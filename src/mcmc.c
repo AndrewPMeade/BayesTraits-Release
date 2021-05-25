@@ -222,7 +222,6 @@ void	InitPhonim(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	fflush(stdout);
 }
 
-
 void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 #ifdef PHONEIM_RUN
@@ -246,7 +245,6 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 void	ShowTimeSec(double StartT, double EndT)
 {
-
 	printf("Sec:\t%f\n", EndT - StartT);
 }
 
@@ -348,6 +346,20 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 	exit(0);
 }
 
+void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
+{
+	int Index;
+	PRIORS *P;
+
+	for(Index=0;Index<Rates->NoOfRates;Index++)
+	{
+		P = Rates->Prios[Index];
+
+		if(P->Dist == UNIFORM)
+			Rates->Rates[Index] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
+	}
+}
+
 
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
@@ -417,26 +429,30 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 
 	//	STest(Opt, Trees, CRates);
 
+//	if(Opt->LoadModels == TRUE)
+//		TestModelFile(Opt, Trees, CRates);
+
+	InitMCMC(Opt, Trees, CRates);
+			
+	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
+	CalcPriors(CRates, Opt);
+
+	if(CRates->LhPrior == ERRLH)
+	{
+ 		SetValidStartingPriors(Opt, Trees, CRates);
+		CRates->Lh	=	Likelihood(CRates, Trees, Opt);
+		CalcPriors(CRates, Opt);
+	}
+
+	if(Opt->UseSchedule == TRUE)
+		ShedFile = SetScheduleFile(Opt, Shed);
+	
 	if(Opt->SaveModels == TRUE)
 		SaveModelF = InitSaveModelFile(Opt->SaveModelsFN, Opt, Trees, CRates);
 
 	StoneF = NULL;
 	if(Opt->Stones != NULL)
 		StoneF = CreatStoneOuput(Opt);
-
-//	if(Opt->LoadModels == TRUE)
-//		TestModelFile(Opt, Trees, CRates);
-
-	InitMCMC(Opt, Trees, CRates);
-
-	if(Opt->UseSchedule == TRUE)
-	{
-		ShedFile = SetScheduleFile(Opt, Shed);
-//		ShedFile = OpenWrite(Opt->ScheduleFile);
-	}
-		
-	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
-	CalcPriors(CRates, Opt);
 
 //	MCMCTest(Opt, Trees, NRates, CRates);
 
@@ -456,13 +472,14 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 			SetTreeAsData(Opt, Trees, NRates->TreeNo);
 
 		NRates->Lh = Likelihood(NRates, Trees, Opt);
-		
+	
+
 		if(NRates->Lh == ERRLH)
 			Itters--;
 		else
 		{
-			CalcPriors(NRates, Opt);	
-		
+			CalcPriors(NRates, Opt);
+
 			Heat = NRates->Lh - CRates->Lh;
 						
 			if(Opt->Stones != NULL)
@@ -490,8 +507,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 				CRates->Lh = Likelihood(CRates, Trees, Opt);
 
 				#ifndef JNIRUN
-				//	if(StonesStarted(Opt->Stones, Itters) == FALSE)
-						PrintMCMCSample(Itters, Shed, Opt, CRates, stdout);
+					PrintMCMCSample(Itters, Shed, Opt, CRates, stdout);
 					fflush(stdout);
 				#endif
 

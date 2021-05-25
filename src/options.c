@@ -841,7 +841,7 @@ PRIORS*	CreatDefPrior(OPTIONS *Opt)
 	{
 		P->DistVals[0] = -100;
 		P->DistVals[1] = 100;
-	}
+	} 
 	
 	P->RateNo = -1;
 
@@ -865,6 +865,9 @@ void	AllocPrios(OPTIONS *Opt)
 	{
 		Opt->Priors[Index] = CreatDefPrior(Opt);
 		Opt->Priors[Index]->RateName = StrMake(Opt->RateName[Index]);
+
+		if((Opt->Model == M_CONTRAST_FULL) && (Index >= Opt->Trees->NoOfSites))
+			Opt->Priors[Index]->DistVals[0] = 0;
 	}
 
 	Opt->RJPrior = CreatDefPrior(Opt);

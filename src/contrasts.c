@@ -18,6 +18,7 @@
 #include "ContrastsTrans.h"
 #include "likelihood.h"
 #include "contrastsfull.h"
+#include "priors.h"
 
 #ifdef CLIK_P
 	#include <cilk/cilk.h>
@@ -1693,7 +1694,6 @@ void	MutateRegContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	
 
 void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
 {
-
 	int Pos;
 	double Dev;
 	
@@ -1703,8 +1703,7 @@ void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	She
 	Dev = Opt->RateDevList[Shed->PNo];
 
 	Rates->Rates[Pos] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
-
-
+	
 	return;
 
 	if(Opt->Model == M_CONTRAST_STD)

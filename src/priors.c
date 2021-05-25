@@ -430,7 +430,6 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 
 	Rates->LhPrior = 0;
 	
-
 	if(Opt->LoadModels == TRUE)
 		return;
 
