@@ -1340,7 +1340,8 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 
 double	TransVarCoVar(int N, double x)
 {
-	return (x * (double)N) / (double)(N-1);
+	return x;
+//	return (x * (double)N) / (double)(N-1);
 }
 
 double	CalcR(double CV, double VT1, double VT2)
@@ -1757,6 +1758,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->UseDistData == TRUE)
 		OutputDataDist(Str, Rates, Opt);
+
 }
 
 double	GetPartailPi(RATES *Rates, NODE N, int StateNo, int SiteNo)

@@ -21,8 +21,6 @@ int			FindRatePos(int Rate, OPTIONS *Opt);
 void		MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It);
 void		MutateHetero(RATES *Rates);
 
-
-
 SUMMARY*	CreatSummary(OPTIONS *Opt);
 void		FreeSummary(SUMMARY*	Summary);
 void		PrintSummaryHeadder(FILE* Str, SUMMARY	*Summary, OPTIONS *Opt);

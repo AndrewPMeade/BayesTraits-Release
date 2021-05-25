@@ -45,6 +45,7 @@
 #include "Initialise.h"
 #include "RandLib.h"
 #include "BatchMode.h"
+#include "AncStateV.h"
 
 #ifdef	OPENMP_THR
 	#include <omp.h>
@@ -211,9 +212,11 @@ int main(int argc, char** argv)
 	Opt = SetUpOptions(Trees, TreeFN, DataFN);
 
 	PrintOptions(stdout, Opt);
-
+	
 	GetOptions(Opt);
 	CheckOptions(Opt);
+
+//	MakeAncVMatrix(Opt, Trees);
 
 	#ifdef BTOCL
 	btocl_init_runtime(CL_DEVICE_TYPE_GPU);
