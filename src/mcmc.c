@@ -260,7 +260,7 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		CalcPriors(NRates, Opt);
 		
 		Heat += NRates->LhPrior - CRates->LhPrior;
-		Heat += NRates->LogHRatio;
+		Heat += NRates->LnHastings;
 		
 		if((log(GenRandState(CRates->RandStates)) <= Heat) && (NRates->Lh != ERRLH))
 		{
@@ -308,8 +308,8 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			}
 		}
 
-		CRates->LhPrior = NRates->LhPrior = 0;
-		CRates->LogHRatio = NRates->LogHRatio = 0;
+//		CRates->LhPrior		= NRates->LhPrior = 0;
+		CRates->LnHastings	= NRates->LnHastings = 0;
 		CRates->LogJacobion = NRates->LogJacobion = 0;
 
 		if((Opt->Itters == Itters) && (Opt->Itters != -1))

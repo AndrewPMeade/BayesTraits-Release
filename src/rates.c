@@ -494,7 +494,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->Beta			= NULL;
 	Ret->MappingVect	= NULL;
 	Ret->LhPrior		= 0;
-	Ret->LogHRatio		= 0;
+	Ret->LnHastings		= 0;
 	Ret->LogJacobion	= 0;
 
 	Ret->Gamma			= -1;
@@ -1604,15 +1604,41 @@ void	MutateRatesOld(OPTIONS* Opt, RATES* Rates)
 }
 
 
+int		ValidMove(RATES *Rates, int No)
+{
+	PLASTY *PP;
+
+	if((No == SPPMOVE) || (No == SPPCHANGESCALE))
+	{
+		PP = Rates->Plasty	;
+		if(PP->NoNodes == 0)
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
 int	PickACat(RATES *Rates, double *Vect, int Size)
 {
 	double	Val;
 	int		Index;
 
-	Val = GenRandState(Rates->RandStates);
-	for(Index=0;Index<Size;Index++)
-		if(Val<Vect[Index])
-			return Index;
+	do
+	{
+		Val = GenRandState(Rates->RandStates);
+		for(Index=0;Index<Size;Index++)
+		{
+			if(Val<Vect[Index])
+			{
+				if(ValidMove(Rates, Index) == TRUE)
+					return Index;
+				else
+					Index = Size;
+			}
+		}
+	}while(1);
+
+	printf("Error in %s line %d\n", __FILE__, __LINE__);
 
 	return -1;
 }
@@ -1948,8 +1974,16 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 			Rates->TreeNo = rand() % Opt->Trees->NoOfTrees;
 		break;
 
+		case(SPPADDREMOVE):
+			PPAddRemove(Rates, Opt->Trees, Opt);
+		break;
+
 		case(SPPMOVE):
-			PlastyMove(Rates, Opt->Trees, Opt);
+			PPMoveNode(Rates, Opt->Trees, Opt);
+		break;
+		
+		case(SPPCHANGESCALE):
+			PPChangeScale(Rates, Opt->Trees, Opt);
 		break;
 	}
 
@@ -2230,8 +2264,11 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 
 	if(Opt->UsePhyloPlasty == TRUE)
 	{
-		Shed->OptFreq[10] = 0.75;
-		Left = Left - Shed->OptFreq[10];
+		Shed->OptFreq[10] = 0.4;
+		Shed->OptFreq[11] = 0.1;
+		Shed->OptFreq[12] = 0.4;
+
+		Left = Left - (Shed->OptFreq[10] + Shed->OptFreq[11] + Shed->OptFreq[12]);
 	}
 
 	Rates = 0;

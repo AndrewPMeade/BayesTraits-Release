@@ -464,7 +464,7 @@ void	RJMergePropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0ID, in
 
 	Ret = Top / Bottom;
 
-	Rates->LogHRatio = log(Ret) + Rates->LogJacobion;
+	Rates->LnHastings = log(Ret) + Rates->LogJacobion;
 }
 
 void	RJSplitPropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0Size, int G1Size, double Rate, int OGroup)
@@ -493,7 +493,7 @@ void	RJSplitPropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0Size, 
 
 	Ret = Top / Bottom;
 
-	Rates->LogHRatio = log(Ret) + Rates->LogJacobion;
+	Rates->LnHastings = log(Ret) + Rates->LogJacobion;
 
 }
 
@@ -628,7 +628,7 @@ void	RJReduce(RATES* Rates, OPTIONS* Opt)
 	Bottom = Bottom * (1.0 / (double)FindGroupsGrater(1, MapInfo));
 	Bottom = Bottom * (1.0 / (double)MapInfo->GroupSize[Group]);
 
-	Rates->LogHRatio = log(Top / Bottom);
+	Rates->LnHastings = log(Top / Bottom);
 
 	FreeMapInfo(MapInfo);
 }
@@ -668,7 +668,7 @@ void	RJAugment(RATES* Rates, OPTIONS* Opt)
 	Bottom = Bottom * (1.0 / (double)MapInfo->NoInZero);
 	Bottom = Bottom * (1.0 / (double)MapInfo->NoOfGroups);
 
-	Rates->LogHRatio = log(Top / Bottom);
+	Rates->LnHastings = log(Top / Bottom);
 
 
 	FreeMapInfo(MapInfo);

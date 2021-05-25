@@ -9,6 +9,7 @@
 #include "rand.h"
 #include "revjump.h"
 #include "likelihood.h"
+#include "phyloplasty.h"
 
 extern double beta(double a, double b);
 extern double incbet(double aa, double bb, double xx );
@@ -424,6 +425,10 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 
 	Rates->LhPrior = 0;
 	NLh = 0;
+
+	if(Opt->UsePhyloPlasty == TRUE)
+		Rates->LhPrior += CalcPPPriors(Rates, Opt);
+
 	for(PIndex=0;PIndex<Rates->NoOfRates;PIndex++)
 	{
 		if(Opt->UseRJMCMC == FALSE)

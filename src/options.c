@@ -817,9 +817,11 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->ModelFile	= NULL;
 	Ret->UseModelFile= FALSE;
 
-	Ret->UseRModel = FALSE;
+	Ret->UseRModel	= FALSE;
 	Ret->RModelP	= -1;
 	Ret->EstDataDev	= 0.2;
+	Ret->PPScaleDev = PPSCALEDEV;
+
 
 	Ret->NoEstDataSite	=	0;
 	Ret->EstDataSites	=	NULL;
@@ -847,7 +849,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	}
 
 	SetOptRates(Ret, NOS, SymbolList);
-
 	
 	AllocRestictions(Ret);
 

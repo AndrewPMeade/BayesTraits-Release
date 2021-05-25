@@ -29,6 +29,7 @@
 #define PPMAXSCALE	10
 #define	PPALPHA		1.5
 #define PPBETA		6
+#define	PPSCALEDEV	5
 
 
 #define MINRATE 1.0e-16
@@ -47,7 +48,6 @@
 
 #define ERRLH -999999
 
-#define NOOFOPERATORS	11
 #define ZERORATENO		-1
 
 //extern double LhPraxis(LhPraxisdouble *);
@@ -239,20 +239,6 @@ static char    *DISTNAMES[] =
 	""
 };
 
-static char    *SHEDOP[] =
-{
-	"Rate",
-	"CV",
-	"Kappa",
-	"Delta",
-	"Labda",
-	"Jump",
-	"Prior Change",
-	"Est Data",
-	"Var Data",
-	"Solo Tree Move",
-	"PP Move"
-};
 
 static int	DISTPRAMS[] =
 {
@@ -597,11 +583,14 @@ typedef struct
 	RESTYPES	*ResTypes;
 	int			*ResNo;
 	double		*ResConst;
-	double		EstDataDev;
-
+	
 	double		RateDev;
 	double		*RateDevList;
 
+	
+	double		EstDataDev;
+	double		PPScaleDev;
+//	PPSCALEDEV
 
 	PRIORS		**Priors;
 
@@ -725,9 +714,10 @@ typedef struct
 	double	*Pis;
 
 	int		TreeNo;
-//	double	LhHastings;
-	double	LhPrior;
 	double	Lh;
+	double	LhPrior;
+	double	LnHastings;
+	double	LogJacobion;
 
 	PRIORS	**Prios;
 
@@ -745,8 +735,6 @@ typedef struct
 
 	int		*MappingVect;
 
-	double	LogJacobion;
-	double	LogHRatio;
 
 	double	*GammaMults;
 	int		GammaCats;
@@ -791,6 +779,25 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
+#define NOOFOPERATORS	13
+
+static char    *SHEDOP[] =
+{
+	"Rate",
+	"CV",
+	"Kappa",
+	"Delta",
+	"Labda",
+	"Jump",
+	"Prior Change",
+	"Est Data",
+	"Var Data",
+	"Solo Tree Move",
+	"PP Add / Remove",
+	"PP Move", 
+	"PP Change Scale"
+};
+
 typedef enum
 {
 	SRATES=0,
@@ -803,7 +810,9 @@ typedef enum
 	SESTDATA=7,
 	SVARDATA=8,
 	SSOLOTREEMOVE=9,
-	SPPMOVE=10
+	SPPADDREMOVE=10,
+	SPPMOVE=11,
+	SPPCHANGESCALE=12,
 } OPERATORS;
 
 typedef struct
