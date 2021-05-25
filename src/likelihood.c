@@ -90,8 +90,8 @@ int	PreCalc(TREES *Trees, RATES *Rates)
 
 	CopyMatrix(InvInfo->Q, InvInfo->A);
 
-//	PrintMathematicaMatrix(InvInfo->Q, "QMat", stdout);
-//	fflush(stdout);
+	PrintMathematicaMatrix(InvInfo->Q, "QMat", stdout);
+	fflush(stdout);
 
 	if(DB == TRUE)
 	{
@@ -105,23 +105,23 @@ int	PreCalc(TREES *Trees, RATES *Rates)
 
 	if(Ret != NO_ERROR)
 	{
-/*		for(Ret=0;Ret<Rates->NoOfRates;Ret++)
+	/*	for(Ret=0;Ret<Rates->NoOfRates;Ret++)
 			printf("%d\t%f\n", Ret, Rates->Rates[Ret]);
 		printf("\n\n\n");
 		PrintMatrix(InvInfo->Q, "QMat", stdout);
 		PrintMathematicaMatrix(InvInfo->Q, "Q", stdout);
-		exit(0); */
-
+		exit(0); 
+		*/
 		// TODO Phoneim remove 
 		return ERROR;
 	}
 
 	CopyMatrix(InvInfo->Q, InvInfo->vec);
 	Ret = InvertMatrix(InvInfo->Q->me, NoOfStates, work, iwork, InvInfo->inv_vec->me);
-	if(DB == TRUE)
+	if(Ret != NO_ERROR)
 		PrintMatrix(InvInfo->inv_vec, "inv vec", stdout);
 
-	if(Ret == ERROR)
+	if(Ret != NO_ERROR)
 	{
 		printf("%s::%d Inver Err\n", __FILE__, __LINE__);
 		exit(0);
@@ -145,6 +145,8 @@ int	CreateMSAMatrix(MATRIX *A, RATES* Rates, TREES* Trees)
 	double	Tot;
 	int		RPos=0;
 	
+
+
 	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
 	{
 		Tot = 0;
@@ -161,7 +163,8 @@ int	CreateMSAMatrix(MATRIX *A, RATES* Rates, TREES* Trees)
 		A->me[Outter][Outter] = -Tot;
 	}
 
-
+//	PrintMatrix(A, "A = ", stdout);
+//	exit(0);
 
 	return PreCalc(Trees, Rates);
 }
@@ -1244,12 +1247,19 @@ int		SetStdPMatrix(TREES *Trees, NODE N, MATRIX *P, double Gamma, double Kappa)
 		Len = pow(Len, Kappa);
 		
 	Len = Len * Gamma;
+
+	Len = 1;
+	printf("Len\t%f\n", Len);
+
 	
 	ThrNo = GetThreadNo();
 	
 	ErrVal = CreatFullPMatrix(Len, P, Trees, Trees->InvInfo->As[ThrNo], Trees->InvInfo->Ets[ThrNo]);
 	if(ErrVal > 0.001)
 		return TRUE;
+
+	PrintMatrix(P, "P = ", stdout);
+	exit(0);
 
 	return FALSE;
 }

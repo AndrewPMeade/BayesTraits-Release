@@ -40,6 +40,13 @@
 */
 #endif
 
+/* Program Control */
+//	#define	RATE_CHANGE_UNI
+#define RATE_CHANGE_NORM
+
+#define RATE_CHANGE_ALL
+//#define RATE_CHANGE_ONE
+
 /* If defined Sigma in indep contrast is restricted to a given value */
 #define RES_SIGMA	0.0034
 #define RES_ALPHA	0

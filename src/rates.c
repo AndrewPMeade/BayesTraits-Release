@@ -1429,7 +1429,7 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 			else
 			{
 				// TODO Phoneim remove. 
-		//		fprintf(Str, "%d ",  Rates->MappingVect[Index]);
+//				fprintf(Str, "%d ",  Rates->MappingVect[Index]);
 				if(Rates->MappingVect[Index] <= 9)
 					fprintf(Str, "%d", Rates->MappingVect[Index]);
 				else
@@ -1578,11 +1578,18 @@ double ChangeRates(RATES *Rates, double RateV, double dev)
 
 	if(RateV >= MAXRATE)
 		return  MAXRATE;
+
 	do
 	{
 		Exit = TRUE;
+#ifdef RATE_CHANGE_UNI
 		Ret = (RandDouble(Rates->RS) * dev) - (dev / 2.0); 
 		Ret += RateV;
+#endif
+
+#ifdef RATE_CHANGE_NORM
+		Ret = RandNormal(Rates->RS, RateV, dev);
+#endif
 
 		if(Ret > MAXRATE)
 			Exit = FALSE;
@@ -1851,14 +1858,16 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 			if(Opt->DataType == DISCRETE)
 			{
 				/* Change all Rates */
+#ifdef RATE_CHANGE_ALL
 				for(Index=0;Index<Rates->NoOfRates;Index++)
 					Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Opt->RateDev);
+#endif
 
+#ifdef RATE_CHANGE_ONE
 				// TODO Phoneim remove. 
-//				for(Index=0;Index<Rates->NoOfRates;Index++)
-//					Rates->Rates[Index] = Rates->Rates[0];
-//				Index = RandUSLong(Rates->RS) % Rates->NoOfRates;
-//				Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Opt->RateDev);
+				Index = RandUSLong(Rates->RS) % Rates->NoOfRates;
+				Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Opt->RateDev);
+#endif
 			}
 			else
 			{
