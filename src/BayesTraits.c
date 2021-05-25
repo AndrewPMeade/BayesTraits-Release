@@ -229,7 +229,7 @@ int main(int argc, char** argv)
 	#endif
 
 	PreProcess(Opt, Trees);
-		
+
 	if(Opt->Analsis == ANALMCMC)
 		MCMC(Opt, Trees);
 

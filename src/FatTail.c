@@ -644,7 +644,7 @@ void	TestMapping(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 void	SSNodeFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates, SLICESAMPLER *SS, RANDSTATES *RS) 
 {
-	int Changed, Valid;
+	int Changed, Valid, Index;
 	double CLh, CAns, NAns, NLh, Min, Max;
 	FATTAILRATES *FTR;
 
@@ -702,6 +702,7 @@ void	SSAllAnsStatesFatTailSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, FATTAIL
 {
 	int FIndex, NIndex, TNo;
 	NODE N;
+	int Index;
 
 	SetStableDist(FTR->SDList[SiteNo], FTR->Alpha[SiteNo], FTR->Scale[SiteNo]);
 	
@@ -722,7 +723,7 @@ void	SSAllAnsStatesFatTailSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, FATTAIL
 
 void	SSAllAnsStatesFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	int SIndex;
+	int SIndex, NIndex;
 	TREE *Tree;
 	
 	FATTAILRATES *FTR;
@@ -748,7 +749,7 @@ void	SSAllAnsStatesFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 void	SSAnsStatesFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	int SIndex;
+	int SIndex, NIndex;
 	NODE N;
 	TREE *Tree;
 	FATTAILRATES *FTR;
@@ -1117,7 +1118,7 @@ void	LoadRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt, TREES *Trees)
 	Buffer = StrMake(Str);
 	Passed = (char**)SMalloc(sizeof(char*) * strlen(Str));
 
-	Tokes = MakeArgv(Buffer, Passed, (int)strlen(Str));
+	Tokes = MakeArgv(Buffer, Passed, strlen(Str));
 
 	Rates->Rates[0] = atof(Passed[2]);
 

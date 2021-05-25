@@ -56,7 +56,7 @@ int		GetParamPerModel(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->DataType == CONTINUOUS)
 	{
 		Ret = Rates->NoOfRates;
-		Ret += (int)GetSig2MatrixSize(Trees);
+		Ret += GetSig2MatrixSize(Trees);
 
 		if(Opt->EstKappa == TRUE)
 			Ret++;
@@ -217,6 +217,7 @@ void	MapConModelFile(OPTIONS *Opt, RATES *Rates)
 {
 	MODELFILE *MF;
 	TREES *Trees;
+	TREE	*Tree;
 	double *Data;
 	size_t		Pos;	
 	size_t		Sig2Size;
