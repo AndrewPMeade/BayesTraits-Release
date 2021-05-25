@@ -9,8 +9,13 @@
 #include "RandLib.h"
 
 // #define	JNIRUN
-// #define THREADED
+ #define THREADED
 // #define BIG_LH
+
+//#define	PUBLIC_BUILD
+
+// To start the Chain from the ML values
+#define MCMC_ML_START
 
 // Information for the phomem cog est runs
 // #define	PHONEIM_RUN
@@ -53,8 +58,8 @@
 
 
 /* If defined Sigma in indep contrast is restricted to a given value */
-#define RES_SIGMA	0.0034
-#define RES_ALPHA	0
+//#define RES_SIGMA	0.0034
+//#define RES_ALPHA	0
 
 /* Cost of Uniform prior */
 #define PPUNICOST		2.302585093
@@ -259,12 +264,12 @@ static char		*MODELNAMES[] =
 	"Multistates",
 	"Discete Independant",
 	"Discete Dependent",
-	"Discrete Covarion", 
-	"Discrete Heterogeneous", 
 	"Continuous Random Walk",
 	"Continuous Directional",
 	"Continuous Regression",
-	"Independent Contrasts"
+	"Independent Contrasts",
+	"Discrete Covarion", 
+	"Discrete Heterogeneous"
 };
 
 static char    *DEPPRAMS[] =
@@ -368,12 +373,12 @@ typedef enum
 	MULTISTATE,
 	DESCINDEP,
 	DESCDEP,
-	DESCCV,
-	DESCHET,
 	CONTINUOUSRR,
 	CONTINUOUSDIR,
 	CONTINUOUSREG,
-	CONTRASTM
+	CONTRASTM,
+	DESCCV,
+	DESCHET
 } MODEL;
 
 typedef enum

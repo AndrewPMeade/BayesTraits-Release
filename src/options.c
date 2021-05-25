@@ -998,129 +998,174 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	return Ret; 
 }
 
-MODEL	GetModel(TREES *Trees)
+void	PrintModelChoic(TREES *Trees)
 {
-	char	Buffer[1024];
-	int		Comment;
+	printf("Please Select the model of evolution to use.\n");
+	printf("1)	MultiState.\n");
+	printf("2)	Discrete: Independent\n");
+	printf("3)	Discrete: Dependant\n");
 
-	Comment = FALSE;
-	for(;;)
+
+	if(Trees->ValidCData == TRUE)
 	{
-		if(Comment == FALSE)
-		{
-			printf("Please Select the model of evolution to use.\n");
-			printf("1)	MultiState.\n");
-			printf("2)	Discrete: Independent\n");
-			printf("3)	Discrete: Dependant\n");
-			printf("4)	Discrete: Covarion\n");
-			printf("5)	Discrete: Heterogeneous \n");
+		printf("4)	Continuous: Random Walk (Model A)\n");
+		printf("5)	Continuous: Directional (Model B)\n");
 
+		if(Trees->NoOfSites > 1)
+			printf("6)	Continuous: Regression\n");
 
-			if(Trees->ValidCData == TRUE)
-			{
-				printf("6)	Continuous: Random Walk (Model A)\n");
-				printf("7)	Continuous: Directional (Model B)\n");
-
-				if(Trees->NoOfSites > 1)
-					printf("8)	Continuous: Regression\n");
-
-				printf("9)	Independent contrast\n");
-			}
-		}
-
-		if(fgets(&Buffer[0], 1024, stdin) != NULL)
-		{
-			if(Buffer[0] != '#')
-			{
-				Comment = FALSE;
-				switch (atoi(&Buffer[0]))
-				{
-					case 1:	
-						return 	MULTISTATE;
-					break;
-
-					case 2:
-						if((Trees->NoOfSites != 2) || (Trees->NoOfStates > 2))
-						{
-							printf("Discrete analisis requiers two two state characters\n");
-							printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
-							break;
-						}
-						return DESCINDEP;
-					break;
-
-					case 3:
-						if((Trees->NoOfSites != 2) || (Trees->NoOfStates > 2))
-						{
-							printf("Descete analisis requiers two two stat characters\n");
-							printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
-							break;
-						}
-
-						return DESCDEP;
-					break;
-
-					case 4:
-						if((Trees->NoOfSites != 2) || (Trees->NoOfStates > 2))
-						{
-							printf("Descete analisis requiers two two stat characters\n");
-							printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
-							break;
-						}
-						return DESCCV;
-					break;
-							
-					case 5:
-						if((Trees->NoOfSites != 2) || (Trees->NoOfStates > 2) || (Trees->NoOfTrees != 1))
-						{
-							printf("Descete Heterogeneous  analisis requiers two two stat characters and only tree\n");
-							printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
-							break;
-						}
-						return DESCHET;
-					break;
-	
-					case 6:
-						if(Trees->ValidCData == TRUE)
-							return CONTINUOUSRR;
-					break;
-
-					case 7:
-						if(Trees->ValidCData == TRUE)
-							return CONTINUOUSDIR;
-					break;
-
-					case 8:
-						if(Trees->ValidCData == TRUE)
-						{
-							if(Trees->NoOfSites > 1)
-								return CONTINUOUSREG;
-							else
-								printf("Continuous: Regression model requires more than one site\n");
-						}
-					break;
-
-
-					case 9:
-						if(Trees->ValidCData == TRUE)
-							return CONTRASTM;
-					break;
-
-
-					default:
-						if(Trees->ValidCData == FALSE)
-							printf("%s is not a valid choice please enter a number between 1 and 3 followed by a return.\n", Buffer);
-						else
-							printf("%s is not a valid choice please enter a number between 1 and 5 followed by a return.\n", Buffer);
-				}
-			}
-			else
-				Comment = TRUE;
-		}
+		printf("7)	Independent contrast\n");
 	}
 
-	/* Code is unreachable, return value not valid */
-	return MULTISTATE;
+#ifndef PUBLIC_BUILD
+	printf("8)	Discrete: Covarion\n");
+	printf("9)	Discrete: Heterogeneous \n");
+#endif
+}
+
+int		GetModelInt()
+{
+	char	*Buffer;
+	int		Ret;
+
+	Ret = -1;
+
+	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
+	if(Buffer == NULL)
+		MallocErr();
+
+	if(fgets(Buffer, BUFFERSIZE, stdin) == NULL)
+	{
+		printf("Fatal error Reading model choice\n");
+		exit(0);
+	}
+	
+	ReplaceChar('\n', '\0', Buffer);
+
+	if(IsValidInt(Buffer) == FALSE)
+		printf("%s is not a valid model choice\n", Buffer);
+	else
+		Ret = atoi(Buffer);
+		
+	free(Buffer);
+
+	return Ret;
+}
+
+int		ValidModelChoice(TREES *Trees, int ModelNo)
+{
+
+	int MaxModelNo;
+
+	
+	MaxModelNo = 9;
+
+#ifdef PUBLIC_BUILD
+	MaxModelNo = 7;
+#endif
+
+	if((ModelNo < 1) || (ModelNo > MaxModelNo))
+	{
+		printf("Model must be 1-7.\n");
+		return FALSE;
+	}
+
+	if(ModelNo == 1)
+		return TRUE;
+
+	if((ModelNo == 2) || (ModelNo == 3) || (ModelNo == 8) || (ModelNo == 9))
+	{
+		if((Trees->NoOfSites != 2) || (Trees->NoOfStates > 2))
+		{
+			printf("Discrete analisis requiers two two state characters\n");
+			printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
+			return FALSE;
+		}
+		return TRUE;
+	}
+
+	if(Trees->ValidCData == FALSE)
+	{
+		printf("Model %d requires continues data.\n", ModelNo);
+		return FALSE;
+	}
+
+	if((ModelNo == 6) && (Trees->NoOfSites < 2))
+	{
+		printf("Continuous Regression, requires two or more sites.\n");
+		return FALSE;
+	}
+
+	return TRUE;
+}
+
+MODEL	IntToModel(int No)
+{
+	if(No == 1)
+		return MULTISTATE;
+
+	if(No == 2)
+		return DESCINDEP;
+
+	if(No == 3)
+		return DESCDEP;
+
+	if(No == 4)
+		return CONTINUOUSRR;
+
+	if(No == 5)
+		return CONTINUOUSDIR;
+
+	if(No == 6)
+		return CONTINUOUSREG;
+
+	if(No == 7)
+		return CONTRASTM;
+
+	if(No == 8)
+		return DESCCV;
+
+	if(No == 9)
+		return DESCHET;
+
+	printf("Unkown model\n");
+	exit(0);
+}
+
+
+//./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < BigMamIn.txt > sout.txt
+void	GetModelChoice(TREES *Trees, MODEL *Model, int *Valid)
+{
+	int		No;
+
+	*Valid = FALSE;
+
+	No = GetModelInt();
+	if(No == -1)
+		return;	
+
+	if(ValidModelChoice(Trees, No) == FALSE)
+		return;
+
+	*Valid = TRUE;
+	*Model = IntToModel(No);
+}
+
+MODEL	GetModel(TREES *Trees)
+{
+	MODEL	Model;
+	int		Valid;
+
+	
+	do
+	{
+		PrintModelChoic(Trees);
+		
+		GetModelChoice(Trees, &Model, &Valid);
+	} while(Valid == FALSE);
+
+	
+	return Model;
 }
 
 

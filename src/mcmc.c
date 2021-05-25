@@ -213,6 +213,11 @@ void	InitPhonim(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	fflush(stdout);
 }
 
+void	MLMCMCStart(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	PraxisGo(Opt, Rates, Trees);
+}
+
 void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	double	*Vec;
@@ -223,9 +228,12 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	return;
 #endif
 
-	// TODO: Set all Rates to ML Value
+#ifdef MCMC_ML_START
+	PraxisGo(Opt, Rates, Trees);
+#else
 	for(Index=0;Index<Rates->NoOfRates;Index++)
 		Rates->Rates[Index] = 1;
+#endif
 	
 	if(Likelihood(Rates, Trees, Opt) != ERRLH)
 		return;

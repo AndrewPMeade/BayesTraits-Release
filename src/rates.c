@@ -632,6 +632,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->Delta			=	-1;
 
 	Ret->Plasty			=	NULL;
+	Ret->Hetero			=	NULL;
 
 	// Must work out how its being inishlised 
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
@@ -732,8 +733,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	if(Opt->Model == DESCHET)
 		Ret->Hetero = CreatHetero(Opt, Ret);
-	else
-		Ret->Hetero = NULL;
 
 	MapRates(Ret, Opt);
 
