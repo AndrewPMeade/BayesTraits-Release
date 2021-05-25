@@ -16,7 +16,7 @@
 #include "Geo.h"
 #include "SliceSampler.h"
 
-#define NO_SLICE_STEPS 1000
+#define NO_SLICE_STEPS 100
 #define	MAX_STEP_DIFF	5.0
 
 double	NodeSliceSampler(NODE N, RANDSTATES *RS);
@@ -711,6 +711,8 @@ void	AllSliceSampleFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	}
 
 	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
+
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
 }
 
 int	GetMutateFatTailRatesPos(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE* Shed)
@@ -729,7 +731,7 @@ int	GetMutateFatTailRatesPos(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*
 
 	return Pos;
 }
-
+/*
 void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
 {
 	int Pos;
@@ -740,7 +742,7 @@ void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed
 
 	Pos = Shed->PNo;
 	Dev = Opt->RateDevList[Shed->PNo];
-	Dev = 0.5;
+//	Dev = 0.5;
 	OldR = Rates->Rates[Pos];
 
 	do
@@ -750,9 +752,31 @@ void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed
 	
 	Rates->Rates[Pos] = NewR;
 
-	MapRatesToFatTailRate(Rates, Rates->FatTailRates);
+//	MapRatesToFatTailRate(Rates, Rates->FatTailRates);
 }
+*/
 
+void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
+{
+	int Index, Pos;
+	double NewR, OldR, Dev;
+
+//	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
+	Shed->PNo = GetMutateFatTailRatesPos(Opt, Trees, Rates, Shed);
+
+	Pos = Shed->PNo;
+	Dev = Opt->RateDevList[Shed->PNo];
+	OldR = Rates->Rates[Pos];
+
+	do
+	{
+		NewR = OldR + (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
+	} while(NewR < 0.0);
+	
+	Rates->Rates[Pos] = NewR;
+	
+//	MapRatesToFatTailRate(Rates, Rates->FatTailRates);
+}
 
 void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
 {

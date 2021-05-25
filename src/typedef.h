@@ -111,8 +111,6 @@
 //#define CONTRAST_ML_PARAM
 
 
-// Minimum number of taxa to transform a node. 
-#define MIN_TAXA_VR_TRANS	5
 
 // No kappa, lambda, delta, OU. 
 #define	NO_RJ_LOCAL_SCALAR	4
@@ -178,6 +176,10 @@
 #define MAX_VR_DELTA	25
 #define MAX_VR_LAMBDA	1
 #define MAX_VR_OU		100
+
+// Minimum number of taxa to transform a node. 
+#define MIN_TAXA_VR_TRANS	5
+
 
 // Value for a normal distribution for a fat tail model
 #define FAT_TAIL_NORMAL_VAL 2.0

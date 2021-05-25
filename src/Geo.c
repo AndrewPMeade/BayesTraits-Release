@@ -192,14 +192,11 @@ void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 		
 	NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
 	
-
 	XYZToNode(N, RX, RY, RZ);
 
 	Rates->Lh = Rates->Lh + (NLh - CLh);
 	
 //	printf("%f\t%f\t%f\n", CLh, NLh, (NLh - CLh));
-
-
 }
 /* // Serial
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -245,8 +242,7 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FatTailSetAnsSates(Tree, Trees->NoOfSites, FTR);
 
 	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
-		
-
+	
 	do
 	{
 		NIndex = RandUSInt(Rates->RS) % Tree->NoNodes;
@@ -255,7 +251,7 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		
 	GeoUpDateNode(N, Rates, Rates->RS);
 		
-	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
+//	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
 }
 /*
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -376,7 +372,7 @@ void GeoTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	exit(0);
 }
 
-void	SetLoadGeoData(double *Vect, TREES *Trees, TREE *Tree)
+void	SetLoadGeoData(char **AnsState, TREES *Trees, TREE *Tree)
 {
 	int Index, SIndex, Pos;
 	NODE N;
@@ -389,7 +385,7 @@ void	SetLoadGeoData(double *Vect, TREES *Trees, TREE *Tree)
 		if(N->Tip == FALSE)
 		{
 			for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
-				N->FatTailNode->Ans[SIndex] = Vect[Pos++];
+				N->FatTailNode->Ans[SIndex] = atof(AnsState[Pos++]);
 		}
 	}
 }
@@ -410,7 +406,7 @@ void	LoadGeoDataTest(OPTIONS *Opt, TREES *Trees, RATES *CRates, RATES *NRates)
 }*/
 
 
-void	LoadGeoDataTest(OPTIONS *Opt, TREES *Trees, RATES *CRates, RATES *NRates)
+void	LoadGeoDataTest(OPTIONS *Opt, TREES *Trees, RATES *CRates)
 {
 	double Alpha, Lh;
 
@@ -425,40 +421,41 @@ void	LoadGeoDataTest(OPTIONS *Opt, TREES *Trees, RATES *CRates, RATES *NRates)
 	exit(0);
 }
 
-void	LoadGeoData(OPTIONS *Opt, TREES *Trees, RATES *CRates, RATES *NRates)
+void	LoadGeoData(char *Str, OPTIONS *Opt, TREES *Trees, RATES *CRates)
 {
-//	int Index;
 	TREE *Tree;
 	FATTAILRATES *FTR;
-//	double Vect[] = {0.259795,0.066530,751.378629,-3437.069454,5311.461637,753.258104,-3436.195650,5311.760789,753.264434,-3436.198048,5311.758340,753.254442,-3436.195880,5311.761160,784.523499,-3268.580864,5412.073818,753.249728,-3436.196573,5311.761380,753.247693,-3436.199677,5311.759660,684.119337,-3445.857367,5314.855477,685.966751,-3449.193539,5312.452781,1174.404203,-4308.824310,4543.616272,912.632312,-3308.485778,5367.556718,1174.440167,-4308.836315,4543.595592,1174.438958,-4308.836987,4543.595267,616.839183,-4439.468506,4527.722364,1174.325102,-4308.200488,4544.228219,629.148487,-3194.496934,5476.221555,857.173841,-3352.341239,5349.458124,629.094699,-3194.502862,5476.224277,629.012338,-3187.840835,5480.114532,629.569706,-3712.553591,5139.088326,629.550511,-3712.552243,5139.091651,629.549949,-3712.582582,5139.069802};
-	double Vect[] = {1.562818,0.279657,-1.498650,-0.844738,-0.051915,-1.396248,0.555995,1.154636,0.457733,1.277120,0.330255,-0.341057,-0.196719,0.387331,0.300890};
+	char *S, **Passed;
+	int Tokes;
+
+	S = StrMake(Str);
 	
 	Tree = Trees->Tree[CRates->TreeNo];
 
 	FTR = CRates->FatTailRates;
 
-//	Rates->Rates[0] = Vect[0];
-//	Rates->Rates[1] = Vect[1];
+	Passed = (char**)malloc(sizeof(char*) * (strlen(S) + 1));
+	if(Passed == NULL)
+		MallocErr();
 
-	FTR->Alpha[0] = Vect[0];
-	FTR->Scale[0] = Vect[1];
+	Tokes = MakeArgv(S, Passed, strlen(S) + 1);
 
-//	memcpy(Tree->FatTailTree->AnsVect, &Vect[2], sizeof(double) * Tree->NoNodes * 3);
-
-
-	SetLoadGeoData(&Vect[2], Trees, Tree);
+	FTR->Alpha[0] = atof(Passed[2]);
+	FTR->Scale[0] = atof(Passed[3]);
+	
+	SetLoadGeoData(&Passed[4], Trees, Tree);
 	MapFatTailRateToRates(CRates, FTR);
 
 	FatTailGetAnsSates(Tree, 1, FTR);
 
 	CRates->Lh = Likelihood(CRates, Trees, Opt);
 
-//	return;
+	return;
 
 
 	printf("Init Lh:\t%f\n", CRates->Lh);
 
-	LoadGeoDataTest(Opt, Trees, CRates, NRates);
+//	LoadGeoDataTest(Opt, Trees, CRates);
 
 	exit(0);
 }

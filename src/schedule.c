@@ -416,7 +416,8 @@ void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, RANDSTATES *RS)
 	{
 		Shed->PTried[Index] = Shed->PAcc[Index] = 0;
 		Shed->RateDevATList[Index] = CreatAutoTune(0.2, 0.4);
-		Opt->RateDevList[Index] = RandDouble(RS) * 10;
+//		Opt->RateDevList[Index] = RandDouble(RS) * 10;
+		Opt->RateDevList[Index] = 1.0;
 	}
 }
 
@@ -568,7 +569,7 @@ void	UpDateRateDevPerP(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 
 	if(Opt->DataType == DISCRETE)
 	{
-		if(Shed->PTried[0] > 4)
+		if(Shed->PTried[0] > 10)
 		{
 			Acc = GetRDDecAccRate(Opt, Shed);
 			Opt->RateDevList[0] = AutoTuneNextRD(Shed->RateDevATList[0], RS, Opt->RateDevList[0], Acc);
@@ -578,7 +579,7 @@ void	UpDateRateDevPerP(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 	{
 		for(Index=0;Index<Shed->NoParm;Index++)
 		{
-			if(Shed->PTried[Index] > 4)
+			if(Shed->PTried[Index] > 10)
 			{
 				Acc = (double)Shed->PAcc[Index] / Shed->PTried[Index];
 				Opt->RateDevList[Index] = AutoTuneNextRD(Shed->RateDevATList[Index], RS, Opt->RateDevList[Index], Acc);
