@@ -1053,7 +1053,10 @@ ANALSIS	GetAnalsis(TREES *Trees)
 		else
 			Comment = TRUE;
 	}
+
 }
+
+
 
 COMMANDS	StringToCommand(char *Str)
 {

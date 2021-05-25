@@ -15,7 +15,6 @@
 #include "rand.h"
 #include "rates.h"
 #include "ckappa.h"
-#include "phyloplasty.h"
 
 void	InitEstData(OPTIONS *Opt, TREES *Trees)
 {
@@ -1287,12 +1286,6 @@ void	SetPhyloPlastyV(TREES* Trees, RATES* Rates)
 
 	Tree = &Trees->Tree[Rates->TreeNo];
 
-	MapRateToTree(Trees, Rates);
-//	CalcPVarCoVar(Trees, Tree); 
-	MapPhyloPlastyToV(Trees, Tree);
-
-	return;
-
 	printf("Stat\t");
 	PrintTime(stdout);
 	printf("\n");
@@ -1300,16 +1293,13 @@ void	SetPhyloPlastyV(TREES* Trees, RATES* Rates)
 	for(Index=0;Index<10000;Index++)
 	{
 		MapRateToTree(Trees, Rates);
-		MapPhyloPlastyToV(Trees, Tree);
-
+		CalcPVarCoVar(Trees, Tree);
 		CopyMatrix(Tree->ConVars->TrueV, Tree->ConVars->V);
-		if(Index%1000==0)
+		if(Index%100==0)
 		{
 			printf("\tdone\t%d\n", Index);
 			fflush(stdout);
 		}
-
-		FindInvV(Trees, Tree);
 	}
 	printf("End\t");
 	PrintTime(stdout);
@@ -1513,11 +1503,6 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 		for(Index=0;Index<Trees->NoOfTaxa;Index++)
 			CV->DepVect[Index] = Trees->Taxa[Index].Dependant;
 	}
-
-	if(Opt->UsePhyloPlasty == TRUE)
-		CV->PPCoVarV = InitPhyloPlastyConVar(Trees, &Trees->Tree[TreeNo]);
-	else
-		CV->PPCoVarV = NULL;
 }
 
 void		FreeTempConVars(TEMPCONVAR* TempCon)

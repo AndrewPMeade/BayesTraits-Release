@@ -40,7 +40,7 @@
 
 #define ERRLH -999999
 
-#define NOOFOPERATORS	11
+#define NOOFOPERATORS	10
 #define ZERORATENO		-1
 
 //extern double LhPraxis(LhPraxisdouble *);
@@ -386,26 +386,6 @@ typedef struct
 
 typedef struct
 {
-	int		x;
-	int		y;
-
-	double	Sum;
-
-	int		No;
-	NODE	*NList;
-
-} PPCOVARPAIR;
-
-typedef struct
-{
-	int				No;
-	PPCOVARPAIR		**List;
-
-} PPCOVARV;
-
-
-typedef struct
-{
 	MATRIX		*TrueV;
 	MATRIX		*V;
 	MATRIX		*InvV;
@@ -438,8 +418,6 @@ typedef struct
 	double		LogDetOfSigma;
 
 	double		*DepVect;
-
-	PPCOVARV	*PPCoVarV;
 } CONVAR;
 
 typedef	struct
@@ -546,16 +524,15 @@ typedef struct
 
 typedef struct
 {
-	double		*RealBL;
-	int			*Cats;
-	int			NoCats;
+	double	*RealBL;
+	int		*Cats;
+	int		NoCats;
 
-	double		*Rates;
-	int			NoRates;
 
-	int			OnePos;
+	double	*Rates;
+	int		NoRates;
 
-	int			InvV;
+	int		InvV;
 } PHYLOPLASTY;
 
 typedef struct
@@ -769,9 +746,9 @@ typedef enum
 	SPPROR=6,
 	SESTDATA=7,
 	SVARDATA=8,
-	SSOLOTREEMOVE=9,
-	SPPMOVE=10
+	SSOLOTREEMOVE
 } OPERATORS;
+
 
 typedef struct
 {

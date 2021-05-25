@@ -246,8 +246,7 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 		Heat = NRates->Lh - CRates->Lh;
 		CalcPriors(NRates, Opt);
-	
-	//	NRates->LhPrior += -1;
+		
 		Heat += NRates->LhPrior - CRates->LhPrior;
 
 		if(Shed->Op == SJUMP)
@@ -255,12 +254,11 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			Heat = Heat + NRates->LogHRatio;
 		}
 		
-//		if((log(GenRandState(CRates->RandStates)) <= Heat) && (NRates->Lh != ERRLH))
-		if(NRates->Lh - 2 > CRates->Lh)
+		if((log(GenRandState(CRates->RandStates)) <= Heat) && (NRates->Lh != ERRLH))
 		{
 			Swap(&NRates, &CRates);
 			Acc++;
-			Shed->Accepted[Shed->Op]++;	
+			Shed->Accepted[Shed->Op]++;
 		}
 
 		if(NRates->Lh == ERRLH)
