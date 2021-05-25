@@ -64,7 +64,7 @@
 
 
 /* Program Control */
-//	#define	RATE_CHANGE_UNI
+#define	RATE_CHANGE_UNI
 #define RATE_CHANGE_NORM
 
 // #define NO_GSL

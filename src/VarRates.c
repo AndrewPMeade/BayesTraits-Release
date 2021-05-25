@@ -412,10 +412,15 @@ double	ChangePlastyRate(RANDSTATES	*RS, double Scale, double SD)
 {
 	double		Ret;
 
+#ifdef PPUNIFORM
+		if(SD > PPMAXSCALE)
+			SD = PPMAXSCALE;
+#endif
+
 	do
 	{
 		Ret = ((RandDouble(RS) * SD) - (SD / 2.0)) + Scale; 
-		
+
 #ifdef PPUNIFORM
 	} while((Ret <= 0) || (Ret > PPMAXSCALE));
 #else
@@ -514,6 +519,7 @@ int		ValidMoveNode(PLASTY *Plasty, NODE N, RJ_VARRATE_TYPE Type)
 
 void	MakeTNodeList(OPTIONS *Opt, PLASTY *Plasty, RJ_VARRATE_TYPE Type, NODE N, NODE* List, int *Size)
 {
+	int Index;
 
 	if(ValidMoveNode(Plasty, N, Type) == TRUE)
 	{
@@ -524,8 +530,8 @@ void	MakeTNodeList(OPTIONS *Opt, PLASTY *Plasty, RJ_VARRATE_TYPE Type, NODE N, N
 	if(N->Tip == TRUE)
 		return;
 
-//	for(Index=0;Index<N->NoNodes;Index++)
-//		MakeTNodeList(Opt, Plasty,Type, N->NodeList[Index], List, Size);
+	for(Index=0;Index<N->NoNodes;Index++)
+		MakeTNodeList(Opt, Plasty,Type, N->NodeList[Index], List, Size);
 }
 
 void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
@@ -1104,7 +1110,6 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 		PVal = PPSGammaPDF(PNode->Scale, Plasty->Alpha, PPBETA);
 		Ret += log(PVal);
 	}
-
 
 	return Ret;
 }

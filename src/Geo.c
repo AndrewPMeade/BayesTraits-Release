@@ -31,7 +31,6 @@ void	LongLatToXYZ(double Long, double Lat, double *X, double *Y, double *Z)
 	*Z = EARTH_KM * sin(Lat);
 }
 
-
 void	XYZToLongLat(double X, double Y, double Z, double *Long, double *Lat)
 {
 	*Long = atan2(Y, X);

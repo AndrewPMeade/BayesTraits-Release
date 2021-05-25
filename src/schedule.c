@@ -444,8 +444,10 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 
 	if(Opt->AutoTuneVarRates == TRUE)
 	{
+
 		Ret->VarRateAT = CreatAutoTune(0.2, 0.4);
-		Opt->VarRatesScaleDev = RandDouble(RS) * 100;
+	//	Opt->VarRatesScaleDev = RandDouble(RS) * 100;
+		Opt->VarRatesScaleDev = RandDouble(RS);
 	}
 
 	if(Opt->EstKappa == TRUE)
@@ -610,7 +612,9 @@ void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 		Acc = GetAccRate(SPPCHANGESCALE, Shed);
 
 		if(Tried > 2)
+		{
 			Opt->VarRatesScaleDev = AutoTuneNextRD(Shed->VarRateAT, RS, Opt->VarRatesScaleDev, Acc);
+		}
 	}
 
 	if(Shed->KappaAT != NULL)
