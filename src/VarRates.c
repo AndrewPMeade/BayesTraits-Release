@@ -313,7 +313,10 @@ void	SetVRScalar(OPTIONS *Opt, RATES *Rates, PLASTYNODE *PNode)
 
 	Prior = GetPriorFromRJRatesScalar(Opt, PNode->Type);
 
-	PNode->Scale = RandFromPrior(Rates->RS, Prior);
+	if(PNode->Type == VR_LAMBDA)
+		PNode->Scale = RandDouble(Rates->RS);
+	else
+		PNode->Scale = RandFromPrior(Rates->RS, Prior);
 //	PNode->Scale = 0;
 }
 
@@ -332,7 +335,8 @@ int		CountPlasyID(long long ID, PLASTY *Plasty)
 void	CheckPlasyNodes(PLASTY *Plasty)
 {
 	int No, Index;
-	
+	PLASTYNODE	*PNode;
+
 	for(Index=0;Index<Plasty->NoNodes;Index++)
 	{
 		No = CountPlasyID(Plasty->NodeList[Index]->Node->ID, Plasty);
@@ -345,6 +349,13 @@ void	CheckPlasyNodes(PLASTY *Plasty)
 		printf("%d\n", No);
 	}
 
+
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+	{
+		PNode = Plasty->NodeList[Index];
+		if(PNode->Type == VR_LAMBDA && PNode->Scale > 1.0)
+			printf("Err\n");
+	}
 }
 
 void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, RJ_VARRATE_TYPE Type, NODE N, long long It)
@@ -600,6 +611,8 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	NODE		N;
 	RJ_VARRATE_TYPE		Type;
 	
+
+
 	Type = GetVarRatesType(Rates->RS, Shed);
 		
 	Plasty = Rates->Plasty;
@@ -613,7 +626,7 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	else
 		VarRatesDelNode(Rates, Trees, Opt, PNodeID);	
 
-//	CheckPlasyNodes(Plasty);
+	CheckPlasyNodes(Plasty);
 }
 
 

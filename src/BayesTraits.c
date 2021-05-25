@@ -225,6 +225,8 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/funnydelta.trees ./Seq/funnydelta.txt < in.txt > sout.txt
 
+// ./Seq/prim10k.trees ./Seq/lambda-vr.LogBM-2.txt < in.txt > sout.txt
+
 int main(int argc, char** argv)
 {
 	TREES*		Trees;
