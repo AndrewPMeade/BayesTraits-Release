@@ -282,6 +282,8 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "Analsis Type:                    Maximum Likelihood\n" );
 		fprintf(Str, "ML attempt per tree:             %d\n", Opt->MLTries);
 	}
+	
+	fprintf(Str, "Precision:                       %d bits\n", Opt->Precision);
 
 	if(Opt->Analsis == ANALMCMC)
 	{
@@ -966,6 +968,12 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->UseEqualTrees	=	FALSE;
 	Ret->ETreeBI		=	-1;
+
+
+	Ret->Precision		=	sizeof(double) * 8;
+#ifdef BIG_LH
+	Ret->Precision		=	256;
+#endif
 
 	return Ret; 
 }
@@ -2046,7 +2054,7 @@ void	GetBasePis(OPTIONS *Opt, char* Type)
 		return;
 	}
 
-	printf("The option %s, is unknown. Valid options are est, emp, uni and none\n");
+	printf("The option %s, is unknown. Valid options are est, emp, uni and none\n", Type);
 }
 
 int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
@@ -2070,7 +2078,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 //			(Command == CPRIORALL)	||
 //			(Command == CPRIOR)		||
 			(Command == CPIS)		||
-			(Command == CNOSPERSITE)
+			(Command == CPRECISION) ||
+			(Command == CNOSPERSITE) 
 			)
 		{
 			printf("Command %s (%s) is not valid with the current model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2439,7 +2448,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 
 		if((Value < GAMMAMIN) || (Value > GAMMAMAX))
 		{
-			printf("Gamma shape parmiter must be grater than %f and less than %f\n", GAMMAMIN, GAMMAMAX);
+			printf("Gamma shape parmiter must be grater than %f and less than %f\n", (double)GAMMAMIN, (double)GAMMAMAX);
 			return;
 		}
 
@@ -2672,14 +2681,14 @@ void	SetConRateDev(OPTIONS *Opt, char *PName, char *PRateDev)
 
 	if(IsValidDouble(PRateDev) == FALSE)
 	{
-		printf("Could not conver %s to a valid doble\n", PRateDev);
+		printf("Could not convert %s to a valid double\n", PRateDev);
 		return;
 	}
 
 	RD = atof(PRateDev);
 	if(RD < 0)
 	{
-		printf("%s has to be a value grater then 0.\n", RPos);
+		printf("%s has to be a value grater then 0.\n", PRateDev);
 		return;
 	}
 
@@ -2724,7 +2733,7 @@ void	SetEqualTrees(OPTIONS *Opt, int Tokes, char **Passed)
 
 	if(IsValidInt(TreeBI) == FALSE)
 	{
-		printf("Cound not convert %s to a valid tree specific burn-in number.\n");
+		printf("Cound not convert %s to a valid tree specific burn-in number.\n", TreeBI);
 		return;
 	}
 
@@ -2737,6 +2746,26 @@ void	SetEqualTrees(OPTIONS *Opt, int Tokes, char **Passed)
 
 	Opt->UseEqualTrees = TRUE;
 	Opt->ETreeBI = NoTreeBI;
+}
+
+void	SetPrecision(OPTIONS *Opt, char *Token)
+{
+	int Pre;
+
+	if(IsValidInt(Token) == FALSE)
+	{
+		printf("%s is not a valid precision. Precision must be an integer >= 64.\n", Token);
+		return;
+	}
+
+	Pre = atoi(Token);
+	if(Pre <= sizeof(double) * 8)
+	{
+		printf("%s is not a valid precision. Precision must be an integer >= 64.\n", Token);
+		return;
+	}
+
+	Opt->Precision = Pre;
 }
 
 int		PassLine(OPTIONS *Opt, char *Buffer)
@@ -2766,7 +2795,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 	if(Command == CUNKNOWN)
 		printf("Unknown command: %s\n",Passed[0]);
 
-	if(CmdVailWithDataType(Opt,Command)==FALSE)
+	if(CmdVailWithDataType(Opt,Command) == FALSE)
 		return FALSE;
 
 	if(Command == CRUN)
@@ -2957,7 +2986,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		{
 			TempDouble = atof(Passed[1]);
 			if(TempDouble <= 0)
-				printf("Could not convert %s to a valid Rate deveation\n");
+				printf("Could not convert %s to a valid Rate deveation\n", Passed[1]);
 			else
 				Opt->RateDev  = TempDouble;
 
@@ -3317,6 +3346,15 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 	if(Command == CEQUALTREES)
 	{
 		SetEqualTrees(Opt, Tokes, Passed);
+	}
+
+	if(Command == CPRECISION)
+	{
+#ifndef BIG_LH
+		printf("Precision is only valid with the Big Lh build of BayesTraits.\n");
+		return FALSE;
+#endif
+		SetPrecision(Opt, Passed[1]);
 	}
 
 	return FALSE;

@@ -19,6 +19,7 @@
 #include "continuous.h"
 #include "initialise.h"
 #include "phyloplasty.h"
+#include "BigLh.h"
 
 OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 {
@@ -85,5 +86,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		SetFossiles(Trees, Opt);
 
 		SetNOSPerSite(Opt);
+
+		InitTreeBigLh(Opt, Trees);
 	}
 }

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "genlib.h"
+#include "typedef.h"
 #include "treepasser.h"
 
 #define	NEXUSTAG	"#NEXUS"

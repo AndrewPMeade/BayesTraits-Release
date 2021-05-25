@@ -17,6 +17,8 @@
 #include "rand.h"
 #include "contrasts.h"
 #include "threaded.h"
+#include "BigLh.h"
+
 
 int	DB = FALSE;
 
@@ -784,7 +786,7 @@ void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err,
 }
 */
 
-void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err, double BLMult, int Rec)
+void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo,  int* Err, int Rec)
 {
 	int		Inner, Outter, NIndex;
 	double	Lh;
@@ -795,7 +797,7 @@ void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err,
 		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
 		{
 			if(N->NodeList[NIndex]->Tip == FALSE)
-				SumLikeMultiState(N->NodeList[NIndex], Trees, SiteNo, Kappa, Err, BLMult, Rec);
+				SumLikeMultiState(N->NodeList[NIndex], Trees, SiteNo, Err, Rec);
 		}
 	}
 
@@ -961,6 +963,7 @@ void	SumLikeInDep(NODE N, TREES *Trees, double *Rates, int SiteNo)
 }
 */
 
+/* Only for first site */
 
 void	PrintTipData(TREES* Trees, int TreeNo)
 {
@@ -977,10 +980,10 @@ void	PrintTipData(TREES* Trees, int TreeNo)
 		{
 			printf("%d\t", N->TipID);
 
-			printf("%f\t", N->Partial[0]);
-			printf("%f\t", N->Partial[1]);
-			printf("%f\t", N->Partial[2]);
-			printf("%f\t", N->Partial[3]);
+			printf("%f\t", N->Partial[0][0]);
+			printf("%f\t", N->Partial[0][1]);
+			printf("%f\t", N->Partial[0][2]);
+			printf("%f\t", N->Partial[0][3]);
 
 			printf("\n");
 		}
@@ -1280,7 +1283,7 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 	NoErr = 0;
 	Err = FALSE;
 	Tree = &Trees->Tree[Rates->TreeNo];
-	/* No need to comput P for root */
+	/* No need to compute P for root */
 
 #ifdef THREADED
 	#pragma omp parallel for private(N, Err)
@@ -1289,14 +1292,18 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 	{
 		N = Tree->NodeList[NIndex];
 
-		if(Opt->UseRModel == TRUE)
-			Err = SetRPMatrix(Trees, N, Trees->PList[N->ID], Gamma, Kappa);
-		else
+		if(NoErr == 0)
 		{
-			if(Opt->AnalyticalP == FALSE)
-				Err = SetStdPMatrix(Trees, N, Trees->PList[N->ID], Gamma, Kappa);
+
+			if(Opt->UseRModel == TRUE)
+				Err = SetRPMatrix(Trees, N, Trees->PList[N->ID], Gamma, Kappa);
 			else
-				Err = SetAnalyticalPMatrix(Trees, N, Trees->PList[N->ID], Rates->FullRates[0], Gamma, Kappa);
+			{
+				if(Opt->AnalyticalP == FALSE)
+					Err = SetStdPMatrix(Trees, N, Trees->PList[N->ID], Gamma, Kappa);
+				else
+					Err = SetAnalyticalPMatrix(Trees, N, Trees->PList[N->ID], Rates->FullRates[0], Gamma, Kappa);
+			}
 		}
 
 		if(Err == TRUE)
@@ -1305,6 +1312,8 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 //			Creat a race condion but all you need to know is if NoErr > 0
 //			#pragma omp critical
 			NoErr++;
+#else
+
 #endif
 		}
 	}
@@ -1315,9 +1324,9 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 	return FALSE;
 }
 
-void	LinerLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, double RateMult)
+void	LinerLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
 {
-#ifdef THREADED
+
 	int	GIndex, NIndex;
 	TREE	*Tree;
 	int		Err;
@@ -1330,10 +1339,15 @@ void	LinerLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, double RateMu
 
 	//	if(Tree->NoPNodes[GIndex] >= Trees->InvInfo->NoThreads * MIN_NODES_PER_PROC)
 		{
+#ifdef THREADED
 			#pragma omp parallel for
+#endif
 			for(NIndex=0;NIndex<Tree->NoPNodes[GIndex];NIndex++)
-				SumLikeMultiState(Tree->PNodes[GIndex][NIndex], Trees, SiteNo, Rates->Kappa, &Err, RateMult, FALSE);
-
+			#ifndef BIG_LH
+				SumLikeMultiState(Tree->PNodes[GIndex][NIndex], Trees, SiteNo, &Err, FALSE);
+			#else
+				LhBigLh(Tree->PNodes[GIndex][NIndex], Trees, Opt->Precision, SiteNo, &Err);
+			#endif
 		}/*
 		else
 		{
@@ -1342,43 +1356,88 @@ void	LinerLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, double RateMu
 	
 		}*/
 	}
-
-#endif
 }
 
-int		SumLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, double RateMult)
+int		SumLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
 {
-	TREE	*Tree;
+//	TREE	*Tree;
 	int		Err;
 
 	Err = FALSE;
 	
-	Tree = &Trees->Tree[Rates->TreeNo];
+//	Tree = &Trees->Tree[Rates->TreeNo];
 
+	LinerLh(Rates, Trees, Opt, SiteNo);
+/*
 #ifndef THREADED
 	if(Opt->UseRModel == TRUE)
 		SumLikeRModel(Tree->Root, Trees, SiteNo, Rates);
 	else
-		SumLikeMultiState(Tree->Root, Trees, SiteNo, Rates->Kappa, &Err, RateMult, TRUE);
+		SumLikeMultiState(Tree->Root, Trees, SiteNo, &Err, TRUE);
 #else	
 	LinerLh(Rates, Trees, Opt, SiteNo, RateMult);
 #endif
-
+*/
 	return Err;
 }
 
+double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
+{
+	int SiteNo, Index, NOS;
+	double Sum, SiteLh, Ret;
+	TREE	*Tree;
+
+	Tree = &Trees->Tree[Rates->TreeNo];
+
+	Ret = 0;
+	for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
+	{
+		if(Trees->NOSPerSite == TRUE)
+		{
+			NOS = Trees->NOSList[SiteNo];
+			for(Index=0;Index<NOS;Index++)
+				Rates->Pis[Index]  = (double)1/NOS;
+		}
+		else
+			NOS = Trees->NoOfStates;
+
+#ifndef BIG_LH
+		Sum = 0;
+		for(Index=0;Index<NOS;Index++)
+			Sum += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
+
+		SiteLh = 0;
+		for(Index=0;Index<NOS;Index++)
+		{
+			if(Tree->Root->Partial[SiteNo][Index] / Sum < 0)
+				return ERRLH;
+
+			SiteLh += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
+		}
+
+		if(IsNum(log(SiteLh)) == FALSE)
+			SiteLh = exp(-700);
+
+		Ret += log(SiteLh);
+#else
+		Ret += CombineBigLh(Rates, Trees, Opt, SiteNo, NOS);
+#endif
+	}
+
+	return Ret;
+}
+
+
 double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
-	double	Ret=0;
+	double	Ret;
 	int		SiteNo;
 	TREE	*Tree;
-	int		Index;
-	double	SiteLh;
 	int		Err=NO_ERROR;
-	double	Sum;
 	int		GammaCat;
 	double	RateMult;
-	int		NOS;
+//	int		Index, NOS;
+//	double	SiteLh, Sum;
 
 
 	MapRates(Rates, Opt);
@@ -1421,9 +1480,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 		for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
 		{
-			Err = FALSE;
-
-			Err = SumLh(Rates, Trees, Opt, SiteNo, RateMult);
+			Err = SumLh(Rates, Trees, Opt, SiteNo);
 
 			if(Err == TRUE)
 				return ERRLH;
@@ -1436,35 +1493,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	if(Opt->UseGamma == TRUE)
 		FinishUpGamma(Rates, Opt, Trees);
 
-	for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
-	{
-		if(Trees->NOSPerSite == TRUE)
-		{
-			NOS = Trees->NOSList[SiteNo];
-			for(Index=0;Index<NOS;Index++)
-				Rates->Pis[Index]  = (double)1/NOS;
-		}
-		else
-			NOS = Trees->NoOfStates;
-
-		Sum = 0;
-		for(Index=0;Index<NOS;Index++)
-			Sum += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
-			
-		SiteLh = 0;
-		for(Index=0;Index<NOS;Index++)
-		{
-			if(Tree->Root->Partial[SiteNo][Index] / Sum < 0)
-				return ERRLH;
-			
-			SiteLh += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
-		}
-
-		if(IsNum(log(SiteLh)) == FALSE)
-			SiteLh = exp(-700);
-		
-		Ret += log(SiteLh);
-	}
+	Ret = CombineLh(Rates, Trees, Opt);
 
 	if((Ret > 0) || (Ret == Ret+1) || (Ret != Ret))
 		return ERRLH;

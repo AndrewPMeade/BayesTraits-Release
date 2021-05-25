@@ -119,7 +119,7 @@ int main(int argc, char** argv)
 
 	if(argc != 3)
 	{
-		printf("The program takes 2 parmeters a tree file and a data file\n");
+		printf("The program takes 2 parameters a tree file and a data file\n");
 		exit(0);
 	}
 

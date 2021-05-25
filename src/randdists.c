@@ -935,7 +935,7 @@ JJV added check to ensure N >= 0
     nsave = n;
     if(xnp < 30.0) goto S140;
     ffm = xnp+p;
-    m = ffm;
+    m = (long)ffm;
     fm = m;
     xnpq = xnp*q;
     p1 = (long) (2.195*sqrt(xnpq)-4.6*q)+0.5;
@@ -970,7 +970,7 @@ S40:
     x = xl+(u-p1)/c;
     v = v*c+1.0-ABS(xm-x)/p1;
     if(v > 1.0 || v <= 0.0) goto S30;
-    ix = x;
+    ix = (long)x;
     goto S70;
 S50:
 /*
@@ -1555,7 +1555,7 @@ ABCDEFGHIJKLMNOPQRSTUVWXYZ\
 0123456789\
 !@#$%^&*()_+[];:'\\\"<>?,./ ";  /* WGR added space, 5/19/1999 */
 
-long ix;
+// long ix;
 
 static long twop30 = 1073741824L;
 static long shift[5] = {

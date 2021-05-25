@@ -5,8 +5,18 @@
 #include <stdio.h>
 #include "matrix.h"
 
-//#define THREADED 
 // #define	JNIRUN
+// #define THREADED
+// #define BIG_LH
+
+#ifdef BIG_LH
+	#include <gmp.h>
+	#include <mpfr.h>
+
+	#define DEF_ROUND GMP_RNDZ
+	#define	DEF_PRE	256
+#endif
+
 
 #ifdef	THREADED
 	#include <omp.h>
@@ -158,6 +168,7 @@ typedef enum
 	CMAKEUM,
 	CPHYLOPLASTY,
 	CEQUALTREES,
+	CPRECISION,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -224,6 +235,7 @@ static char    *COMMANDSTRINGS[] =
 	"makeum",		"mum",
 	"phyloplasty",	"pp",
 	"equaltrees",	"eqt",
+	"precision",	"pre"
 	""
 };
 
@@ -382,6 +394,11 @@ struct INODE
 	double		**GammaPartial;
 	char		*Tag;
 
+#ifdef BIG_LH
+	mpfr_t		**BigPartial;
+	mpfr_t		t1, t2, t3;
+#endif
+
 	TAXA		*Taxa;
 
 	int			*Part;
@@ -457,7 +474,6 @@ typedef struct
 	double		*TVect3;
 	double		*SVect;
 
-
 	TAXADIST	*TaxaDist;
 
 	double		LogDetOfV;
@@ -476,7 +492,7 @@ typedef	struct
 	NODE		**PNodes;
 	int			*NoPNodes;
 	int			NoPGroups;
-	
+
 	CONVAR*		ConVars;
 } TREE;
 
@@ -533,6 +549,8 @@ typedef struct
 	MATRIX	*TempV2;
 
 } TEMPCONVAR;
+
+
 
 typedef struct
 {
@@ -742,6 +760,8 @@ typedef struct
 
 	int			UseEqualTrees;
 	int			ETreeBI;
+
+	int			Precision;
 
 } OPTIONS;
 

@@ -23,7 +23,7 @@ void	PrintTaxaData(OPTIONS *Opt, TREES* Trees)
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 		{
 			if(Opt->DataType == DISCRETE)
-				printf("%d\t", Taxa->DesDataChar[SIndex]);
+				printf("%s\t", Taxa->DesDataChar[SIndex]);
 			else
 				printf("%f\t", Taxa->ConData[SIndex]);
 		}

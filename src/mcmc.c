@@ -264,8 +264,7 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	GBurntIn = BurntIn = FALSE;
 
-PrintTime(stdout);
-printf("\n");
+// PrintTime(stdout); printf("\n");
 
 	for(Itters=0;;Itters++)
 	{ 
@@ -332,8 +331,7 @@ printf("\n");
 
 		if((Opt->Itters == Itters) && (Opt->Itters != -1))
 		{
-			PrintTime(stdout);
-			printf("\n");
+//			PrintTime(stdout); printf("\n");
 
 			if((Opt->UseEqualTrees == FALSE) || (CRates->TreeNo == Trees->NoOfTrees - 1))
 			{	

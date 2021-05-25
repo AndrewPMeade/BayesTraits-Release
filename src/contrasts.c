@@ -241,7 +241,7 @@ void	RecPrintNode(NODE N)
 void	PrintContrasts(TREES* Trees, RATES* Rates)
 {
 	TREE	*Tree;
-	int		Index, CIndex;
+	int		Index, CIndex, SIndex;
 	NODE	N;
 	CONTRAST	*C;
 
@@ -259,7 +259,8 @@ void	PrintContrasts(TREES* Trees, RATES* Rates)
 			printf("\t");
 			C = N->Contrast[CIndex];
 
-			printf("%f\t%f\t%f\t%f\t", C->Cont, C->Data, C->Err, C->Var);
+			for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+				printf("%f\t%f\t%f\t%f\t", C->Cont[SIndex], C->Data[SIndex], C->Err[SIndex], C->Var[SIndex]);
 
 			printf("\n");
 		}

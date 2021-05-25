@@ -17,6 +17,7 @@
 #include "randdists.h"
 #include "contrasts.h"
 #include "phyloplasty.h"
+#include "BigLh.h"
 
 double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -1254,6 +1255,8 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OP
 
 	Trees = Opt->Trees;
 
+
+
 	if(Node == NULL)
 	{
 		for(SiteIndex=0;SiteIndex<NoOfSites;SiteIndex++)
@@ -1261,6 +1264,8 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OP
 				fprintf(Str, "--\t");
 		return;
 	}
+
+	SetBigLhNodeRec(Node, NOS, NoOfSites, Rates, Opt);
 
 	for(SiteIndex=0;SiteIndex<NoOfSites;SiteIndex++)
 	{

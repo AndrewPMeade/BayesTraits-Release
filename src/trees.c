@@ -14,7 +14,7 @@
 #include "treenode.h"
 #include "treepasser.h"
 #include "treenode.h"
-
+#include "BigLh.h"
 
 void	WriteTreeToFile(NODE n, NODE Root, FILE *F);
 
@@ -192,6 +192,8 @@ void	FreeTree(TREE* Tree, int NoOfSites, int NoOfTaxa)
 void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 {
 	int	Index;
+
+	FreeTreeBigLh(Opt, Trees);
 
 	FreeData(Opt);
 	free(Trees->Taxa);
