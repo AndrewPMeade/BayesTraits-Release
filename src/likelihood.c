@@ -26,6 +26,7 @@
 #include "VarRates.h"
 #include "LocalTransform.h"
 #include "DistData.h"
+#include "TimeSlices.h"
 
 #ifdef BTOCL
 	#include "btocl_discrete.h"
@@ -978,7 +979,9 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	if(NeedToReSetBL(Opt, Rates) == TRUE)
 	{
 		SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
-		
+
+		ApplyTimeSlices(Rates, Trees);
+
 //		PrintTreeBL(Trees->Tree[Rates->TreeNo]); exit(0);			
 
 		TransformTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
@@ -1022,8 +1025,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		Err;
 	int		GammaCat;
 	double	RateMult;
-
-	
+		
 
  	if(Rates->ModelFile == NULL)
 		MapRates(Rates, Opt);

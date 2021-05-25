@@ -296,6 +296,7 @@ typedef enum
 	CNOLH,
 	CSAVETREES,
 	CCSCHED, 
+	CADDTIMESLICE,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -375,6 +376,7 @@ static char    *COMMANDSTRINGS[] =
 	"nolh",			"nl",
 	"savetrees",	"st",
 	"customschedule", "csched", 
+	"addtimeslice", "ats",
 	""
 };
 
@@ -484,6 +486,8 @@ static int	DISTPRAMS[] =
 };
 
 
+
+
 typedef enum
 {
 	PDIST_GAMMA,
@@ -558,6 +562,26 @@ typedef enum
 	MRCA,
 	FOSSIL,
 } NODETYPE;
+
+
+typedef struct
+{
+	char *Name;
+
+	int FixedTime;
+	int FixedScale;
+
+	double Time;
+	double Scale;
+	
+} TIME_SLICE;
+
+typedef struct
+{
+	int NoTimeSlices;
+	TIME_SLICE	**TimeSlices;
+
+} TIME_SLICES;
 
 typedef struct
 {
@@ -646,8 +670,8 @@ struct INODE
 
 	double		Length;
 	double		DistToRoot;
-
 	double		UserLength;
+	double		ScaleFactor;
 
 	int			VPosX, VPosY;
 
@@ -1187,6 +1211,8 @@ typedef struct
 	int				NoCShed;
 	CUSTOM_SCHEDULE	**CShedList;
 
+	TIME_SLICES		*TimeSlices;
+
 } OPTIONS;
 
 typedef struct
@@ -1350,6 +1376,8 @@ typedef struct
 	LOCAL_TRANSFORM	**LocalTransforms;
 
 	DIST_DATE_RATES	*DistDataRates;
+
+	TIME_SLICES		*TimeSlices;
 
 	int				AutoAccept;
 	int				CalcLh;

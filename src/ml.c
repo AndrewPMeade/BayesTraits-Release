@@ -104,10 +104,12 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
 		if(Rates->LocalTransforms[Index]->Est == TRUE)
+		{
 			if(Rates->LocalTransforms[Index]->Type == VR_OU)
 				AddPToMLMap(MLMap, MIN_OU, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
 			else
 				AddPToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
+		}
 }
 
 void	CheckMLMapVals(ML_MAP* MLMap)

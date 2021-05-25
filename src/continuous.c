@@ -38,9 +38,8 @@ void	InitEstData(OPTIONS *Opt, TREES *Trees)
 	int		SIndex;
 	TAXA	*Taxa;
 
-	TempEst = (int*)malloc(sizeof(int) * (Trees->NoOfSites+1));
-	if(TempEst == NULL)
-		MallocErr();
+	TempEst = (int*)SMalloc(sizeof(int) * (Trees->NoOfSites+1));
+
 
 	for(SIndex=0;SIndex<Trees->NoOfSites+1;SIndex++)
 		TempEst[SIndex] = FALSE;
@@ -79,9 +78,7 @@ void	InitEstData(OPTIONS *Opt, TREES *Trees)
 		return;
 	}
 
-	Opt->EstDataSites = (int*)malloc(sizeof(int) * Opt->NoEstDataSite);
-	if(Opt->EstDataSites == NULL)
-		MallocErr();
+	Opt->EstDataSites = (int*)SMalloc(sizeof(int) * Opt->NoEstDataSite);
 
 	TIndex=0;
 	for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)

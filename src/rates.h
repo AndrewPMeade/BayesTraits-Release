@@ -1,5 +1,5 @@
-#ifndef RATESHEADDER
-#define RATESHEADDER
+#ifndef RATES_HEADDER
+#define RATES_HEADDER
 
 RATES*		CreatRates(OPTIONS *Opt);
 void		FreeRates(RATES *Rates, TREES *Trees);

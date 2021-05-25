@@ -345,6 +345,9 @@ void	TransformTreeLambda(NODE N, double Lambda, int Norm)
 
 int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates)
 {
+	if(Rates->TimeSlices != NULL)
+		return TRUE;
+
 	if(Rates->UseLocalTransforms == TRUE)
 		return TRUE;
 

@@ -73,6 +73,7 @@ NODE	AllocNode(void)
 	Ret->TipID			=	-1;
 	Ret->Length			=	-1;
 	Ret->DistToRoot		=	-1;
+	Ret->ScaleFactor	=	1.0;
 	Ret->Taxa			=	NULL;
 	Ret->Partial		=	NULL;
 	Ret->FossilMask		=	NULL;
@@ -84,6 +85,8 @@ NODE	AllocNode(void)
 
 	Ret->VPosX			=	-1;
 	Ret->VPosY			=	-1;
+
+
 
 	return Ret;
 }
@@ -429,9 +432,7 @@ void	MakeNewTree(TREE *Tree, NTREE *PTree)
 
 	Tree->NoNodes = PTree->NoOfNodes;
 
-	Tree->NodeList = (NODE*)malloc(sizeof(NODE) * Tree->NoNodes);
-	if(Tree->NodeList == NULL)
-		MallocErr();
+	Tree->NodeList = (NODE*)SMalloc(sizeof(NODE) * Tree->NoNodes);
 
 	for(Index=0;Index<PTree->NoOfNodes;Index++)
 		Tree->NodeList[Index] = AllocNode();
@@ -566,9 +567,7 @@ int		FindMaxPoly(TREES *Trees)
  {
 	TREE	*Ret;
 	
-	Ret = (TREE*)malloc(sizeof(TREE));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (TREE*)SMalloc(sizeof(TREE));
 
 	Ret->ConVars	= NULL;
 	Ret->NodeList	= NULL;
@@ -631,16 +630,12 @@ void	InitialTrees(TREES *Trees, NTREES *PTrees)
 	Trees->NoOfTrees	= PTrees->NoOfTrees;
 	Trees->NOSPerSite	= FALSE;
 	
-	Trees->Taxa = (TAXA**) malloc(sizeof(TAXA*) * Trees->NoOfTaxa);
-	if(Trees->Taxa == NULL)
-		MallocErr();
+	Trees->Taxa = (TAXA**) SMalloc(sizeof(TAXA*) * Trees->NoOfTaxa);
 	
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 		Trees->Taxa[Index] = InitTaxa(PTrees->Taxa[Index].No, PTrees->Taxa[Index].Name);
 
-	Trees->Tree = (TREE**)malloc(sizeof(TREE*) * PTrees->NoOfTrees);
-	if(Trees->Tree == NULL)
-		MallocErr();
+	Trees->Tree = (TREE**)SMalloc(sizeof(TREE*) * PTrees->NoOfTrees);
 
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 		Trees->Tree[Index] = InitTree(Trees, PTrees, Index);
@@ -684,9 +679,8 @@ TREES*	LoadTrees(char* FileName)
 	NTREES*		PTrees;
 	char		*Err;
 
-	Ret = (TREES*)malloc(sizeof(TREES));
-	if(Ret==NULL)
-		MallocErr();
+	Ret = (TREES*)SMalloc(sizeof(TREES));
+
 
 	Ret->MaxNodes			= -1;
 	Ret->PMem				= NULL;
