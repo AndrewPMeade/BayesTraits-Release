@@ -8,6 +8,7 @@
 #include "GenLib.h"
 #include "Part.h"
 #include "VarRates.h"
+#include "LandscapeRJGroups.h"
 
 void		ResetTreeLandscape(TREE *Tree)
 {
@@ -85,20 +86,20 @@ int			NodeSubSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	return FALSE;
 }
 
-void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void		MapRJLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	VARRATES* VarRates;
-	VAR_RATES_NODE *VR_Node;
-	TREE *Tree;
-	int TreeNo, Index, NIndex;
 	NODE Node;
 	
-	TreeNo = Rates->TreeNo;
-	Tree = Trees->Tree[TreeNo];
+	VARRATES* VarRates;
+	VAR_RATES_NODE *VR_Node;
+	int TreeNo, Index, NIndex;
 	
-	VarRates = Rates->VarRates;
+	TreeNo = Rates->TreeNo;
 
-	ResetTreeLandscape(Tree);
+	if(Rates->VarRates == NULL)
+		return;
+
+	VarRates = Rates->VarRates;
 
 	for(Index=0;Index<VarRates->NoNodes;Index++)
 	{
@@ -108,17 +109,26 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		{
 			Node = GetVRNode(Trees, TreeNo, VR_Node);
 
-	//		for(NIndex=0;NIndex<Node->NoNodes;NIndex++)
-	//			SetBetaNode(Node->NodeList[NIndex], Landscape->NodeList[Index]->Beta);
-
 			Node->LandscapeBeta = VR_Node->Scale;
 		}
 	}
-	
-//	exit(0);
+}
 
-//	for(Index=0;Index<Tree->Root->NoNodes;Index++)
-//		PropLandscapeBeta(Trees, Tree->NodeList[Index], 0.0);
+void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+
+	TREE *Tree;
+	int TreeNo;
+	
+	TreeNo = Rates->TreeNo;
+	Tree = Trees->Tree[TreeNo];
+	
+	ResetTreeLandscape(Tree);
+
+	MapRJLandscape(Opt, Trees, Rates);
+	
+	if(Rates->RJLandscapeRateGroups != NULL)
+		MapLandRateGroups(Opt, Trees, Rates);
 
 	PropLandscapeBeta(Trees, Tree->Root, 0.0);
 }

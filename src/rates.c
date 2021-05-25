@@ -59,6 +59,7 @@
 #include "DistData.h"
 #include "TimeSlices.h"
 #include "Landscape.h"
+#include "LandscapeRJGroups.h"
 
 void	SetRegBetaZero(int NoSites, RATES *Rates)
 {
@@ -818,6 +819,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 
 	Ret->Landscape		=	NULL;
+	Ret->RJLandscapeRateGroups	= NULL;
 		
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
@@ -826,9 +828,11 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->NormConst		=	-1;
 	Ret->GlobablRate	=	1.0;
-
-
+	
 	SetRatesLocalRates(Ret, Opt);
+
+	if(Opt->UseRJLandscapeRateGroup == TRUE)
+		Ret->RJLandscapeRateGroups = CreateLandRateGroups(Opt->Trees->Tree[0]->NoNodes-1);
 	
 	if(Opt->UseDistData == TRUE)
 		Ret->DistDataRates = CreateDistDataRates(Opt->DistData, Ret->RS);
@@ -945,8 +949,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 		Ret->ModelFile = LoadModelFile(Opt->LoadModelsFN, Opt, Opt->Trees, Ret);
 		ChangeModelFile(Ret, Ret->RS);
 	}
-
-
+	
 	SimData(Opt, Opt->Trees, Ret);
 
 
@@ -2935,6 +2938,9 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 
 	if(Rates->TimeSlices != NULL)
 		FreeTimeSlices(Rates->TimeSlices);
+
+	if(Rates->RJLandscapeRateGroups != NULL)
+		FreeLandRateGroups(Rates->RJLandscapeRateGroups);
 
 	free(Rates);
 }

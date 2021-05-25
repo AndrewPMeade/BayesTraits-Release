@@ -498,9 +498,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		}
 		else
 			fprintf(Str, "00,01,10,11\n");
-
-		
-//		fprintf(Str, "Normalisation Constant:          %20.20f\n", Opt->Trees->NormConst);
 	}
 
 	if(Opt->DataType == CONTINUOUS)
@@ -525,6 +522,11 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		
 		if(Opt->Analsis == ANALMCMC)
 			PrintRJLocalTrans(Str, Opt);
+
+		fprintf(Str, "RJ Landscape Rate Group:         ");
+		if(Opt->UseRJLandscapeRateGroup == TRUE)
+			fprintf(Str, "True\n");
+		
 
 		if(Opt->AlphaZero == TRUE)
 			fprintf(Str, "Alpha through zero:              True\n");
@@ -1400,6 +1402,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->UsePisInAncStates = TRUE;
 	Ret->RJZero			   = TRUE;
 	
+	Ret->UseRJLandscapeRateGroup	 = FALSE;
+
 	free(Buffer);
 
 	return Ret; 
@@ -2543,15 +2547,16 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 	else
 	{
 		if(
-			(Command == CDELTA)		|| 
-			(Command == CLAMBDA)	||
-			(Command == COU)		||
-			(Command == CALPHAZERO)	||
-			(Command == CNODEBLDATA)||
-			(Command == CNODEDATA)  ||
-			(Command == CRJDUMMY)	||
-			(Command == CRJLOCALTRANSFORM) ||
-			(Command == CDISTDATA)
+			Command == CDELTA		|| 
+			Command == CLAMBDA		||
+			Command == COU			||
+			Command == CALPHAZERO	||
+			Command == CNODEBLDATA	||
+			Command == CNODEDATA	||
+			Command == CRJDUMMY		||
+			Command == CRJLOCALTRANSFORM ||
+			Command == CDISTDATA	||
+			Command == CRJLANDSCAPERATEGROUP
 			)
 		{
 			printf("Command %s (%s) is not valid with Discrete data\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2595,7 +2600,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			Command == CDISTDATA	||
 			Command == CNOLH		||
 			Command == CSTONES		||
-			Command == CCSCHED	
+			Command == CCSCHED		||
+			Command == CRJLANDSCAPERATEGROUP
 			)
 		{
 			printf("Command %s (%s) is not valid with the ML model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -4076,6 +4082,22 @@ void	SetRateScalars(OPTIONS *Opt, int Tokes, char **Passed)
 	}
 }
 
+void	SetRJLandscapeRateGroup(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	PRIOR *Prior;
+
+	RemovePriorFormOpt("RJ_Landscape_Rate_Group", Opt);
+
+	if(Opt->UseRJLandscapeRateGroup == FALSE)
+	{
+		Opt->UseRJLandscapeRateGroup = TRUE;
+		Prior = CreateNormalPrior("RJ_Landscape_Rate_Group", 0, 2.0);
+		AddPriorToOpt(Opt, Prior);
+	}
+	else
+		Opt->UseRJLandscapeRateGroup = FALSE;
+}
+
 void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	if(Opt->SaveInitialTrees != NULL)
@@ -4772,6 +4794,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	
 	if(Command == CRATESCALARS)
 		SetRateScalars(Opt, Tokes, Passed);
+
+	if(Command == CRJLANDSCAPERATEGROUP)
+		SetRJLandscapeRateGroup(Opt, Tokes, Passed);
 
 	return FALSE;
 }

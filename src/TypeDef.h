@@ -329,6 +329,7 @@ typedef enum
 	CRJZERO,
 	CLANDSCAPE,
 	CRATESCALARS, 
+	CRJLANDSCAPERATEGROUP,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -417,6 +418,7 @@ static char    *COMMANDSTRINGS[] =
 	"RJZero",			"rjz",
 	"Landscape",		"LS",
 	"RateScalars",		"rs", 
+	"RJLandscapeRateGroup", "rlrg",
 	""
 };
 
@@ -613,6 +615,23 @@ typedef struct
 	TIME_SLICE	**TimeSlices;
 
 } TIME_SLICES;
+
+
+typedef struct
+{
+	int		NoRates;
+	double	Rate;
+	int		*PramList;
+} RATE_GROUP;
+
+typedef struct
+{
+	int NoRates;
+	int	NoGroups;
+
+	RATE_GROUP	**RateGroupList;
+
+} LAND_RATE_GROUPS;
 
 typedef struct
 {
@@ -1291,6 +1310,8 @@ typedef struct
 
 	double		*RateScalars;
 
+	int			UseRJLandscapeRateGroup;
+
 } OPTIONS;
 
 typedef struct
@@ -1466,6 +1487,7 @@ typedef struct
 	double			NormConst;
 
 	LANDSCAPE		*Landscape;
+	LAND_RATE_GROUPS	*RJLandscapeRateGroups;
 } RATES;
 
 typedef struct

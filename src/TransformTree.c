@@ -394,6 +394,9 @@ int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates)
 	if(Opt->UseLambda == TRUE)
 		return TRUE;
 
+	if(Opt->UseRJLandscapeRateGroup == TRUE)
+		return TRUE;
+
 	return FALSE;
 }
 
