@@ -182,6 +182,11 @@ void	FreeTree(TREE* Tree, int NoOfSites, int NoOfTaxa)
 
 	if(Tree->ConVars!= NULL)
 		FreeConVar(Tree->ConVars, NoOfTaxa);
+
+	for(NIndex=0;NIndex<Tree->NoPGroups;NIndex++)
+		free(Tree->PNodes[NIndex]);
+	free(Tree->PNodes);
+	free(Tree->NoPNodes);
 }
 
 void	FreeTrees(TREES* Trees, OPTIONS *Opt)
@@ -198,7 +203,7 @@ void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 
 	if(Trees->PList != NULL)
 	{
-		for(Index=0;Index<Trees->MaxPoly;Index++)
+		for(Index=0;Index<Trees->MaxNodes;Index++)
 			FreeMatrix(Trees->PList[Index]);
 
 		free(Trees->PList);
@@ -481,6 +486,175 @@ int		FindMaxPoly(TREES *Trees)
 	return Ret;
 }
 
+ int	FindMaxNodes(TREES *Trees)
+ {
+	int TIndex;
+	int	Ret;
+	TREE *Tree;
+	
+	Ret = 0;
+
+
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	{
+		Tree = &Trees->Tree[TIndex];
+		if(Tree->NoNodes > Ret)
+			Ret = Tree->NoNodes;
+	}
+
+	return Ret;
+ }
+
+ void	InitPNodes(TREE *T)
+ {
+	 int Index;
+	 NODE N;
+
+	 for(Index=0;Index<T->NoNodes;Index++)
+	 {
+		 N = T->NodeList[Index];
+		 N->Visited = N->Tip;
+	 }
+ }
+
+ /* 
+	NODE		**PNodes;
+	int			*NoPNodes;
+	int			NoPGroups;
+*/
+
+ int	ValidPNode(NODE N)
+ {
+	 int Index;
+
+	if(N->Visited == TRUE)
+		return FALSE;
+
+	 for(Index=0;Index<N->NoNodes;Index++)
+	 {
+		if(N->NodeList[Index]->Visited == FALSE)
+			return FALSE;
+	 }
+	 return TRUE;
+ }
+
+ NODE*	GetNextPList(TREE *T, int *Size)
+ {
+	 NODE	*Ret, *List, N;
+	 int	No, Index;
+
+	 List = (NODE*)malloc(sizeof(NODE) * T->NoNodes);
+	 if(List == NULL)
+		 MallocErr();
+
+	 No = 0;
+	 for(Index=0;Index<T->NoNodes;Index++)
+	 {
+		 N = T->NodeList[Index]; 
+
+		 if(ValidPNode(N) == TRUE)
+			 List[No++] = N;
+	 }
+
+	 if(No != 0)
+	 {
+		 Ret = (NODE*)malloc(sizeof(NODE) * No);
+		 if(Ret == NULL)
+			 MallocErr();
+
+		 for(Index=0;Index<No;Index++)
+		 {
+			 Ret[Index] = List[Index];
+			 Ret[Index]->Visited = TRUE;
+		 }
+	 }
+	 else
+		 Ret = NULL;
+
+	 free(List);
+
+	 *Size = No;
+
+	 return Ret;
+ }
+
+ void	RecPrintNodeBelow(NODE N)
+ {
+	 int Index;
+	 if(N->Tip == TRUE)
+	 {
+		 printf("%s,", N->Taxa->Name);
+		 return;
+	 }
+
+	 for(Index=0;Index<N->NoNodes;Index++)
+		 RecPrintNodeBelow(N->NodeList[Index]);
+ }
+
+ void	PrintPNodes(TREE *T)
+ {
+	 int Index,j;
+
+	 printf("No Groups\t%d\n", T->NoPGroups);
+	 printf("Size\t");
+	 for(Index=0;Index<T->NoPGroups;Index++)
+		 printf("%d\t", T->NoPNodes[Index]);
+	 printf("\n");
+
+	 for(Index=0;Index<T->NoPGroups;Index++)
+	 {
+		 printf("%d\t%d\n", Index, T->NoPNodes[Index]);
+		 for(j=0;j<T->NoPNodes[Index];j++)
+		 {
+			 printf("\t");
+			RecPrintNodeBelow(T->PNodes[Index][j]);
+			printf("\n");
+		 }
+	 }
+ }
+
+ void	SetParallelNodes(TREES *Trees, TREE *T)
+ {
+	 int	*NoNodes;
+	 int	NoGroups, Size;
+	 NODE	**PNodes, *PN;
+
+
+	 NoNodes = (int*)malloc(sizeof(int) * T->NoNodes);
+	 PNodes = (NODE**)malloc(sizeof(NODE*) * T->NoNodes);
+
+	 if((NoNodes == NULL) || (PNodes == NULL))
+		 MallocErr();
+
+	  NoGroups = 0;
+	
+	  InitPNodes(T);
+
+	 do
+	 {
+		 PN = GetNextPList(T, &Size);
+		 if(PN != NULL)
+		 {
+			 NoNodes[NoGroups] = Size;
+			 PNodes[NoGroups] = PN;
+			 NoGroups++;
+		 }
+	 }while(PN != NULL);
+
+	 T->NoPGroups = NoGroups;
+	 T->NoPNodes = (int*)malloc(sizeof(int) * NoGroups);
+	 T->PNodes = (NODE**)malloc(sizeof(NODE*) * NoGroups);
+
+	 if((T->NoPNodes == NULL) || (T->PNodes == NULL))
+		 MallocErr();
+
+	 memcpy(T->NoPNodes, NoNodes, sizeof(int) * NoGroups);
+	 memcpy(T->PNodes, PNodes, sizeof(NODE*) * NoGroups);
+	 
+	 free(PNodes);
+	 free(NoNodes);
+ }
+
 void	InitialTrees(TREES *Trees, NTREES *PTrees)
 {
 	int		Index;
@@ -528,17 +702,23 @@ void	InitialTrees(TREES *Trees, NTREES *PTrees)
 		Tree->NodeList	= NULL;
 		Tree->Root		= NULL;
 
+		Tree->PNodes	= NULL;
+		Tree->NoPNodes	= NULL;
+		Tree->NoPGroups = -1;
+
 		MakeNewTree(Tree, &PTrees->Trees[Index]);
 
 		LinkTipsToTaxa(Trees->Tree[Index].Root, Trees->Taxa, Trees->NoOfTaxa);
 
 		NodeID = 0;
 		SetNodeIDs(Trees->Tree[Index].Root, &NodeID);
+
+		SetParallelNodes(Trees, Tree);
 	}
 
 	SetPartitions(Trees);
 
-	Trees->MaxPoly = FindMaxPoly(Trees);
+	Trees->MaxNodes = FindMaxNodes(Trees);
 }
 
 TREES*	LoadTrees(char* FileName)
@@ -551,7 +731,7 @@ TREES*	LoadTrees(char* FileName)
 	if(Ret==NULL)
 		MallocErr();
 
-	Ret->MaxPoly			= -1;
+	Ret->MaxNodes			= -1;
 	Ret->PList				= NULL;
 
 	Ret->Taxa				= NULL;

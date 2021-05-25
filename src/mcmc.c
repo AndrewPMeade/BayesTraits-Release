@@ -264,6 +264,9 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	GBurntIn = BurntIn = FALSE;
 
+PrintTime(stdout);
+printf("\n");
+
 	for(Itters=0;;Itters++)
 	{ 
 		CopyRates(NRates, CRates, Opt);
@@ -329,6 +332,9 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 		if((Opt->Itters == Itters) && (Opt->Itters != -1))
 		{
+			PrintTime(stdout);
+			printf("\n");
+
 			if((Opt->UseEqualTrees == FALSE) || (CRates->TreeNo == Trees->NoOfTrees - 1))
 			{	
 				FreePriors(CRates);
@@ -406,8 +412,9 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			if((Itters == Opt->ETreeBI) && (GBurntIn == TRUE))
 				BurntIn = TRUE;
 		}
-
 	}
+
+
 }
 
 void	LhOverAllModels(OPTIONS *Opt, TREES *Trees)

@@ -21,6 +21,10 @@
 #include "mathlib.h"
 //#include "./MathLib/mconf.h"
 
+#ifdef	THREADED
+	#include <omp.h>
+#endif
+
 extern void BayesModeTest(OPTIONS *Opt, TREES *Trees);
 extern void PMatrixTest(void);
 /*
@@ -100,6 +104,11 @@ int main(int argc, char** argv)
 // ./Seq/Zuzana/Chiroptera.trees ./Seq/Zuzana/Chiroptera_BrW.txt  < ./Seq/Zuzana/in.txt > sout.txt
 // ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt  < BigMamIn.txt > sout.txt
 // ./Seq/MamBigTrimCNodes.trees ./Seq/MamBigTrim.txt < BigMamIn.txt > sout.txt
+
+//	./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
+//	./Seq/Lang/IE-M1P-RS.trees ./Seq/Lang/IE-MS.nex-0007.txt < in.txt > sout.txt
+
+
 int main(int argc, char** argv)
 {
 	TREES*		Trees;

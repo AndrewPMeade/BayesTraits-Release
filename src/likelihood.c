@@ -14,10 +14,9 @@
 #include "gamma.h"
 #include "trees.h"
 #include "praxis.h"
-
 #include "rand.h"
 #include "contrasts.h"
-
+#include "threaded.h"
 
 int	DB = FALSE;
 
@@ -25,7 +24,7 @@ int	DB = FALSE;
 	extern int isnan(double x);
 #endif
 
-double	CreatFullPMatrix(double t, MATRIX *Mat, TREES* Trees);
+double	CreatFullPMatrix(double t, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et);
 
 int		IsNum(double n)
 {
@@ -127,7 +126,7 @@ int	PreCalc(TREES *Trees, RATES *Rates)
 
 	if(DB == TRUE)
 	{
-		CreatFullPMatrix(1, Trees->PList[0], Trees);
+		CreatFullPMatrix(1, Trees->PList[0], Trees, Trees->InvInfo->A, Trees->InvInfo->TempVect1);
 		PrintMatrix(Trees->PList[0], "My P", stdout);
 	}
 
@@ -367,32 +366,16 @@ int	CreateDEPAMatrix(MATRIX *A, RATES* Rates, TREES* Trees)
 	return PreCalc(Trees, Rates);
 }
 
-double	CreatFullPMatrix(double t, MATRIX *Mat, TREES* Trees)
+double	CreatFullPMatrix(double t, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et)
 {
 	int		i, j, k;
 	double	t1, t2;
-/*	static  MATRIX	*A=NULL;
-	static	double	*Et=NULL;
-*/
-	MATRIX	*A=NULL;
-	double	*Et=NULL;
-
 	int		NOS;
 	INVINFO	*InvInfo;
 
 	NOS		= Trees->NoOfStates;
 	InvInfo = Trees->InvInfo;
 
-	A		= InvInfo->TempA;
-	Et		= InvInfo->TempVect1;
-
-/*	
-	if(A==NULL)
-	{
-		A = AllocMatrix(NOS, NOS);
-		Et = (double*)malloc(sizeof(double)* NOS);
-	}
-*/
 	for(i=0;i<NOS;i++)
 		Et[i] = exp(t*InvInfo->val[i]);
 
@@ -419,28 +402,12 @@ double	CreatFullPMatrix(double t, MATRIX *Mat, TREES* Trees)
 	}
 
 	return t1;
-
-/*
-
-	for(i=0;i<Mat->NoOfCols;i++)
-	{
-		t1 = 0;
-		for(j=0;j<Mat->NoOfRows;j++)
-			t1 += Mat->me[j][i];
-		if(t1 != 1.0)
-		{
-			printf("t1: %f\n", t1);
-			PrintMatrix(Mat, "P", stdout);
-			printf("No 1: \n");
-			exit(0);
-		}
-	}	
-*/
 }
 
 INVINFO*	AllocInvInfo(int NOS)
 {
-	INVINFO	*Ret=NULL;
+	INVINFO	*Ret;
+	int		Index;
 
 	Ret = (INVINFO*)malloc(sizeof(INVINFO));
 	if(Ret==NULL)
@@ -468,12 +435,29 @@ INVINFO*	AllocInvInfo(int NOS)
 	Ret->TempVect4	= (double*)malloc(sizeof(double)*NOS);
 	if(Ret->TempVect4 == NULL)
 		MallocErr();
+	
+	Ret->NoThreads = GetMaxThreads();
+	Ret->Ets = (double**)malloc(sizeof(double*) * Ret->NoThreads);
+	Ret->As = (MATRIX**)malloc(sizeof(MATRIX*) * Ret->NoThreads);
+	if((Ret->Ets == NULL) || (Ret->As == NULL))
+		MallocErr();
+	for(Index=0;Index<Ret->NoThreads;Index++)
+	{
+		Ret->As[Index] = AllocMatrix(NOS, NOS);
+		Ret->Ets[Index] = (double*)malloc(sizeof(double) * NOS );
+		if(Ret->Ets[Index] == NULL)
+			MallocErr();
+	}
+
+
 
 	return Ret;
 }
 
 void	FreeInvInfo(INVINFO* InvInfo)
 {
+	int Index;
+
 	FreeMatrix(InvInfo->vec);
 	FreeMatrix(InvInfo->inv_vec);
 	FreeMatrix(InvInfo->Q);
@@ -485,9 +469,16 @@ void	FreeInvInfo(INVINFO* InvInfo)
 	free(InvInfo->TempVect2);
 	free(InvInfo->TempVect3);
 	free(InvInfo->TempVect4);
-
-
+	
 	free(InvInfo->val);
+
+	for(Index=0;Index<InvInfo->NoThreads;Index++)
+	{
+		FreeMatrix(InvInfo->As[Index]);
+		free(InvInfo->Ets[Index]);
+	}
+	free(InvInfo->As);
+	free(InvInfo->Ets);
 
 	free(InvInfo);
 }
@@ -500,11 +491,11 @@ void	AllocLHInfo(TREES *Trees, OPTIONS *Opt)
 
 	Trees->InvInfo = AllocInvInfo(NOS);
 
-	Trees->PList = (MATRIX**)malloc(sizeof(MATRIX*) * Trees->MaxPoly);
+	Trees->PList = (MATRIX**)malloc(sizeof(MATRIX*) * Trees->MaxNodes);
 	if(Trees->PList == NULL)
 		MallocErr();
 
-	for(Index=0;Index<Trees->MaxPoly;Index++)
+	for(Index=0;Index<Trees->MaxNodes;Index++)
 		Trees->PList[Index] = AllocMatrix(NOS, NOS);
 
 }
@@ -793,39 +784,18 @@ void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err,
 }
 */
 
-void	SumLikeMultiStateAP(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err, double BLMult, double Rate)
+void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err, double BLMult, int Rec)
 {
-
 	int		Inner, Outter, NIndex;
-	int		NOS;
 	double	Lh;
-	double	Len, ErrVal;
+	double	**Mat, **Partial;
 
-	for(NIndex=0;NIndex<N->NoNodes;NIndex++)
+	if(Rec == TRUE)
 	{
-		if(N->NodeList[NIndex]->Tip == FALSE)
-			SumLikeMultiStateAP(N->NodeList[NIndex], Trees, SiteNo, Kappa, Err, BLMult, Rate);
-	}
-
-	if(Trees->NOSPerSite == TRUE)
-		NOS = Trees->NOSList[SiteNo];
-	else
-		NOS = Trees->NoOfStates;
-
-	for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-	{
-		Len = N->NodeList[NIndex]->Length;
-		if(Kappa != -1)
-			Len = pow(Len, Kappa);
-		
-		Len = Len * BLMult;
-
-		ErrVal = CreatFullAP(Len, Rate, NOS, Trees->PList[NIndex]);
-
-		if(ErrVal > 0.001)
+		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
 		{
-			(*Err) = TRUE;
-			return;
+			if(N->NodeList[NIndex]->Tip == FALSE)
+				SumLikeMultiState(N->NodeList[NIndex], Trees, SiteNo, Kappa, Err, BLMult, Rec);
 		}
 	}
 
@@ -835,54 +805,13 @@ void	SumLikeMultiStateAP(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Er
 
 		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
 		{
+			Mat = Trees->PList[N->NodeList[NIndex]->ID]->me;
+			Partial = N->NodeList[NIndex]->Partial;
+
 			Lh = 0;
 			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-				Lh += N->NodeList[NIndex]->Partial[SiteNo][Inner] * Trees->PList[NIndex]->me[Outter][Inner];
-			N->Partial[SiteNo][Outter] *= Lh;
-		}
-	}
-
-	if(N->FossilState != -1)
-		FossilLh(N, Trees, SiteNo);
-}
-
-void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err, double BLMult)
-{
-	int		Inner, Outter, NIndex;
-	double	Lh;
-	double	Len, ErrVal;
-
-	for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-	{
-		if(N->NodeList[NIndex]->Tip == FALSE)
-			SumLikeMultiState(N->NodeList[NIndex], Trees, SiteNo, Kappa, Err, BLMult);
-	}
-
-	for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-	{
-		Len = N->NodeList[NIndex]->Length;
-		if(Kappa != -1)
-			Len = pow(Len, Kappa);
-		
-		Len = Len * BLMult;
-
-		ErrVal = CreatFullPMatrix(Len, Trees->PList[NIndex], Trees);
-		if(ErrVal > 0.001)
-		{
-			(*Err) = TRUE;
-			return;
-		}
-	}
-
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-	{
-		N->Partial[SiteNo][Outter] = 1;
-
-		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-		{
-			Lh = 0;
-			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-				Lh += N->NodeList[NIndex]->Partial[SiteNo][Inner] * Trees->PList[NIndex]->me[Outter][Inner];
+				Lh += Partial[SiteNo][Inner] * Mat[Outter][Inner];
+			
 			N->Partial[SiteNo][Outter] *= Lh;
 		}
 	}
@@ -1297,6 +1226,147 @@ void	LongProc(int x)
 
 }
 
+int		SetStdPMatrix(TREES *Trees, NODE N, MATRIX *P, double Gamma, double Kappa)
+{
+	double Len;
+	double ErrVal;
+	int		ThrNo;
+
+	Len = N->Length;
+	if(Kappa != -1)
+		Len = pow(Len, Kappa);
+		
+	Len = Len * Gamma;
+	
+	ThrNo = GetThreadNo();
+	
+	ErrVal = CreatFullPMatrix(Len, P, Trees, Trees->InvInfo->As[ThrNo], Trees->InvInfo->Ets[ThrNo]);
+	if(ErrVal > 0.001)
+		return TRUE;
+
+	return FALSE;
+}
+
+int		SetAnalyticalPMatrix(TREES *Trees, NODE N, MATRIX *P, double Rate, double Gamma, double Kappa)
+{
+	double Len, ErrVal;
+	
+	Len = N->Length;
+	if(Kappa != -1)
+		Len = pow(Len, Kappa);
+		
+	Len = Len * Gamma;
+
+	ErrVal = CreatFullAP(Len, Rate, Trees->NOSPerSite, P);			
+
+	return FALSE;
+}
+
+
+int		SetRPMatrix(TREES *Trees, NODE N, MATRIX *P, double Gamma, double Kappa)
+{
+	return FALSE;
+	/* Needs to be fiex for R model as its not fixed form polytomie code. */
+}
+
+
+
+int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, double Kappa)
+{
+	int NIndex, Err, NoErr;
+	TREE *Tree;
+	NODE N;
+	
+	NoErr = 0;
+	Err = FALSE;
+	Tree = &Trees->Tree[Rates->TreeNo];
+	/* No need to comput P for root */
+
+#ifdef THREADED
+	#pragma omp parallel for private(N, Err)
+#endif	
+	for(NIndex=1;NIndex<Tree->NoNodes;NIndex++)
+	{
+		N = Tree->NodeList[NIndex];
+
+		if(Opt->UseRModel == TRUE)
+			Err = SetRPMatrix(Trees, N, Trees->PList[N->ID], Gamma, Kappa);
+		else
+		{
+			if(Opt->AnalyticalP == FALSE)
+				Err = SetStdPMatrix(Trees, N, Trees->PList[N->ID], Gamma, Kappa);
+			else
+				Err = SetAnalyticalPMatrix(Trees, N, Trees->PList[N->ID], Rates->FullRates[0], Gamma, Kappa);
+		}
+
+		if(Err == TRUE)
+		{
+#ifdef THREADED
+//			Creat a race condion but all you need to know is if NoErr > 0
+//			#pragma omp critical
+			NoErr++;
+#endif
+		}
+	}
+
+	if(NoErr > 0)
+		return TRUE;
+	
+	return FALSE;
+}
+
+void	LinerLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, double RateMult)
+{
+#ifdef THREADED
+	int	GIndex, NIndex;
+	TREE	*Tree;
+	int		Err;
+
+	Err = FALSE;
+	
+	Tree = &Trees->Tree[Rates->TreeNo];
+	for(GIndex=0;GIndex<Tree->NoPGroups;GIndex++)
+	{
+
+	//	if(Tree->NoPNodes[GIndex] >= Trees->InvInfo->NoThreads * MIN_NODES_PER_PROC)
+		{
+			#pragma omp parallel for
+			for(NIndex=0;NIndex<Tree->NoPNodes[GIndex];NIndex++)
+				SumLikeMultiState(Tree->PNodes[GIndex][NIndex], Trees, SiteNo, Rates->Kappa, &Err, RateMult, FALSE);
+
+		}/*
+		else
+		{
+			for(NIndex=0;NIndex<Tree->NoPNodes[GIndex];NIndex++)
+				SumLikeMultiState(Tree->PNodes[GIndex][NIndex], Trees, SiteNo, Rates->Kappa, &Err, RateMult, FALSE);
+	
+		}*/
+	}
+
+#endif
+}
+
+int		SumLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, double RateMult)
+{
+	TREE	*Tree;
+	int		Err;
+
+	Err = FALSE;
+	
+	Tree = &Trees->Tree[Rates->TreeNo];
+
+#ifndef THREADED
+	if(Opt->UseRModel == TRUE)
+		SumLikeRModel(Tree->Root, Trees, SiteNo, Rates);
+	else
+		SumLikeMultiState(Tree->Root, Trees, SiteNo, Rates->Kappa, &Err, RateMult, TRUE);
+#else	
+	LinerLh(Rates, Trees, Opt, SiteNo, RateMult);
+#endif
+
+	return Err;
+}
+
 double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
 	double	Ret=0;
@@ -1339,26 +1409,21 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	for(GammaCat=0;GammaCat<Rates->GammaCats;GammaCat++)
 	{
+
+		if(Opt->UseGamma == FALSE)
+			RateMult = 1;
+		else
+			RateMult = Rates->GammaMults[GammaCat];
+
+		Err = SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
+		if(Err == TRUE)
+			return ERRLH;
+
 		for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
 		{
 			Err = FALSE;
 
-			if(Opt->UseRModel == TRUE)
-			{
-				SumLikeRModel(Tree->Root, Trees, SiteNo, Rates);
-			}
-			else
-			{
-				if(Opt->UseGamma == FALSE)
-					RateMult = 1;
-				else
-					RateMult = Rates->GammaMults[GammaCat];
-
-				if(Opt->AnalyticalP == FALSE)
-					SumLikeMultiState(Tree->Root, Trees, SiteNo, Rates->Kappa, &Err, RateMult);
-				else
-					SumLikeMultiStateAP(Tree->Root, Trees, SiteNo, Rates->Kappa, &Err, RateMult, Rates->FullRates[0]);
-			}
+			Err = SumLh(Rates, Trees, Opt, SiteNo, RateMult);
 
 			if(Err == TRUE)
 				return ERRLH;

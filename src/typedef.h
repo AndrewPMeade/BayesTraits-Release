@@ -4,9 +4,17 @@
 #pragma warning(disable : 4996)
 #include <stdio.h>
 #include "matrix.h"
-/*
-#define	JNIRUN
-*/
+
+//#define THREADED 
+// #define	JNIRUN
+
+#ifdef	THREADED
+	#include <omp.h>
+
+	#define MIN_NODES_PER_PROC	2
+
+#endif
+
 #ifdef	 JNIRUN
 	#include "jni.h"
 /*	Build
@@ -385,14 +393,14 @@ struct INODE
 	int			NoContrast;
 };
 
+typedef struct INODE*	NODE;
+
 typedef enum
 {
 	NODEREC,
 	MRCA,
 	FOSSIL,
 } NODETYPE;
-
-typedef struct INODE*	NODE;
 
 struct RNODE
 {
@@ -463,10 +471,12 @@ typedef	struct
 {
 	int			NoNodes;
 	NODE		*NodeList;
-
 	NODE		Root;
 
-
+	NODE		**PNodes;
+	int			*NoPNodes;
+	int			NoPGroups;
+	
 	CONVAR*		ConVars;
 } TREE;
 
@@ -496,6 +506,10 @@ typedef	struct
 	double		*TempVect2;
 	double		*TempVect3;
 	double		*TempVect4;
+
+	int			NoThreads;
+	MATRIX		**As;
+	double		**Ets;
 
 } INVINFO;
 
@@ -530,7 +544,7 @@ typedef struct
 	INVINFO*	InvInfo;
 
 	MATRIX		**PList;
-	int			MaxPoly;
+	int			MaxNodes;
 
 	TAXA		*Taxa;
 	TREE		*Tree;
