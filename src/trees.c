@@ -2392,7 +2392,8 @@ int		TaxaNoToIndex(TREES *Trees, int No)
 	return -1;
 }
 
-void	ReSetBranchLength(TREE *Tree)
+
+void	SetUserBranchLength(TREE *Tree)
 {
 	int Index;
 	NODE N;
@@ -2404,17 +2405,12 @@ void	ReSetBranchLength(TREE *Tree)
 	}
 }
 
-void	SetAsUserBranchLength(TREE *Tree)
+void	ReSetBranchLength(TREE *Tree)
 {
-	int Index;
-	NODE N;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-		N->UserLength = N->Length;
-	}
+	SetUserBranchLength(Tree);
+	SetTreeDistToRoot(Tree);
 }
+
 
 void	RecGetSumBL(NODE N, double *SumBL)
 {

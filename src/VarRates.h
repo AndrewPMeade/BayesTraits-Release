@@ -17,6 +17,7 @@ void	VarRatesCopy(RATES *R1, RATES *R2);
 void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise);
 
 void	InitVarRatesFiles(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void	FinishVarRatesFiles(OPTIONS *Opt);
 void	PrintVarRatesOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It);
 
 double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt);

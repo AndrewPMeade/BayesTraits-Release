@@ -1412,8 +1412,8 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 		if(Rates->Plasty != NULL)
 			VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
-		
-	//	SaveTrees("DTest.trees", Trees); exit(0);
+
+	//		SaveTrees("DTest.trees", Trees); exit(0);
 	}
 
 	if(Opt->RJDummy == TRUE)

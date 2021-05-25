@@ -458,14 +458,14 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 	SetRatesToPriors(Opt, NRates);
 
 	if(Opt->ModelType == MT_FATTAIL)
+	{
 		InitFatTailRates(Opt, Trees, CRates);
+		InitFattailFile(Opt, Trees);
+	}
 
 	if(UseNonParametricMethods(Opt) == TRUE)
 		InitVarRatesFiles(Opt, Trees, CRates);
-
-	if(Opt->ModelType == MT_FATTAIL)
-		InitFattailFile(Opt, Trees);
-
+		
 	if(Opt->RJDummy == TRUE)
 		InitRJDummyFile(Opt);
 	
@@ -613,6 +613,9 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 				if( (Opt->UseEqualTrees == FALSE) || 
 					(CRates->TreeNo == Trees->NoOfTrees - 1))
 				{	
+					EndT = GetSeconds();
+					printf("Sec:\t%f\n", EndT - StartT);
+
 					FreeRates(CRates, Trees);
 					FreeRates(NRates, Trees);
 
@@ -624,9 +627,8 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 					if(Opt->UseSchedule == TRUE)
 						fclose(ShedFile);
 
-					EndT = GetSeconds();
-
-					printf("Sec:\t%f\n", EndT - StartT);
+					if(UseNonParametricMethods(Opt) == TRUE)
+						FinishVarRatesFiles(Opt);
 
 					if(SaveModelF != NULL)
 						fclose(SaveModelF);
@@ -680,8 +682,6 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 				else
 					BurntIn = TRUE;
 			}
-
-
 
 			if(Opt->Stones != NULL)
 				StoneItter(Opt->Stones, Itters, CRates->Lh, StoneF);

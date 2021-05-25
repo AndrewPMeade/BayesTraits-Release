@@ -75,6 +75,7 @@ void	TransContNodeKappa(NODE N, double Kappa, int Norm)
 	for(Index=0;Index<N->NoNodes;Index++)
 		RecTransContNodeKappa(N->NodeList[Index], Kappa, 0);
 
+	
 	if(Norm == FALSE)
 		return;
 
@@ -179,7 +180,7 @@ void	TransContNodeLambda(NODE N, double Lambda, int Norm)
 {
 	double SumBL, Scale;
 	int Index;
-
+		
 	if(Norm == TRUE)
 		SumBL = SumNodeBL(N);
 	
@@ -210,8 +211,6 @@ int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates)
 	if(Opt->UseLambda == TRUE)
 		return TRUE;
 	
-
-
 	return FALSE;
 }
 
@@ -236,6 +235,8 @@ void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 
 	if(Opt->UseOU == TRUE)
 	{
+		SetTreeDistToRoot(Tree);
+
 		if(Opt->EstOU == TRUE)
 			TransContNodeOU(Root, Rates->OU, Norm);
 		else
@@ -253,13 +254,14 @@ void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 	if(Opt->UseLambda == TRUE)
 	{
 		SetTreeDistToRoot(Tree);
+
 		if(Opt->EstLambda == TRUE)
 			TransContNodeLambda(Root, Rates->Lambda, Norm);
 		else
 			TransContNodeLambda(Root, Opt->FixLambda, Norm);
 	}
 }
-
+/*
 void	TransformContrastTreeFixed(OPTIONS *Opt, TREES *Trees)
 {
 	TREE *Tree;
@@ -291,3 +293,4 @@ void	TransformContrastTreeFixed(OPTIONS *Opt, TREES *Trees)
 	}
 }
 
+*/

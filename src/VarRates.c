@@ -25,7 +25,7 @@ int		UseNonParametricMethods(OPTIONS *Opt)
 	if(Opt->UseVarRates == TRUE)
 		return TRUE;
 
-	for(Index=0;Index<NO_PRIOR_DIST;Index++)
+	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
 		if(Opt->UseRJLocalScalar[Index] == TRUE)
 			return TRUE;
 
@@ -289,7 +289,7 @@ RJ_VARRATE_TYPE	GetVarRatesType(RANDSTATES *RS, SCHEDULE *Shed)
 void	SetVRNodeBLRates(PLASTYNODE *PNode, RANDSTATES *RS)
 {
 #ifdef PPUNIFORM
-	PNode->Scale = GenRandState(Rates->RandStates) * PPMAXSCALE;
+	PNode->Scale = RandDouble(RS) * PPMAXSCALE;
 #else
 	PNode->Scale = RandGamma(PPALPHA, PPBETA);
 #endif
@@ -666,7 +666,7 @@ void	ScaleNode(NODE N, PLASTYNODE *P)
 		ScaleNode(N->NodeList[Index], P);
 }
 
-void	VarRatesNode(NODE N, PLASTYNODE *P)
+void	VarRatesNode(TREE *Tree, NODE N, PLASTYNODE *P)
 {
 
 	if(P->Type == VR_BL)
@@ -679,42 +679,48 @@ void	VarRatesNode(NODE N, PLASTYNODE *P)
 		TransContNodeKappa(N, P->Scale, FALSE);
 
 	if(P->Type == VR_LAMBDA)
+	{
+		SetTreeDistToRoot(Tree);
 		TransContNodeLambda(N, P->Scale, FALSE);
+	}
 
 	if(P->Type == VR_DELTA)
 		TransContNodeDelta(N, P->Scale, FALSE);
 
 	if(P->Type == VR_OU)
+	{
+	//	SetTreeDistToRoot(Tree);
 		TransContNodeOU(N, P->Scale, FALSE);
-
+	}
 }
 
 void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 {
 	int Index;
 	int	TNo;
-	TREE *T;
+	TREE *Tree;
 	PLASTY *P;
 	double SumBL, Scale;
 
 	P = Rates->Plasty;
 	TNo = Rates->TreeNo;
-	T = Trees->Tree[TNo];
+	Tree = Trees->Tree[TNo];
 
-	for(Index=0;Index<T->NoNodes;Index++)
-		T->NodeList[Index]->Length = P->TrueBL[TNo][Index];
+//	This is done before. 
+//	for(Index=0;Index<Tree->NoNodes;Index++)
+//		Tree->NodeList[Index]->Length = P->TrueBL[TNo][Index];
 
 	if(Normalise == TRUE)
-		SumBL = SumNodeBL(T->Root);
+		SumBL = SumNodeBL(Tree->Root);
 
 	for(Index=0;Index<P->NoNodes;Index++)
-		VarRatesNode(P->NodeList[Index]->Node, P->NodeList[Index]);
+		VarRatesNode(Tree, P->NodeList[Index]->Node, P->NodeList[Index]);
 
 	if(Normalise == FALSE)
 		return;
 
-	Scale = SumBL / SumNodeBL(T->Root);
-	ScaleSubTree(T->Root, Scale);
+	Scale = SumBL / SumNodeBL(Tree->Root);
+	ScaleSubTree(Tree->Root, Scale);
 }
 
 void	InitVarRatesTreeFile(OPTIONS *Opt, TREES *Trees)
@@ -725,7 +731,8 @@ void	InitVarRatesTreeFile(OPTIONS *Opt, TREES *Trees)
 	Buffer = (char*)malloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
 	if(Buffer == NULL)
 		MallocErr();
-	sprintf(Buffer, "%s.PP.trees", Opt->DataFN);
+		
+	sprintf(Buffer, "%s.VarRates.trees", Opt->LogFN);
 	Opt->PPTree = OpenWrite(Buffer);
 	free(Buffer);
 
@@ -739,6 +746,7 @@ void	InitVarRatesTreeFile(OPTIONS *Opt, TREES *Trees)
 
 	fflush(Opt->PPTree);
 }
+
 
 
 void	RecPrintPPNodes(FILE *Out, NODE N)
@@ -798,7 +806,8 @@ void	IntiVarRatesLogFile(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	Buffer = (char*)malloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
 	if(Buffer == NULL)
 		MallocErr();
-	sprintf(Buffer, "%s.PP.txt", Opt->DataFN);
+
+	sprintf(Buffer, "%s.VarRates.txt", Opt->LogFN);
 	Opt->PPLog = OpenWrite(Buffer);
 	free(Buffer);
 
@@ -829,6 +838,13 @@ void	InitVarRatesFiles(OPTIONS *Opt, TREES *Trees, RATES* Rates)
 	IntiVarRatesLogFile(Opt, Trees, Rates);
 }
 
+void	FinishVarRatesFiles(OPTIONS *Opt)
+{
+	fprintf(Opt->PPTree, "end;");
+	fclose(Opt->PPTree);
+	fclose(Opt->PPLog);
+}
+
 void	PrintPPNode(FILE *Out, NODE N)
 {
 	int Index;
@@ -852,23 +868,24 @@ void	PrintPPNode(FILE *Out, NODE N)
 void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 {
 	PLASTY	*P;
-	TREE	*T;
+	TREE	*Tree;
 	int		Index;
 
 	P = Rates->Plasty;
-	T = Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 
+	ReSetBranchLength(Tree);
 	VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
 	fprintf(Opt->PPTree, "\tTree T_%010ll_%d = (", It, P->NoNodes);
 
-	for(Index=0;Index<T->Root->NoNodes-1;Index++)
+	for(Index=0;Index<Tree->Root->NoNodes-1;Index++)
 	{
-		PrintPPNode(Opt->PPTree, T->Root->NodeList[Index]);
+		PrintPPNode(Opt->PPTree, Tree->Root->NodeList[Index]);
 		fprintf(Opt->PPTree, ",");
 	}
 
-	PrintPPNode(Opt->PPTree, T->Root->NodeList[Index]);
+	PrintPPNode(Opt->PPTree, Tree->Root->NodeList[Index]);
 	fprintf(Opt->PPTree, ");\n");
 
 	fflush(Opt->PPTree);
@@ -999,6 +1016,8 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 	PLASTY		*Plasty;
 	PLASTYNODE	*PNode;
 	double		PVal;
+
+//	return Rates->Plasty->NoNodes * -2.302585093;
 
 	Plasty = Rates->Plasty;
 	Ret = 0;

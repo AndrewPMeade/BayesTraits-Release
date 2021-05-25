@@ -174,7 +174,7 @@ static char    *RJ_LOCAL_SCALAR_NAMES[] =
 {
 	"kappa",
 	"lambda",
-	"detla", 
+	"delta", 
 	"ou"
 };
 
