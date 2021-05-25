@@ -7,7 +7,7 @@
 #include "trees.h"
 #include "data.h"
 #include "options.h"
-#include "rates.h"
+#include "Rates.h"
 #include "likelihood.h"
 #include "priors.h"
 #include "mcmc.h"

@@ -1186,7 +1186,7 @@ static double a5 =  0.1428833286;
 static double a6 = -0.1241963125;
 static double a7 =  0.1101687109;
 static double a8 = -0.1142650302;
-static double a9 =  0.1055093006;
+//static double a9 =  0.1055093006;
 /* JJV changed the initial values of MUPREV and MUOLD */
 static double muold = -1.0E37;
 static double muprev = -1.0E37;
@@ -1548,20 +1548,22 @@ void phrtsd(char* phrase,long *seed1,long *seed2)
 **********************************************************************
 */
 {
-
+/*
 static char table[] =
 "abcdefghijklmnopqrstuvwxyz\
 ABCDEFGHIJKLMNOPQRSTUVWXYZ\
 0123456789\
-!@#$%^&*()_+[];:'\\\"<>?,./ ";  /* WGR added space, 5/19/1999 */
+!@#$%^&*()_+[];:'\\\"<>?,./ ";  */
+/* WGR added space, 5/19/1999 */
 
 // long ix;
 
 static long twop30 = 1073741824L;
+/*
 static long shift[5] = {
     1L,64L,4096L,262144L,16777216L
 };
-
+*/
 #ifdef PHRTSD_ORIG
  /*----------------------------- Original phrtsd */
 static long i,ichr,j,lphr,values[5];

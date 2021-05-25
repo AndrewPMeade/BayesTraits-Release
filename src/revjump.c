@@ -4,7 +4,7 @@
 #include <math.h>
 
 #include "typedef.h"
-#include "rates.h"
+#include "Rates.h"
 #include "genlib.h"
 #include "RandLib.h"
 #include "trees.h"

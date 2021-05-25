@@ -6,7 +6,7 @@
 #include "genlib.h"
 #include "matrix.h"
 #include "linalg.h"
-#include "rates.h"
+#include "Rates.h"
 
 extern INVINFO*	AllocInvInfo(int NOS);
 extern void FreeInvInfo(INVINFO* InvInfo);

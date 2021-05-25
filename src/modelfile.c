@@ -7,7 +7,7 @@
 #include "typedef.h"
 #include "modelfile.h"
 #include "likelihood.h"
-#include "rates.h"
+#include "Rates.h"
 
 int		GetParamPerModel(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {

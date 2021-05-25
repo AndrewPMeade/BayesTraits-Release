@@ -147,7 +147,7 @@ PRIORS*		CreateGammaPrior(double Mean, double Var)
 
 	Ret = AllocBlankPrior(2);
 	
-	Ret->Dist			= BETA;
+	Ret->Dist			= GAMMA;
 	Ret->DistVals[0]	= Mean;
 	Ret->DistVals[1]	= Var;
 	
@@ -257,7 +257,7 @@ void		CreatPriors(OPTIONS *Opt, RATES* Rates)
 		return;
 	}
 
-	NoOfPriors=0;
+	NoOfPriors = 0;
 	
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
@@ -767,7 +767,6 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 
 	CalcP = 0;
 	Err = FALSE;
-//	ProbTest();
 
 	if(Opt->LoadModels == TRUE)
 		return;
@@ -1034,22 +1033,3 @@ PRIORS*		CreatePrior(int Tokes, char **Passed)
 	return Ret;
 }
 
-double		RandFromPrior(RANDSTATES *RS, PRIORS* Prior)
-{
-	double Ret;
-
-	if(Prior->Dist == UNIFORM)
-	{
-		Ret = RandUniDouble(RS, Prior->DistVals[0], Prior->DistVals[1]);
-		return Ret;
-	}
-
-	if(Prior->Dist == EXP)
-	{
-		Ret = RandExp(RS, Prior->DistVals[0]);
-		return Ret;
-	}
-
-	printf("Currently only exponential or uniform distributions are supported.\n");
-	exit(0);
-}

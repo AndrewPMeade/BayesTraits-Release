@@ -10,7 +10,7 @@
 #include "praxis.h"
 #include "RandLib.h"
 #include "VarRates.h"
-#include "threaded.h"
+#include "Threaded.h"
 #include "trees.h"
 #include "part.h"
 #include "matrix.h"
@@ -322,7 +322,7 @@ void	RecCalcContrast(NODE N, int NoSites)
 #ifndef CLIK_P
 	for(Index=0;Index<N->NoNodes;Index++)
 	{
-	#ifdef THREADED
+	#ifdef OPENMP_THR
 			if(N->NodeList[Index]->Visited == FALSE)
 	#endif
 				RecCalcContrast(N->NodeList[Index], NoSites);
@@ -472,10 +472,9 @@ void	CalcContrastP(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		
 	Tree = Trees->Tree[Rates->TreeNo];
 	
-//	#pragma omp parallel for num_threads(Tree->NoPNodes) schedule(dynamic,1)
-
-//	#pragma omp parallel for num_threads(Opt->Cores) schedule(dynamic,1)
+#ifdef OPENMP_THR
 	#pragma omp parallel for num_threads(Opt->Cores)
+#endif
 	for(NIndex=0;NIndex<Tree->NoPNodes;NIndex++)
 		RecCalcContrast(Tree->PNodes[NIndex], Trees->NoOfSites);
 
@@ -492,7 +491,10 @@ void	CalcContrastP(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		}
 	//	else
 		{
+
+#ifdef OPENMP_THR
 			#pragma omp parallel for num_threads(Opt->Cores)
+#endif
 			for(NIndex=0;NIndex<Tree->NoFNodes[PIndex];NIndex++)
 				LinCalcContrast(Tree->FNodes[PIndex][NIndex], Trees->NoOfSites);
 		}
@@ -1408,7 +1410,7 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	if(Opt->RJDummy == TRUE)
 		DummCodePreLh(Opt, Trees, Rates);
 
-#ifdef THREADED
+#ifdef OPENMP_THR
 	CalcContrastP(Opt, Trees, Rates);
 #else
 	CalcContrast(Trees, Rates);	
@@ -1650,6 +1652,7 @@ void	MapConValsToRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 void	MapRatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 {
 	int NoSites;
+	int Index;
 
 //	NoSites = Opt->Trees->NoOfSites;
 	NoSites = ConR->NoSites;
@@ -1661,6 +1664,10 @@ void	MapRatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 	{
 		// Reg Alpha will be set to ML values from Beta's
 		ConR->RegAlpha = 0;
+
+		if(Opt->TestCorrel == FALSE)
+			for(Index=0;Index<Opt->Trees->NoOfSites - 1;Index++)
+				Rates->Rates[Index] = 0.0;
 
 		memcpy(ConR->RegBeta, (void*)Rates->Rates, sizeof(double) * (Opt->Trees->NoOfSites - 1));
 	}

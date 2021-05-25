@@ -16,8 +16,8 @@ typedef struct
 	int		NoAcc, NoTried;
 
 	double	Min, Max, Target;
-	double	Last;	
-	
+	double	Last;
+	double	MaxDev;	
 	double	*RateAcc;
 	double	*RateDev;
 
@@ -27,6 +27,8 @@ typedef struct
 
 AUTOTUNE*	CreatAutoTune(char *Name, double InitDev, double Min, double Max);
 void		FreeAutoTune(AUTOTUNE *AutoTune);
+
+void		SetMaxDev(AUTOTUNE *AutoTune, double MaxDev);
 
 void		AutoTuneUpDate(AUTOTUNE *AutoTune, RANDSTATES *RS);
 

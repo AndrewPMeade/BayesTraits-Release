@@ -10,12 +10,12 @@
 #endif
 
 #include "typedef.h"
-#include "threaded.h"
+#include "Threaded.h"
 
 
 int		GetThreadNo(void)
 {
-#ifdef THREADED
+#ifdef OPENMP_THR
 	return omp_get_thread_num();
 #endif	
 	return 0;
@@ -23,7 +23,7 @@ int		GetThreadNo(void)
 
 int		GetMaxThreads(void)
 {
-#ifdef THREADED
+#ifdef OPENMP_THR
 	return omp_get_num_procs();
 #endif
 	
@@ -32,7 +32,7 @@ int		GetMaxThreads(void)
 
 void	SetNoOfThreads(int No)
 {
-#ifdef THREADED
+#ifdef OPENMP_THR
 	omp_set_num_threads(No);
 	return; 
 #endif	
@@ -59,7 +59,7 @@ void	SetNoOfThreads(int No)
 
 double	GetSeconds(void)
 {
-#ifndef THREADED
+#ifndef OPENMP_THR
 	return  (double)time(NULL);
 #else
 	return omp_get_wtime();

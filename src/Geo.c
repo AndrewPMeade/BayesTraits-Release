@@ -6,10 +6,10 @@
 #include "typedef.h"
 #include "Geo.h"
 #include "genlib.h"
-#include "threaded.h"
+#include "Threaded.h"
 #include "FatTail.h"
 #include "likelihood.h"
-#include "rates.h"
+#include "Rates.h"
 
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846

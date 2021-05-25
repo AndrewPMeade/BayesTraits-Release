@@ -4,7 +4,7 @@
 #include <math.h>
 
 #include "typedef.h"
-#include "rates.h"
+#include "Rates.h"
 #include "genlib.h"
 #include "RandLib.h"
 #include "trees.h"
@@ -26,7 +26,8 @@
 #include "ContrastRegOutput.h"
 #include "FatTail.h"
 #include "Geo.h"
-#include "threaded.h"
+#include "Threaded.h"
+#include "LocalTransform.h"
 
 //double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 //void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -45,34 +46,31 @@ int		FindNoConRates(OPTIONS *Opt)
 	switch(Opt->Model)
 	{
 		case M_CONTINUOUS_RR:
-			return Opt->Trees->NoOfSites;
+			return Opt->Trees->NoUserSites;
 		break;
 			
 		case M_CONTINUOUS_DIR:
-			return Opt->Trees->NoOfSites  * 2;
+			return Opt->Trees->NoUserSites  * 2;
 		break;
 
 		case M_CONTINUOUS_REG:
-			return Opt->Trees->NoOfSites + 1; 
+			return Opt->Trees->NoUserSites; 
 		break;
 
 		case M_CONTRAST_CORREL:
-			return Opt->Trees->NoOfSites;
+			return Opt->Trees->NoUserSites;
 		break;
 
 		case M_CONTRAST_REG:
-			return Opt->Trees->NoOfSites - 1; 
+			return Opt->Trees->NoUserSites - 1; 
 		break;
 
 		case M_CONTRAST:
-			return Opt->Trees->NoOfSites * 2;
+			return Opt->Trees->NoUserSites * 2;
 		break;
 
 		case M_FATTAIL:
-			if(Opt->UseGeoData == FALSE)
-				return Opt->Trees->NoOfSites * 2;
-			else
-				return 2;
+				return Opt->Trees->NoUserSites * 2;
 		break;
 	}
 
@@ -99,15 +97,6 @@ int		FindNoOfRates(OPTIONS *Opt)
 			if(Opt->ResTypes[Index] == RESNONE)
 				Ret++;	
 	}
-
-	if((Opt->UseCovarion == TRUE) && (Opt->Analsis == ANALML))
-		Ret+=1;
-
-	if((Opt->EstKappa == TRUE) && (Opt->Analsis == ANALML))
-		Ret++;
-
-	if((Opt->EstGamma == TRUE) && (Opt->Analsis == ANALML))
-		Ret++;
 
 	return Ret;
 }
@@ -285,11 +274,11 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 	{
 		Rates->Gamma = Rates->Rates[Pos++];
 	
-		if(Rates->Gamma < GAMMAMIN)
-			Rates->Gamma = GAMMAMIN;
+		if(Rates->Gamma < MIN_GAMMA)
+			Rates->Gamma = MIN_GAMMA;
 
-		if(Rates->Gamma > GAMMAMAX)
-			Rates->Gamma = GAMMAMAX;
+		if(Rates->Gamma > MAX_GAMMA)
+			Rates->Gamma = MAX_GAMMA;
 	}
 }
 
@@ -419,15 +408,20 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	int		Index;
 	TREES	*Trees;
 
+	Rates->NoOfRates = 0;
+	Rates->Prios = NULL;
+	Rates->Means = NULL;
+	Rates->Rates = NULL;
+	Rates->Beta = NULL;
+
 	Rates->Delta = 1;
 	Rates->Kappa = 1;
 	Rates->Lambda= 1;
+
 	if(Opt->EstOU == TRUE)
 		Rates->OU = MIN_OU;
 	else
 		Rates->OU = 0;
-	
-	Rates->Prios = NULL;
 
 	if(Opt->Analsis == ANALMCMC)
 	{
@@ -470,32 +464,6 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 		if(Opt->UseVarData == TRUE)
 			Rates->VarDataSite = 0;
 	}
-	else
-	{
-		Rates->NoOfRates = 0;
-		Rates->Means = NULL;
-
-		if(Opt->EstDelta == TRUE)
-			Rates->NoOfRates++;
-
-		if(Opt->EstKappa == TRUE)
-			Rates->NoOfRates++;
-
-		if(Opt->EstLambda == TRUE)
-			Rates->NoOfRates++;
-
-		if(Opt->EstOU == TRUE)
-			Rates->NoOfRates++;
-
-		if(Opt->NoOfRates > 0)
-		{
-			Rates->Rates = (double*)malloc(sizeof(double) * Rates->NoOfRates);
-			if(Rates==NULL)
-				MallocErr();
-			for(Index=0;Index<Rates->NoOfRates;Index++)
-				Rates->Rates[Index] = 1;
-		}
-	}
 
 	Trees = Opt->Trees;
 
@@ -513,8 +481,6 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 		for(Index=0;Index<Rates->NoEstData;Index++)
 			Rates->EstData[Index] = 0;
 	}
-
-
 	
 	if(Opt->ModelType == MT_CONTRAST)
 		Rates->Contrast = CreatContrastRates(Opt, Rates);
@@ -648,6 +614,38 @@ void	 MutateHetero(RATES *Rates)
 	Hetero->MList[No] = New;
 }
 
+void	SetRatesLocalRates(RATES *Rates, OPTIONS *Opt)
+{	
+	int Index;
+
+	Rates->UseLocalTransforms	= FALSE;
+	Rates->EstLocalTransforms	= FALSE;
+	Rates->NoLocalTransforms		= Opt->NoLocalTransforms;
+	Rates->LocalTransforms	= NULL;
+
+	if(Opt->NoLocalTransforms == 0)
+		return;
+
+	Rates->LocalTransforms = (LOCAL_TRANSFORM**)malloc(sizeof(LOCAL_TRANSFORM*) * Opt->NoLocalTransforms);
+	if(Rates->LocalTransforms == NULL)
+		MallocErr();
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+		Rates->LocalTransforms[Index] = CloneLocalTransform(Opt->LocalTransforms[Index]);
+	
+	Rates->EstLocalTransforms = EstLocalTransforms(Opt->LocalTransforms, Opt->NoLocalTransforms);
+	Rates->UseLocalTransforms = TRUE;
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+		if(Rates->LocalTransforms[Index]->Est == TRUE)
+		{
+			if(Rates->LocalTransforms[Index]->Type == VR_OU)
+				Rates->LocalTransforms[Index]->Scale = MIN_OU;
+			else
+				Rates->LocalTransforms[Index]->Scale = 1.0;
+		}
+}
+
 RATES*	CreatRates(OPTIONS *Opt)
 {
 	RATES*	Ret;
@@ -686,7 +684,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->Gamma			= -1;
 	Ret->GammaCats		= 1;
 	Ret->GammaMults		= NULL;
-	Ret->LastGamma		= -1;
 
 	Ret->Lh				= 0;
 
@@ -720,7 +717,9 @@ RATES*	CreatRates(OPTIONS *Opt)
 	
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
-	
+	SetRatesLocalRates(Ret, Opt);
+
+
 	if(Opt->UseGamma == TRUE)
 	{
 		Ret->GammaMults= (double*)malloc(sizeof(double) * Opt->GammaCats);
@@ -925,6 +924,40 @@ void	FreeParamNames(int No, char **PName)
 	free(PName);
 }
 
+void	PrintLocalRateHeader(FILE *Str, OPTIONS *Opt)
+{
+	int Index;
+	LOCAL_TRANSFORM *LRate;
+
+	for(Index=0;Index<Opt->NoLocalTransforms;Index++)
+	{
+		LRate = Opt->LocalTransforms[Index];
+		if(LRate->Est == TRUE)
+			fprintf(Str, "%s - %s\t", LRate->Tag->Name, VarRatesTypeToStr(LRate->Type));
+	}
+}
+
+void	PrintLocalTransformHeadder(FILE *Str, OPTIONS *Opt)
+{
+	if(Opt->UseVarRates == TRUE)
+	{
+		fprintf(Str, "No RJ Local Branch\t");
+		fprintf(Str, "No RJ Local Node\t");
+	}
+
+	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
+		fprintf(Str, "No RJ Local Kappa\t");
+
+	if(Opt->UseRJLocalScalar[VR_LAMBDA] == TRUE)
+		fprintf(Str, "No RJ Local Lambda\t");
+
+	if(Opt->UseRJLocalScalar[VR_DELTA] == TRUE)
+		fprintf(Str, "No RJ Local Delta\t");
+
+	if(Opt->UseRJLocalScalar[VR_OU] == TRUE)
+		fprintf(Str, "No RJ Local OU\t");
+}
+
 void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 {
 	int		Index, NOS;
@@ -1046,6 +1079,8 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 	if((Opt->EstOU == TRUE) || (Opt->FixOU != -1))
 		fprintf(Str, "OU\t");
 
+	PrintLocalRateHeader(Str, Opt);
+
 	if(Opt->NodeBLData == TRUE)
 	{
 		fprintf(Str, "Slope Nodes\tSlope  Root to Tip\t");
@@ -1056,8 +1091,9 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 	PrintConRecNodesHeadder(Str, Opt);
 
-	if(Opt->UseVarRates == TRUE)
-		fprintf(Str, "No VarRates\t");
+	PrintLocalTransformHeadder(Str, Opt);
+
+//	if(Opt->
 
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
@@ -1197,6 +1233,8 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 				PrintRecNodeHeadder(Str, Opt, RNode->Name, SiteIndex);
 		}
 	}
+
+	
 
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
@@ -1438,6 +1476,29 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 	}
 }
 
+void	PrintLocalTransformNo(FILE* Str, RATES* Rates, OPTIONS *Opt)
+{
+	int No;
+
+	if(Opt->UseVarRates == TRUE)
+	{
+		fprintf(Str, "%d\t", GetNoTransformType(VR_BL, Rates));
+		fprintf(Str, "%d\t", GetNoTransformType(VR_NODE, Rates));
+	}
+
+	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
+		fprintf(Str, "%d\t", GetNoTransformType(VR_KAPPA, Rates));
+
+	if(Opt->UseRJLocalScalar[VR_LAMBDA] == TRUE)
+		fprintf(Str, "%d\t", GetNoTransformType(VR_LAMBDA, Rates));
+
+	if(Opt->UseRJLocalScalar[VR_DELTA] == TRUE)
+		fprintf(Str, "%d\t", GetNoTransformType(VR_DELTA, Rates));
+
+	if(Opt->UseRJLocalScalar[VR_OU] == TRUE)
+		fprintf(Str, "%d\t", GetNoTransformType(VR_OU, Rates));
+}
+
 void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
 	int		Index;
@@ -1557,6 +1618,10 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	if(Opt->FixOU != -1)
 		fprintf(Str, "%0.12f\t", Opt->FixOU);
 
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+		if(Rates->LocalTransforms[Index]->Est == TRUE)
+			fprintf(Str, "%0.12f\t", Rates->LocalTransforms[Index]->Scale);
+
 	if(Opt->NodeBLData == TRUE)
 	{
 		fprintf(Str, "%f\t", ConVar->Sigma->me[0][1] / ConVar->Sigma->me[0][0]);
@@ -1581,8 +1646,8 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	PrintConRecNodes(Str, Rates, Opt);
 
-	if(Opt->UseVarRates == TRUE)
-		fprintf(Str, "%d\t", Rates->VarRates->NoNodes);
+
+	PrintLocalTransformNo(Str, Rates, Opt);
 }
 
 double	GetPartailPi(RATES *Rates, NODE N, int StateNo, int SiteNo)
@@ -1919,7 +1984,7 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	{
 		A->Gamma	= B->Gamma;
 		A->GammaCats= B->GammaCats;
-		A->LastGamma= B->LastGamma;
+
 		memcpy(A->GammaMults, B->GammaMults, sizeof(double) * A->GammaCats);
 
 		CopyPrior(A->PriorGamma, B->PriorGamma);
@@ -1951,6 +2016,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 
 	if(Opt->ModelType == MT_FATTAIL)
 		CopyFatTailRates(Opt->Trees, A->FatTailRates, B->FatTailRates);
+
+	for(Index=0;Index<B->NoLocalTransforms;Index++)
+		CopyLocalTransforms(A->LocalTransforms[Index], B->LocalTransforms[Index]);
 } 
 
 double ChangeRatesTest(RATES *Rates, double RateV, double dev)
@@ -2498,7 +2566,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 	Shed->Op = PickACat(Rates, Shed->OptFreq, Shed->NoOfOpts);
 
 	Shed->CurrentAT = NULL;
-
+	
 	switch(Shed->Op)
 	{
 		case SRATES:
@@ -2597,6 +2665,10 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 			else
 				GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
 		break;
+
+		case SLOCALRATES:
+			ChangeLocalTransform(Opt, Opt->Trees, Rates, Shed);
+		break;
 	}
 }
 
@@ -2662,6 +2734,12 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 
 	if(Rates->RJDummy != NULL)
 		FreeRJDummyCode(Rates->RJDummy);
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+		FreeLocalTransforms(Rates->LocalTransforms[Index]);
+
+	if(Rates->LocalTransforms != NULL)
+		free(Rates->LocalTransforms);
 
 	free(Rates);
 }

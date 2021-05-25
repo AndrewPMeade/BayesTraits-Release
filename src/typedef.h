@@ -12,8 +12,8 @@
 #include "StableDist.h"
 #include "AutoTune.h"
 
-//#define	JNIRUN
-//#define THREADED
+//#define JNIRUN
+//#define OPENMP_THR
 //#define BIG_LH
 
 // #define BTOCL
@@ -45,7 +45,7 @@
 	#define QDOUBLE	__float128
 #endif
 
-#ifdef	THREADED
+#ifdef	OPENMP_THR
 	#include <omp.h>
 #endif
 
@@ -139,8 +139,6 @@
 
 //extern double LhPraxis(LhPraxisdouble *);
 
-#define GAMMAMAX	10000
-#define GAMMAMIN	0.05
 
 #define	LOGFILEBUFFERSIZE	65536
 
@@ -170,6 +168,12 @@
 
 #define MIN_OU		1E-07
 #define MAX_OU		200
+
+#define MIN_GAMMA	1E-07
+#define MAX_GAMMA	100
+
+#define MIN_LOCAL_RATE 1E-07
+#define MAX_LOCAL_RATE 3
 
 #define	NORM_MEAN_BL	0.1
 
@@ -207,7 +211,7 @@ typedef enum
 	VR_OU,
 	VR_NODE,
 	VR_BL,
-} RJ_VARRATE_TYPE;
+} TRANSFORM_TYPE;
 
 typedef enum
 {
@@ -280,10 +284,11 @@ typedef enum
 	CSHEDULE, 
 	CRJDUMMY,
 	CSCALETREES,
-	CRJLOCALSCALAR,
+	CRJLOCALTRANSFORM,
 	CGEODATA,
 	CFATTAILNORMAL,
 	CADDTAG,
+	CLOCALTRANSFORM,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -358,10 +363,11 @@ static char    *COMMANDSTRINGS[] =
 	"schedule",		"sh", 
 	"rjdummy",		"rjd",
 	"scaletrees",	"st", 
-	"rjlocalscalar", "rjls", 
+	"rjlocaltransform", "rjlt", 
 	"geodata",		"gd", 
 	"fattailnormal", "ftn",
 	"addtag",		"at",
+	"localtransform",	"lt",
 	""
 };
 
@@ -582,7 +588,6 @@ typedef struct
 	int *Taxa;
 } PART;
 
-
 struct INODE
 {
 	int		Tip;
@@ -636,7 +641,6 @@ typedef enum
 	MRCA,
 	FOSSIL,
 } NODETYPE;
-
 
 struct RNODE
 {
@@ -746,6 +750,8 @@ typedef	struct
 	
 	FATTAILTREE*	FatTailTree;
 
+	double			AveBL;
+
 // information needed to traverse the tree and accumulate partial results
 #ifdef BTOCL
     int* groups;
@@ -830,6 +836,7 @@ typedef struct
 	int			NoOfTrees;
 	int			NoOfTaxa;
 	int			NoOfSites;
+	int			NoUserSites;
 	int			NoOfStates;
 
 	INVINFO*	InvInfo;
@@ -903,14 +910,17 @@ typedef struct
 {
 	NODE			Node;
 	double			Scale;
-	RJ_VARRATE_TYPE	Type;
+	TRANSFORM_TYPE	Type;
 	long long		NodeID;
-} PLASTYNODE;
+
+	int				Fixed;
+	int				UserSupplied;
+} VAR_RATES_NODE;
 
 typedef struct
 {
-	int			NoNodes;
-	PLASTYNODE **NodeList;
+	int				NoNodes;
+	VAR_RATES_NODE **NodeList;
 
 	NODE		*TempList;
 	int			NoTempList;
@@ -972,6 +982,14 @@ typedef struct
 	int		N;
 } STONES;
 
+typedef struct
+{
+	TRANSFORM_TYPE	Type;
+	double			Scale;
+	int				Est;
+	TAG				*Tag;
+} LOCAL_TRANSFORM;
+
 
 typedef struct
 {
@@ -990,8 +1008,7 @@ typedef struct
 //	double		*RateDevList;
 //	int			AutoTuneRD;
 //	int			RateDevPerParm;
-
-
+	
 /*	double		RateDevKappa;
 	double		RateDevLambda;
 	double		RateDevDelta;
@@ -1154,6 +1171,9 @@ typedef struct
 	int			NoTags;
 	TAG			**TagList;
 
+	int				NoLocalTransforms;
+	LOCAL_TRANSFORM	**LocalTransforms;
+
 } OPTIONS;
 
 typedef struct
@@ -1287,7 +1307,6 @@ typedef struct
 	double	*GammaMults;
 	int		GammaCats;
 	double	Gamma;
-	double	LastGamma;
 		
 	int		HMeanCount;
 
@@ -1315,6 +1334,12 @@ typedef struct
 	HETERO			*Hetero;
 	RJDUMMY			*RJDummy;
 	FATTAILRATES	*FatTailRates;
+
+	int				UseLocalTransforms;
+	int				EstLocalTransforms;
+	
+	int				NoLocalTransforms;
+	LOCAL_TRANSFORM	**LocalTransforms;
 } RATES;
 
 typedef struct
@@ -1331,7 +1356,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NOOFOPERATORS	22
+#define NOOFOPERATORS	23
 
 static char    *SHEDOP[] =
 {
@@ -1345,10 +1370,10 @@ static char    *SHEDOP[] =
 	"Est Data",
 	"Var Data",
 	"Solo Tree Move",
-	"PP Add / Remove",
-	"PP Move",
-	"PP Change Scale",
-	"PP Hyper Prior",
+	"RJ Local Transform Add / Remove",
+	"Local Transform Move",
+	"Local Transform Change Scale",
+	"Local Transform Hyper Prior",
 	"Change Hetero",
 	"Tree Move",
 	"OU",
@@ -1356,7 +1381,8 @@ static char    *SHEDOP[] =
 	"RJ Dummy Add / Remove",
 	"RJ Dummy Move Node",
 	"RJ Dummy Change Beta",
-	"Fat Tail Ans"
+	"Fat Tail Ans",
+	"Local Rates"
 };
 
 typedef enum
@@ -1382,7 +1408,8 @@ typedef enum
 	SRJDUMMY, 
 	SRJDUMMYMOVE,
 	SRJDUMMYCHANGEBETA,
-	SFATTAILANS
+	SFATTAILANS,
+	SLOCALRATES
 } OPERATORS;
 
 
@@ -1409,7 +1436,7 @@ typedef struct
 
 	int			NoVarRatesOp;
 	double		*FreqVarRatesOp;
-	RJ_VARRATE_TYPE	*VarRatesOp;
+	TRANSFORM_TYPE	*VarRatesOp;
 
 
 	AUTOTUNE	*KappaAT;
@@ -1423,6 +1450,8 @@ typedef struct
 
 	AUTOTUNE	**FullATList;
 	int			NoFullATList;
+
+	AUTOTUNE	*LocalRatesAT;
 
 	AUTOTUNE	*CurrentAT;
 
@@ -1438,6 +1467,5 @@ typedef struct
 	int	NoInZero;
 	int	*ZeroPos;
 } MAPINFO;
-
 
 #endif

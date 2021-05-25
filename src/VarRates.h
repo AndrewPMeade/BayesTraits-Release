@@ -5,8 +5,13 @@
 
 int		UseNonParametricMethods(OPTIONS *Opt);
 
+TRANSFORM_TYPE	StrToVarRatesType(char *Str);
+char*			 VarRatesTypeToStr(TRANSFORM_TYPE Type);
+
 VARRATES*	CreatVarRates(RATES *Rates, TREES *Trees, OPTIONS *Opt);
-void	FreeVarRates(VARRATES* Plasty);
+void		FreeVarRates(VARRATES* Plasty);
+
+void	VarRatesNode(TREE *Tree, NODE N, double Scale, TRANSFORM_TYPE Type);
 
 void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed, long long It);
 void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* Shed);

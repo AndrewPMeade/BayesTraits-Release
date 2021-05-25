@@ -3,10 +3,10 @@
 
 #include "typedef.h"
 
-RJ_VARRATE_TYPE			NameToRJLocalType(char *Name);
+TRANSFORM_TYPE			NameToRJLocalType(char *Name);
 
 int						UseRJLocalScalars(OPTIONS *Opt);
 
-PRIORS*					GetPriorFromRJRatesScalar(OPTIONS *Opt, RJ_VARRATE_TYPE Type);
+PRIORS*					GetPriorFromRJRatesScalar(OPTIONS *Opt, TRANSFORM_TYPE Type);
 
 #endif

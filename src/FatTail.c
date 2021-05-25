@@ -15,6 +15,7 @@
 #include "praxis.h"
 #include "Geo.h"
 #include "SliceSampler.h"
+#include "mcmc.h"
 
 #define NO_SLICE_STEPS 100
 #define	MAX_STEP_DIFF	5.0
@@ -418,8 +419,9 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		SetStableDist(FTR->SDList[Index], FTR->Alpha[Index], FTR->Scale[Index]);
 	
 	Ret = 0;
-
+#ifdef OPENMP_THR
 	#pragma omp parallel for num_threads(Opt->Cores) reduction(+:Ret)
+#endif
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		if(Tree->NodeList[Index]->Tip == FALSE)
@@ -502,8 +504,10 @@ void	SetTestVect(NODE N, int SiteNo, STABLEDIST *SD, int NoSteps, double *XVect,
 int		FatTailSetYPosVect(SLICESAMPLER *SS, OPTIONS *Opt, NODE N, int SiteNo, STABLEDIST *SD)
 {
 	int Index; 
-	
+
+#ifdef OPENMP_THR
 	#pragma omp parallel for num_threads(Opt->Cores) 
+#endif
 	for(Index=0;Index<SS->NoSteps;Index++)
 		SS->SliceY[Index] = AnsStateLh(SS->SliceX[Index], SiteNo, N, SD);
 
@@ -966,8 +970,6 @@ void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 	int Pos;
 	PRIORS *P;
 
-//	TestLhNorm(Rates);
-
 	Pos = SiteNo * 2;
 		
 	P = Rates->Prios[Pos];
@@ -975,17 +977,14 @@ void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 	Pos++;
 
 	P = Rates->Prios[Pos];
-//	Rates->Rates[Pos] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
 	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 10);
-
-//	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 0.000001);
-	Pos++;
-
 }
+
+
+
 
 void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	double Lh;
 	int Index;
 	
 	do
@@ -993,34 +992,9 @@ void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		for(Index=0;Index<Rates->FatTailRates->NoSD;Index++)
 			SetRandFatTail(Opt, Rates, Index);
 
-		Lh = Likelihood(Rates, Trees, Opt);
-	} while(Lh == ERRLH);
+	} while(ValidMCMCParameters(Opt, Trees, Rates) == ERRLH);
 
 	return;
-/*
-	PRAXSTATE* PS;
-	double		*TempVect;
-	double		Lh;
-
-	TempVect = (double*)malloc(sizeof(double) * Rates->NoOfRates);
-	if(TempVect == NULL)
-		MallocErr();
-	memcpy(TempVect, Rates->Rates, sizeof(double) * Rates->NoOfRates);
-	
-	PS = IntiPraxis(FatTailLhPraxis, TempVect, Rates->NoOfRates, 0, 0, 4, 10000);
-	
-	PS->Opt		= Opt;
-	PS->Trees	= Trees;
-	PS->Rates	= Rates;
-	
-	Lh = praxis(PS);
-
-	memcpy(Rates->Rates, TempVect, sizeof(double) * Rates->NoOfRates);
-		
-	FreePracxStates(PS);
-
-	printf("%f\t%f\t%f\n", Lh, Rates->Rates[0], Rates->Rates[1]);
-	exit(0);*/
 }
 
 

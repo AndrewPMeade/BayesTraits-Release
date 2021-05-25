@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 
-#include "threaded.h"
+#include "Threaded.h"
 #include "typedef.h"
 #include "genlib.h"
 #include "continuous.h"

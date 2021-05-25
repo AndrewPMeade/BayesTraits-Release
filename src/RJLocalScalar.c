@@ -8,7 +8,7 @@
 #include "genlib.h"
 #include "RJLocalScalar.h"
 
-RJ_VARRATE_TYPE	NameToRJLocalType (char *Name)
+TRANSFORM_TYPE	NameToRJLocalType (char *Name)
 {
 	int Index;
 
@@ -17,10 +17,10 @@ RJ_VARRATE_TYPE	NameToRJLocalType (char *Name)
 	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
 	{
 		if(strcmp(Name, RJ_LOCAL_SCALAR_NAMES[Index]) == 0)
-			return (RJ_VARRATE_TYPE)Index;
+			return (TRANSFORM_TYPE)Index;
 	}
 
-	return (RJ_VARRATE_TYPE)-1;
+	return (TRANSFORM_TYPE)-1;
 }
 
 
@@ -37,7 +37,7 @@ int	UseRJLocalScalars(OPTIONS *Opt)
 	return FALSE;
 }
 
-PRIORS*	GetPriorFromRJRatesScalar(OPTIONS *Opt, RJ_VARRATE_TYPE Type)
+PRIORS*	GetPriorFromRJRatesScalar(OPTIONS *Opt, TRANSFORM_TYPE Type)
 {
 	return Opt->RJLocalScalarPriors[Type];
 }

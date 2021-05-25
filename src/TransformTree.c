@@ -17,7 +17,7 @@ void	RecTransContNodeDelta(NODE N, double Delta, double PathLen)
 
 	TLen = N->Length + PathLen;
 
-	N->Length = pow(PathLen+N->Length, Delta) - pow(PathLen, Delta) ;
+	N->Length = pow(PathLen+N->Length, Delta) - pow(PathLen, Delta);
 
 	if(N->Tip == TRUE)
 		return;
@@ -28,14 +28,15 @@ void	RecTransContNodeDelta(NODE N, double Delta, double PathLen)
 
 void	TransformTreeDelta(NODE N, double Delta, int Norm)
 {
+	int Index;
 	double SumBL,Scale;
 
 	if(Norm == TRUE)
 		SumBL = SumNodeBL(N);
 
-//	for(Index=0;Index<N->NoNodes;Index++)
-//		RecTransContNodeDelta(N->NodeList[Index], Delta, 0);
-	RecTransContNodeDelta(N, Delta, 0);
+	for(Index=0;Index<N->NoNodes;Index++)
+		RecTransContNodeDelta(N->NodeList[Index], Delta, 0);
+//	RecTransContNodeDelta(N, Delta, 0);
 
 	if(Norm == FALSE)
 		return;
@@ -185,6 +186,9 @@ void	TransformTreeLambda(NODE N, double Lambda, int Norm)
 
 int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates)
 {
+	if(Rates->UseLocalTransforms == TRUE)
+		return TRUE;
+
 	if(Rates->VarRates != NULL)
 		return TRUE;
 
@@ -207,9 +211,6 @@ void	TransformTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 {
 	TREE *Tree;
 	NODE Root;
-	
-	if(NeedToReSetBL(Opt, Rates) == FALSE)
-		return;
 
 	Tree = Trees->Tree[Rates->TreeNo];
 	Root = Tree->Root;
@@ -231,12 +232,12 @@ void	TransformTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 		else
 			TransformTreeOU(Root, Opt->FixOU, Norm);
 	}
-	
+
 	if(Opt->UseDelta == TRUE)
 	{
 		if(Opt->EstDelta == TRUE)
 			TransformTreeDelta(Root, Rates->Delta, Norm);
-		else
+		else 
 			TransformTreeDelta(Root, Opt->FixDelta, Norm);
 	}
 		
@@ -250,3 +251,12 @@ void	TransformTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 			TransformTreeLambda(Root, Opt->FixLambda, Norm);
 	}
 }
+
+double	GetTransformDefValue(TRANSFORM_TYPE TranType)
+{
+	if(TranType == VR_OU)
+		return MIN_OU;
+
+	return 1.0;
+}
+

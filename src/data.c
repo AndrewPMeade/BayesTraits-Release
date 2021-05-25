@@ -6,7 +6,6 @@
 #include "data.h"
 #include "genlib.h"
 #include "trees.h"
-#include "treenode.h"
 #include "part.h"
 
 
@@ -318,6 +317,8 @@ void	LoadTaxaData(char* FileName, TREES* Trees)
 
 	free(Buffer);
 	free(Passed);
+
+	Trees->NoUserSites = Trees->NoOfSites;
 
 	FreeTextFile(DataFile);
 }

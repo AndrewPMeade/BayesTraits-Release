@@ -1,503 +1,525 @@
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <math.h>
+#include <string.h>
 
-#include "typedef.h"
-#include "RandLib.h"
 #include "genlib.h"
-#include "rates.h"
-#include "praxis.h"
+#include "typedef.h"
+#include "trees.h"
+#include "Rates.h"
+#include "ml.h"
 #include "likelihood.h"
-#include "options.h"
-#include "1dopt.h"
-#include "data.h"
+#include "praxis.h"
+#include "priors.h"
 #include "continuous.h"
-#include "contrasts.h"
-#include "threaded.h"
+#include "Threaded.h"
+#include "options.h"
+#include "data.h"
 
-double	Min1D(RATES* Rates, TREES *Trees, OPTIONS *Opt, double From, double To, int Steps);
+#define MAX_ML_FREE_P 1048576
+#define NO_RAND_TRIES 10000
 
-#ifdef	 JNIRUN
-	#include "BayesTraitsJNI.h"
-//	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
-#endif
 
-#ifdef	NLOPT_BT
-//	#include "nlopt.h"
-	#include "NLOptBT.h"
-#endif
-
-void	SetRatesVecFixed(double *Vec, double Val, int Size)
+typedef struct
 {
-	int Index;
+	int NoP;
 
-	for(Index=0;Index<Size;Index++)
-		Vec[Index] = Val;
-}
+	double	*PVal;
+	double	*PMin;
+	double	*PMax;
+	double	*PDef;
+	PRIORS	**Priors;
 
-void	SetRatesVec(double *Vec, double Mag, RANDSTATES *RS, int Size)
+} ML_MAP;
+
+void Opt1D(ML_MAP* Map, OPTIONS *Opt, TREES *Trees, RATES *Rates);
+
+
+ML_MAP*	AllocMLMap(void)
 {
-	int Index;
+	ML_MAP*	Ret;
 
-	for(Index=0;Index<Size;Index++)
-	{
-		Vec[Index] = RandDouble(RS);
-	//	Vec[Index] = RandDouble(RS) * Mag;
+	Ret = (ML_MAP*)malloc(sizeof(ML_MAP));
+	if(Ret == NULL)
+		MallocErr();
 
-	}
-}
+	Ret->PVal = (double*)malloc(sizeof(double) * MAX_ML_FREE_P);
+	Ret->PMin = (double*)malloc(sizeof(double) * MAX_ML_FREE_P);
+	Ret->PMax = (double*)malloc(sizeof(double) * MAX_ML_FREE_P);
+	Ret->PDef = (double*)malloc(sizeof(double) * MAX_ML_FREE_P);
 
-double	RandMag(double Min, double Max, RANDSTATES *RS)
-{
-	double Ret;
-	int		No, Index;
+	if( Ret->PVal == NULL ||
+		Ret->PMin == NULL ||
+		Ret->PMax == NULL ||
+		Ret->PDef == NULL)
+		MallocErr();
 
-	Ret = Max / Min;
-	No = (int)log10(Ret);
-	No++;
-
-	No = RandUSInt(RS) % No;
-
-	Ret = Min;
-	for(Index=0;Index<No;Index++)
-		Ret = Ret * 10;
+	Ret->NoP = 0;
 
 	return Ret;
 }
 
-void SetOtherRandRates(OPTIONS *Opt, TREES *Trees, RATES *Rates, double Mag)
+void	FreeMLMap(ML_MAP *MLMap)
 {
-	if(Opt->UseCovarion == TRUE)
-	{
-		Rates->OffToOn = RandDouble(Rates->RS) * Mag;
-		Rates->OnToOff = Rates->OffToOn;
-	}
+	free(MLMap->PVal);
+	free(MLMap->PDef);
+	free(MLMap->PMin);
+	free(MLMap->PMax);
+	
+	free(MLMap);
+}
+
+void	CopyMLMap(ML_MAP *A, ML_MAP *B)
+{
+	A->NoP = B->NoP;
+
+	memcpy(A->PVal, B->PVal, sizeof(double) * A->NoP);
+	memcpy(A->PMin, B->PMin, sizeof(double) * A->NoP);
+	memcpy(A->PMax, B->PMax, sizeof(double) * A->NoP);
+	memcpy(A->PDef, B->PDef, sizeof(double) * A->NoP);
+}
+
+void	AddPToMLMap(ML_MAP*	MLMap, double DefV, double MinV, double MaxV)
+{
+	MLMap->PDef[MLMap->NoP] = DefV;
+	MLMap->PMin[MLMap->NoP] = MinV;
+	MLMap->PMax[MLMap->NoP] = MaxV;
+	MLMap->NoP++;
+}
+
+void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int Index;
+
+	for(Index=0;Index<Rates->NoOfRates;Index++)
+		AddPToMLMap(MLMap, 1.0, MINRATE, MAXRATE);
 
 	if(Opt->EstKappa == TRUE)
-	{
-		Rates->Kappa = RandDouble(Rates->RS);
-	}
+		AddPToMLMap(MLMap, 1.0, MIN_KAPPA, MAX_KAPPA);
+
+	if(Opt->EstLambda == TRUE)
+		AddPToMLMap(MLMap, 1.0, MIN_LAMBDA, MAX_LAMBDA);
+
+	if(Opt->EstDelta == TRUE)
+		AddPToMLMap(MLMap, 1.0, MIN_DELTA, MAX_DELTA);
+
+	if(Opt->EstOU == TRUE)
+		AddPToMLMap(MLMap, 1.0, MIN_OU, MAX_OU);
+	//	AddPToMLMap(MLMap, MIN_OU, MIN_OU, MAX_OU);
+
+	if(Opt->EstGamma == TRUE)
+		AddPToMLMap(MLMap, 1.0, MIN_GAMMA, MAX_GAMMA);
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+		if(Rates->LocalTransforms[Index]->Est == TRUE)
+			if(Rates->LocalTransforms[Index]->Type == VR_OU)
+				AddPToMLMap(MLMap, MIN_OU, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
+			else
+				AddPToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
 }
 
-
-int		SetRandStart(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	CheckMLMapVals(ML_MAP* MLMap)
 {
 	int Index;
-	double Mag;
 
-
-	for(Index=0;Index<10000;Index++)
+	for(Index=0;Index<MLMap->NoP;Index++)
 	{
-		Mag = RandMag(0.001, 1000, Rates->RS);
-		
-		SetRatesVec(Rates->Rates, Mag, Rates->RS, Rates->NoOfRates);
+		if(MLMap->PVal[Index] > MLMap->PMax[Index])
+			MLMap->PVal[Index] = MLMap->PMax[Index];
 
-		SetOtherRandRates(Opt, Trees, Rates, Mag);
-
-		Rates->Lh = Likelihood(Rates, Trees, Opt);
-
-		if(Rates->Lh != ERRLH)
-			return TRUE;
-
+		if(MLMap->PVal[Index] < MLMap->PMin[Index])
+			MLMap->PVal[Index] = MLMap->PMin[Index];
 	}
-
-	return FALSE;	
 }
 
-int		Set1RandRate(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
+{
+	int Index, Pos;
+
+	Pos = 0;
+
+	CheckMLMapVals(MLMap);
+
+	for(Index=0;Index<Rates->NoOfRates;Index++)
+		Rates->Rates[Index] = MLMap->PVal[Pos++];
+
+	if(Opt->EstKappa == TRUE)
+		Rates->Kappa = MLMap->PVal[Pos++];
+
+	if(Opt->EstLambda == TRUE)
+		Rates->Lambda = MLMap->PVal[Pos++];
+
+	if(Opt->EstDelta == TRUE)
+		Rates->Delta = MLMap->PVal[Pos++];
+
+	if(Opt->EstOU == TRUE)
+		Rates->OU = MLMap->PVal[Pos++];
+
+	if(Opt->EstGamma == TRUE)
+		Rates->Gamma = MLMap->PVal[Pos++];
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+		if(Rates->LocalTransforms[Index]->Est == TRUE)
+			Rates->LocalTransforms[Index]->Scale = MLMap->PVal[Pos++];
+}
+
+double	LikelihoodML(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	MLMapToRates(MLMap, Opt, Rates);
+
+	return Likelihood(Rates, Trees, Opt);
+}
+
+void	MLMapSetDefVals(ML_MAP* MLMap)
+{
+	memcpy(MLMap->PVal, MLMap->PDef, sizeof(double) * MLMap->NoP);
+}
+
+void	MLMapSetRandVals(ML_MAP* MLMap, RANDSTATES *RS)
 {
 	int Index;
-	double Mag;
 
-	for(Index=0;Index<10000;Index++)
+	for(Index=0;Index<MLMap->NoP;Index++)
 	{
-		Mag = RandMag(0.001, 1000, Rates->RS);
-
-		SetRatesVecFixed(Rates->Rates, RandDouble(Rates->RS) * Mag, Rates->NoOfRates);
-
-		Rates->Lh = Likelihood(Rates, Trees, Opt);
-		
-		if(Rates->Lh != ERRLH)
-			return TRUE;
-
+		MLMap->PVal[Index] = RandDouble(RS) * (MLMap->PMax[Index] - MLMap->PMin[Index]);
+		MLMap->PVal[Index] += MLMap->PMin[Index];
 	}
-	return FALSE;	
 }
 
-void	SetRandStaes(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	MLMapSetRatesFixedVals(ML_MAP* MLMap, RATES *Rates, double Val)
 {
-	int NoRates;
-	double Mag;
+	int Index;
 
-	NoRates = Rates->NoOfRates;
-	if(Opt->UseRJMCMC == TRUE)
-		NoRates = Rates->NoOfRJRates;
+	MLMapSetDefVals(MLMap);
 
-	Mag = RandMag(0.001, 1000, Rates->RS);
-
-	SetRatesVecFixed(Rates->Rates, RandDouble(Rates->RS) * Mag, NoRates);
+	for(Index=0;Index<Rates->NoOfRates;Index++)
+		MLMap->PVal[Index] = Val;
 }
 
-void	FindRandConSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	FindValidMLStartSet(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	int Pos;
-	
-	do
-	{
-		Pos = 0;
-		if(Opt->EstKappa == TRUE)
-			Rates->Rates[Pos++] = RandDouble(Rates->RS) * (MAX_KAPPA - MIN_KAPPA);
-
-		if(Opt->EstDelta == TRUE)
-			Rates->Rates[Pos++] = RandDouble(Rates->RS) * (MAX_DELTA - MIN_DELTA);
-
-		if(Opt->EstLambda == TRUE)
-			Rates->Rates[Pos++] = RandDouble(Rates->RS) * (MAX_LAMBDA - MIN_LAMBDA);
-
-		if(Opt->EstOU == TRUE)
-//			Rates->Rates[Pos++] = RandDouble(Rates->RS) * (MAX_OU - MIN_OU);
-			Rates->Rates[Pos++] = RandDouble(Rates->RS) * 1.0;
-//			Rates->Rates[Pos++] = 0;
-
-		MapConParams(Opt, Rates, Rates->Rates);
-		Rates->Lh = Likelihood(Rates, Trees, Opt);
-
-	}while(Rates->Lh == ERRLH);
-}
-
-void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
+	int Index;
 	double Lh;
-	if(Rates->NoOfRates == 0)
-		return;
 
-	if(Opt->ModelType == MT_CONTRAST || Opt->ModelType == MT_FATTAIL)
+	for(Index=0;Index<NO_RAND_TRIES;Index++)
 	{
-		Lh = Likelihood(Rates, Trees, Opt);
-		if(Lh == ERRLH)
-		{
-			printf("Starting likelihood for contrast is invalid.\n");
-			exit(0);
-		}
-		return;
+		MLMapSetRandVals(MLMap, Rates->RS);
+
+		Lh = LikelihoodML(MLMap, Opt, Trees, Rates);
+
+		if(Lh != ERRLH)
+			return;
 	}
 
-	if(Opt->DataType == CONTINUOUS)
-	{
-		FindRandConSet(Opt, Trees, Rates);
-		return;
-	}
-
-	/* Set a fully random set of rates */
-	if(SetRandStart(Opt, Trees, Rates) == TRUE)
-		return;
-	
-	if(Set1RandRate(Opt, Trees, Rates) == TRUE)
+	MLMapSetDefVals(MLMap);
+	Lh = LikelihoodML(MLMap, Opt, Trees, Rates);
+	if(Lh != ERRLH)
 		return;
 
-	printf("Cannot find a valid set of starting parameters. Please see manual for solutions.\n");
+	printf("Cannot find a valid starting set of parameters.\n");
 	exit(0);
 }
 
-double	PraxisGo(OPTIONS *Opt, RATES *Rates, TREES *Trees)
+double	LhPraxis(void* P, double *List)
 {
-	double		*TempVec;
 	double		Ret;
-	PRAXSTATE*	PState;
+	PRAXSTATE	*PState;
+	ML_MAP		*MLMap;
 
-	TempVec = (double*)malloc(sizeof(double)*Rates->NoOfRates);
-	if(TempVec == NULL)
-		MallocErr();
+	PState = (PRAXSTATE*)P;
+	MLMap = (ML_MAP*)PState->Pt;
+
+	memcpy(MLMap->PVal, List, sizeof(double) * MLMap->NoP);
 	
-	FindValidStartSet(Opt, Trees, Rates);
-
-	memcpy(TempVec, Rates->Rates, sizeof(double)*Rates->NoOfRates);
-
-	if(Rates->NoOfRates > 0)
-	{
-		if(Rates->NoOfRates > 1)
-//			PState = IntiPraxis(LhPraxis, TempVec, Rates->NoOfRates, 0, 1, 4, 5000);	
-			PState = IntiPraxis(LhPraxis, TempVec, Rates->NoOfRates, 0, 0, 4, 5000);	
-		else
-			PState = IntiPraxis(LhPraxis, TempVec, Rates->NoOfRates, 0, 0, 4, 250);
-			
-
-		PState->Opt		= Opt;
-		PState->Trees	= Trees;
-		PState->Rates	= Rates;
-
-//		Ret = praxis(PState);
-
-#ifndef NLOPT_BT
-		Ret = praxis(PState);
-		Ret = LhPraxis((void*)PState, TempVec);
-#else
-		Ret = NLOptBT(TempVec, PState);
-#endif
-				
-		FreePracxStates(PState);		
-	}
-
-#ifndef NLOPT_BT
-	CheckRatesVec(TempVec, Rates->NoOfRates);
-	memcpy(Rates->Rates, TempVec, sizeof(double)*Rates->NoOfRates);
+	Ret = LikelihoodML(MLMap ,  PState->Opt, PState->Trees, PState->Rates);
 	
-	Rates->Lh = Likelihood(Rates, Trees, Opt);
-#endif
+	PState->NoLhCalls++;
 
-	free(TempVec);
-	return Rates->Lh;
+	return -Ret;
 }
 
-void	TestCL(OPTIONS *Opt, TREES* Trees, RATES *Rates)
+double*	MLMapClonePVect(ML_MAP*	MLMap)
 {
-	double D;
+	double *Ret;
 
-	for(D=0.001;D<12;D+=0.001)
-	{
-		Rates->Delta = D;
-		printf("%f\t%f\n", D, Likelihood(Rates, Trees, Opt));
-	}
+	Ret = (double*)malloc(sizeof(double) * MLMap->NoP);
+	if(Ret == NULL)
+		MallocErr();
+
+	memcpy(Ret, MLMap->PVal, sizeof(double) * MLMap->NoP);
+
+	return Ret;
 }
 
+ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	ML_MAP		*Ret;
+	PRAXSTATE	*PState;
+	double		*TVect, Lh;
 
+	Ret = AllocMLMap();
+
+	BuildMLMap(Ret, Opt, Trees, Rates);
+	
+	FindValidMLStartSet(Ret, Opt, Trees, Rates);	
+
+	Lh = LikelihoodML(Ret, Opt, Trees, Rates);
+
+	TVect = MLMapClonePVect(Ret);
+
+// 1 seem to work better than 4. 
+	if(Ret->NoP > 1)
+		PState = IntiPraxis(LhPraxis, TVect, Ret->NoP, 0, 1, 1, 5000);
+	else
+		PState = IntiPraxis(LhPraxis, TVect, Ret->NoP, 0, 1, 1, 250);
+
+	PState->Opt		= Opt;
+	PState->Trees	= Trees;
+	PState->Rates	= Rates;
+	PState->Pt		= (void*)Ret;
+
+	Lh = praxis(PState);
+
+	memcpy(Ret->PVal, TVect, sizeof(double) * Ret->NoP);
+
+	Lh = LikelihoodML(Ret, Opt, Trees, Rates);
+	
+	FreePracxStates(PState);
+
+	free(TVect);
+	return Ret;
+}
+
+//./Seq/AASacra.trees ./Seq/AASacra.txt < in.txt > sout.txt
+//./Seq/a67.1000.trees ./Seq/descent.txt < in.txt > sout.txt
+
+// ./Seq/MLTest/Tree-00000717.trees ./Seq/MLTest/Data-00000717.txt < in.txt > sout.txt
+// ./Seq/Testing/PrimatesBody.trees ./Seq/Testing/PrimatesBody.txt < ./Seq/Testing/in.txt > ./Seq/Testing/sout.txt
 void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
+	ML_MAP*	CMap, *BMap;
+	double CLh, BLh;
 	int Index;
-	double CLh, BLh, TLh;
-	double *BRates;
-
-	
-	if(Rates->NoOfRates == 0)
-	{
-		Rates->Lh = Likelihood(Rates, Trees, Opt);
-		return;
-	}
-	
-	if(Rates->NoOfRates == 1)
-	{
-		Opt1D(Opt, Rates, Trees);
-		Rates->Lh = Likelihood(Rates, Trees, Opt);
-		return;
-	}
-	
-	FindValidStartSet(Opt, Trees, Rates);
-
-	BRates = (double*)malloc(sizeof(double)*Rates->NoOfRates);
-	if(BRates == NULL)
-		MallocErr();
-	memcpy(BRates, Rates->Rates, sizeof(double)*Rates->NoOfRates);
-	BLh = Likelihood(Rates, Trees, Opt);
-	
-	for(Index=0;Index<Opt->MLTries;Index++)
-	{
-		CLh = PraxisGo(Opt, Rates, Trees);
-		TLh = Likelihood(Rates, Trees, Opt);
 		
-		if(CLh > BLh)
+	BMap = AllocMLMap();
+
+	BuildMLMap(BMap, Opt, Trees, Rates);
+	FindValidMLStartSet(BMap, Opt, Trees, Rates);	
+	BLh = LikelihoodML(BMap, Opt, Trees, Rates);
+
+	if(BMap->NoP != 0)
+	{
+		if(BMap->NoP == 1)
+			Opt1D(BMap, Opt, Trees, Rates);
+		else
 		{
-			BLh = CLh;
-			memcpy(BRates, Rates->Rates, sizeof(double)*Rates->NoOfRates);
-
-		}
-
-//		printf("%d\tCLh:\t%f\tBLh:\t%f\n", Index, CLh, BLh);fflush(stdout);
-
-		#ifdef JNIRUN
-			CheckStop(Env, Obj, Trees);
-			if(Trees->JStop == TRUE)
+			for(Index=0;Index<Opt->MLTries;Index++)
 			{
-				free(BRates);
-				return;
+				CMap = MLMapTreeTry(Opt, Trees, Rates);
+				CLh = LikelihoodML(CMap, Opt, Trees, Rates);
+			
+				if(CLh > BLh)
+				{
+					CopyMLMap(BMap, CMap);
+					BLh = CLh;
+				}
+
+				FreeMLMap(CMap);
 			}
-		#endif
+		}
 	}
-
-	memcpy(Rates->Rates, BRates, sizeof(double)*Rates->NoOfRates);
-	if(Opt->DataType == CONTINUOUS)
-		MapConParams(Opt, Rates, BRates);
-	free(BRates);
-
-	Rates->Lh = Likelihood(Rates, Trees, Opt);
-/*	printf("My Lh:\t%f\n", Rates->Lh);
-	printf("%f\t%f\n", Rates->Rates[0], Rates->Rates[1]);
-	fflush(stdout); exit(0);*/
+	
+	Rates->Lh = LikelihoodML(BMap, Opt, Trees, Rates);
+	FreeMLMap(BMap);
 }
 
-void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
+void	FindML(OPTIONS *Opt, TREES *Trees)
 {
-	double Rate;
-
-	for(Rate=0.00000000001;Rate<20;Rate+=0.001)
-	{
-		Rates->Rates[0] = Rate;
-		Rates->Lh = Likelihood(Rates, Trees, Opt);
-		printf("%f\t%f\n", Rates->Lh, Rate);
-	}
-
-	exit(0);
-	return;
-}
-
-void	InitML(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	if(Opt->Model == M_CONTRAST_REG)
-	{
-		NormaliseReg(Opt, Trees, Rates);
-	}
-}
-
-#ifdef	 JNIRUN
-	void	FindML(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
-#else
-	void	FindML(OPTIONS *Opt, TREES *Trees)
-#endif
-{
-	int		TIndex;
-	RATES	*Rates;
-	FILE	*SumOut;
-	SUMMARY	*Summary;
-	char	Buffer[1024];
-	double	StartT, EndT;
-#ifdef JNIRUN
-	long	FP;
-#endif
-
-	Summary = NULL;
-	if(Opt->Summary == TRUE)
-		Summary = CreatSummary(Opt);
-
-	StartT = GetSeconds();	
+	RATES *Rates;
+	int Index;
+	double Lh;
+	double	TStart, TEnd;
 
 	Rates = CreatRates(Opt);
 	
-	InitML(Opt, Trees, Rates);
+	PrintOptions(stdout, Opt);
+	PrintRatesHeadder(stdout, Opt);
 
-//	Test(Opt, Trees, Rates);
-	#ifndef JNIRUN
-		PrintOptions(stdout, Opt);
-		PrintRatesHeadder(stdout, Opt);
-	#endif
+	PrintOptions(Opt->LogFile, Opt);
+	PrintRatesHeadder(Opt->LogFile, Opt);
 
-	if(Opt->Headers == TRUE)
-	{
-		PrintOptions(Opt->LogFile, Opt);
-		
-		#ifdef JNIRUN
-			fflush(Opt->LogFile);
-			FP = ftell(Opt->LogFile);
-		/*	GotoFileEnd(Opt->LogFileRead, Opt->LogFileBuffer, LOGFILEBUFFERSIZE); */
-		#endif	
-
-		PrintRatesHeadder(Opt->LogFile, Opt);
-
-		#ifdef JNIRUN
-			fflush(Opt->LogFile);
-			fseek(Opt->LogFileRead, FP, SEEK_SET);
-			fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
-			ProcessHeaders(Env, Obj, Opt);
-		#endif
-	} 
-
-	fflush(Opt->LogFile);
 	fflush(stdout);
-	
-//	Test(Opt, Trees, Rates);
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
-	{
-		if(Opt->ModelType == MT_CONTINUOUS)
-			InitContinusTree(Opt, Trees, TIndex);
+	fflush(Opt->LogFile);
 
-		Rates->TreeNo = TIndex;
+	TStart = GetSeconds();
+
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
+	{
+		Rates->TreeNo = Index;
+
+		if(Opt->ModelType == MT_CONTINUOUS)
+			InitContinusTree(Opt, Trees, Rates->TreeNo);
 
 		if((Opt->NodeData == TRUE) || (Opt->NodeBLData == TRUE))
 			SetTreeAsData(Opt, Trees, Rates->TreeNo);
 
 		MLTree(Opt, Trees, Rates);
-		
-		Rates->Lh = Likelihood(Rates, Trees, Opt);
-  		
-		if(Opt->Summary == TRUE)
-			UpDataSummary(Summary, Rates, Opt);
+
+		Lh = Likelihood(Rates, Trees, Opt);
+
 
 		PrintRates(Opt->LogFile, Rates, Opt, NULL);
 		fprintf(Opt->LogFile, "\n");
 		fflush(Opt->LogFile);
-	
-		#ifndef JNIRUN
-			PrintRates(stdout, Rates, Opt, NULL);
-			printf("\n");
-			fflush(stdout);
-		#else
-			CheckStop(Env, Obj, Trees);
-			if(Trees->JStop == TRUE)
-			{
-				FreeRates(Rates);
-				return;
-			}
 
-			fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
-			AddResults(Env, Obj, Opt);
-
-			SetProgress(Env, Obj, TIndex);
-		#endif
-
+		PrintRates(stdout, Rates, Opt, NULL);
+		printf("\n");
+		fflush(stdout);
+		
 		if(Opt->ModelType == MT_CONTINUOUS)
 		{
-			FreeConVar(Trees->Tree[TIndex]->ConVars, Trees->NoOfTaxa);
-			Trees->Tree[TIndex]->ConVars = NULL;
+			FreeConVar(Trees->Tree[Rates->TreeNo]->ConVars, Trees->NoOfTaxa);
+			Trees->Tree[Rates->TreeNo]->ConVars = NULL;
 		}
 	}
 
-	EndT = GetSeconds();
-
-	printf("Sec:\t%f\n", EndT - StartT);
+	TEnd = GetSeconds();
+	printf("Sec:\t%f\n", TEnd - TStart);
 
 	FreeRates(Rates, Trees);
-
-	if(Opt->Summary == TRUE)
-	{
-		sprintf(&Buffer[0], "%s.%s", Opt->DataFN, SUMMARYFILEEXT);
-		SumOut = OpenWrite(Buffer);
-
-		PrintSummaryHeadder(SumOut, Summary, Opt);
-		PrintSummary(SumOut, Summary, Opt);
-
-		fclose(SumOut);
-
-		FreeSummary(Summary);
-	}
 }
 
-double	Min1D(RATES* Rates, TREES *Trees, OPTIONS *Opt, double From, double To, int Steps)
+#define SHFT2(a,b,c) (a)=(b);(b)=(c);
+#define SHFT3(a,b,c,d) (a)=(b);(b)=(c);(c)=(d);
+
+double GoldenOpt(int maxiter, int count, double ax, double bx, double cx, double (*f)(double), double tol, double *xmin)
 {
-	double	StepSize;
-	int		Itters;
-	double	Val;
-	double	Ret=To;
-	double	Best=-999999;
-	double	New;
+	double f1,f2,x0,x1,x2,x3;
+	double R, C;
 
-	StepSize = (To - From) / (double)Steps;
-	
-	for(Itters=0,Val=From;Itters<Steps;Itters++,Val+=StepSize)
+	R =  0.61803399 ;
+	C = 1.0 - R;
+
+	if (maxiter<=0)
 	{
-		Rates->Rates[0] = Val;
-
-		New = Likelihood(Rates, Trees, Opt);
-
-		if((New > Best) && (New < 0))
-		{
-			Ret = Val;
-			Best = New;
-		}
-
+		*xmin = bx;
+		count = 0;
+		return 0;
+	}
+	else if (maxiter==1)
+	{
+		*xmin = bx;
+		count = 1;
+		return (*f)(bx);
 	}
 
-	Rates->Rates[0] = Ret;
-	Rates->Lh		= Best;
+	x0 = ax; 
+	x3 = cx;
+	if (fabs(cx-bx) > fabs(bx-ax)) 
+	{ 
+		x1 = bx;
+		x2 = bx+C*(cx-bx); 
+	} 
+	else 
+	{
+		x2 = bx;
+		x1 = bx-C*(bx-ax);
+	}
+	f1 = (*f)(x1); 
 
-	return Best;
+	f2 = (*f)(x2);
+	count = 2;
+	while (count<maxiter && fabs(x3-x0)>tol*(fabs(x1)+fabs(x2))) 
+	{
+		if (f2 < f1) 
+		{ 
+			SHFT3(x0,x1,x2,R*x1+C*x3) 
+				SHFT2(f1,f2,(*f)(x2)) 
+		} 
+		else 
+		{
+			SHFT3(x3,x2,x1,R*x2+C*x0)
+				SHFT2(f2,f1,(*f)(x1)) 
+		}
+		count++;
+	} 
+	if (f1 < f2) 
+	{ 
+		*xmin=x1;
+		return f1;
+	} 
+	else 
+	{
+		*xmin=x2;
+		return f2;
+	}
 }
 
+RATES*		FRates;
+TREES*		FTrees;
+OPTIONS*	FOpt;
+ML_MAP*		FMap;
+
+double	Opt1DFunc(double Pram)
+{
+	double	Ret;
+	
+	FMap->PVal[0] = Pram;
+
+	Ret = LikelihoodML(FMap, FOpt, FTrees, FRates);
+
+	return -Ret;
+}
+
+void Opt1DAcc(double *BLh, double *BVal, double *CLh, double *CVal)
+{
+	if(*CLh == ERRLH)
+		return;
+
+	if(*CLh > *BLh)
+	{
+		*BLh = *CLh;
+		*BVal = *CVal;
+	}
+}
+
+void Opt1D(ML_MAP* Map, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double BLh, BVal;
+	double CLh, CVal;
+	double Tol, Val;
+	int Index;
+
+	Tol = 0.0000001;
+
+	FRates = Rates;
+	FTrees = Trees;
+	FOpt = Opt;
+	FMap = Map;
+	
+	BLh = LikelihoodML(Map, Opt, Trees, Rates);
+	BVal = Map->PVal[0];
+
+	// Test Min
+	CLh = -GoldenOpt(500, 1, Map->PMin[0], Map->PMin[0], Map->PMax[0], Opt1DFunc, Tol, &CVal);
+	Opt1DAcc(&BLh, &BVal, &CLh, &CVal);
+
+	// Test Max
+	CLh = -GoldenOpt(500, 1, Map->PMin[0], Map->PMax[0], Map->PMax[0], Opt1DFunc, Tol, &CVal);
+	Opt1DAcc(&BLh, &BVal, &CLh, &CVal);
+
+	// Def Min
+	CLh = -GoldenOpt(500, 1, Map->PMin[0], Map->PDef[0], Map->PMax[0], Opt1DFunc, Tol, &CVal);
+	Opt1DAcc(&BLh, &BVal, &CLh, &CVal);
+
+	// A set of Random
+	for(Index=0;Index<Opt->MLTries;Index++)
+	{
+		Val = Map->PMin[0] + (RandDouble(Rates->RS) * (Map->PMax[0] - Map->PMin[0]));
+		CLh = -GoldenOpt(500, 1, Map->PMin[0], Val, Map->PMax[0], Opt1DFunc, Tol, &CVal);
+		Opt1DAcc(&BLh, &BVal, &CLh, &CVal);
+	}
+
+	Map->PVal[0] = BVal;
+	BLh = LikelihoodML(Map, Opt, Trees, Rates);
+}

@@ -10,4 +10,5 @@
 #endif
 
 	void	LhOverAllModels(OPTIONS *Opt, TREES *Trees);
+	double	ValidMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 #endif

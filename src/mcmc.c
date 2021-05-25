@@ -6,7 +6,7 @@
 
 #include "typedef.h"
 #include "trees.h"
-#include "rates.h"
+#include "Rates.h"
 #include "priors.h"
 #include "likelihood.h"
 #include "genlib.h"
@@ -17,14 +17,16 @@
 #include "gamma.h"
 #include "ml.h"
 #include "VarRates.h"
-#include "threaded.h"
+#include "Threaded.h"
 #include "schedule.h"
 #include "modelfile.h"
-#include "stones.h"
+#include "Stones.h"
 #include "RJDummy.h"
 #include "contrasts.h"
 #include "FatTail.h"
 #include "Geo.h"
+#include "TransformTree.h"
+#include "Prob.h"
 
 
 #ifdef	 JNIRUN
@@ -227,6 +229,161 @@ void	InitPhonim(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	fflush(stdout);
 }
 
+void	SetDefMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int Index;
+	LOCAL_TRANSFORM *LR;
+
+	if(Opt->EstKappa == TRUE)
+		Rates->Kappa = 1.0;
+
+	if(Opt->EstLambda == TRUE)
+		Rates->Lambda = 1.0;
+
+	if(Opt->EstDelta == TRUE)
+		Rates->Delta = 1.0;
+
+	if(Opt->EstOU == TRUE)
+		Rates->OU = 1.0;
+	
+	if(Opt->EstGamma == TRUE)
+		Rates->Gamma = 1.0;
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+	{
+		LR = Rates->LocalTransforms[Index];
+		if(LR->Est == TRUE)
+			LR->Scale = GetTransformDefValue(LR->Type);
+	}
+}
+
+double		ValidMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{	
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+
+	if(Rates->Lh == ERRLH)
+		return ERRLH;
+
+	CalcPriors(Rates, Opt);
+
+	if(Rates->LhPrior == ERRLH)
+		return ERRLH;
+
+	return Rates->Lh + Rates->LhPrior;
+}
+
+void	SetAllMCMCRates(double Val, RATES *Rates)
+{
+	int Index;
+
+	for(Index=0;Index<Rates->NoOfRates;Index++)
+		Rates->Rates[Index] = Val;
+}
+
+int	FindValidStartRateAllSame(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double CRate, BRate;
+	double CLh, BLh;
+
+	CRate = 100000;
+	BRate = -1.0;
+	BLh = ERRLH;
+	do
+	{
+		SetAllMCMCRates(CRate, Rates);
+		CLh = ValidMCMCParameters(Opt, Trees, Rates);
+		if(CLh != ERRLH && CLh > BLh)
+		{
+			BRate = CRate;
+			BLh = CLh;
+		}		
+
+		CRate = CRate * 0.1;
+	} while(CRate > 1E-20);
+
+	if(BLh == ERRLH)
+		return FALSE;
+
+	SetAllMCMCRates(BRate, Rates);
+	Rates->Lh = ValidMCMCParameters(Opt, Trees, Rates);
+	return TRUE;
+}
+
+double	RandFromPrior(RANDSTATES *RS, PRIORS *P)
+{
+	double Mean, SD;
+	int Err;
+
+	Err = TRUE;	
+
+	if(P->Dist == BETA)
+		return RandDouble(RS);
+
+	if(P->Dist == UNIFORM)
+		return RandUniDouble(RS, P->DistVals[0], P->DistVals[1]);
+
+	if(P->Dist == EXP)
+		return RandExp(RS, P->DistVals[0]);
+
+	if(P->Dist == GAMMA)
+	{
+		Mean = P->DistVals[0] * P->DistVals[1];
+		SD = P->DistVals[0] * pow(P->DistVals[1], 2.0);
+		SD = sqrt(SD);
+	}
+		
+
+	if(P->Dist == INVGAMMA)
+	{
+		Mean = 100;
+		SD = 50;
+	}
+
+	return RandUniDouble(RS, Mean-(2*SD), Mean-(2*SD));
+}
+
+double	RandFromPriorPosition(int Pos, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	PRIORS *P;
+
+	if(Opt->UseRJMCMC == TRUE)
+		P = Rates->Prios[0];
+	else
+		P =  Rates->Prios[Pos];
+
+	return RandFromPrior(Rates->RS, P);
+}
+
+void	RandRatesFromPrior(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int TNo, RIndex;
+
+
+	for(TNo=0;TNo<10000;TNo++)
+	{
+		for(RIndex=0;RIndex<Rates->NoOfRates;RIndex++)
+			Rates->Rates[RIndex] = RandFromPriorPosition(RIndex, Opt, Trees, Rates);
+
+		if(ValidMCMCParameters(Opt, Trees, Rates) != ERRLH)
+			return;
+	}
+
+	printf("Cannot find initial starting set of parameters.");
+	exit(0);
+}
+
+void FindValidStartLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+
+	if(Opt->ModelType == MT_DISCRETE)
+	{
+		if(FindValidStartRateAllSame(Opt, Trees, Rates) == TRUE)
+			return;
+	}
+	
+	RandRatesFromPrior(Opt, Trees, Rates);
+
+}
 void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 #ifdef PHONEIM_RUN
@@ -236,22 +393,19 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	Rates->TreeNo = 0;
 
-	if(Opt->Model == M_CONTRAST_REG)
-		NormaliseReg(Opt, Trees, Rates);
+	SetDefMCMCParameters(Opt, Trees, Rates);
 
 	if(Opt->ModelType == M_FATTAIL)
 		InitFatTailRates(Opt, Trees, Rates);
 
 	if(Opt->MCMCMLStart == TRUE)
+	{
+		printf("Starting MCMC form ML is not avalable, please e-mail support.\n");
+		exit(0);
 		MLTree(Opt, Trees, Rates);
+	}
 	else
-		FindValidStartSet(Opt, Trees, Rates);
-	
-	if(Likelihood(Rates, Trees, Opt) != ERRLH)
-		return;
-	
-	printf("Err (%s,%d): Could not get inish Lh:\n", __FILE__, __LINE__);
-	exit(0);
+		FindValidStartLh(Opt, Trees, Rates);
 }
 
 void	ShowTimeSec(double StartT, double EndT)
@@ -259,35 +413,6 @@ void	ShowTimeSec(double StartT, double EndT)
 	printf("Sec:\t%f\n", EndT - StartT);
 }
 
-void	SetRates(RATES *Rates)
-{
-	Rates->Rates[0] = 0.916083;
-	Rates->Rates[1] = 0.082224;
-	Rates->Rates[2] = 0.335076;
-	Rates->Rates[3] = 0.082224;
-	Rates->Rates[4] = 0.839922;
-	Rates->Rates[5] = 0.839922;
-	Rates->Rates[6] = 0.195256;
-	Rates->Rates[7] = 0.002904;
-}
-
-
-void	STest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	double StartT, EndT;
-	int Index;
-	
-	SetRates(Rates);
-	StartT = GetSeconds();
-
-	for(Index=0;Index<Opt->Itters;Index++)
-		Likelihood(Rates, Trees, Opt);
-	
-	EndT = GetSeconds();
-
-	printf("Time:\t%f\n", EndT - StartT);
-	exit(0);
-}
 
 FILE*	SetScheduleFile(OPTIONS *Opt, SCHEDULE*	Shed)
 {
@@ -607,10 +732,13 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 					SaveModelFile(SaveModelF, Opt, Trees, CRates);
 			}
 
-			if(Itters % Opt->Sample==0)
+			if(Itters % Opt->Sample == 0)
 			{
-				UpDateSchedule(Opt, Shed, CRates->RS);
-				BlankSchedule(Shed);
+				if(StonesStarted(Opt->Stones, Itters) == FALSE)
+				{
+					UpDateSchedule(Opt, Shed, CRates->RS);
+					BlankSchedule(Shed);
+				}
 			}
 
 			if(ExitMCMC(Opt, Itters) == TRUE)

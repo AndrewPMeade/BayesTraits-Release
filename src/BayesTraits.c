@@ -7,7 +7,7 @@
 #include "trees.h"
 #include "data.h"
 #include "options.h"
-#include "rates.h"
+#include "Rates.h"
 #include "likelihood.h"
 #include "priors.h"
 #include "mcmc.h"
@@ -23,7 +23,7 @@
 #include "mathlib.h"
 //#include "./MathLib/mconf.h"
 
-#ifdef	THREADED
+#ifdef	OPENMP_THR
 	#include <omp.h>
 #endif
 
@@ -188,18 +188,18 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // gcc -O3 -fomit-frame-pointer -lm 
 
 // Big Lh + OpenMP
-// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp
-// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp -Dwarn _unused_result 
+// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DOPENMP_THR -fopenmp
+// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DOPENMP_THR -fopenmp -Dwarn _unused_result 
 
 
 // Threaded + quad math
-// gcc *.c -O3 -fomit-frame-pointer -lgsl -DQUAD_DOUBLE -DTHREADED -lquadmath -fopenmp
+// gcc *.c -O3 -fomit-frame-pointer -lgsl -DQUAD_DOUBLE -DOPENMP_THR -lquadmath -fopenmp
 
 
 // ./Seq/MamTrees-1.trees ./Seq/MamData.txt < in.txt > sout.txt
 // ./Seq/MamBrainBody.trees ./Seq/MamBrainBody.txt < in.txt. > sout.txt
 // ./Seq/FritzMammalianSupertree.trees ./Seq/JustBM.txt < in.txt > sout.txt
-// ./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
+
 
 // ./Seq/Mammal-1.trees ./Seq/MammalBrainBodyGt.txt < in.txt > sout.txt
 
@@ -239,6 +239,11 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // ./Seq/Testing/PrimatesBrainBody.trees ./Seq/Testing/PrimatesBrainBody.txt < ./Seq/Testing/PIn.txt > ./Seq/Testing/sout.txt
 // ./Seq/Testing/PrimatesBody.trees ./Seq/Testing/PrimatesBody.txt < ./Seq/Testing/in.txt > ./Seq/Testing/sout.txt
 
+// ./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
+// ./Seq/MamTrees.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
+
+// ./Seq/StartLHTest/Somebird_tree_ladder.trees ./Seq/StartLHTest/song_coop_1.txt < in.txt > sout.txt
+// ./Seq/Testing/HTest/prim10k.trees ./Seq/Testing/HTest/l-lambdatest_1.txt < ./Seq/Testing/HTest/in.txt > ./Seq/Testing/HTest/sout.txt
 int main(int argc, char** argv)
 {
 	TREES*		Trees;

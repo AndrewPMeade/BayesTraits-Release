@@ -28,7 +28,7 @@ void		CopyContrastRates(OPTIONS *Opt, RATES* R1, RATES* R2, int NoSites);
 //void		RecIntNode(NODE N, int SiteNo, double *Alpha, double *Sigma, double *Lh);
 void		RecIntNode(NODE N, int SiteNo, double *Alpha);
 
-void		NormaliseReg(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+//void		NormaliseReg(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 double		DataToZScore(double X, double Mean, double SD);
 
 void		PrintContrast(RATES *Rates, TREES *Trees);

@@ -8,14 +8,14 @@
 #include "likelihood.h"
 #include "matrix.h"
 #include "genlib.h"
-#include "rates.h"
+#include "Rates.h"
 #include "continuous.h"
 #include "gamma.h"
 #include "trees.h"
 #include "praxis.h"
 #include "RandLib.h"
 #include "contrasts.h"
-#include "threaded.h"
+#include "Threaded.h"
 #include "BigLh.h"
 #include "pmatrix.h"
 #include "linalg.h"
@@ -24,6 +24,7 @@
 #include "FatTail.h"
 #include "TransformTree.h"
 #include "VarRates.h"
+#include "LocalTransform.h"
 
 #ifdef BTOCL
 	#include "btocl_discrete.h"
@@ -765,9 +766,6 @@ void	SetUpGamma(RATES* Rates, OPTIONS* Opt)
 	
 	SetGammaBlank(Rates, Opt);
 
-	if(Rates->LastGamma == Rates->Gamma)
-		return;
-
 	if(RateW == NULL)
 	{
 		RateW = (double*)malloc(sizeof(double) * Opt->GammaCats);
@@ -776,7 +774,6 @@ void	SetUpGamma(RATES* Rates, OPTIONS* Opt)
 	}
 
 	DiscreteGamma(RateW, Rates->GammaMults, Rates->Gamma, Rates->Gamma, Rates->GammaCats, 0);
-	Rates->LastGamma = Rates->Gamma;
 }
 
 void	ProcessGamma(RATES *Rates, TREES* Trees)
@@ -975,7 +972,7 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 	/* No need to compute P for root */
 
 	
-#ifdef THREADED
+#ifdef OPENMP_THR
 	#pragma omp parallel for private(N, Err) num_threads(Opt->Cores)
 #endif	
 	for(NIndex=1;NIndex<Tree->NoNodes;NIndex++)
@@ -1037,7 +1034,7 @@ void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Tr
 		return;
 	}
 
-#ifdef THREADED
+#ifdef OPENMP_THR
 	#pragma omp parallel for num_threads(Opt->Cores)
 #endif
 	for(NIndex=0;NIndex<Tree->NoFNodes[GroupNo];NIndex++)
@@ -1066,7 +1063,7 @@ void	SumLhLiner(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
 	
 	for(GIndex=0;GIndex<Tree->NoFGroups;GIndex++)
 	{
-#ifndef THREADED
+#ifndef OPENMP_THR
 		RunNodeGroup(GIndex, FALSE, Rates, Tree, Trees, Opt, SiteNo);
 #else
 		if(Opt->Cores == 1)
@@ -1139,9 +1136,11 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 		TransformTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
+		ApplyLocalTransforms(Rates, Trees, Opt, NORMALISE_TREE_CON_SCALING);
+
 		if(Rates->VarRates != NULL)
 			VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
-
+		
 	//		SaveTrees("DTest.trees", Trees); exit(0);
 	}
 }
@@ -1238,8 +1237,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			if(Err == TRUE)
 				return ERRLH;
 		}
-//#endif
-	
+//#endif	
 
 		if(Opt->UseGamma == TRUE)
 			ProcessGamma(Rates, Trees);
@@ -1257,114 +1255,4 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		return ERRLH;
 
 	return Ret;
-}
-
-void	MapConParams(OPTIONS *Opt, RATES *Rates, double *List)
-{
-	int	Index;
-
-	Index = 0;
-	if(Opt->EstKappa == TRUE)
-	{
-		Rates->Kappa = List[Index];
-		if(Rates->Kappa > MAX_KAPPA)
-			Rates->Kappa = MAX_KAPPA;
-		if(Rates->Kappa < MIN_KAPPA)
-			Rates->Kappa = MIN_KAPPA;
-
-		Index++;
-	}
-
-	if(Opt->EstDelta == TRUE)
-	{
-		Rates->Delta = List[Index];
-		if(Rates->Delta > MAX_DELTA)
-			Rates->Delta = MAX_DELTA;
-		if(Rates->Delta < MIN_DELTA)
-			Rates->Delta = MIN_DELTA;
-
-		Index++;
-	}
-
-	if(Opt->EstLambda == TRUE)
-	{
-		Rates->Lambda = List[Index];
-		if(Rates->Lambda > MAX_LAMBDA)
-			Rates->Lambda = MAX_LAMBDA;
-		if(Rates->Lambda < MIN_LAMBDA)
-			Rates->Lambda = MIN_LAMBDA;
-		
-		Index++;
-	}
-
-	if(Opt->EstOU == TRUE)
-	{
-		Rates->OU = List[Index];
-		if(Rates->OU > MAX_OU)
-			Rates->OU = MAX_OU;
-		if(Rates->OU < MIN_OU)
-			Rates->OU = MIN_OU;
-		Index++;
-	}
-}
-
-double	LhPraxisCon(PRAXSTATE* PState, double *List)
-{
-	MapConParams(PState->Opt, PState->Rates, List);
-	return LHRandWalk(PState->Opt, PState->Trees, PState->Rates);
-}
-
-double	LhPraxisContrast(PRAXSTATE* PState, double *List)
-{
-	MapConParams(PState->Opt, PState->Rates, List);
-	return CalcContrastLh(PState->Opt, PState->Trees, PState->Rates);
-}
-
-void	CheckRatesVec(double *Vec, int Size)
-{
-	int Index;
-
-	for(Index=0;Index<Size;Index++)
-	{
-/*		if(IsNum(Vec[Index]) == FALSE)
-			Vec[Index] = MINRATE;
-		else
-		{
-			if(Vec[Index] < MINRATE)
-				Vec[Index] = Vec[Index] * -1;
-		}
-*/		
-		if((Vec[Index] < MINRATE) || (IsNum(Vec[Index]) == FALSE))
-			Vec[Index] = MINRATE;
-	}
-
-}
-
-double	LhPraxis(void* P, double *List)
-{
-//	static		Called;
-	double		Ret;
-	double		*TRates;
-	PRAXSTATE	*PState;
-
-	PState = (PRAXSTATE*)P;
-	
-	if(PState->Opt->ModelType == MT_CONTRAST)
-		return -LhPraxisContrast(PState, List);
-
-	if(PState->Opt->ModelType == MT_CONTINUOUS)
-		return -LhPraxisCon(PState, List);
-
-	CheckRatesVec(List, PState->Rates->NoOfRates);
-	
-	TRates = PState->Rates->Rates;
-	PState->Rates->Rates = List;
-
-	Ret = Likelihood(PState->Rates, PState->Trees, PState->Opt);
-
-	PState->Rates->Rates = TRates;
-
-	PState->NoLhCalls++;
-
-	return -Ret;
 }

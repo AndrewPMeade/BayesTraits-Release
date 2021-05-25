@@ -8,8 +8,9 @@
 #include "schedule.h"
 #include "data.h"
 #include "AutoTune.h"
-#include "rates.h"
+#include "Rates.h"
 #include "VarRates.h"
+#include "LocalTransform.h"
 
 void	AddToFullATList(SCHEDULE* Shed, AUTOTUNE *AT)
 {
@@ -141,7 +142,7 @@ void	SetVarRatesShed(OPTIONS *Opt, SCHEDULE *Shed)
 	Max = NO_RJ_LOCAL_SCALAR + 2;
 
 	Shed->FreqVarRatesOp	= (double*)malloc(sizeof(double) * Max);
-	Shed->VarRatesOp		= (RJ_VARRATE_TYPE*)malloc(sizeof(RJ_VARRATE_TYPE) * Max);
+	Shed->VarRatesOp		= (TRANSFORM_TYPE*)malloc(sizeof(TRANSFORM_TYPE) * Max);
 
 	if(Shed->FreqVarRatesOp == NULL || Shed->VarRatesOp == NULL)
 		MallocErr();
@@ -152,7 +153,7 @@ void	SetVarRatesShed(OPTIONS *Opt, SCHEDULE *Shed)
 	{
 		if(Opt->UseRJLocalScalar[Index] == TRUE)
 		{
-			Shed->VarRatesOp[No] = (RJ_VARRATE_TYPE)Index;
+			Shed->VarRatesOp[No] = (TRANSFORM_TYPE)Index;
 			Shed->FreqVarRatesOp[No] = 0.1;
 			No++;
 		}
@@ -176,103 +177,61 @@ void	SetVarRatesShed(OPTIONS *Opt, SCHEDULE *Shed)
 
 void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 {
-	double	Left;
 	int		Rates, Index;
 	
-	Left = 1.0;
-
 	for(Index=0;Index<Shed->NoOfOpts;Index++)
 		Shed->OptFreq[Index] = 0.0;
 
 	if((Opt->UseCovarion == TRUE) && (Opt->LoadModels == FALSE))
-	{
 		Shed->OptFreq[SCV] = 0.2;
-		Left = Left - Shed->OptFreq[SCV];
-	}
 
 	if((Opt->EstKappa == TRUE) && (Opt->LoadModels == FALSE))
-	{
 		Shed->OptFreq[SKAPPA] = 0.1;
-		Left = Left - Shed->OptFreq[SKAPPA];
-	}
 
 	if((Opt->EstDelta == TRUE) && (Opt->LoadModels == FALSE))
-	{
 		Shed->OptFreq[SDELTA] = 0.1;
-		Left = Left - Shed->OptFreq[SDELTA];
-	}
 
 	if((Opt->EstLambda == TRUE)  && (Opt->LoadModels == FALSE))
-	{
 		Shed->OptFreq[SLABDA] = 0.1;
-		Left = Left - Shed->OptFreq[SLABDA];
-	}
-
 
 	if((Opt->UseRJMCMC == TRUE) && (Opt->LoadModels == FALSE))
-	{
 		Shed->OptFreq[SJUMP] = 0.1;
-		Left = Left - Shed->OptFreq[SJUMP];
-	}
 
 	if(UsingHP(Opt) == TRUE)
-	{
 		Shed->OptFreq[SPPROR] = 0.1;
-		Left = Left - Shed->OptFreq[SPPROR];
-	}
 
 	if(EstData(Opt->Trees) == TRUE)
-	{
 		Shed->OptFreq[SESTDATA] = 0.5;
-		Left = Left - Shed->OptFreq[SESTDATA];
-	}
 
 	if(Opt->UseVarData == TRUE)
-	{
 		Shed->OptFreq[SVARDATA] = 0.1;
-		Left = Left - Shed->OptFreq[SVARDATA];
-	}
 
-	if((Opt->EstOU == TRUE)  && (Opt->LoadModels == FALSE))
-	{
+	if((Opt->EstOU == TRUE) && (Opt->LoadModels == FALSE))
 		Shed->OptFreq[SOU] = 0.1;
-		Left = Left - Shed->OptFreq[SOU];
-	}
 
 	if(Opt->EstGamma == TRUE)
-	{
 		Shed->OptFreq[SGAMMA] = 0.1;
-		Left = Left - Shed->OptFreq[SGAMMA];
-	}
 
 	if(Opt->Model == M_FATTAIL)
-	{
-		Shed->OptFreq[SFATTAILANS] = Left * 0.9;
-		Left = Left - Shed->OptFreq[SFATTAILANS];
-	}
+		Shed->OptFreq[SFATTAILANS] = 0.5;
 
 	if(MultiTree(Opt) == TRUE)
 		Shed->OptFreq[STREEMOVE] = 0.1;
-	else
-		Shed->OptFreq[STREEMOVE] = 0.0;
 	
+	if(EstLocalTransforms(Opt->LocalTransforms, Opt->NoLocalTransforms) == TRUE && Opt->LoadModels == FALSE)
+		Shed->OptFreq[SLOCALRATES] = 0.1;
 
 	if(UseNonParametricMethods(Opt) == TRUE)
 	{
 		Shed->OptFreq[SPPADDREMOVE] = 0.5;
 		Shed->OptFreq[SPPMOVE] = 0.05;
 		Shed->OptFreq[SPPCHANGESCALE] = 0.4;
-
-		Left = Left - (Shed->OptFreq[SPPADDREMOVE] + Shed->OptFreq[SPPMOVE] + Shed->OptFreq[SPPCHANGESCALE]);
-
+		
 		SetVarRatesShed(Opt, Shed);
 	}
 
 	if(Opt->Model == M_DESCHET)
-	{
 		Shed->OptFreq[SHETERO] = 0.4;
-		Left = Left - Shed->OptFreq[SHETERO];
-	}
 
 	Rates = 0;
 	if(Opt->DataType == CONTINUOUS)
@@ -287,32 +246,26 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	if(Rates == 0)
 		Shed->OptFreq[SRATES] = 0;
 	else
-	{
-		if(Left < 0.05)
-			Left = 0.05;
-
-		Shed->OptFreq[SRATES] = Left;
-	}
-
+		Shed->OptFreq[SRATES] = 0.5;
+	
 #ifdef CONTRAST_ML_PARAM
 	if(Opt->ModelType == MT_CONTRAST)
 		Shed->OptFreq[0] = 0;
 #endif
 
 	if(Opt->LoadModels == TRUE)
-		Shed->OptFreq[SRATES] = 0.3;
+		Shed->OptFreq[SRATES] = 0.4;
 	
 	if(Opt->RJDummy == TRUE)
 	{
-		Shed->OptFreq[SRATES]		= 0.1;
-		Shed->OptFreq[SRJDUMMY]		= 0.4;
-		Shed->OptFreq[SRJDUMMYMOVE] = 0.1;
-		Shed->OptFreq[SRJDUMMYCHANGEBETA] = 0.5;
+		Shed->OptFreq[SRATES]		= 0.5;
+		Shed->OptFreq[SRJDUMMY]		= 0.2;
+		Shed->OptFreq[SRJDUMMYMOVE] = 0.2;
+		Shed->OptFreq[SRJDUMMYCHANGEBETA] = 0.2;
 	}
 
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 }
-
 
 void	PrintATHeader(FILE *Str,AUTOTUNE *AT)
 {
@@ -418,7 +371,9 @@ SCHEDULE*	AllocSchedule()
 
 	Ret->GammaAT		= NULL;
 
-	Ret->RJDummyBetaAT	=	NULL;
+	Ret->RJDummyBetaAT	= NULL;
+
+	Ret->LocalRatesAT	= NULL;
 	
 	Ret->NoVarRatesOp	= 0;
 	Ret->FreqVarRatesOp = NULL;
@@ -491,18 +446,12 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST_REG)
 	{
-		sprintf(Buffer,"Alpha");
-		Ret[PIndex++] = StrMake(Buffer);
-
-		if(Opt->TestCorrel == TRUE)
+		for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
 		{
-
-			for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
-			{
-				sprintf(Buffer,"Beta %d",Index);
-				Ret[PIndex++] = StrMake(Buffer);
-			}
+			sprintf(Buffer,"Beta %d", Index);
+			Ret[PIndex++] = StrMake(Buffer);
 		}
+
 		free(Buffer);
 		return Ret;
 	}
@@ -559,13 +508,13 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 	return Ret;
 }
 
-
 void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, RANDSTATES *RS)
 {
 	int Index;
 	char **PNames;
 
 	Shed->NoParm			= FindNoOfAutoCalibRates(Opt);
+	
 	Shed->RateDevATList		= (AUTOTUNE**)malloc(sizeof(AUTOTUNE*) * Shed->NoParm);
 
 	if(Shed->RateDevATList == NULL)
@@ -602,38 +551,43 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 	// Set Auto tune Data Dev
 	if(Opt->EstData == TRUE)
 	{
-		Ret->DataDevAT = CreatAutoTune("Data", RandDouble(RS) * 10,MIN_VALID_ACC,MAX_VALID_ACC);
+		Ret->DataDevAT = CreatAutoTune("Data", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Ret,Ret->DataDevAT);
 	}
 
 	// Set VarRates Auto Tune
 	if(UseNonParametricMethods(Opt) == TRUE)
 	{
-		Ret->VarRateAT = CreatAutoTune("VarRates", RandDouble(RS),MIN_VALID_ACC,MAX_VALID_ACC);
+		Ret->VarRateAT = CreatAutoTune("VarRates", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->VarRateAT, 200.0);
 		AddToFullATList(Ret,Ret->VarRateAT);
 	}
 
 	if(Opt->EstKappa == TRUE)
 	{
 		Ret->KappaAT = CreatAutoTune("Kappa", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->KappaAT, 10.0);
 		AddToFullATList(Ret, Ret->KappaAT);
 	}
 
 	if(Opt->EstLambda == TRUE)
 	{
 		Ret->LambdaAT = CreatAutoTune("Lambda", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->LambdaAT, 10.0);
 		AddToFullATList(Ret, Ret->LambdaAT);
 	}
 
 	if(Opt->EstDelta == TRUE)
 	{
 		Ret->DeltaAT = CreatAutoTune("Delta", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->DeltaAT, 10.0);
 		AddToFullATList(Ret, Ret->DeltaAT);
 	}
 
 	if(Opt->EstOU == TRUE)
 	{
 		Ret->OUAT = CreatAutoTune("OU", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->OUAT, 10.0);
 		AddToFullATList(Ret, Ret->OUAT);
 	}
 
@@ -646,7 +600,15 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 	if(Opt->EstGamma == TRUE)
 	{
 		Ret->GammaAT = CreatAutoTune("Gamma", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->GammaAT, 10.0);
 		AddToFullATList(Ret, Ret->GammaAT);
+	}
+
+	if(EstLocalTransforms(Opt->LocalTransforms, Opt->NoLocalTransforms) == TRUE)
+	{
+		Ret->LocalRatesAT = CreatAutoTune("LocalTransform", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->LocalRatesAT, 10.0);
+		AddToFullATList(Ret, Ret->LocalRatesAT);
 	}
 
 	return Ret;
@@ -687,6 +649,9 @@ void		FreeeSchedule(SCHEDULE* Sched)
 
 	if(Sched->OUAT != NULL)
 		FreeAutoTune(Sched->OUAT);
+
+	if(Sched->LocalRatesAT != NULL)
+		FreeAutoTune(Sched->LocalRatesAT);
 
 	if(Sched->GammaAT != NULL)
 		FreeAutoTune(Sched->GammaAT);
@@ -733,12 +698,11 @@ double	GetRDDecAccRate(OPTIONS *Opt, SCHEDULE* Shed)
 	return Ret;
 }
 
-
 void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 {
 	int		Index;
 	
 	for(Index=0;Index<Shed->NoFullATList;Index++)
-		AutoTuneUpDate(Shed->FullATList[Index],RS);
+		AutoTuneUpDate(Shed->FullATList[Index], RS);
 }
 

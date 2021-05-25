@@ -22,6 +22,11 @@ int			GetAutoTuneSize(AUTOTUNE *AutoTune)
 	return  AT_HSIZE;
 }
 
+void		SetMaxDev(AUTOTUNE *AutoTune, double MaxDev)
+{
+	AutoTune->MaxDev = MaxDev;
+}
+
 AUTOTUNE*	CreatAutoTune(char *Name, double InitDev, double Min, double Max)
 {
 	AUTOTUNE *Ret;
@@ -49,6 +54,7 @@ AUTOTUNE*	CreatAutoTune(char *Name, double InitDev, double Min, double Max)
 	Ret->Max	= Max;
 	Ret->Target = ((Max - Min) * 0.5) + Min;
 	Ret->No		= 0;
+	Ret->MaxDev	= -1.0;
 
 	if(Name != NULL)
 		Ret->Name = StrMake(Name);
@@ -84,6 +90,9 @@ void		BlindUpDate(AUTOTUNE *AT, RANDSTATES *RS, double Acc)
 		Scale = RandDouble(RS) + 1;
 	
 	AT->CDev = AT->CDev * Scale;
+
+	if(AT->MaxDev != -1.0 && AT->CDev > AT->MaxDev)
+		AT->CDev = AT->MaxDev;
 }
 
 int			InList(double *List, int Size, double RD)
@@ -145,7 +154,7 @@ double		AutoTuneCalcAcc(AUTOTUNE *AT)
 
 void		AutoTuneUpDate(AUTOTUNE *AT, RANDSTATES *RS)
 {
-	double Ret;
+	double NDev;
 	double R2, Slope, Int;
 	double	Acc;
 
@@ -166,10 +175,15 @@ void		AutoTuneUpDate(AUTOTUNE *AT, RANDSTATES *RS)
 		}
 
 		CalcRSqr(AT->RateAcc, AT->RateDev, AT_HSIZE, &R2, &Slope, &Int);
-		Ret = Int + (AT->Target * Slope);
+		NDev = Int + (AT->Target * Slope);
 
-		if(Ret < 0)
+		if(NDev < 0)
 			BlindUpDate(AT, RS, Acc);
+		else
+			AT->CDev = NDev;
+
+		if(AT->MaxDev != -1.0 && AT->CDev > AT->MaxDev)
+			AT->CDev = AT->MaxDev;
 		
 		return;
 	}

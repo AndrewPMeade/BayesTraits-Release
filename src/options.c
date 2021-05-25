@@ -8,36 +8,41 @@
 #include "data.h"
 #include "trees.h"
 #include "priors.h"
-#include "treenode.h"
 #include "RandLib.h"
-#include "threaded.h"
+#include "Threaded.h"
 #include "part.h"
-#include "rates.h"
-#include "stones.h"
+#include "Rates.h"
+#include "Stones.h"
 #include "RJLocalScalar.h"
-#include "tag.h"
+#include "Tag.h"
+#include "VarRates.h"
+#include "LocalTransform.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHT_INDENT	4
 
 void	FreeRecNodes(OPTIONS *Opt, int NoSites);
 
-char*	FormatRateName(char* RateName)
+char*	FormatStr(char* RateName)
 {
-	char* Ret;
+	char* Ret, *Temp;
 	int	Index;
-
-	Ret = (char*)malloc(sizeof(char) * RATEOUTPUTLEN+1);
-	if(Ret == NULL)
+	
+	Temp = (char*)malloc(sizeof(char) * BUFFERSIZE);
+	if(Temp == NULL)
 		MallocErr();
 
 	for(Index=0;Index<RATEOUTPUTLEN;Index++)
-		Ret[Index] = ' ';
-	Ret[RATEOUTPUTLEN] = '\0';
+		Temp[Index] = ' ';
+	Temp[RATEOUTPUTLEN] = '\0';
 
-	sprintf(&Ret[RIGHT_INDENT], "%s", RateName);
-	Ret[RIGHT_INDENT+strlen(RateName)] = ' ';
+	sprintf(&Temp[RIGHT_INDENT], "%s", RateName);
+	Temp[RIGHT_INDENT+strlen(RateName)] = ' ';
 	
+	Ret = StrMake(Temp);
+
+	free(Temp);
+
 	return Ret;
 }
 
@@ -52,7 +57,7 @@ void	PrintOptRes(FILE* Str, OPTIONS *Opt)
 	fprintf(Str, "Restrictions:\n");
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
-		FRateName = FormatRateName(Opt->RateName[Index]);
+		FRateName = FormatStr(Opt->RateName[Index]);
 		fprintf(Str, "%s", FRateName);
 
 		free(FRateName);
@@ -117,7 +122,7 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
-		FRateName = FormatRateName(Opt->RateName[Index]);
+		FRateName = FormatStr(Opt->RateName[Index]);
 		fprintf(Str, "%s", FRateName);
 		free(FRateName);
 
@@ -288,6 +293,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	fprintf(Str, "Precision:                       %d bits\n", Opt->Precision);
 	fprintf(Str, "Cores:                           %d\n", Opt->Cores);
 
+	PrintTags(Str, Opt);
+
+
 	if(Opt->Analsis == ANALMCMC)
 	{
 		fprintf(Str, "Analysis Type:                   MCMC\n" );
@@ -431,6 +439,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		}
 	}
 
+	if(Opt->NoLocalTransforms > 0)
+		PrintLocalTransforms(Str, Opt->LocalTransforms, Opt->NoLocalTransforms);
+
 	if(Opt->SaveModels == TRUE)
 		fprintf(Str, "Save Model:                      %s\n", Opt->SaveModelsFN);
 
@@ -486,7 +497,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->Model == M_DESCHET)
 		PrintHetMap(Str, Opt, Opt->Trees);
 
-
 	PrintTreesInfo(Str, Opt->Trees, Opt->DataType);
 	fflush(Str);
 }
@@ -524,8 +534,13 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	if(Opt->PriorOU != NULL)
 		FreePrior(Opt->PriorOU);
 
+	if (Opt->PriorGamma != NULL)
+		FreePrior(Opt->PriorGamma);
+
 	if(Opt->EstDataSites != NULL)
 		free(Opt->EstDataSites);
+
+	
 
 
 	free(Opt->DataFN);
@@ -545,7 +560,7 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	free(Opt->ResTypes);
 	free(Opt->ResNo);
 	free(Opt->ResConst);
-
+	 
 	if(Opt->SaveTrees != NULL)
 		free(Opt->SaveTrees);
 	
@@ -566,6 +581,16 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->RJLocalScalarPriors != NULL)
 		free(Opt->RJLocalScalarPriors);
+
+	for(Index=0;Index<Opt->NoLocalTransforms;Index++)
+		FreeLocalTransforms(Opt->LocalTransforms[Index]);
+	if(Opt->LocalTransforms != NULL)
+		free(Opt->LocalTransforms);
+	
+	for(Index=0;Index<Opt->NoTags;Index++)
+		FreeTag(Opt->TagList[Index]);
+	if(Opt->TagList != NULL)
+		free(Opt->TagList);
 
 	free(Opt);
 }
@@ -614,9 +639,6 @@ char**	ModelBRateName(OPTIONS* Opt)
 	char*	Buffer;
 	int		No, Index;
 
-
-	Opt->NoOfRates = Opt->Trees->NoOfSites * 2;
-
 	Ret = (char**)malloc(sizeof(char*)*Opt->NoOfRates);
 	if(Ret == NULL)
 		MallocErr();
@@ -650,10 +672,8 @@ char**	RetModelRateName(OPTIONS* Opt)
 	char**	Ret;
 	char*	Buffer;
 	int		Index;
-
-	Opt->NoOfRates = Opt->Trees->NoOfSites;
-
-	Ret = (char**)malloc(sizeof(char*)*Opt->NoOfRates);
+	
+	Ret = (char**)malloc(sizeof(char*) * Opt->NoOfRates);
 	if(Ret == NULL)
 		MallocErr();
 
@@ -680,9 +700,6 @@ char**	ContrastRateNames(OPTIONS *Opt)
 	char	*Buffer;
 	int		Index, NOS, i;
 	
-
-	Opt->NoOfRates = Opt->Trees->NoOfSites;
-
 	NOS = Opt->Trees->NoOfSites;
 	 
 	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
@@ -707,8 +724,6 @@ char**	ContrastFullRateNames(OPTIONS *Opt)
 	char	*Buffer;
 	int		Index, NOS, i;
 	
-	Opt->NoOfRates = Opt->Trees->NoOfSites * 2;
-
 	NOS = Opt->Trees->NoOfSites;
 	 
 	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
@@ -738,9 +753,7 @@ char**	ContrastRegRateNames(OPTIONS *Opt)
 	char	**Ret;
 	char	*Buffer;
 	int		Index, Pos;
-	
-	Opt->NoOfRates = (Opt->Trees->NoOfSites - 1);
-	 
+		 
 	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
 	if((Ret == NULL) || (Buffer == NULL))
@@ -762,8 +775,6 @@ char**	FatTailRateNames(OPTIONS *Opt)
 	char	**Ret;
 	char	*Buffer;
 	int		Index, Pos;
-	
-	Opt->NoOfRates = Opt->Trees->NoOfSites * 2;
 	 
 	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
@@ -786,6 +797,9 @@ char**	FatTailRateNames(OPTIONS *Opt)
 
 char**	CreatContinusRateName(OPTIONS* Opt)
 {
+
+	Opt->NoOfRates  = FindNoConRates(Opt);
+
 	switch(Opt->Model)
 	{
 		case M_CONTINUOUS_RR:
@@ -907,7 +921,7 @@ void	SetFatTailPrior(OPTIONS *Opt)
 	}
 }
 
-void	AllocPrios(OPTIONS *Opt)
+void	AllocRatePrios(OPTIONS *Opt)
 {
 	int		Index;
 
@@ -934,13 +948,17 @@ void	AllocPrios(OPTIONS *Opt)
 	}
 
 	Opt->RJPrior = CreateUniformPrior(0, 100);
+}
 
+void	SetGenPriors(OPTIONS *Opt)
+{
 	Opt->PriorDelta = CreateUniformPrior(MIN_DELTA, MAX_DELTA);
 	Opt->PriorKappa = CreateUniformPrior(MIN_KAPPA, MAX_KAPPA);
 	Opt->PriorLambda= CreateUniformPrior(MIN_LAMBDA, MAX_LAMBDA);
 
-//	Opt->PriorOU	= CreatUniPrior(MIN_OU, MAX_OU);
-	Opt->PriorOU	= CreateExpPrior(1.0);
+	Opt->PriorOU	= CreateUniformPrior(MIN_OU, MAX_OU);
+	//	Opt->PriorOU	= CreateExpPrior(1.0);
+	Opt->PriorGamma	= CreateUniformPrior(MIN_GAMMA, MAX_GAMMA);
 }
 
 MODEL_TYPE	GetModelType(MODEL Model)
@@ -989,6 +1007,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
 	if(Buffer == NULL)
 		MallocErr();
+	
 
 	Ret->Trees		= Trees;
 	Ret->Model		= Model;
@@ -1059,12 +1078,14 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->Priors			=	NULL;
 	Ret->PriorCats		=	-1;
 	
+	SetGenPriors(Ret);
+
 	if(Ret->Analsis == ANALML)
 	{
 		Ret->Itters		=	-1;
 		Ret->Sample		=	-1;
 		Ret->BurnIn		=	-1;
-		Ret->RJPrior		=	NULL;
+		Ret->RJPrior	=	NULL;
 	}
 	
 	if(Ret->Analsis == ANALMCMC)
@@ -1077,21 +1098,11 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		Ret->BurnIn		=	10000;
 		Ret->Sample		=	1000;
 		
-//		Set short run time, good for testing.
-
-		/*
-		Ret->BurnIn		=	10000;
-		Ret->Sample		=	100;
-		Ret->Itters		=	1000;
-		Ret->Itters		=	101000;
-		*/
 		Ret->PriorCats	=	100;
-
 		
-		AllocPrios(Ret);
+		AllocRatePrios(Ret);
 
-//		Ret->UseSchedule	= TRUE;
-		Ret->UseSchedule	= FALSE;
+		Ret->UseSchedule	= TRUE;
 	}
 
 
@@ -1188,6 +1199,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->NoTags			= 0;
 	Ret->TagList		= NULL;
 
+	Ret->NoLocalTransforms	= 0;
+	Ret->LocalTransforms		= NULL;
+	
 	free(Buffer);
 
 	return Ret; 
@@ -2379,7 +2393,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CDEPSITE)   ||
 			(Command == CRJDUMMY)	||
 			(Command == CVARRATES)	||
-			(Command == CRJLOCALSCALAR)
+			(Command == CRJLOCALTRANSFORM)
 			)
 		{
 			printf("Command %s (%s) is not valid with Discrete data\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2691,23 +2705,11 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 
 	if(Tokes == 2)
 	{
-		if(Opt->PriorGamma != NULL)
-		{
-			FreePrior(Opt->PriorGamma);
-			Opt->PriorGamma = NULL;
-		}
-
 		Opt->UseGamma = TRUE;
 		Opt->EstGamma = TRUE;
 		Opt->FixGamma = -1;
 	
 		Opt->GammaCats = GammaCats;
-
-		if(Opt->Analsis == ANALMCMC)
-		{
-			Opt->PriorGamma = CreateUniformPrior(0, 100);
-			Opt->PriorGamma->RateNo = -1;
-		}
 		
 		return;
 	}
@@ -2721,17 +2723,12 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 		}
 		Value = atof(Passed[2]);
 
-		if((Value < GAMMAMIN) || (Value > GAMMAMAX))
+		if((Value < MIN_GAMMA) || (Value > MAX_GAMMA))
 		{
-			printf("Gamma shape parmiter must be grater than %f and less than %f\n", (double)GAMMAMIN, (double)GAMMAMAX);
+			printf("Gamma shape parmiter must be grater than %f and less than %f\n", (double)MIN_GAMMA, (double)MAX_GAMMA);
 			return;
 		}
 
-		if(Opt->PriorGamma != NULL)
-		{
-			FreePrior(Opt->PriorGamma);
-			Opt->PriorGamma = NULL;
-		}
 
 		Opt->UseGamma = TRUE;
 		Opt->FixGamma = Value;
@@ -2944,9 +2941,9 @@ void	SetCores(OPTIONS *Opt, int Tokes, char** Passed)
 {
 	int Cores;
 
-//#if !(CLIK_P || THREADED)
+
 #ifndef CLIK_P
-#ifndef THREADED
+#ifndef OPENMP_THR
 	printf("Cores is not valid with this build. please use the threaded build.");
 	return;
 #endif
@@ -3348,10 +3345,10 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 	return TRUE;
 }
 
-void	SetRJLocalScalar(OPTIONS *Opt, char **Passed, int Tokes)
+void	SetRJLocalTransform(OPTIONS *Opt, char **Passed, int Tokes)
 {
 	PRIORS *P;
-	RJ_VARRATE_TYPE	Type;
+	TRANSFORM_TYPE	Type;
 
 	if(ValidRJLocalScalarModel(Opt, Passed, Tokes) == FALSE)
 		return;
@@ -3403,6 +3400,71 @@ void	SetFatTailNormal(OPTIONS *Opt)
 		Opt->FatTailNormal = TRUE;
 	else
 		Opt->FatTailNormal = FALSE;
+}
+
+
+
+double	ValidLocalRateScalar(char *Str)
+{
+	double Ret;
+
+	if(IsValidDouble(Str) == FALSE)
+	{
+		printf("Cannot convert %s to a valid scalar.\n", Str);
+		exit(0);
+	}
+
+	Ret = atof(Str);
+	if(Ret < 0)
+	{
+		printf("Scalars must be > 0.\n");
+		exit(0);
+	}
+
+	return Ret;
+}
+
+void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	TRANSFORM_TYPE	Type;
+	double			Scale;
+	int				Est;
+	TAG				*Tag;
+	LOCAL_TRANSFORM		*UVR;
+
+	if(Opt->ModelType == MT_CONTINUOUS)
+	{
+		printf("Local Rates not not compatable with model.\n");
+		exit(1);
+	}
+	
+	if(!(Tokes == 3 || Tokes == 4))
+	{
+		printf("UserVarRates takes a tag, rate type (node, bl, kappa, lambda, delta, OU).\n");
+		exit(1);
+	}
+
+	Scale = -1;
+	Est = TRUE;
+
+	Tag = GetTagFromName(Opt, Passed[1]);
+
+	if(Tag == NULL)
+	{
+		printf("Cannot find valid tag name %s.\n", Passed[1]);
+		exit(0);
+	}
+
+	Type = StrToVarRatesType(Passed[2]);
+
+	if(Tokes == 4)
+	{
+		Scale = ValidLocalRateScalar(Passed[3]);
+		Est = FALSE;
+	}
+
+	UVR = CreateLocalTransforms(Tag, Type, Est, Scale);
+	Opt->LocalTransforms = (LOCAL_TRANSFORM**)AddToList(&Opt->NoLocalTransforms, (void**)Opt->LocalTransforms, UVR);
 }
 
 void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
@@ -4066,19 +4128,21 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetScaleTree(Opt, Passed, Tokes);
 	
 
-	if(Command == CRJLOCALSCALAR)
-		SetRJLocalScalar(Opt, Passed, Tokes);
+	if(Command == CRJLOCALTRANSFORM)
+		SetRJLocalTransform(Opt, Passed, Tokes);
 	
 
 	if(Command == CGEODATA)
 		SetGeoData(Opt);
 	
-
 	if(Command == CFATTAILNORMAL)
 		SetFatTailNormal(Opt);
 
 	if(Command == CADDTAG)
 		AddTag(Opt, Tokes, Passed);
+
+	if(Command == CLOCALTRANSFORM)
+		AddLocalTransform(Opt, Tokes, Passed);
 
 	return FALSE;
 }

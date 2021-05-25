@@ -11,9 +11,7 @@
 #include "matrix.h"
 #include "linalg.h"
 #include "continuous.h"
-#include "treenode.h"
 #include "treepasser.h"
-#include "treenode.h"
 #include "BigLh.h"
 #include "part.h"
 #include "RandLib.h"
@@ -564,6 +562,19 @@ int		FindMaxPoly(TREES *Trees)
 		 Trees->Taxa[Index]->Index = Index;
  }
 
+ double	CaclAveBL(TREE *Tree)
+ {
+	 double Ret;
+	 int Index;
+
+	 Ret = 0.0;
+	 for(Index=1;Index<Tree->NoNodes;Index++)
+		 Ret += Tree->NodeList[Index]->Length;
+	 
+	 Ret = Ret / (Tree->NoNodes - 1);
+	 return Ret;
+ }
+
  TREE*	InitTree(TREES *Trees, NTREES *PTrees, int TNo)
  {
 	TREE	*Ret;
@@ -586,12 +597,16 @@ int		FindMaxPoly(TREES *Trees)
 	Ret->FatTailTree= NULL;
 
 	Ret->NoContrast	= -1;
-
+	
 	MakeNewTree(Ret, &PTrees->Trees[TNo]);
 
 	LinkTipsToTaxa(Ret->Root, Trees->Taxa, Trees->NoOfTaxa);
 		
 	SetNodeIDs(Ret);
+
+	Ret->AveBL = CaclAveBL(Ret);
+
+//	printf("AveBL\t%f\n", Ret->AveBL);
 
 	return Ret;
  }

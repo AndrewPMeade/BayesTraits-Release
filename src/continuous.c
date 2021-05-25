@@ -12,7 +12,7 @@
 #include "likelihood.h"
 #include "matrix.h"
 #include "linalg.h"
-#include "rates.h"
+#include "Rates.h"
 #include "ckappa.h"
 #include "contrasts.h"
 #include "RandLib.h"
@@ -591,6 +591,8 @@ void	FreeConVar(CONVAR* ConVar, int NoTaxa)
 	#endif
 
 	free(ConVar);
+
+	ConVar = NULL;
 }
 
 CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
@@ -1114,7 +1116,7 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 
 	CV = Tree->ConVars;
 
-#ifdef THREADED
+#ifdef OPENMP_THR
 	#pragma omp parallel for private(x, Ret) num_threads(4)
 #endif
 	for(y=0;y<Trees->NoOfTaxa;y++)

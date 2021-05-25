@@ -9,7 +9,7 @@
 
 #include "typedef.h"
 #include "genlib.h"
-#include "stones.h"
+#include "Stones.h"
 #include "options.h"
 
 void	PrintStones(FILE *Str, STONES *Stones)
