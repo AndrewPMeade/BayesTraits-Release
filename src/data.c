@@ -245,7 +245,6 @@ int		EstData(TREES *Trees)
 	return FALSE;
 }
 
-
 void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 {
 	TAXA	*Taxa;

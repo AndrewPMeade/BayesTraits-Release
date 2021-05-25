@@ -223,7 +223,7 @@ void	PrintEstData(FILE *Str, OPTIONS *Opt)
 			for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 			{
 				if(Taxa->EstDataP[SIndex] == TRUE)
-					fprintf(Str, " %d ", SIndex+1);
+					fprintf(Str, "%d ", SIndex+1);
 			}
 			fprintf(Str, "\n");
 		}
@@ -2293,7 +2293,7 @@ void	AddConAnsStatePrior(OPTIONS *Opt, int SiteNo)
  	if(Opt->Model == M_CONTINUOUS_REG && SiteNo == 1)
 		sprintf(Buffer, "AncState-Dep");
 	else
-		sprintf(Buffer, "AncState-%d", SiteNo-1);
+		sprintf(Buffer, "AncState-%d", SiteNo);
 
 	RemovePriorFormOpt(Buffer, Opt);
 	Prior = CreateUniformPrior(Buffer, -100, 100);

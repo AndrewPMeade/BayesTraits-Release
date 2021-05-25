@@ -516,6 +516,8 @@ void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *In
 
 int		SetInvMat(MODEL Model, RATES *Rates, int NOS, INVINFO *InvInfo)
 {
+	int Err; 
+
 	if(Model != M_DESCHET)
 		return InvMat(InvInfo, NOS);
 

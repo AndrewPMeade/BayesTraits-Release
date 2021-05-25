@@ -38,7 +38,7 @@
 
 int	InvMat(INVINFO	*InvInfo, int NoStates)
 {
-	int				Ret;
+	int				Ret, Index;
 	int				*iwork;
 	double			*work;
 	double			*vi;

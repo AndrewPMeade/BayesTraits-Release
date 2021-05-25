@@ -1464,9 +1464,9 @@ double CaclRegContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	NoSites = Rates->Contrast->NoSites;
 
 	CR->RegAlpha = CalcRegAlpha(Tree, CR, NoSites);
-//	CR->RegSigma = CaclRegSigma(Tree, CR->RegBeta, NoSites);
+	CR->RegSigma = CaclRegSigma(Tree, CR->RegBeta, NoSites);
 		
-		Ret = CalcRegLh(Opt, Trees, Rates, CR->RegAlpha, CR->RegBeta);
+	Ret = CalcRegLh(Opt, Trees, Rates, CR->RegAlpha, CR->RegBeta);
 /*
 	printf("LH\t%f\t%d\tAlpha:\t%f\tBeta\t%f\tSigma2\t%f\tV0\t%f\n", Ret, Rates->TreeNo, CR->RegAlpha, CR->RegBeta[0], CR->RegSigma, V0);
 

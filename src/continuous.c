@@ -136,11 +136,11 @@ void	RemoveDependantData(OPTIONS *Opt, TREES *Trees)
 		Taxa = Trees->Taxa[TIndex];
 
 		if(Taxa->EstDataP[DepNo] == TRUE)
+		{
 			Taxa->EstDepData = TRUE;
-		
-		for(Index=DepNo+1;Index<Trees->NoSites;Index++)
-			Taxa->EstDataP[Index-1] = Taxa->EstDataP[Index];
-		
+			for(Index=DepNo+1;Index<Trees->NoSites;Index++)
+				Taxa->EstDataP[Index-1] = Taxa->EstDataP[Index];
+		}
 
 		Taxa->Dependant = Taxa->ConData[DepNo];
 
@@ -2213,13 +2213,13 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 
 	CheckZeroTaxaBL(Trees);
 	SetTreesDistToRoot(Trees);
+
 	if(Opt->Model == M_CONTINUOUS_REG)
 		RemoveDependantData(Opt, Trees);
-	
+
 	AddRecNodes(Opt, Trees);
 
 	Trees->TempConVars = AllocTempConVars(Opt, Trees);
-
 
 	InitEstData(Opt, Trees);
 
