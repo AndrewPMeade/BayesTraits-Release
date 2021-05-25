@@ -312,17 +312,17 @@ static char    *COMMANDSTRINGS[] =
 
 static char		*MODELNAMES[] =
 {
-	"Multistates",
-	"Discete Independant",
-	"Discete Dependent",
-	"Continuous Random Walk",
-	"Continuous Directional",
-	"Continuous Regression",
+	"MultiState",
+	"Discrete: Independent",
+	"Discrete: Dependent",
+	"Continuous: Random Walk",
+	"Continuous: Directional",
+	"Continuous: Regression",
 	"Independent Contrasts",
-	"Independent Contrasts Regression",
-	"Independent Contrasts Full",
-	"Discrete Covarion", 
-	"Discrete Heterogeneous"
+	"Independent Contrasts: Correlation",
+	"Independent Contrasts: Regression",
+	"Discrete: Covarion", 
+	"Discrete: Heterogeneous"
 };
 
 static char    *DEPPRAMS[] =
@@ -426,12 +426,12 @@ typedef enum
 	M_MULTISTATE,
 	M_DESCINDEP,
 	M_DESCDEP,
-	M_CONTINUOUSRR,
-	M_CONTINUOUSDIR,
-	M_CONTINUOUSREG,
-	M_CONTRAST_STD,
+	M_CONTINUOUS_RR,
+	M_CONTINUOUS_DIR,
+	M_CONTINUOUS_REG,
+	M_CONTRAST,
+	M_CONTRAST_CORREL,
 	M_CONTRAST_REG,
-	M_CONTRAST_FULL,
 	M_DESCCV,
 	M_DESCHET
 } MODEL;

@@ -82,7 +82,7 @@ void	PrintDataCon(TREES* Trees, OPTIONS *Opt)
 			printf("Yetp\n");
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 			printf("%f\t", Taxa->ConData[SIndex]);
-		if(Opt->Model == M_CONTINUOUSREG)
+		if(Opt->Model == M_CONTINUOUS_REG)
 			printf("|\t%f", Taxa->Dependant);
 		printf("\n");
 	}
@@ -555,7 +555,7 @@ void	FreeData(OPTIONS *Opt)
 	Trees = Opt->Trees;
 
 	NOS = Trees->NoOfSites;
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 		NOS++;
 
 	for(Index=0;Index<Opt->Trees->NoOfTaxa;Index++)

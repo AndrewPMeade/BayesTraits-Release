@@ -417,7 +417,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		PrintPriorOpt(Str, Opt);
 
 	RNode = Opt->RecNode;
-	while((RNode != NULL) && (Opt->Model != M_CONTINUOUSRR) && (Opt->Model != M_CONTINUOUSDIR))
+	while((RNode != NULL) && (Opt->Model != M_CONTINUOUS_RR) && (Opt->Model != M_CONTINUOUS_DIR))
 	{
 		if(RNode->NodeType == MRCA)
 			fprintf(Str, "MRCA:         %s                    %f\n", RNode->Name, FindAveNodeDepth(RNode, Opt));
@@ -716,22 +716,22 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 {
 	switch(Opt->Model)
 	{
-		case M_CONTINUOUSRR:
+		case M_CONTINUOUS_RR:
 			return ModelARateName(Opt);
 
-		case M_CONTINUOUSDIR:
+		case M_CONTINUOUS_DIR:
 			return ModelBRateName(Opt);
 
-		case M_CONTINUOUSREG:
+		case M_CONTINUOUS_REG:
 			return RetModelRateName(Opt);
 
-		case M_CONTRAST_STD:
+		case M_CONTRAST_CORREL:
 			return ContrastRateNames(Opt);
 
 		case M_CONTRAST_REG:
 			return ContrastRegRateNames(Opt);
 
-		case M_CONTRAST_FULL:
+		case M_CONTRAST:
 			return ContrastFullRateNames(Opt);
 	}
 
@@ -836,7 +836,7 @@ void	AllocPrios(OPTIONS *Opt)
 		
 		Opt->Priors[Index]->RateName = StrMake(Opt->RateName[Index]);
 
-		if((Opt->Model == M_CONTRAST_FULL) && (Index >= Opt->Trees->NoOfSites))
+		if((Opt->Model == M_CONTRAST) && (Index >= Opt->Trees->NoOfSites))
 			Opt->Priors[Index]->DistVals[0] = 0;
 	}
 
@@ -866,12 +866,12 @@ MODEL_TYPE	GetModelType(MODEL Model)
 		case	M_MULTISTATE:		return MT_DISCRETE; break;
 		case	M_DESCINDEP:		return MT_DISCRETE; break;
 		case	M_DESCDEP:			return MT_DISCRETE; break;
-		case	M_CONTINUOUSRR:		return MT_CONTINUOUS; break;
-		case	M_CONTINUOUSDIR:	return MT_CONTINUOUS; break;
-		case	M_CONTINUOUSREG:	return MT_CONTINUOUS; break;
-		case	M_CONTRAST_STD:		return MT_CONTRAST; break;
+		case	M_CONTINUOUS_RR:	return MT_CONTINUOUS; break;
+		case	M_CONTINUOUS_DIR:	return MT_CONTINUOUS; break;
+		case	M_CONTINUOUS_REG:	return MT_CONTINUOUS; break;
+		case	M_CONTRAST_CORREL:	return MT_CONTRAST; break;
 		case	M_CONTRAST_REG:		return MT_CONTRAST; break;
-		case	M_CONTRAST_FULL:	return MT_CONTRAST; break;
+		case	M_CONTRAST:			return MT_CONTRAST; break;
 		case	M_DESCCV:			return MT_DISCRETE; break;
 		case	M_DESCHET:			return MT_DISCRETE; break;
 	}
@@ -1124,14 +1124,15 @@ void	PrintModelChoic(TREES *Trees)
 
 		printf("7)	Independent Contrast\n");
 
-		if(Trees->NoOfSites > 1)
-			printf("8)	Independent Contrast: Regression\n");
+		printf("8)	Independent Contrast: Correlation\n");
 
-		printf("9)	Independent Contrast: Full\n");
+		if(Trees->NoOfSites > 1)
+			printf("9)	Independent Contrast: Regression\n");
 	}
 
+	if((Trees->NoOfSites == 2) && (Trees->NoOfStates == 2))
+		printf("10)	Discrete: Covarion\n");
 #ifndef PUBLIC_BUILD
-	printf("8)	Discrete: Covarion\n");
 	printf("9)	Discrete: Heterogeneous \n");
 #endif
 }
@@ -1171,15 +1172,15 @@ int		ValidModelChoice(TREES *Trees, int ModelNo)
 	int MaxModelNo;
 
 	
-	MaxModelNo = 10;
+	MaxModelNo = 11;
 
 #ifdef PUBLIC_BUILD
-	MaxModelNo = 9;
+	MaxModelNo = 10;
 #endif
 
 	if((ModelNo < 1) || (ModelNo > MaxModelNo))
 	{
-		printf("Model must be 1-8.\n");
+		printf("Model must be 1-10.\n");
 		return FALSE;
 	}
 
@@ -1209,7 +1210,7 @@ int		ValidModelChoice(TREES *Trees, int ModelNo)
 		return FALSE;
 	}
 
-	if((ModelNo == 8) && (Trees->NoOfSites < 2))
+	if((ModelNo == 9) && (Trees->NoOfSites < 2))
 	{
 		printf("Regression, requires two or more sites.\n");
 		return FALSE;
@@ -1230,22 +1231,22 @@ MODEL	IntToModel(int No)
 		return M_DESCDEP;
 
 	if(No == 4)
-		return M_CONTINUOUSRR;
+		return M_CONTINUOUS_RR;
 
 	if(No == 5)
-		return M_CONTINUOUSDIR;
+		return M_CONTINUOUS_DIR;
 
 	if(No == 6)
-		return M_CONTINUOUSREG;
+		return M_CONTINUOUS_REG;
 
 	if(No == 7)
-		return M_CONTRAST_STD;
+		return M_CONTRAST;
 
 	if(No == 8)
-		return M_CONTRAST_REG;
-
+		return M_CONTRAST_CORREL;
+	
 	if(No == 9)
-		return M_CONTRAST_FULL;
+		return M_CONTRAST_REG;
 
 	if(No == 10)
 		return M_DESCCV;
@@ -2223,7 +2224,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 {
 	if(Opt->DataType == CONTINUOUS)
 	{
-		if(Opt->Model == M_CONTRAST_STD)
+		if(Opt->Model == M_CONTRAST_CORREL)
 		{
 			if(Command == CNODE)
 				return TRUE;

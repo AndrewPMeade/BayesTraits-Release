@@ -177,7 +177,7 @@ void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		Lh = Likelihood(Rates, Trees, Opt);
 		if(Lh == ERRLH)
 		{
-			printf("starting lh for contrast is invalid.\n");
+			printf("Starting likelihood for contrast is invalid.\n");
 			exit(0);
 		}
 	}
@@ -195,7 +195,7 @@ void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Set1RandRate(Opt, Trees, Rates) == TRUE)
 		return;
 
-	printf("%s::%d Cannot find a valid set of starting parameters, likelihood calculation may be singular.\n", __FILE__, __LINE__);
+	printf("Cannot find a valid set of starting parameters. Please see manual for solutions.\n", __FILE__, __LINE__);
 	exit(0);
 }
 

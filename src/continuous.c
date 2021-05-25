@@ -445,7 +445,7 @@ void	CalcZ(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 
 	ZPos = 0;
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		for(SIndex=0;SIndex<Trees->NoOfTaxa;SIndex++)
 			Tree->ConVars->Z[SIndex] = Trees->Taxa[SIndex]->Dependant;
@@ -607,13 +607,13 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 	Ret->InvXVX		=	NULL;
 	Ret->Beta		=	NULL;
 
-	if(Opt->Model == M_CONTINUOUSDIR)
+	if(Opt->Model == M_CONTINUOUS_DIR)
 	{
 		Ret->TVT	=	AllocMatrix(2, 2);
 		Ret->TVTTemp=	AllocMatrix(2, Trees->NoOfTaxa);
 	}
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		if(Opt->AlphaZero == FALSE)
 		{
@@ -640,7 +640,7 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 	else
 		Ret->TrueV = NULL;
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 //		Ret->KProd		= AllocMatrix(Trees->NoOfTaxa, Trees->NoOfTaxa);
 //		Ret->InvKProd	= AllocMatrix(Trees->NoOfTaxa, Trees->NoOfTaxa);
@@ -657,7 +657,7 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 
 	Ret->Beta	=	NULL;
 
-	if((Opt->Model == M_CONTINUOUSDIR) || (Opt->Model == M_CONTINUOUSRR))
+	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_RR))
 		Ret->Alpha	=	(double*)malloc(sizeof(double) * Trees->NoOfSites);
 	else
 		Ret->Alpha	=	(double*)malloc(sizeof(double) * 1);
@@ -665,14 +665,14 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 	if(Ret->Alpha == NULL)
 		MallocErr();
 
-	if((Opt->Model == M_CONTINUOUSDIR) || (Opt->Model == M_CONTINUOUSREG))
+	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_REG))
 	{
 		Ret->Beta = (double*)malloc(sizeof(double) * Trees->NoOfSites);
 		if(Ret->Beta == NULL)
 			MallocErr();
 	}
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		Ret->Z		=	(double*)malloc(sizeof(double) * Trees->NoOfTaxa);
 		Ret->ZA		=	(double*)malloc(sizeof(double) * Trees->NoOfTaxa);
@@ -1188,20 +1188,20 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 	int		x,y;
 	double	Val;
 
-	if((Opt->Analsis == ANALML) && (Opt->Model == M_CONTINUOUSDIR))
+	if((Opt->Analsis == ANALML) && (Opt->Model == M_CONTINUOUS_DIR))
 		FindTVT(Trees, Tree, Opt->AlphaZero);
 
-	if((Opt->Analsis == ANALML) && (Opt->Model == M_CONTINUOUSREG))
+	if((Opt->Analsis == ANALML) && (Opt->Model == M_CONTINUOUS_REG))
 		FindMLRagVals(Trees, Tree, Opt);
 
 	for(x=0;x<Trees->NoOfSites;x++)
 	{
 		if(Opt->Analsis == ANALML)
 		{
-			if(Opt->Model == M_CONTINUOUSDIR)
+			if(Opt->Model == M_CONTINUOUS_DIR)
 				MLFindAlphaBeta(Trees, Tree, x, Opt->AlphaZero);
 
-			if(Opt->Model == M_CONTINUOUSRR)
+			if(Opt->Model == M_CONTINUOUS_RR)
 			{
 				if(Opt->AlphaZero == FALSE)
 					Tree->ConVars->Alpha[x] = MLFindAlphaMean(Trees, Tree, x);
@@ -1211,17 +1211,17 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 		}
 		else
 		{
-			if((Opt->Model == M_CONTINUOUSRR) || (Opt->Model == M_CONTINUOUSDIR))
+			if((Opt->Model == M_CONTINUOUS_RR) || (Opt->Model == M_CONTINUOUS_DIR))
 				Tree->ConVars->Alpha[x] = Means[x];
 			else
 				Tree->ConVars->Alpha[0] = Means[0];
 
-			if((Opt->Model == M_CONTINUOUSDIR) || (Opt->Model == M_CONTINUOUSREG))
+			if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_REG))
 				Tree->ConVars->Beta[x] = Beta[x];
 		}
 	}
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		Tree->ConVars->Sigma->me[0][0] = FindMLRegVar(Trees, Tree);
 		return;
@@ -1233,7 +1233,7 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 		{
 			if(Opt->TestCorrel == TRUE)
 			{
-				if(Opt->Model == M_CONTINUOUSRR)
+				if(Opt->Model == M_CONTINUOUS_RR)
 					Val = FindMLVar(Trees, Tree, x, Tree->ConVars->Alpha[x], 0, y, Tree->ConVars->Alpha[y], 0);
 				else
 					Val = FindMLVar(Trees, Tree, x, Tree->ConVars->Alpha[x], Tree->ConVars->Beta[x], y, Tree->ConVars->Alpha[y], Tree->ConVars->Beta[y]);
@@ -1245,7 +1245,7 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 			{
 				if(x==y)
 				{
-					if(Opt->Model == M_CONTINUOUSRR)
+					if(Opt->Model == M_CONTINUOUS_RR)
 						Tree->ConVars->Sigma->me[x][x] = FindMLVar(Trees, Tree, x, Tree->ConVars->Alpha[x], 0, y, Tree->ConVars->Alpha[y], 0);
 					else
 						Tree->ConVars->Sigma->me[x][x] = FindMLVar(Trees, Tree, x, Tree->ConVars->Alpha[x], Tree->ConVars->Beta[x], y, Tree->ConVars->Alpha[y], Tree->ConVars->Beta[y]);
@@ -1296,7 +1296,7 @@ void	CalcZAlpha(TREES* Trees, TREE *Tree, MODEL Model)
 
 	ZPos = 0;
 
-	if(Model == M_CONTINUOUSREG)
+	if(Model == M_CONTINUOUS_REG)
 	{
 		RegCalcZAlpha(Trees, Tree);
 		return;
@@ -1308,11 +1308,11 @@ void	CalcZAlpha(TREES* Trees, TREE *Tree, MODEL Model)
 		{
 			switch(Model)
 			{
-				case M_CONTINUOUSRR:
+				case M_CONTINUOUS_RR:
 					Tree->ConVars->ZA[ZPos] = Tree->ConVars->Z[ZPos] - Tree->ConVars->Alpha[SIndex];
 				break;
 
-				case M_CONTINUOUSDIR:
+				case M_CONTINUOUS_DIR:
 					Tree->ConVars->ZA[ZPos] = Tree->ConVars->Z[ZPos] - (Tree->ConVars->Alpha[SIndex] + (Tree->ConVars->Beta[SIndex] * Tree->ConVars->V->me[TIndex][TIndex]));
 				break;
 			}
@@ -1323,7 +1323,7 @@ void	CalcZAlpha(TREES* Trees, TREE *Tree, MODEL Model)
 
 double	FindDet(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 {
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		return (Tree->ConVars->LogDetOfV) + ((double)Trees->NoOfTaxa * Tree->ConVars->LogDetOfSigma);
 	}
@@ -1782,7 +1782,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	PrintMathematicaMatrix(Tree->ConVars->Sigma, "Sigma = ", stdout);
 #endif
 	
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		CV->InvSigma->me[0][0] = 1.0 / CV->Sigma->me[0][0];
 		
@@ -1821,7 +1821,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 //#endif
 
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 		Len = Trees->NoOfTaxa;
 	else
 		Len = Trees->NoOfSites * Trees->NoOfTaxa;
@@ -1836,7 +1836,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	Det = -0.5 * Det;
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 		Ret = -(double)(Trees->NoOfTaxa);
 	else
 		Ret = -(double)(Trees->NoOfSites * Trees->NoOfTaxa);
@@ -1985,7 +1985,7 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 #endif
 #endif	
 	
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		for(Index=0;Index<Trees->NoOfTaxa;Index++)
 			CV->DepVect[Index] = Trees->Taxa[Index]->Dependant;
@@ -2089,7 +2089,7 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 	CheckZeroTaxaBL(Trees);
 	SetTreesDistToRoot(Trees);
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 		RemoveDependantData(Opt, Trees);
 	
 	AddRecNodes(Opt, Trees);

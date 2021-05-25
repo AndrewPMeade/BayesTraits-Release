@@ -39,19 +39,19 @@ int		FindNoConRates(OPTIONS *Opt)
 {
 	switch(Opt->Model)
 	{
-		case M_CONTINUOUSRR:
+		case M_CONTINUOUS_RR:
 			return Opt->Trees->NoOfSites;
 		break;
 			
-		case M_CONTINUOUSDIR:
+		case M_CONTINUOUS_DIR:
 			return Opt->Trees->NoOfSites  * 2;
 		break;
 
-		case M_CONTINUOUSREG:
+		case M_CONTINUOUS_REG:
 			return Opt->Trees->NoOfSites + 1; 
 		break;
 
-		case M_CONTRAST_STD:
+		case M_CONTRAST_CORREL:
 			return Opt->Trees->NoOfSites;
 		break;
 
@@ -59,7 +59,7 @@ int		FindNoConRates(OPTIONS *Opt)
 			return Opt->Trees->NoOfSites; 
 		break;
 
-		case M_CONTRAST_FULL:
+		case M_CONTRAST:
 			return Opt->Trees->NoOfSites * 2;
 		break;
 
@@ -133,7 +133,7 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 		return;
 	}
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		Rates->Means[0] = Rates->Rates[0];
 
@@ -152,10 +152,10 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 		Rates->Means[Index] = Rates->Rates[Index];
 	
 
-	if(Opt->Model == M_CONTINUOUSRR)
+	if(Opt->Model == M_CONTINUOUS_RR)
 		return;
 
-	if(Opt->Model == M_CONTINUOUSDIR)
+	if(Opt->Model == M_CONTINUOUS_DIR)
 	{
 		for(;Index<Rates->NoOfRates;Index++)
 			Rates->Beta[Index - Opt->Trees->NoOfSites] = Rates->Rates[Index];
@@ -401,7 +401,7 @@ void	CreatMCMCContrastRates(OPTIONS *Opt, RATES *Rates)
 
 	Trees = Opt->Trees;
 
-	if(Opt->Model == M_CONTRAST_STD)
+	if(Opt->Model == M_CONTRAST_CORREL)
 		Rates->NoOfRates = Trees->NoOfSites;
 	
 	if(Opt->Model == M_CONTRAST_REG)
@@ -412,7 +412,7 @@ void	CreatMCMCContrastRates(OPTIONS *Opt, RATES *Rates)
 			Rates->NoOfRates = Trees->NoOfSites;
 	}
 	
-	if(Opt->Model == M_CONTRAST_FULL)
+	if(Opt->Model == M_CONTRAST)
 		Rates->NoOfRates = Trees->NoOfSites * 2;
 	
 	Rates->NoOfFullRates = Rates->NoOfRates;
@@ -460,7 +460,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 			for(Index=0;Index<Rates->NoOfRates;Index++)
 				Rates->Rates[Index] = 0;
 
-			if(Opt->Model == M_CONTINUOUSREG)
+			if(Opt->Model == M_CONTINUOUS_REG)
 				Rates->Means = (double*)malloc(sizeof(double));
 			else
 				Rates->Means = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
@@ -468,7 +468,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 			if(Rates->Means == NULL)
 				MallocErr();
 
-			if((Opt->Model == M_CONTINUOUSDIR) || (Opt->Model == M_CONTINUOUSREG))
+			if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_REG))
 			{
 				Rates->Beta = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
 				if(Rates->Beta== NULL)
@@ -726,7 +726,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->Contrast		=	NULL;
 	
-	// Must work out how its being inishlised 
+
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	
 	if(Opt->UseGamma == TRUE)
@@ -750,9 +750,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 			Ret->Kappa = Opt->FixKappa;
 		else
 			Ret->Kappa = 1;
-	}
-
-	
+	}	
 	
 	if(Opt->DataType == CONTINUOUS)
 	{
@@ -935,7 +933,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 	if((Buffer == NULL) || (Ret == NULL))
 		MallocErr();
 
-	if(Opt->Model == M_CONTRAST_STD)
+	if(Opt->Model == M_CONTRAST_CORREL)
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 		{
@@ -962,7 +960,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		return Ret;
 	}
 
-	if(Opt->Model == M_CONTRAST_FULL)
+	if(Opt->Model == M_CONTRAST)
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 		{
@@ -980,7 +978,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		return Ret;
 	}
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		sprintf(Buffer, "Alpha");
 		Ret[PIndex++] = StrMake(Buffer);
@@ -1000,7 +998,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		Ret[PIndex++] = StrMake(Buffer);
 	}
 	
-	if(Opt->Model == M_CONTINUOUSDIR)
+	if(Opt->Model == M_CONTINUOUS_DIR)
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 		{
@@ -1094,7 +1092,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 	if(Opt->LoadModels == TRUE)
 		fprintf(Str, "Model No\t");
 
-	if(Opt->Model == M_CONTRAST_STD)
+	if(Opt->Model == M_CONTRAST_CORREL)
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 			fprintf(Str, "Alpha %d\t", Index+1);
@@ -1109,7 +1107,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		}
 	}
 
-	if(Opt->Model == M_CONTRAST_FULL)
+	if(Opt->Model == M_CONTRAST)
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 			fprintf(Str, "Alpha %d\t", Index+1);
@@ -1125,7 +1123,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 			fprintf(Str, "Beta %d\t", Index);
 	}
 
-	if((Opt->Model == M_CONTINUOUSDIR) || (Opt->Model == M_CONTINUOUSRR))
+	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_RR))
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 		{
@@ -1133,13 +1131,13 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		}
 	}
 	
-	if(Opt->Model == M_CONTINUOUSDIR)
+	if(Opt->Model == M_CONTINUOUS_DIR)
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 			fprintf(Str, "Beta %d\t", Index+1);
 	}
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		fprintf(Str, "Alpha\t");
 
@@ -1157,7 +1155,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		PrintConRegVarCoVarHeadder(Str, Opt->Trees->NoOfSites);
 	}
 	
-	if((Opt->Model == M_CONTINUOUSDIR) || (Opt->Model == M_CONTINUOUSRR))
+	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_RR))
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 			fprintf(Str, "Sigma^2 %d \t", Index+1);
@@ -1562,7 +1560,7 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 	CONTRAST	*Con;
 	double		Alpha, Sigma, Lh;
 		
-	if(Opt->Model != M_CONTRAST_STD)
+	if(Opt->Model != M_CONTRAST_CORREL)
 		return;
 	
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
@@ -1606,12 +1604,12 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	if(Opt->LoadModels == TRUE)
 		fprintf(Str, "%d\t", Rates->ModelNo);
 
-	if((Opt->Model == M_CONTINUOUSRR) || (Opt->Model == M_CONTINUOUSDIR))
+	if((Opt->Model == M_CONTINUOUS_RR) || (Opt->Model == M_CONTINUOUS_DIR))
 	{
 		for(Index=0;Index<Trees->NoOfSites;Index++)
 		{
 			fprintf(Str, "%0.12f\t", ConVar->Alpha[Index]);
-			if(Opt->Model == M_CONTINUOUSDIR)
+			if(Opt->Model == M_CONTINUOUS_DIR)
 				fprintf(Str, "%0.12f\t", ConVar->Beta[Index]);
 		}	
 			for(Index=0;Index<Trees->NoOfSites;Index++)
@@ -1622,7 +1620,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 					fprintf(Str, "%0.12f\t", CalcR(ConVar->Sigma->me[x][y], ConVar->Sigma->me[x][x], ConVar->Sigma->me[y][y]));
 	}
 
-	if(Opt->Model == M_CONTRAST_STD)
+	if(Opt->Model == M_CONTRAST_CORREL)
 	{
 		for(Index=0;Index<NOS;Index++)
 			fprintf(Str, "%0.12f\t", Rates->Contrast->Alpha[Index]);
@@ -1637,7 +1635,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		}
 	}
 	
-	if(Opt->Model == M_CONTRAST_FULL)
+	if(Opt->Model == M_CONTRAST)
 	{
 		for(Index=0;Index<NOS;Index++)
 			fprintf(Str, "%0.12f\t", Rates->Contrast->Alpha[Index]);
@@ -1653,7 +1651,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 			fprintf(Str, "%0.12f\t", Rates->Contrast->RegBeta[Index]);
 	}
 
-	if(Opt->Model == M_CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		fprintf(Str, "%0.12f\t", ConVar->Alpha[0]);
 		for(Index=0;Index<Trees->NoOfSites;Index++)
@@ -2572,7 +2570,7 @@ void	ChangeConRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 
 	if(Opt->AlphaZero == TRUE)
 	{
-		if(Opt->Model == M_CONTINUOUSREG)
+		if(Opt->Model == M_CONTINUOUS_REG)
 			Rates->Rates[0] = 0;
 		else
 		{

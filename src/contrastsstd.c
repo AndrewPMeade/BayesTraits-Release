@@ -6,7 +6,7 @@
 #include "typedef.h"
 #include "genlib.h"
 
-double	CaclFullContrastLhMLSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, int SiteNo)
+double	CaclStdContrastLhMLSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, int SiteNo)
 {
 	int			Index, CIndex;
 	TREE		*T;
@@ -60,7 +60,7 @@ double	CaclFullContrastLhMLSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Si
 	return Ret;
 }
 
-double	CaclFullContrastLhML(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+double	CaclStdContrastLhML(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	double Ret;
 	int Index;
@@ -68,7 +68,7 @@ double	CaclFullContrastLhML(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	Ret = 0;
 
 	for(Index=0;Index<Trees->NoOfSites;Index++)
-		Ret += CaclFullContrastLhMLSite(Opt, Trees, Rates, Index);
+		Ret += CaclStdContrastLhMLSite(Opt, Trees, Rates, Index);
 
 	return Ret;
 }
@@ -86,7 +86,7 @@ double	CaclAlphaErr(NODE N, double EstAlpha, int SiteNo)
 	return Ret;
 }
 
-double CaclFullContrastLhMCMCSite(OPTIONS *Opt, TREES* Trees, RATES* Rates, int SiteNo)
+double CaclStdContrastLhMCMCSite(OPTIONS *Opt, TREES* Trees, RATES* Rates, int SiteNo)
 {
 	int			Index, CIndex;
 	TREE		*T;
@@ -148,7 +148,7 @@ double CaclFullContrastLhMCMCSite(OPTIONS *Opt, TREES* Trees, RATES* Rates, int 
 	return Ret;
 }
 
-double	CaclFullContrastLhMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+double	CaclStdContrastLhMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	double Ret;
 	int Index;
@@ -156,19 +156,18 @@ double	CaclFullContrastLhMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	Ret = 0;
 
 	for(Index=0;Index<Trees->NoOfSites;Index++)
-		Ret += CaclFullContrastLhMCMCSite(Opt, Trees, Rates, Index);
+		Ret += CaclStdContrastLhMCMCSite(Opt, Trees, Rates, Index);
 
 	return Ret;
 }
 
-double	CaclFullContrastLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+double	CaclStdContrastLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	if(Opt->Analsis == ANALML)
-		return CaclFullContrastLhML(Opt, Trees, Rates);
-
-
+		return CaclStdContrastLhML(Opt, Trees, Rates);
+	
 	if(Opt->Analsis == ANALMCMC)
-		return CaclFullContrastLhMCMC(Opt, Trees, Rates);
+		return CaclStdContrastLhMCMC(Opt, Trees, Rates);
 
 	return ERRLH;
 }

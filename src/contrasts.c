@@ -17,7 +17,7 @@
 #include "linalg.h"
 #include "ContrastsTrans.h"
 #include "likelihood.h"
-#include "contrastsfull.h"
+#include "contrastsstd.h"
 #include "priors.h"
 
 #ifdef CLIK_P
@@ -1245,6 +1245,7 @@ void	CaclRegBeta(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 
 // Method use pre Rob Code
+/*
 double	CaclStdContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 	CONTRASTR	*Con;
@@ -1265,6 +1266,7 @@ double	CaclStdContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	
 	return Rates->Lh;
 } 
+*/
 
 double	CalcRegAlpha(TREE *Tree, CONTRASTR *CR, int NoSites)
 {
@@ -1342,14 +1344,14 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	CalcContrast(Trees, Rates);	
 #endif	
 
-	if(Opt->Model == M_CONTRAST_STD)
+	if(Opt->Model == M_CONTRAST_CORREL)
 		Rates->Lh = CalcContLh(Opt, Trees, Rates);
 	
 	if(Opt->Model == M_CONTRAST_REG)
 		Rates->Lh = CaclRegContrastLh(Opt, Trees, Rates);
 
-	if(Opt->Model == M_CONTRAST_FULL)
-		Rates->Lh = CaclFullContrastLh(Opt, Trees, Rates);
+	if(Opt->Model == M_CONTRAST)
+		Rates->Lh = CaclStdContrastLh(Opt, Trees, Rates);
 
 	if(Rates->Lh != Rates->Lh)
 		return ERRLH;
@@ -1421,7 +1423,7 @@ void		InitFullContrastRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConRates)
 	if(Opt->Analsis == ANALMCMC)
 	{
 		CalcContrast(Opt->Trees, Rates);
-		CaclFullContrastLhML(Opt, Opt->Trees, Rates);
+		CaclStdContrastLhML(Opt, Opt->Trees, Rates);
 	}
 }
 
@@ -1536,13 +1538,13 @@ void	MapConValsToRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 
 	NoSites = Opt->Trees->NoOfSites;
 	
-	if(Opt->Model == M_CONTRAST_STD)
+	if(Opt->Model == M_CONTRAST_CORREL)
 	{
 		memcpy(Rates->Rates, ConR->Alpha, sizeof(double) * NoSites);
 		return;
 	}
 
-	if(Opt->Model == M_CONTRAST_FULL)
+	if(Opt->Model == M_CONTRAST)
 	{
 		memcpy(Rates->Rates, ConR->Alpha, sizeof(double) * NoSites);
 		memcpy(&Rates->Rates[NoSites], ConR->Sigma, sizeof(double) * NoSites);
@@ -1552,7 +1554,7 @@ void	MapConValsToRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 	if(Opt->Model == M_CONTRAST_REG)
 	{
 		Rates->Rates[0] = ConR->RegAlpha;
-		memcpy((void*)&Rates->Rates[1], ConR->RegBeta, sizeof(double) * NoSites);
+		memcpy((void*)&Rates->Rates[1], ConR->RegBeta, sizeof(double) * (NoSites-1));
 		return;
 	}
 }
@@ -1563,7 +1565,7 @@ void	MapRatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 
 	NoSites = Opt->Trees->NoOfSites;
 	
-	if(Opt->Model == M_CONTRAST_STD)
+	if(Opt->Model == M_CONTRAST_CORREL)
 		memcpy(ConR->Alpha, Rates->Rates, sizeof(double) * NoSites);
 	
 	if(Opt->Model == M_CONTRAST_REG)
@@ -1571,15 +1573,15 @@ void	MapRatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 		ConR->RegAlpha = Rates->Rates[0];
 
 		if(Opt->TestCorrel == TRUE)
-			memcpy(ConR->RegBeta, (void*)&Rates->Rates[1], sizeof(double) * NoSites);
+			memcpy(ConR->RegBeta, (void*)&Rates->Rates[1], sizeof(double) * (NoSites-1));
 		else
 		{
-			for(x=0;x<NoSites;x++)
+			for(x=0;x<NoSites-1;x++)
 				ConR->RegBeta[x] = 0.0;
 		}
 	}
 
-	if(Opt->Model == M_CONTRAST_FULL)
+	if(Opt->Model == M_CONTRAST)
 	{
 		memcpy(ConR->Alpha, Rates->Rates, sizeof(double) * NoSites);
 		memcpy(ConR->Sigma, &Rates->Rates[NoSites], sizeof(double) * NoSites);
@@ -1595,13 +1597,13 @@ CONTRASTR*	CreatContrastRates(OPTIONS *Opt, RATES *Rates)
 	Ret = AllocContrastRates(Opt, Rates);
 	Rates->Contrast = Ret;
 
-	if(Opt->Model == M_CONTRAST_STD)
+	if(Opt->Model == M_CONTRAST_CORREL)
 		InitStdContrastRates(Opt, Rates, Ret);
 	
 	if(Opt->Model == M_CONTRAST_REG)
 		InitRegContrastRates(Opt, Rates, Ret);
 
-	if(Opt->Model == M_CONTRAST_FULL)
+	if(Opt->Model == M_CONTRAST)
 		InitFullContrastRates(Opt, Rates, Ret);
 
 	if(Opt->Analsis == ANALMCMC)
@@ -1698,7 +1700,7 @@ void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	She
 {
 	int Pos;
 	double Dev;
-	
+
 	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
 
 	Pos = Shed->PNo;
@@ -1708,7 +1710,7 @@ void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	She
 	
 	return;
 
-	if(Opt->Model == M_CONTRAST_STD)
+	if(Opt->Model == M_CONTRAST_CORREL)
 		MutateStdContrastRates(Opt, Trees, Rates, Shed);
 
 	if(Opt->Model == M_CONTRAST_REG)
@@ -1743,12 +1745,12 @@ void	CopyContrastRates(OPTIONS *Opt, RATES* R1, RATES* R2, int NoSites)
 	if(Opt->Analsis == ANALMCMC)
 		memcpy(R1->Rates, R2->Rates, sizeof(double) * R1->NoOfRates);
 
-	if(Opt->Model == M_CONTRAST_STD)
+	if(Opt->Model == M_CONTRAST_CORREL)
 		CopyContrastRatesStd(R1, R2, C1, C2, NoSites);
 
 	if(Opt->Model == M_CONTRAST_REG)
 		CopyContrastRatesReg(R1, R2, C1, C2, NoSites);
 
-	if(Opt->Model == M_CONTRAST_FULL)
+	if(Opt->Model == M_CONTRAST)
 		CopyContrastRatesFull(R1, R2, C1, C2, NoSites);
 } 
