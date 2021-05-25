@@ -158,7 +158,12 @@ void	SetVarRatesShed(OPTIONS *Opt, SCHEDULE *Shed)
 	NormaliseVector(Shed->FreqVarRatesOp, Shed->NoVarRatesOp);
 }
 
-void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
+void	SetCustomSchdule(SCHEDULE *Shed, OPTIONS *Opt)
+{
+	return;
+}
+
+void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 {
 	int		Rates, Index;
 	
@@ -283,27 +288,47 @@ void	PrintAutoTuneHeader(FILE* Str,SCHEDULE* Shed)
 		PrintATHeader(Str,Shed->FullATList[Index]);
 }
 
+void	PrintCustomShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
+{
+	int ShedNo, Index;
+	CUSTOM_SCHEDULE *CSched;
+
+	for(ShedNo=0;ShedNo<Shed->NoCShed;ShedNo++)
+	{
+		CSched = Shed->CShedList[ShedNo];
+
+		fprintf(Str, "\nCustom schedule %d\tStarting\t%lld\n", ShedNo, CSched->Iteration);
+	//	fprintf(Str, "It:\t%lld\t", CSched->Iteration);
+
+		for(Index=0;Index<Shed->NoOfOpts;Index++)
+		{
+			if(CSched->Frequencies[Index] != 0)
+				fprintf(Str, "%s\t%2.2f\n", SHEDOP[Index], CSched->Frequencies[Index]*100);
+		}
+
+		fprintf(Str, "\n\n");
+	}
+}
 
 void	PrintShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
 {
 	int	Index;
-	double	Last;
-
-	Last = 0;
 	
+	fprintf(Str, "Default schedule\n");
+
 	for(Index=0;Index<Shed->NoOfOpts;Index++)
 	{
 		if(Shed->OptFreq[Index] != 0)
 			fprintf(Str, "%s\t%2.2f\n", SHEDOP[Index], Shed->OptFreq[Index]*100);
-		Last = Shed->OptFreq[Index];
 	}
-	
-	Last = 0;
+		
+
+	PrintCustomShedHeadder(Opt, Shed, Str);
+
 	for(Index=0;Index<Shed->NoOfOpts;Index++)
 	{
 		if(Shed->OptFreq[Index] != 0)
 			fprintf(Str, "%s Tried\t%% Accepted\t", SHEDOP[Index]);
-		Last = Shed->OptFreq[Index];
 	}
 
 	PrintAutoTuneHeader(Str, Shed);
@@ -331,7 +356,7 @@ void	PrintShed(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
 		}
 		Last = Shed->OptFreq[Index];
 	}
-
+	
 	PrintAutoTune(Str, Opt, Shed);
 
 	fprintf(Str, "%f\t", (double)Shed->SNoAcc / Shed->SNoTried);
