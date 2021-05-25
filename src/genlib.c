@@ -15,7 +15,7 @@ void		MallocErrFull(char* FileName, int LineNo)
 	exit(1);
 }
 
-char*		StrMake(const char* Str)
+char*		StrMake(char* Str)
 {
 	char*	Ret;
 

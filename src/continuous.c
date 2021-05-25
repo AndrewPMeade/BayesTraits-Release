@@ -550,14 +550,23 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 
 void	FindInvV(TREES *Trees, TREE* Tree)
 {
+	static	double	*T1=NULL;
+	static	int		*T2=NULL;
+	static	MATRIX*	TMat=NULL;
 	int		Err;
-	TEMPCONVAR*	TempCon;
 
-	TempCon = Trees->TempConVars;
+	if(T1 == NULL)
+	{
+		T1 = (double*)malloc(sizeof(double)*Trees->NoOfTaxa);
+		T2 = (int*)malloc(sizeof(int)*Trees->NoOfTaxa);
+		TMat = AllocMatrix(Trees->NoOfTaxa, Trees->NoOfTaxa);
+		if((T1==NULL) || (T2==NULL) || (TMat == NULL))
+			MallocErr();
+	}
 
-	CopyMatrix(TempCon->TMat, Tree->ConVars->V);
+	CopyMatrix(TMat, Tree->ConVars->V);
 
-	Err = InvertMatrixAndDet(TempCon->TMat->me, Trees->NoOfTaxa, TempCon->T1, TempCon->T2, Tree->ConVars->InvV->me, &Tree->ConVars->LogDetOfV);
+	Err = InvertMatrixAndDet(TMat->me, Trees->NoOfTaxa, T1, T2, Tree->ConVars->InvV->me, &Tree->ConVars->LogDetOfV);
 
 	if(Err == ERROR)
 	{
@@ -645,29 +654,124 @@ void	FindTVT(TREES* Trees, TREE *Tree, int AlphaZero)
 	ConVars->TVT->me[1][1] = Temp * ConVars->TVT->me[1][1];
 }
 
+#ifdef HAHALJKDASLJLJK
 void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 {
-	TEMPCONVAR*	TempCon;
+	static MATRIX	*X=NULL;
+	static MATRIX	*TranX;
+	static MATRIX	*NX;
+	static double	*Y;
+	
 	int		x,y;
 	CONVAR	*CV;
 
-
 	CV = Tree->ConVars;
-	TempCon = Trees->TempConVars;
+
+	if(X == NULL)
+	{
+
+		X		= AllocMatrix(Trees->NoOfTaxa, Trees->NoOfSites + 1);
+		TranX	= AllocMatrix(Trees->NoOfSites + 1, Trees->NoOfTaxa);
+		NX		= AllocMatrix(Trees->NoOfSites + 1, Trees->NoOfSites + 1);
+		Y		= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
+	}
 	
 	for(x=0;x<Trees->NoOfTaxa;x++)
-		TempCon->Y[x] = Trees->Taxa[x].Dependant;
+		Y[x] = Trees->Taxa[x].Dependant;
+
+
+	for(x=0;x<Trees->NoOfTaxa;x++)
+	{
+		X->me[x][0] = 1;
+	/*	X->me[x][0] = 0; */
+	}
+
+	for(x=1;x<Trees->NoOfSites+1;x++)
+	{
+		for(y=0;y<Trees->NoOfTaxa;y++)
+			X->me[y][x] = Trees->Taxa[y].ConData[x-1];
+	}
+
+	/* Calc X'.InvV.Y */
+	MatrixByVectMult(CV->InvV, Y, CV->TVect1);
+	VectByMatrixMult(CV->TVect1, X, CV->TVect2);
+	/* Now X'.InvV.Y is in TVect2 */
+
+
+	/* Calc d */
+	MatrixMult(CV->InvV, X, CV->TVTTemp);
+
+	Transpose(X, TranX);
+	MatrixMult(TranX, CV->TVTTemp, NX);
+	InvertMatrix(NX->me, NX->NoOfCols, CV->TVect1, (int*)CV->TVect3, CV->InvXVX->me);
+	MatrixByVectMult(CV->InvXVX, CV->TVect2, CV->TVect1);
+
+	CV->Alpha[0] = CV->TVect1[0];
+	for(x=1;x<Trees->NoOfSites+1;x++)
+		CV->Beta[x-1] = CV->TVect1[x];
+/*
+	printf("ML Vals\n");
+	for(x=0;x<Trees->NoOfSites+1;x++)
+		printf("%f\t", CV->TVect1[x]);
+	printf("\nML Done\n");
+*/
+	
+/*	To Check With Mathematica. 
+	PrintMathematicaMatrix(X, "X = ", stdout);
+	PrintMathematicaMatrix(CV->InvV, "InvV = ", stdout);
+	PrintMathematicaVect(Y, Trees->NoOfTaxa, "Y = ", stdout);
+	printf("B1 = Inverse[Transpose[X].InvV.X]\n");
+	printf("B2 = Transpose[X].InvV.Y\n");
+	printf("B = B1.B2\n");
+
+	exit(0);
+*/
+}
+#endif
+
+void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
+{
+	static MATRIX	*X=NULL;
+	static MATRIX	*TranX;
+	static MATRIX	*NX;
+	static double	*Y;
+	
+	int		x,y;
+	CONVAR	*CV;
+
+	CV = Tree->ConVars;
+
+	if(X == NULL)
+	{
+		if(Opt->AlphaZero == FALSE)
+		{
+			X		= AllocMatrix(Trees->NoOfTaxa, Trees->NoOfSites + 1);
+			TranX	= AllocMatrix(Trees->NoOfSites + 1, Trees->NoOfTaxa);
+			NX		= AllocMatrix(Trees->NoOfSites + 1, Trees->NoOfSites + 1);
+		}
+		else
+		{
+			X		= AllocMatrix(Trees->NoOfTaxa, Trees->NoOfSites);
+			TranX	= AllocMatrix(Trees->NoOfSites, Trees->NoOfTaxa);
+			NX		= AllocMatrix(Trees->NoOfSites, Trees->NoOfSites);
+		}
+
+		Y		= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
+	}
+	
+	for(x=0;x<Trees->NoOfTaxa;x++)
+		Y[x] = Trees->Taxa[x].Dependant;
 
 
 	if(Opt->AlphaZero == FALSE)
 	{
 		for(x=0;x<Trees->NoOfTaxa;x++)
-			TempCon->X->me[x][0] = 1;
+			X->me[x][0] = 1;
 
 		for(x=1;x<Trees->NoOfSites+1;x++)
 		{
 			for(y=0;y<Trees->NoOfTaxa;y++)
-				TempCon->X->me[y][x] = Trees->Taxa[y].ConData[x-1];
+				X->me[y][x] = Trees->Taxa[y].ConData[x-1];
 		}
 	}
 	else
@@ -675,21 +779,22 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 		for(x=0;x<Trees->NoOfSites;x++)
 		{
 			for(y=0;y<Trees->NoOfTaxa;y++)
-				TempCon->X->me[y][x] = Trees->Taxa[y].ConData[x];
+				X->me[y][x] = Trees->Taxa[y].ConData[x];
 		}
 	}
 
 	/* Calc X'.InvV.Y */
-	MatrixByVectMult(CV->InvV, TempCon->Y, CV->TVect1);
-	VectByMatrixMult(CV->TVect1, TempCon->X, CV->TVect2);
+	MatrixByVectMult(CV->InvV, Y, CV->TVect1);
+	VectByMatrixMult(CV->TVect1, X, CV->TVect2);
 	/* Now X'.InvV.Y is in TVect2 */
 
-	/* Calc d */
-	MatrixMult(CV->InvV, TempCon->X, CV->TVTTemp);
 
-	Transpose(TempCon->X, TempCon->TranX);
-	MatrixMult(TempCon->TranX, CV->TVTTemp, TempCon->NX);
-	InvertMatrix(TempCon->NX->me, TempCon->NX->NoOfCols, CV->TVect1, (int*)CV->TVect3, CV->InvXVX->me);
+	/* Calc d */
+	MatrixMult(CV->InvV, X, CV->TVTTemp);
+
+	Transpose(X, TranX);
+	MatrixMult(TranX, CV->TVTTemp, NX);
+	InvertMatrix(NX->me, NX->NoOfCols, CV->TVect1, (int*)CV->TVect3, CV->InvXVX->me);
 	MatrixByVectMult(CV->InvXVX, CV->TVect2, CV->TVect1);
 
 	if(Opt->AlphaZero == FALSE)
@@ -1186,17 +1291,15 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates)
 MATRIX*	FindRegVar(TREES *Trees, RATES* Rates, int AlphaZero)
 {
 	MATRIX	*Ret;
-	TEMPCONVAR	*TempCon;
-	
-	/*	static MATRIX	*XT=NULL;
+	static MATRIX	*XT=NULL;
 	static MATRIX	*X=NULL;
 	static MATRIX	*TempV1;
-	static MATRIX	*TempV2; */
+	static MATRIX	*TempV2;
+	TAXA	*Taxa;
 	TREE	*Tree;
 	CONVAR	*CV;
+	int		x,y;
 	int		Size;
-
-	TempCon = Trees->TempConVars;
 
 	Tree = &Trees->Tree[Rates->TreeNo];
 	CV = Tree->ConVars;
@@ -1206,15 +1309,46 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates, int AlphaZero)
 	else
 		Size = Trees->NoOfSites;
 
+	if(X == NULL)
+	{
+		X		= AllocMatrix(Trees->NoOfTaxa, Size);
+		XT		= AllocMatrix(Size, Trees->NoOfTaxa);
+		TempV1	= AllocMatrix(Size, Trees->NoOfTaxa);
+		TempV2	= AllocMatrix(Size, Size);
+
+		if(AlphaZero == FALSE)
+		{
+			for(x=0;x<Trees->NoOfTaxa;x++)
+			{
+				Taxa = &Trees->Taxa[x];
+				X->me[x][0] = 1;
+				for(y=0;y<Trees->NoOfSites;y++)
+					X->me[x][y+1] = Taxa->ConData[y];
+			}
+		}
+		else
+		{
+			for(x=0;x<Trees->NoOfTaxa;x++)
+			{
+				Taxa = &Trees->Taxa[x];
+				for(y=0;y<Trees->NoOfSites;y++)
+					X->me[x][y] = Taxa->ConData[y];
+			}
+		}
+
+		Transpose(X, XT);
+	}
+
 	Ret = AllocMatrix(Size, Size);
+
 
 	/* Do 
 		Sig*Inverse[Transpose[X].InvV.X]
 	*/
-	MatrixMult(TempCon->XT, CV->InvV, TempCon->TempV1);
-	MatrixMult(TempCon->TempV1, TempCon->RVX, TempCon->TempV2);
+	MatrixMult(XT, CV->InvV, TempV1);
+	MatrixMult(TempV1, X, TempV2);
 
-	InvertMatrix(TempCon->TempV2->me, Size, CV->TVect1,(int*)CV->TVect2, Ret->me);
+	InvertMatrix(TempV2->me, Size, CV->TVect1,(int*)CV->TVect2, Ret->me);
 	
 	ScaleMatrix(Ret, CV->Sigma->me[0][0]);
 
@@ -1260,7 +1394,7 @@ void	SetEstData(TREES *Trees, RATES* Rates)
 double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 	double	Val;
-	MATRIX	*TMat;
+	static MATRIX	*TMat;
 	int		Index;
 	int		Len;
 	double	Det;
@@ -1325,7 +1459,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	PrintMathematicaMatrix(Tree->ConVars->Sigma, "Sigma = ", stdout);
 #endif
 
-//	if(TMat == NULL)
+	if(TMat == NULL)
 		TMat = AllocMatrix(Trees->NoOfSites, Trees->NoOfSites);
 	
 	if(Opt->Model == CONTINUOUSREG)
@@ -1388,8 +1522,6 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	if(Ret == Ret + 1)
 		return ERRLH;
 
-	FreeMatrix(TMat);
-
 	Rates->Lh = Ret;
 
 	return Ret;
@@ -1407,7 +1539,6 @@ void	TreeBLToPower(TREES *Trees, TREE *Tree, double Power)
 			N->Length = pow(N->Length, Power);
 	}
 }
-
 
 void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 {
@@ -1448,102 +1579,13 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 		for(Index=0;Index<Trees->NoOfTaxa;Index++)
 			CV->DepVect[Index] = Trees->Taxa[Index].Dependant;
 	}
-}
 
-void		FreeTempConVars(TEMPCONVAR* TempCon)
-{
-	free(TempCon->T1);
-	free(TempCon->T2);
-	FreeMatrix(TempCon->TMat);
-
-	FreeMatrix(TempCon->X);
-	FreeMatrix(TempCon->TranX);
-	FreeMatrix(TempCon->NX);
-	free(TempCon->Y);
-
-
-	FreeMatrix(TempCon->RVX);
-	FreeMatrix(TempCon->XT);
-	FreeMatrix(TempCon->TempV1);
-	FreeMatrix(TempCon->TempV2);
-}
-
-TEMPCONVAR* AllocTempConVars(OPTIONS *Opt, TREES* Trees)
-{
-	TEMPCONVAR*	Ret;
-	int			Size;
-	TAXA		*Taxa;
-	int			x,y;
-
-	Ret = (TEMPCONVAR*) malloc(sizeof(TEMPCONVAR));
-	if(Ret == NULL)
-		MallocErr();
-
-	/* Statics form FindInvV */
-	Ret->T1 = (double*)malloc(sizeof(double)*Trees->NoOfTaxa);
-	Ret->T2 = (int*)malloc(sizeof(int)*Trees->NoOfTaxa);
-	Ret->TMat = AllocMatrix(Trees->NoOfTaxa, Trees->NoOfTaxa);
-	if((Ret->T1==NULL) || (Ret->T2==NULL) || (Ret->TMat == NULL))
-			MallocErr();
-
-	/* Statics from FindMLRagVals */
-	if(Opt->AlphaZero == FALSE)
-	{
-		Ret->X		= AllocMatrix(Trees->NoOfTaxa, Trees->NoOfSites + 1);
-		Ret->TranX	= AllocMatrix(Trees->NoOfSites + 1, Trees->NoOfTaxa);
-		Ret->NX		= AllocMatrix(Trees->NoOfSites + 1, Trees->NoOfSites + 1);
-	}
-	else
-	{
-		Ret->X		= AllocMatrix(Trees->NoOfTaxa, Trees->NoOfSites);
-		Ret->TranX	= AllocMatrix(Trees->NoOfSites, Trees->NoOfTaxa);
-		Ret->NX		= AllocMatrix(Trees->NoOfSites, Trees->NoOfSites);
-	}
-
-	Ret->Y	= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-
-	/* Statics from FindRegVar */
-	if(Opt->AlphaZero == FALSE)
-		Size = Trees->NoOfSites+1;
-	else
-		Size = Trees->NoOfSites;
-
-	Ret->RVX	= AllocMatrix(Trees->NoOfTaxa, Size);
-	Ret->XT		= AllocMatrix(Size, Trees->NoOfTaxa);
-	Ret->TempV1	= AllocMatrix(Size, Trees->NoOfTaxa);
-	Ret->TempV2	= AllocMatrix(Size, Size);
-
-	if(Opt->AlphaZero == FALSE)
-	{
-		for(x=0;x<Trees->NoOfTaxa;x++)
-		{
-			Taxa = &Trees->Taxa[x];
-			Ret->RVX->me[x][0] = 1;
-			for(y=0;y<Trees->NoOfSites;y++)
-				Ret->RVX->me[x][y+1] = Taxa->ConData[y];
-		}
-	}
-	else
-	{
-		for(x=0;x<Trees->NoOfTaxa;x++)
-		{
-			Taxa = &Trees->Taxa[x];
-			for(y=0;y<Trees->NoOfSites;y++)	
-				Ret->RVX->me[x][y] = Taxa->ConData[y];
-		}
-	}
-
-	Transpose(Ret->RVX, Ret->XT);
-
-	return Ret;
 }
 
 void	InitContinus(OPTIONS *Opt, TREES* Trees)
 {
 	int		TIndex;
 	RATES*	Rates=NULL;
-
-	Trees->TempConVars = AllocTempConVars(Opt, Trees);
 
 	CheckZeroTaxaBL(Trees);
 

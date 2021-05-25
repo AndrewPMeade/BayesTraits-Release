@@ -13,9 +13,12 @@
 #include "continuous.h"
 #include "gamma.h"
 #include "trees.h"
-#include "praxis.h"
 
 #include "rand.h"
+
+RATES	*PraxR;
+TREES	*PraxT;
+OPTIONS *PraxO;
 
 int	DB = FALSE;
 
@@ -59,31 +62,22 @@ double  AddLog(double a, double b)
 
 int	PreCalc(TREES *Trees, RATES *Rates)
 {
-	int				Ret;
-	int				NoOfStates;
-	INVINFO			*InvInfo;
-	int				*iwork=NULL;
-	double			*work=NULL;
-	double			*vi=NULL;
-	
-/*
+	int		Ret;
+	int		NoOfStates;
+	INVINFO	*InvInfo;
 	static int		*iwork=NULL;
 	static double	*work=NULL;
 	static double	*vi=NULL;
-*/
+
 	InvInfo = Trees->InvInfo;
 	NoOfStates = Trees->NoOfStates;
-/*
+
 	if(iwork == NULL)
 	{
 		iwork = (int*)malloc(sizeof(int) * NoOfStates);
 		work = (double*)malloc(sizeof(double) * NoOfStates);
 		vi = (double*)malloc(sizeof(double) * NoOfStates);
 	}
-*/
-	iwork = (int*)InvInfo->TempVect2;
-	work = InvInfo->TempVect3;
-	vi = InvInfo->TempVect4;
 
 	CopyMatrix(InvInfo->Q, InvInfo->A);
 
@@ -366,28 +360,20 @@ double	CreatFullPMatrix(double t, MATRIX *Mat, TREES* Trees)
 {
 	int		i, j, k;
 	double	t1, t2;
-/*	static  MATRIX	*A=NULL;
+	static  MATRIX	*A=NULL;
 	static	double	*Et=NULL;
-*/
-	MATRIX	*A=NULL;
-	double	*Et=NULL;
-
 	int		NOS;
 	INVINFO	*InvInfo;
 
 	NOS		= Trees->NoOfStates;
 	InvInfo = Trees->InvInfo;
 
-	A		= InvInfo->TempA;
-	Et		= InvInfo->TempVect1;
-
-/*	
 	if(A==NULL)
 	{
 		A = AllocMatrix(NOS, NOS);
 		Et = (double*)malloc(sizeof(double)* NOS);
 	}
-*/
+
 	for(i=0;i<NOS;i++)
 		Et[i] = exp(t*InvInfo->val[i]);
 
@@ -445,23 +431,9 @@ INVINFO*	AllocInvInfo(int NOS)
 	Ret->inv_vec	= AllocMatrix(NOS, NOS);
 	Ret->Q			= AllocMatrix(NOS, NOS);
 	Ret->A			= AllocMatrix(NOS, NOS);
-	Ret->TempA		= AllocMatrix(NOS, NOS);
 
 	Ret->val = (double*)malloc(sizeof(double)*NOS);
 	if(Ret->val == NULL)
-		MallocErr();
-
-	Ret->TempVect1	= (double*)malloc(sizeof(double)*NOS);
-	if(Ret->TempVect1 == NULL)
-		MallocErr();
-	Ret->TempVect2	= (double*)malloc(sizeof(double)*NOS);
-	if(Ret->TempVect2 == NULL)
-		MallocErr();
-	Ret->TempVect3	= (double*)malloc(sizeof(double)*NOS);
-	if(Ret->TempVect3 == NULL)
-		MallocErr();
-	Ret->TempVect4	= (double*)malloc(sizeof(double)*NOS);
-	if(Ret->TempVect4 == NULL)
 		MallocErr();
 
 	return Ret;
@@ -473,12 +445,6 @@ void	FreeInvInfo(INVINFO* InvInfo)
 	FreeMatrix(InvInfo->inv_vec);
 	FreeMatrix(InvInfo->Q);
 	FreeMatrix(InvInfo->A);
-	
-	FreeMatrix(InvInfo->TempA);
-	free(InvInfo->TempVect1);
-
-
-
 
 	free(InvInfo->val);
 
@@ -1136,21 +1102,6 @@ void SetDiscEstData(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	}
 }
 
-void	LongProc(int x)
-{
-	int i,j;
-	double	d;
-
-	
-	for(i=0;i<x;i++)
-		for(j=0;j<x;j++)
-		{
-			d = 999;
-			d = pow(d, 99);
-		}
-
-}
-
 double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
 	double	Ret=0;
@@ -1163,7 +1114,6 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		GammaCat;
 	double	RateMult;
 	int		NOS;
-
 
 	MapRates(Rates,Opt);
 
@@ -1256,69 +1206,73 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	return Ret;
 }
 
-double	LhPraxisCon(PRAXSTATE* PState, double *List)
+void	SetUpPrarix(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+{
+	PraxR = Rates;
+	PraxT = Trees;
+	PraxO = Opt;
+}
+
+double	LhPraxisCon(double *List)
 {
 	int	Index=0;
 
-	if(PState->Opt->EstKappa == TRUE)
+	if(PraxO->EstKappa == TRUE)
 	{
-		PState->Rates->Kappa = List[Index];
-		if(PState->Rates->Kappa > 3)
-			PState->Rates->Kappa = 3;
-		if(PState->Rates->Kappa < 0.0000001)
-			PState->Rates->Kappa = 0.0000001;
+		PraxR->Kappa = List[Index];
+		if(PraxR->Kappa > 3)
+			PraxR->Kappa = 3;
+		if(PraxR->Kappa < 0.0000001)
+			PraxR->Kappa = 0.0000001;
 
 		Index++;
 	}
 
-	if(PState->Opt->EstDelta == TRUE)
+	if(PraxO->EstDelta == TRUE)
 	{
-		PState->Rates->Delta = List[Index];
-		if(PState->Rates->Delta > 3)
-			PState->Rates->Delta = 3;
-		if(PState->Rates->Delta < 0.0000001)
-			PState->Rates->Delta = 0.0000001;
+		PraxR->Delta = List[Index];
+		if(PraxR->Delta > 3)
+			PraxR->Delta = 3;
+		if(PraxR->Delta < 0.0000001)
+			PraxR->Delta = 0.0000001;
 
 		Index++;
 	}
 
-	if(PState->Opt->EstLambda == TRUE)
+	if(PraxO->EstLambda == TRUE)
 	{
-		PState->Rates->Lambda = List[Index];
-		if(PState->Rates->Lambda > 1)
-			PState->Rates->Lambda = 1;
-		if(PState->Rates->Lambda < 0.0000001)
-			PState->Rates->Lambda = 0.0000001;
+		PraxR->Lambda= List[Index];
+		if(PraxR->Lambda > 1)
+			PraxR->Lambda = 1;
+		if(PraxR->Lambda < 0.0000001)
+			PraxR->Lambda = 0.0000001;
 		
 		Index++;
 	}
 
-	return LHRandWalk(PState->Opt, PState->Trees, PState->Rates);
+	return LHRandWalk(PraxO, PraxT, PraxR);
 }
 
-double	LhPraxis(void* P, double *List)
+double	LhPraxis(double *List)
 {
-//	static	Called;
+	static	Called;
 	int		Index;
-	double		Ret;
-	double		*TRates;
-	PRAXSTATE	*PState;
+	double	Ret;
+	double	*TRates;
 
-	PState = (PRAXSTATE*)P;
+	if(PraxO->DataType == CONTINUOUS)
+		return -LhPraxisCon(List);
 
-	if(PState->Opt->DataType == CONTINUOUS)
-		return -LhPraxisCon(PState, List);
-
-	for(Index=0;Index<PState->Rates->NoOfRates;Index++)
+	for(Index=0;Index<PraxR->NoOfRates;Index++)
 		if((List[Index] < MINRATE) || (IsNum(List[Index]) == FALSE))
 			List[Index] = MINRATE;
 
-	TRates = PState->Rates->Rates;
-	PState->Rates->Rates = List;
+	TRates = PraxR->Rates;
+	PraxR->Rates = List;
 
-	Ret = Likelihood(PState->Rates, PState->Trees, PState->Opt);
+	Ret = Likelihood(PraxR, PraxT, PraxO);
 
-	PState->Rates->Rates = TRates;
+	PraxR->Rates = TRates;
 
 	return -Ret;
 }

@@ -129,7 +129,7 @@ int LUDecompose (double **a, int n, double *vv, int *indx, double *pd)
 			}
 		if (big == 0.0)
 			{
-			printf("singular matrix in routine LUDecompose\n");
+			printf("singular matrix in routine LUDecompose");
 			return ERROR;
 			}
 		vv[i] = 1.0 / big;
@@ -292,8 +292,7 @@ int EigenRealGeneral (int n, double **a, double *v, double *vi, double **u, int 
 int EigenRG (int n, double **a, double *wr, double *wi, double **z, int *iv1, double *fv1)
 
 {
-//	static int	is1, is2;
-	int	is1, is2;
+	static int	is1, is2;
 	int			ierr;
 
 	Balanc (n, a, &is1, &is2, fv1);

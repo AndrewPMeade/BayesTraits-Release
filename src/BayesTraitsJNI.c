@@ -3,12 +3,6 @@
 #include <string.h>
 #include <math.h>
 
-//#define DllExport __declspec(dllexport)
-//#define DllImport __declspec(dllimport)
-
-
-#include "JBayesTraits_JAnalysis.h"
-
 #include "typedef.h"
 #include "trees.h"
 #include "data.h"
@@ -23,32 +17,9 @@
 #include "genlib.h"
 #include "continuous.h"
 #include "initialise.h"
-#include "rand.h"
 
 #include "./MathLib/dcalc.h"
 #include "./MathLib/mconf.h"
-
-#include <jni.h>
-
-#define	MAXJANALYSIS 128
-			 
-
-int		SetOnce = FALSE;
-/*
-char	*DeadAnalysis[MAXJANALYSIS];
-
-void	InitBTJNI()
-{
-	int i;
-	if(SetOnce == TRUE)
-		return;
-	SetOnce = TRUE;
-
-	for(i=0;i<MAXJANALYSIS;i++)
-		DeadAnalysis[i] = NULL;
-}
-
-*/
 
 MODEL	GetModelFromNo(int ModelNo)
 {
@@ -76,32 +47,12 @@ ANALSIS	AnalsisFromNo(int AnalisisNo)
 	exit(0);
 }
 
-
-void	SetProgress(JNIEnv *Env, jobject Obj, int Progress)
+void JavaProgress(int No)
 {
-	jclass		classID;
-	jmethodID	mID;
-
-	classID = (*Env)->GetObjectClass(Env, Obj);
-	mID		= (*Env)->GetMethodID(Env, classID, "SetProgress", "(I)V");
-	(*Env)->CallVoidMethod(Env, Obj, mID, Progress);
+	
 }
 
-void	CheckStop(JNIEnv *Env, jobject Obj, TREES *Trees)
-{
-	jclass		classID;
-	jfieldID	fID;
-	jboolean	Stop;
-
-	classID = (*Env)->GetObjectClass(Env, Obj);
-	fID		= (*Env)->GetFieldID(Env, classID, "Stop", "Z");
-	Stop	= (*Env)->GetBooleanField(Env, Obj, fID);
-
-	if(Stop == JNI_TRUE)
-		Trees->JStop = TRUE;
-}
-
-int mainJNI(JNIEnv *Env, jobject Obj, int Size, char** RunP)
+int mainJNI(int Size, char** RunP)
 {
 	TREES*		Trees=NULL;
 	OPTIONS*	Opt=NULL; 
@@ -115,13 +66,7 @@ int mainJNI(JNIEnv *Env, jobject Obj, int Size, char** RunP)
 	DataFN	= RunP[1];
 	Model	= GetModelFromNo(atoi(RunP[2]));
 	Analysis= AnalsisFromNo(atoi(RunP[3]));
-	
-
-	if(SetOnce == FALSE)
-	{
-		SetSeed();
-		SetOnce = TRUE;
-	}
+	SetSeed();
 
 	Trees  = LoadTrees(TreeFN);
 	LoadData(DataFN, Trees);
@@ -132,10 +77,10 @@ int mainJNI(JNIEnv *Env, jobject Obj, int Size, char** RunP)
 	PreProcess(Opt, Trees);
 
 	if(Opt->Analsis == ANALMCMC)
-		MCMC(Opt, Trees, Env, Obj);
+		MCMC(Opt, Trees);
 
 	if(Opt->Analsis == ANALML)
-		FindML(Opt, Trees, Env, Obj);
+		FindML(Opt, Trees);
 
 	FreeTrees(Trees, Opt);
 	FreeOptions(Opt);
@@ -143,60 +88,15 @@ int mainJNI(JNIEnv *Env, jobject Obj, int Size, char** RunP)
 	return 0;
 }
 
-
-/*
-
-#ifdef _MANAGED
-#pragma managed(push, off)
-#endif
-
-*/
-
-JNIEXPORT void JNICALL Java_JBayesTraits_JAnalysis_RunBayesTraits
-/* JNIEXPORT void JNICALL Java_JBayesTraits_JModelRun_RunBayesTraits */
-  (JNIEnv *Env, jobject Obj, jobjectArray Arr)
+int	main(int argc, char **argv)
 {
-	int		Index;
-	int		ArrLen;
-	char**	Commands;
-	jstring strElem;
+	TEXTFILE*	TF;
+	int			Ret;
 
-	ArrLen = (*Env)->GetArrayLength(Env, Arr);
+	TF = LoadTextFile(argv[1], FALSE);
 
-	Commands = (char**)malloc(sizeof(char*) * ArrLen);
-	if(Commands == NULL)
-		MallocErr();
-	
-	for(Index=0;Index<ArrLen;Index++) 
-	{
-		strElem = (jstring)(*Env)->GetObjectArrayElement(Env, Arr, Index);
-		if(strElem != NULL) 
-		{
-			const char *strTemp = (*Env)->GetStringUTFChars(Env, strElem, NULL);
-			Commands[Index] = StrMake(strTemp);
-			(*Env)->ReleaseStringChars(Env, strElem, (jchar*)strTemp);
-			(*Env)->DeleteLocalRef(Env, strElem);
-		}
-	}
+	Ret = mainJNI(TF->NoOfLines, TF->Data);
 
-//	for(Index=0;;Index++)Index=0;
-	mainJNI(Env, Obj, ArrLen, Commands);
-
-	for(Index=0;Index<ArrLen;Index++)
-		free(Commands[Index]);
-	free(Commands);
+	FreeTextFile(TF);
+	return Ret;
 }
-
-/*
-BOOL APIENTRY DllMain( HMODULE hModule,
-                       DWORD  ul_reason_for_call,
-                       LPVOID lpReserved
-					 )
-{
-    return TRUE;
-}
-
-#ifdef _MANAGED
-#pragma managed(pop)
-#endif
-*/

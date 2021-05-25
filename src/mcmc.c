@@ -3,7 +3,6 @@
 #include <string.h>
 #include <math.h>
 
-
 #include "typedef.h"
 #include "trees.h"
 #include "rates.h"
@@ -18,8 +17,7 @@
 #include "ml.h"
 
 #ifdef	 JNIRUN
-//	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
-	#include "BayesTraitsJNI.h"
+	extern	void JavaProgress(int No);
 #endif
 
 void	PrintPriorHeadder(FILE* Str, OPTIONS *Opt, RATES* Rates)
@@ -147,32 +145,14 @@ void	PrintTest(int Itters, RATES* Rates)
 
 void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	double	*Vec;
-
-	if(Likelihood(Rates, Trees, Opt) != ERRLH)
-		return;
-
-	if(Opt->DataType == CONTINUOUS)
+	while(Likelihood(Rates, Trees, Opt) == ERRLH)
 	{
-		printf("Err (%s,%d): Could not get inish Lh:\n", __FILE__, __LINE__);
-		exit(0);
+		SetUpPrarix(Rates, Trees, Opt);
+		PraxisGo(Opt, Rates, Trees);
 	}
-
-	Vec = (double*)malloc(sizeof(double) * Rates->NoOfRates);
-	if(Vec == NULL)
-		MallocErr();
-
-	FindValidStartSet(Vec, Rates, Trees, Opt);
-	memcpy(Rates->Rates, Vec, sizeof(double) * Rates->NoOfRates);
-
-	free(Vec);
 }
 
-#ifdef	 JNIRUN
-	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
-#else
-	void	MCMC(OPTIONS *Opt, TREES *Trees)
-#endif
+void	MCMC(OPTIONS *Opt, TREES *Trees)
 {
 	RATES*		CRates=NULL;
 	RATES*		NRates=NULL;
@@ -188,7 +168,7 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->UseSchedule == TRUE)
 		ShedFile	= OpenWrite(Opt->ScheduleFile);
 	
-	Shed = CreatSchedule(Opt);
+	Shed		= CreatSchedule(Opt);
 
 	if(Opt->UseSchedule == TRUE)
 		PrintShedHeadder(Opt, Shed, ShedFile);
@@ -217,6 +197,7 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	PrintPriorHeadder(Opt->LogFile, Opt, CRates);
 
 	InitMCMC(Opt, Trees, CRates);
+
 	
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
@@ -241,7 +222,7 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			Heat = Heat + NRates->LogHRatio;
 		}
 		
-		if((log(GenRandState(CRates->RandStates)) <= Heat) && (NRates->Lh != ERRLH))
+	 	if((log(GenRand()) <= Heat) && (NRates->Lh != ERRLH))
 		{
 			Swap(&NRates, &CRates);
 			Acc++;
@@ -274,7 +255,7 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				}
 
 				#ifdef JNIRUN
-					SetProgress(Env, Obj, Itters);
+					JavaProgress(Itters);
 				#endif
 
 				Acc=0;
@@ -310,25 +291,6 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 			return;
 		}
-
-		#ifdef JNIRUN
-			if(Itters%100==0)
-			{
-				CheckStop(Env, Obj, Trees);
-				if(Trees->JStop == TRUE)
-				{
-					FreePriors(CRates);
-					FreePriors(NRates);
-
-					FreeRates(CRates);
-					FreeRates(NRates);
-
-					free(Shed);
-
-					return;
-				}
-			}
-		#endif
 	}
 }
 

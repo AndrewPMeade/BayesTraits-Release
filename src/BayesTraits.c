@@ -70,8 +70,6 @@ extern void PMatrixTest(void);
 	./Seq/AustCon.trees ./Seq/0204.txt < in.txt > sout.txt
 */
 
-/*
-
 int main(int argc, char** argv)
 {
 	TREES*		Trees=NULL;
@@ -103,7 +101,7 @@ int main(int argc, char** argv)
 	
 	PreProcess(Opt, Trees);
 
-//	LhOverAllModels(Opt, Trees); 
+/*	LhOverAllModels(Opt, Trees); */
 
 	if(Opt->Analsis == ANALMCMC)
 		MCMC(Opt, Trees);
@@ -116,5 +114,3 @@ int main(int argc, char** argv)
 
 	return 0;
 }
-
-*/

@@ -465,8 +465,6 @@ TREES*	LoadTrees(char* FileName)
 
 	FreeNTrees(PTrees);
 
-	Ret->JStop	=	FALSE;
-
 	return Ret;
 }
 
