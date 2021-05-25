@@ -1245,7 +1245,6 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->UsePhyloPlasty == TRUE)
 		fprintf(Str, "%d\t", Rates->Plasty->NoNodes);
-	
 }
 
 void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OPTIONS *Opt)
@@ -1863,7 +1862,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 
 	Shed->Op = PickACat(Rates, Shed->OptFreq, Shed->NoOfOpts);
 
-	if(Opt->SoloTreeMove == FALSE)
+	if((Opt->SoloTreeMove == FALSE) && (Opt->UseEqualTrees == FALSE))
 		Rates->TreeNo = rand() % Opt->Trees->NoOfTrees;
 
 	switch(Shed->Op)

@@ -28,6 +28,8 @@ void	ScaleMatrix(MATRIX *M, double Scalar);
 void	PrintMathematicaMatrix(MATRIX *Matrix, char* Headder, FILE*	Str);
 void	PrintMathematicaVect(double* Vect, int N, char* Banna, FILE *Str);
 
+void	PrintMathematicaTFMatrix(MATRIX *Matrix, char* Headder, FILE* Str);
+
 double*	FlattenMatix(MATRIX *M);
 
 #endif

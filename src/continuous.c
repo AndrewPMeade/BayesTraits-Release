@@ -2,8 +2,8 @@
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
-	
-/*	#define MATHMAT */
+
+//#define MATHMAT
 
 #include "typedef.h"
 #include "trees.h"
@@ -143,8 +143,8 @@ double	GetTinyBL(TREES *Trees)
 		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
 		{
 			Node = &Trees->Tree[TIndex].NodeList[NIndex];
-			if((Node != Trees->Tree[TIndex].Root) && 
-				(Node->Length != 0)) 
+			if((Node != Trees->Tree[TIndex].Root) &&
+				(Node->Length != 0))
 			{
 				if(Node->Length < Ret)
 					Ret = Node->Length;
@@ -275,9 +275,9 @@ void	CalcPVarCoVar(TREES* Trees, TREE *Tree)
 	}
 
 	#ifdef IDMATRIX
-		SetIdentityMatrix(Tree->ConVars->V); 
+		SetIdentityMatrix(Tree->ConVars->V);
 	#endif
-	
+
 /*
 	PrintMathematicaMatrix(Tree->VarCoVar, "Var Co var for a tree", stdout);
 	PrintMatrix(Tree->VarCoVar, "Var Co var for a tree", stdout);
@@ -506,7 +506,7 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 		if(Ret->Beta == NULL)
 			MallocErr();
 	}
-	
+
 	if(Opt->Model == CONTINUOUSREG)
 	{
 		Ret->Z		=	(double*)malloc(sizeof(double) * Trees->NoOfTaxa);
@@ -580,7 +580,7 @@ void	FindTVT(TREES* Trees, TREE *Tree, int AlphaZero)
 	ConVars = Tree->ConVars;
 
 	TMat = AllocMatrix(2, Trees->NoOfTaxa);
-	
+
 	for(Col=0;Col<Trees->NoOfTaxa;Col++)
 	{
 		if(AlphaZero == FALSE)
@@ -641,7 +641,7 @@ void	FindTVT(TREES* Trees, TREE *Tree, int AlphaZero)
 	ConVars->TVT->me[1][1] = Temp;
 
 	Temp = 1.0 / (ConVars->TVT->me[0][0] * ConVars->TVT->me[1][1] - ConVars->TVT->me[1][0] * ConVars->TVT->me[0][1]);
-	
+
 	ConVars->TVT->me[0][0] = Temp * ConVars->TVT->me[0][0];
 	ConVars->TVT->me[0][1] = Temp * -ConVars->TVT->me[0][1];
 	ConVars->TVT->me[1][0] = Temp * -ConVars->TVT->me[1][0];
@@ -657,7 +657,7 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 
 	CV = Tree->ConVars;
 	TempCon = Trees->TempConVars;
-	
+
 	for(x=0;x<Trees->NoOfTaxa;x++)
 		TempCon->Y[x] = Trees->Taxa[x].Dependant;
 
@@ -714,8 +714,8 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 		printf("%f\t", CV->TVect1[x]);
 	printf("\nML Done\n");
 */
-	
-/*	To Check With Mathematica. 
+
+/*	To Check With Mathematica.
 	PrintMathematicaMatrix(X, "X = ", stdout);
 	PrintMathematicaMatrix(CV->InvV, "InvV = ", stdout);
 	PrintMathematicaVect(Y, Trees->NoOfTaxa, "Y = ", stdout);
@@ -739,7 +739,7 @@ void	MLFindAlphaBeta(TREES* Trees, TREE *Tree, int Site, int AlphaZero)
 
 
 	TMat = AllocMatrix(2, Trees->NoOfTaxa);
-	
+
 	for(Row=0;Row<2;Row++)
 	{
 		for(Col=0;Col<Trees->NoOfTaxa;Col++)
@@ -769,7 +769,7 @@ void	MLFindAlphaBeta(TREES* Trees, TREE *Tree, int Site, int AlphaZero)
 	{
 		Tree->ConVars->Alpha[Site] = 0;
 		Tree->ConVars->Beta[Site] = ConVars->TVT->me[1][1] * TempTVX[1];
-		
+
 	}
 	else
 	{
@@ -880,7 +880,7 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree)
 
 	CV = Tree->ConVars;
 
-	for(y=0;y<Trees->NoOfTaxa;y++)	
+	for(y=0;y<Trees->NoOfTaxa;y++)
 	{
 		Ret = 0;
 		for(x=0;x<Trees->NoOfTaxa;x++)
@@ -955,13 +955,13 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 	if((Opt->Analsis == ANALML) && (Opt->Model == CONTINUOUSREG))
 		FindMLRagVals(Trees, Tree, Opt);
 
-	for(x=0;x<Trees->NoOfSites;x++) 
+	for(x=0;x<Trees->NoOfSites;x++)
 	{
 		if(Opt->Analsis == ANALML)
 		{
 			if(Opt->Model == CONTINUOUSDIR)
 				MLFindAlphaBeta(Trees, Tree, x, Opt->AlphaZero);
-			
+
 			if(Opt->Model == CONTINUOUSRR)
 			{
 				if(Opt->AlphaZero == FALSE)
@@ -976,7 +976,7 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 				Tree->ConVars->Alpha[x] = Means[x];
 			else
 				Tree->ConVars->Alpha[0] = Means[0];
-			
+
 			if((Opt->Model == CONTINUOUSDIR) || (Opt->Model == CONTINUOUSREG))
 				Tree->ConVars->Beta[x] = Beta[x];
 		}
@@ -987,7 +987,7 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 		Tree->ConVars->Sigma->me[0][0] = FindMLRegVar(Trees, Tree);
 		return;
 	}
-	
+
 	for(x=0;x<Trees->NoOfSites;x++)
 	{
 		for(y=x;y<Trees->NoOfSites;y++)
@@ -999,7 +999,7 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 				else
 					Val = FindMLVar(Trees, Tree, x, Tree->ConVars->Alpha[x], Tree->ConVars->Beta[x], y, Tree->ConVars->Alpha[y], Tree->ConVars->Beta[y]);
 
-	
+
 				Tree->ConVars->Sigma->me[x][y] = Val;
 				Tree->ConVars->Sigma->me[y][x] = Val;
 			}
@@ -1094,7 +1094,7 @@ double	FindDet(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 
 /*
 << LinearAlgebra`MatrixManipulation`;
-BlockMatrix[Outer[Times, S, V]] 
+BlockMatrix[Outer[Times, S, V]]
 */
 
 void	CalcDelta(MATRIX *V, double Delta)
@@ -1163,7 +1163,7 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates)
 
 	Ret = AllocMatrix(Trees->NoOfSites+1, Trees->NoOfSites+1);
 
-	/* Do 
+	/* Do
 		Sig*Inverse[Transpose[X].InvV.X]
 	*/
 	MatrixMult(XT, CV->InvV, TempV1);
@@ -1190,7 +1190,7 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates, int AlphaZero)
 {
 	MATRIX	*Ret;
 	TEMPCONVAR	*TempCon;
-	
+
 	/*	static MATRIX	*XT=NULL;
 	static MATRIX	*X=NULL;
 	static MATRIX	*TempV1;
@@ -1211,14 +1211,14 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates, int AlphaZero)
 
 	Ret = AllocMatrix(Size, Size);
 
-	/* Do 
+	/* Do
 		Sig*Inverse[Transpose[X].InvV.X]
 	*/
 	MatrixMult(TempCon->XT, CV->InvV, TempCon->TempV1);
 	MatrixMult(TempCon->TempV1, TempCon->RVX, TempCon->TempV2);
 
 	InvertMatrix(TempCon->TempV2->me, Size, CV->TVect1,(int*)CV->TVect2, Ret->me);
-	
+
 	ScaleMatrix(Ret, CV->Sigma->me[0][0]);
 
 /*	printf("\n");
@@ -1262,11 +1262,20 @@ void	SetEstData(TREES *Trees, RATES* Rates)
 
 void	PrintMathmatCode(void)
 {
+/*
 	printf("Part3 = -0.5*ZA.Inverse[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]].ZA\n");
 	printf("Part2 = Log[Det[BlockMatrix[Outer[Times, (Sigma), (V^Delta)]]]^-0.5]\n");
 	printf("Part1 = 1.8378770664093453 ((-(NoOfTaxa*NoOfSites))/2)\n");
 	printf("Lh = Part1 + Part2 + Part3\n");
 	printf("Lh = (Log[2 Pi] ((-(NoOfTaxa*NoOfSites))/2)) + (Log[Det[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]]^-0.5]) + (-0.5*ZA.Inverse[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]].ZA)\n");
+*/
+
+	printf("Part3 = -0.5*ZA.Inverse[ArrayFlatten[Outer[Times, Sigma, V]]].ZA;\n");
+	printf("Part2 = Log[Det[ArrayFlatten[Outer[Times, (Sigma), V]]]^-0.5];\n");
+	printf("Part1 = 1.8378770664093453 ((-(NoOfTaxa*NoOfSites))/2);\n");
+	printf("Lh = Part1 + Part2 + Part3;\n");
+	printf("Lh = (Log[2 Pi] ((-(NoOfTaxa*NoOfSites))/2)) + (Log[Det[ArrayFlatten[Outer[Times, Sigma, V]]]^-0.5]) + (-0.5*ZA.Inverse[ArrayFlatten[Outer[Times, Sigma, V]]].ZA)\n");
+
 }
 
 double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
@@ -1279,13 +1288,13 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	double	Ret;
 	TREE	*Tree;
 	CONVAR	*CV;
-	
+
 	Tree = &Trees->Tree[Rates->TreeNo];
 	CV = Tree->ConVars;
 
 	if(Rates->UseEstData == TRUE)
 		SetEstData(Trees, Rates);
-	
+
 	if(Opt->UseVarData == TRUE)
 		SetVarData(Trees, Opt->VarData, Rates->VarDataSite);
 
@@ -1293,20 +1302,17 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		CalcZ(Trees, Tree, Opt);
 
 #ifdef MATHMAT
+
+	printf("(* **************** Start Tree %d *********************** *)\n", Rates->TreeNo);
 	printf("NoOfSites = %d;\n", Trees->NoOfSites);
 	printf("NoOfTaxa = %d;\n", Trees->NoOfTaxa);
-	
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		printf("%s\t", Trees->Taxa[Index].Name);	
-	
-	printf("\n");
 
 	if(Tree->ConVars->TrueV != NULL)
-		PrintMathematicaMatrix(Tree->ConVars->TrueV, "V = ", stdout);
+		PrintMathematicaTFMatrix(Tree->ConVars->TrueV, "V = ", stdout);
 	else
-		PrintMathematicaMatrix(Tree->ConVars->V, "V = ", stdout);
+		PrintMathematicaTFMatrix(Tree->ConVars->V, "V = ", stdout);
 
-	PrintMatrix(Tree->ConVars->V, "V = ", stdout);
+//	PrintMatrix(Tree->ConVars->V, "V = ", stdout);
 #endif
 
 	if(Opt->InvertV	== TRUE)
@@ -1315,7 +1321,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 			MakeKappaV(Trees, Tree, Rates->Kappa);
 		else
 			CopyMatrix(Tree->ConVars->V, Tree->ConVars->TrueV);
-		
+
 		if(Opt->EstDelta == TRUE)
 			CalcDelta(Tree->ConVars->V, Rates->Delta);
 
@@ -1339,7 +1345,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 //	if(TMat == NULL)
 		TMat = AllocMatrix(Trees->NoOfSites, Trees->NoOfSites);
-	
+
 	if(Opt->Model == CONTINUOUSREG)
 	{
 		CV->InvSigma->me[0][0] = 1 / CV->Sigma->me[0][0];
@@ -1382,20 +1388,21 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		Ret = -(double)(Trees->NoOfTaxa);
 	else
 		Ret = -(double)(Trees->NoOfSites * Trees->NoOfTaxa);
-		
+
 	Ret = Ret / 2.0;
 
 	Ret = Ret * 1.837877066409345483560659472811;
-			
+
 #ifdef MATHMAT
 
 	PrintMathmatCode();
 
-	printf("Part3: %f\n", Val);
-	printf("Part2 : %f\n", Det);
-	printf("Part1: %f\n", Ret);
-	printf("LH: %f\n", Ret + Det + Val);
-	exit(0);
+	printf("(* Part3 = %f *)\n", Val);
+	printf("(* Part2 = %f *)\n", Det);
+	printf("(* Part1 = %f *)\n", Ret);
+	printf("(* LH = %f *)\n", Ret + Det + Val);
+
+	printf("(* **************** End Tree %d *********************** *)\n", Rates->TreeNo);
 #endif
 
 	Ret = Ret + Det + Val;
@@ -1434,8 +1441,8 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 		InitContrastTree(Opt, Trees, TreeNo);
 		return;
 	}
-	
-	Trees->Tree[TreeNo].ConVars = AllocConVar(Opt, Trees);	
+
+	Trees->Tree[TreeNo].ConVars = AllocConVar(Opt, Trees);
 	CV = Trees->Tree[TreeNo].ConVars;
 
 	if((Opt->NodeData == TRUE) || (Opt->NodeBLData == TRUE))
@@ -1454,7 +1461,7 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 
 	if(Opt->FixLambda != -1)
 		CalcLabda(CV->V, Opt->FixLambda);
-	
+
 	CalcZ(Trees, &Trees->Tree[TreeNo], Opt);
 	FindInvV(Trees, &Trees->Tree[TreeNo]);
 
@@ -1549,7 +1556,7 @@ TEMPCONVAR* AllocTempConVars(OPTIONS *Opt, TREES* Trees)
 		for(x=0;x<Trees->NoOfTaxa;x++)
 		{
 			Taxa = &Trees->Taxa[x];
-			for(y=0;y<Trees->NoOfSites;y++)	
+			for(y=0;y<Trees->NoOfSites;y++)
 				Ret->RVX->me[x][y] = Taxa->ConData[y];
 		}
 	}

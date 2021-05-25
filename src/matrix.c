@@ -121,6 +121,36 @@ void	PrintMathematicaMatrix(MATRIX *Matrix, char* Headder, FILE*	Str)
 
 }
 
+void	PrintMathematicaTFMatrix(MATRIX *Matrix, char* Headder, FILE*	Str)
+{
+	int	RIndex, CIndex;
+
+	fprintf(Str, "%s", Headder);
+
+	fprintf(Str, "{");
+    
+	for(RIndex=0;RIndex<Matrix->NoOfRows;RIndex++)
+	{
+		fprintf(Str, "{");
+		for(CIndex=0;CIndex<Matrix->NoOfCols;CIndex++)
+		{
+			fprintf(Str, "%10.10f", log(1+Matrix->me[RIndex][CIndex]));
+			if(CIndex!=Matrix->NoOfCols-1)
+				fprintf(Str, ",");
+
+		}
+		fprintf(Str, "}");
+
+		if(RIndex!=Matrix->NoOfRows-1)
+			fprintf(Str, ",");
+		fprintf(Str, "\n");
+	}
+	
+	fprintf(Str, "};\n");
+
+}
+
+
 void	KroneckerProduct(MATRIX *A, MATRIX *B, MATRIX *C)
 {
 	int X,Y;

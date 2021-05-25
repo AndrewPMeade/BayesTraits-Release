@@ -82,6 +82,7 @@
 #define MIN_KAPPA	1E-07
 #define MAX_KAPPA	3
 
+
 typedef enum
 {
 	CRUN,
@@ -144,6 +145,7 @@ typedef enum
 	CSETSEED,
 	CMAKEUM,
 	CPHYLOPLASTY,
+	CEQUALTREES,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -209,6 +211,7 @@ static char    *COMMANDSTRINGS[] =
 	"setseed",		"ss",
 	"makeum",		"mum",
 	"phyloplasty",	"pp", 
+	"equaltrees",	"eqt",
 	""
 };
 
@@ -713,6 +716,9 @@ typedef struct
 	int			MakeUM;
 
 	int			UsePhyloPlasty;
+
+	int			UseEqualTrees;
+	int			ETreeBI;
 
 } OPTIONS;
 
