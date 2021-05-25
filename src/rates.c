@@ -238,11 +238,11 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 
 	for(Index=0;Index<Rates->NoOfRates;Index++)
 	{
-		if((Rates->Rates[Index] < MINRATE) || (IsNum(Rates->Rates[Index]) == FALSE))
-			Rates->Rates[Index] = MINRATE;
+		if(Rates->Rates[Index] < Opt->RateMin || IsNum(Rates->Rates[Index]) == FALSE)
+			Rates->Rates[Index] = Opt->RateMin;
 
-		if(Rates->Rates[Index] > MAXRATE)
-			Rates->Rates[Index] = MAXRATE;
+		if(Rates->Rates[Index] > Opt->RateMax)
+			Rates->Rates[Index] = Opt->RateMax;
 	}
 
 	if(Opt->UseRModel == TRUE)
@@ -259,11 +259,11 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 			Pos = FindRatePos(Index, Opt);
 			Rates->FullRates[Index] = FindRateVal(Pos, Rates, Opt);
 
-			if(Rates->FullRates[Index] < MINRATE)
-				Rates->FullRates[Index] = MINRATE;
+			if(Rates->FullRates[Index] < Opt->RateMin)
+				Rates->FullRates[Index] = Opt->RateMin;
 
-			if(Rates->FullRates[Index] > MAXRATE)
-				Rates->FullRates[Index] = MAXRATE;
+			if(Rates->FullRates[Index] > Opt->RateMax)
+				Rates->FullRates[Index] = Opt->RateMax;
 		}
 	}
 	
@@ -2117,8 +2117,8 @@ double ChangeRate(RATES *Rates, double RateV, double dev)
 	int		Exit;
 	double	Ret, Scale;
 
-	if(RateV >= MAXRATE)
-		return  MAXRATE;
+	if(RateV >= RATE_MAX)
+		return  RATE_MAX;
 
 	do
 	{
@@ -2128,10 +2128,10 @@ double ChangeRate(RATES *Rates, double RateV, double dev)
 
 		Ret = RateV * Scale;
 
-		if(Ret > MAXRATE)
+		if(Ret > RATE_MAX)
 			Exit = FALSE;
 
-		if(Ret < MINRATE)
+		if(Ret < RATE_MIN)
 			Exit = FALSE;
 
 	} while(Exit == FALSE);

@@ -132,8 +132,8 @@
 // Minimum number of taxa to Var Rate a ndoe
 #define MIN_TAXA_VR_NODE	0
 
-#define MINRATE 1.0e-16
-#define MAXRATE	1000
+#define RATE_MIN 1.0e-16
+#define RATE_MAX 1000
 
 /*	#define MAXRATE	100 */
 #define MINBL	0.0000001
@@ -158,8 +158,7 @@
 
 #define	LOGFILEBUFFERSIZE	65536
 
-#define DISPLAY_INFO	printf("BayesTraits V2.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
-
+#define DISPLAY_INFO	printf("BayesTraits V3.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
 
 #define MIN_DELTA	1E-07
 #define MAX_DELTA	3
@@ -297,6 +296,7 @@ typedef enum
 	CADDTIMESLICE,
 	CADDPATTERN,
 	CSETMINTAXATRANS,
+	CSETMINMAXRATE, 
 	CUNKNOWN,
 } COMMANDS;
 
@@ -382,6 +382,7 @@ static char    *COMMANDSTRINGS[] =
 	"AddTimeSlice", "ats",
 	"AddPattern", "ap",
 	"SetMinTransTaxaNo", "smttn",
+	"SetMinMaxRate", "smmr",
 	""
 };
 
@@ -1224,6 +1225,8 @@ typedef struct
 	int			NoPatterns;
 
 	int			MinTransTaxaNo;
+	
+	double		RateMin, RateMax;
 
 } OPTIONS;
 

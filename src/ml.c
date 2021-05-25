@@ -82,11 +82,21 @@ void	AddPToMLMap(ML_MAP*	MLMap, double DefV, double MinV, double MaxV)
 void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Index;
+	double MidPoint;
 	TIME_SLICE *TS;
 	LOCAL_TRANSFORM *LT;
 
 	for(Index=0;Index<Rates->NoOfRates;Index++)
-		AddPToMLMap(MLMap, 1.0, MINRATE, MAXRATE);
+	{
+		if(Opt->RateMax > 1.0)
+			AddPToMLMap(MLMap, 1.0, Opt->RateMin, Opt->RateMax);
+		else
+		{
+			MidPoint = (Opt->RateMax + Opt->RateMin) * .5;
+			AddPToMLMap(MLMap, MidPoint, Opt->RateMin, Opt->RateMax);
+		}
+
+	}
 
 	if(Opt->EstKappa == TRUE)
 		AddPToMLMap(MLMap, 1.0, MIN_KAPPA, MAX_KAPPA);

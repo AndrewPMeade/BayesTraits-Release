@@ -320,12 +320,11 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "ML Max Evaluations:              %d\n", Opt->MLMaxEVals);
 		fprintf(Str, "ML Tolerance:                    %f\n", Opt->MLTol);
 		fprintf(Str, "ML Algorithm:                    %s\n", Opt->MLAlg);
+		fprintf(Str, "Rate Range:                      %f - %f\n", Opt->RateMin, Opt->RateMax);
 	}
 	
 	fprintf(Str, "Precision:                       %d bits\n", Opt->Precision);
 	fprintf(Str, "Cores:                           %d\n", Opt->Cores);
-
-
 
 	if(Opt->Analsis == ANALMCMC)
 	{
@@ -1130,12 +1129,14 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	
 	Ret->PriorCats		= -1;
 
+	Ret->RateMin		= RATE_MIN;
+	Ret->RateMax		= RATE_MAX;
+
 	if(Ret->Analsis == ANALML)
 	{
 		Ret->Itters		=	-1;
 		Ret->Sample		=	-1;
 		Ret->BurnIn		=	-1;
-
 
 		Ret->MLTries		=	10;
 		Ret->MLTol			=	0.000001;
@@ -2389,9 +2390,15 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 
 	if(Opt->Analsis == ANALMCMC)
 	{
-		if(Command == CCI)
+		if(	Command == CCI ||
+			Command == CMLTOL ||
+			Command == CMLTRIES ||
+			Command == CMLEVAL ||
+			Command == CMLALG ||
+			Command == CSETMINMAXRATE
+			)
 		{
-			printf("Confidence intervals can only be established under ML.\n");
+			printf("Command %s (%s) is not valid with the MCMC model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
 			return FALSE;
 		}
 	}
@@ -3946,6 +3953,35 @@ void	SetMinTaxaNoTrans(OPTIONS *Opt, int Tokes, char **Passed)
 	Opt->MinTransTaxaNo = No;
 }
 
+void SetMinMaxRate(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	double Min, Max;
+
+	if(Tokes != 3)
+	{
+		printf("SetMinMaxRate takes the a minimum and maximum rate.\n");
+		exit(0);
+	}
+
+	if(IsValidDouble(Passed[1]) == FALSE || IsValidDouble(Passed[2]) == FALSE)
+	{
+		printf("Cannot convert values to rates.\n");
+		exit(0);
+	}
+
+	Min = atof(Passed[1]);
+	Max = atof(Passed[2]);
+
+	if(Min >= Max)
+	{
+		printf("Min %f is not valid", Min);
+		exit(0);
+	}
+
+	Opt->RateMin = Min;
+	Opt->RateMax = Max;
+}
+
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 {
 	int			Tokes;
@@ -4414,6 +4450,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CSETMINTAXATRANS)
 		SetMinTaxaNoTrans(Opt, Tokes, Passed);
+
+	if(Command == CSETMINMAXRATE)
+		SetMinMaxRate(Opt, Tokes, Passed);
 
 	return FALSE;
 }
