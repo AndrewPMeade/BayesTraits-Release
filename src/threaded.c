@@ -40,7 +40,8 @@
 #include "Threaded.h"
 #include "GenLib.h"
 
-#ifdef BTLAPACK
+
+#ifdef USE_MKL
 	#include <mkl.h>
 	extern void mkl_set_num_threads(int);
 #endif
@@ -64,7 +65,7 @@ int		GetMaxThreads(void)
 
 void	SetNoOfThreads(int No)
 {
-#ifdef BTLAPACK
+#ifdef USE_MKL
 	mkl_set_num_threads(No);
 #endif
 

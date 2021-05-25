@@ -55,6 +55,7 @@
 
 #ifdef BTLAPACK
 	#include "btlapack_interface.h"
+	#include "CBlasWrapper.h"
 #endif
 
 double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree);
@@ -1125,6 +1126,17 @@ double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree)
 
 	return P1 * P2;
 }
+/*
+void matvecprod(double* A, double* v, double* u, int N)
+{ 
+	double alpha= 1.0, beta= 0.0;
+	char no= 'N', tr= 'T';
+	int m= N, n= N, lda= N, incx= 1, incy= N;
+
+	dgemv(&no,&m,&n,&alpha,A,&lda,v,&incx,&beta,u,&incy);
+}
+*/
+
 
 
 double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
@@ -1135,9 +1147,14 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 
 	CV = Tree->ConVars;
 
-#ifdef OPENMP_THR
+//	TestKMLTT(Trees, Tree);
+#ifdef BTLAPACK
+	MatrixVectProduct(CV->InvV->me[0], CV->TVect1, CV->TVect2, Trees->NoTaxa);
+	Ret  = VectVectDotProduct(CV->TVect2, CV->TVect3, Trees->NoTaxa);
+#else
+	#ifdef OPENMP_THR
 	#pragma omp parallel for private(x, Ret) num_threads(4)
-#endif
+	#endif
 	for(y=0;y<Trees->NoTaxa;y++)
 	{
 		Ret = 0;
@@ -1150,7 +1167,7 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 	Ret = 0;
 	for(x=0;x<Trees->NoTaxa;x++)
 		Ret = Ret + (CV->TVect2[x] * CV->TVect3[x]);
-
+#endif
 	// Use sum of least squares, should not be used.
 //	if(SLS == TRUE)
 //		return Ret * (1.0/(Trees->NoTaxa - (Trees->NoOfSites+1)));
@@ -1889,8 +1906,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 			MakeKappaV(Trees, Tree, Rates->Kappa);
 		else
 			CopyMatrix(Tree->ConVars->V, Tree->ConVars->TrueV);
-
-
+		
 		if(Opt->EstOU == TRUE)
 			CalcOU(Trees, Tree, Tree->ConVars->V, Rates->OU);
 

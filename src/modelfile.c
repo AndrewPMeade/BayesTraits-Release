@@ -134,9 +134,6 @@ void	SaveModelFile(FILE *MFile, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	if(Opt->DataType == CONTINUOUS)
 	{
-//		Rates->Rates[0] = 0.0;
-//		Tree->ConVars->Sigma->me[0][0] = (double)2.0;
-
 		MFWriteDoubleArr(Rates->Rates, Rates->NoOfRates, MFile);
 		MFWriteDoubleArr(Tree->ConVars->Sigma->me[0], Tree->ConVars->Sigma->NoOfCols * Tree->ConVars->Sigma->NoOfRows, MFile);
 		

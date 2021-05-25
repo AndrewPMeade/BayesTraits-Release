@@ -1815,9 +1815,7 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoSites, RATES* Rates, OPTI
 	TREES	*Trees;
 
 	Trees = Opt->Trees;
-
-
-
+	
 	if(Node == NULL)
 	{
 		for(SiteIndex=0;SiteIndex<NoSites;SiteIndex++)
@@ -1847,10 +1845,11 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoSites, RATES* Rates, OPTI
 
 		Tot=0;
 		for(Index=0;Index<NOS;Index++)
-			Tot += (Node->Partial[SiteIndex][Index] * Rates->Pis[Index]);
-//			Tot += (Node->Partial[SiteIndex][Index]);
-
-
+			if(Opt->UsePisInAncStates == TRUE)
+				Tot += Node->Partial[SiteIndex][Index] * Rates->Pis[Index];
+			else
+				Tot += Node->Partial[SiteIndex][Index];
+		
 	/*
 		if(Opt->Model == DESCINDEP)
 		{
@@ -1891,15 +1890,20 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoSites, RATES* Rates, OPTI
 			if(Opt->UseCovarion == FALSE)
 			{
 				for(Index=0;Index<NOS;Index++)
-					fprintf(Str, "%f\t", (Node->Partial[SiteIndex][Index] *  Rates->Pis[Index]) / Tot);
+					if(Opt->UsePisInAncStates == TRUE)
+						fprintf(Str, "%f\t", (Node->Partial[SiteIndex][Index] *  Rates->Pis[Index]) / Tot);
+					else
+						fprintf(Str, "%f\t", Node->Partial[SiteIndex][Index] / Tot);
 //					fprintf(Str, "%f\t", (Node->Partial[SiteIndex][Index]) / Tot);
 			}
 			else
 			{
 				TrueNOS = NOS / 2;
 				for(Index=0;Index<TrueNOS;Index++)
-					fprintf(Str, "%f\t", ((Node->Partial[SiteIndex][Index] *  Rates->Pis[Index]) +
-										  (Node->Partial[SiteIndex][Index+TrueNOS] *  Rates->Pis[Index+TrueNOS]))/ Tot);
+					if(Opt->UsePisInAncStates == TRUE)
+						fprintf(Str, "%f\t", ((Node->Partial[SiteIndex][Index] *  Rates->Pis[Index]) + (Node->Partial[SiteIndex][Index+TrueNOS] *  Rates->Pis[Index+TrueNOS]))/ Tot);
+					else
+						fprintf(Str, "%f\t", (Node->Partial[SiteIndex][Index] + Node->Partial[SiteIndex][Index+TrueNOS])/ Tot);
 			}
 
 		}
@@ -2526,15 +2530,18 @@ int		TryRJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 	int NoOfGroups;
 
 	NoOfGroups = NoOfPramGroups(Rates, NULL, NULL);
-#ifndef NO_RJ_ZERO
-	if(RandDouble(Rates->RS) < 0.25)
+
+	if(Opt->RJZero == TRUE)
 	{
-		if(RandDouble(Rates->RS) < 0.5)
-			return RJAugment(Rates, Opt);
-		else
-			return RJReduce(Rates, Opt);
+		if(RandDouble(Rates->RS) < 0.25)
+		{
+			if(RandDouble(Rates->RS) < 0.5)
+				return RJAugment(Rates, Opt);
+			else
+				return RJReduce(Rates, Opt);
+		}
 	}
-#endif
+
 	if(RandDouble(Rates->RS) < 0.5)
 		return RJSplit(Rates, Opt);
 

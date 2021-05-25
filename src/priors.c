@@ -508,7 +508,7 @@ double	LogNormalP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
-void	TestLh(PRIOR *Prior)
+void	TestGammaPrior(PRIOR *Prior)
 {
 	double X, LogLh;
 
@@ -532,7 +532,6 @@ double	LogGammaP(double X, PRIOR *Prior)
 	if(X < 0.0)
 		return ERRLH;
 
-	TestLh(Prior);
 
 	if(Prior->Discretised == FALSE)
 		Ret = gsl_ran_gamma_pdf(X, Prior->DistVals[0], Prior->DistVals[1]);
@@ -578,9 +577,26 @@ double LogChiSquaredP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
+void	PLhTest(PRIOR *Prior)
+{
+	double X, Lh;
+
+	for(X=0;X<=10;X+=0.001)
+	{
+		Lh  = PDFSGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
+
+		printf("%f\t%f\n", X, Lh);
+	}
+
+	exit(0);
+}
+
 double LogSGammaP(double X, PRIOR *Prior)
 {
 	double Ret;
+
+
+//	PLhTest(Prior);
 
 	if(X < 0.0)
 		return ERRLH;

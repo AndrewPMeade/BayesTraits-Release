@@ -418,6 +418,12 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			fprintf(Str, "Use RJ MCMC:                     True\n");
 			if(Opt->CapRJRatesNo != -1)
 				fprintf(Str, "Cap RJ Rate Number:              %d\n", Opt->CapRJRatesNo);
+
+			fprintf(Str, "Zero Rates:                      ");
+			if(Opt->RJZero == TRUE)
+				fprintf(Str, "Yes\n");
+			else
+				fprintf(Str, "No\n");
 		}
 			
 		if(Opt->UseSchedule	== TRUE)
@@ -454,7 +460,13 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 				fprintf(Str, "Uniform\n");
 				break;
 		}
-
+		
+		fprintf(Str, "Pis used in ancestral state estimation:      ");
+		if(Opt->UsePisInAncStates == TRUE)
+			fprintf(Str, "Yes\n");
+		else
+			fprintf(Str, "No\n");
+		
 		fprintf(Str, "Character Symbols:               ");
 
 		if(Opt->Model == M_MULTISTATE)
@@ -1349,6 +1361,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->NormQMat = FALSE;
 	
 	Ret->NoSliceSampleSteps = 100;
+
+	Ret->UsePisInAncStates = TRUE;
+	Ret->RJZero			   = TRUE;
 
 	free(Buffer);
 
@@ -4163,6 +4178,35 @@ void	SetNoSliceSampleSteps(OPTIONS *Opt, int Tokes, char **Passed)
 	Opt->NoSliceSampleSteps = NoSteps;
 }
 
+void	SetPisAncStates(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("PisAncStates Does not take any parameters.\n");
+		exit(1);
+	}
+	
+	if(Opt->UsePisInAncStates == TRUE)
+		Opt->UsePisInAncStates = FALSE;
+	else
+		Opt->UsePisInAncStates = TRUE;
+}
+
+void	SetRJZero(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("RJZero Does not take any parameters.\n");
+		exit(1);
+	}
+
+	if(Opt->RJZero == TRUE)
+		Opt->RJZero = FALSE;
+	else
+		Opt->RJZero = TRUE;
+}
+
+
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 {
 	int			Tokes;
@@ -4615,6 +4659,13 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CNOSLICESAMPLESTEPS)
 		SetNoSliceSampleSteps(Opt, Tokes, Passed);
+
+	if(Command == CPISANCSTATES)
+		SetPisAncStates(Opt, Tokes, Passed);
+
+	if(Command == CRJZERO)
+		SetRJZero(Opt, Tokes, Passed);
+	
 
 	return FALSE;
 }

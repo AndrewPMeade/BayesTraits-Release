@@ -25,8 +25,6 @@
 *
 */
 
-
-
 #include "TypeDef.h"
 
 #ifdef BTLAPACK

@@ -27,6 +27,13 @@
 	#include <mkl.h>
 #endif
 
+#ifdef BTLAPACK 
+#ifndef USE_MKL
+	#include <cblas.h>
+#endif
+#endif
+
+
 #ifdef BTOCL
 	#include "btocl_runtime.h"
 #endif
@@ -148,10 +155,6 @@
 /*	#define MAXRATE	100 */
 // Minium barnch legnth
 #define MIN_BL	0.0000001
-
-
-// define to stop RJ zeroing out rates. 
-#define NO_RJ_ZERO
 
 // Output File Extensions 
 #define OUTPUT_EXT_LOG			".Log.txt"
@@ -313,6 +316,8 @@ typedef enum
 	CSETMINMAXRATE, 
 	CNORMQMAT, 
 	CNOSLICESAMPLESTEPS,
+	CPISANCSTATES,
+	CRJZERO,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -397,6 +402,8 @@ static char    *COMMANDSTRINGS[] =
 	"SetMinMaxRate", "smmr",
 	"NormaliseQMatrix", "nqm",
 	"NoSliceSampleSteps", "nsss",
+	"PisAncStates",		"pas",
+	"RJZero",			"rjz",
 	""
 };
 
@@ -1248,6 +1255,10 @@ typedef struct
 	int			NormQMat;
 
 	int			NoSliceSampleSteps;
+
+	int			UsePisInAncStates;
+		
+	int			RJZero;
 
 } OPTIONS;
 
