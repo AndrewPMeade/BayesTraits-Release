@@ -339,7 +339,8 @@ int kronecker_vectmultColumn(double* vres, double* v, double* sigma, int sigma_d
 }
 
 // Simpler version (column major) for sigma_dim = 1
-int kronecker_vectmultColumnOne(double* vres, double* v, double* sigma, int sigma_dim,double*  mat, int mat_dim) {
+int kronecker_vectmultColumnOne(double* vres, double* v, double* sigma, int sigma_dim, double*  mat, int mat_dim) 
+{
 	int mat_col, mat_row;     // included for clarity - no need
 	double *pvres, *pv;
 //	double sum;

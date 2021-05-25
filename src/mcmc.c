@@ -299,7 +299,7 @@ int	FindValidStartRateAllSame(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	CLh = ValidMCMCParameters(Opt, Trees, Rates);
 
 
-	CRate = 100000;
+	CRate = RATE_MAX;
 	BRate = -1.0;
 	BLh = ERRLH;
 	do
@@ -314,7 +314,7 @@ int	FindValidStartRateAllSame(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 		CRate = CRate * 0.1;
 
-	} while(CRate > 1E-20);
+	} while(CRate > RATE_MIN);
 
 	if(BLh == ERRLH)
 		return FALSE;

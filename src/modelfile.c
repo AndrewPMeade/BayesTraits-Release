@@ -38,6 +38,15 @@
 #include "Likelihood.h"
 #include "Rates.h"
 
+size_t	GetSig2MatrixSize(TREES *Trees)
+{
+	size_t Ret;
+
+	Ret = Trees->Tree[0]->ConVars->Sigma->NoOfCols  * Trees->Tree[0]->ConVars->Sigma->NoOfCols;
+
+	return Ret;
+}
+
 int		GetParamPerModel(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Ret;
@@ -47,7 +56,8 @@ int		GetParamPerModel(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->DataType == CONTINUOUS)
 	{
 		Ret = Rates->NoOfRates;
-		
+		Ret += GetSig2MatrixSize(Trees);
+
 		if(Opt->EstKappa == TRUE)
 			Ret++;
 
@@ -118,10 +128,15 @@ FILE*	InitSaveModelFile(char *FName, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 void	SaveModelFile(FILE *MFile, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
+	TREE *Tree;
+
+	Tree = Trees->Tree[Rates->TreeNo];
+
 	if(Opt->DataType == CONTINUOUS)
 	{
 		MFWriteDoubleArr(Rates->Rates, Rates->NoOfRates, MFile);
-	
+		MFWriteDoubleArr(Tree->ConVars->Sigma->me[0], Tree->ConVars->Sigma->NoOfCols * Tree->ConVars->Sigma->NoOfRows, MFile);
+		
 		if(Opt->EstKappa == TRUE)
 			MFWriteDouble(Rates->Kappa, MFile);
 
@@ -185,12 +200,24 @@ void		MapDescModelFile(OPTIONS *Opt, RATES *Rates)
 		Rates->Kappa = Data[Pos++];
 }
 
+
+
+void CopySig2Matrix(TREES* Trees, RATES *Rates, size_t Pos, size_t Sig2Size, double *Data)
+{
+	CONVAR		*CV;
+	CV = Trees->Tree[Rates->TreeNo]->ConVars;
+
+	memcpy((void*)&CV->Sigma->me[0][0], (void*)&Data[Pos], sizeof(double) * Sig2Size);
+
+}
 void	MapConModelFile(OPTIONS *Opt, RATES *Rates)
 {
 	MODELFILE *MF;
 	TREES *Trees;
+	TREE	*Tree;
 	double *Data;
-	int		Pos;
+	size_t		Pos;	
+	size_t		Sig2Size;
 
 	Trees = Opt->Trees;
 	MF = Rates->ModelFile;
@@ -198,6 +225,11 @@ void	MapConModelFile(OPTIONS *Opt, RATES *Rates)
 
 	memcpy((void*)Rates->Rates, (void*)Data, sizeof(double) * Rates->NoOfRates);
 	Pos = Rates->NoOfRates;
+
+	Sig2Size = GetSig2MatrixSize(Trees);
+
+	CopySig2Matrix(Trees, Rates, Pos, Sig2Size, Data);
+	Pos += Sig2Size;
 
 	if(Opt->EstKappa == TRUE)
 		Rates->Kappa = Data[Pos++];
@@ -226,9 +258,7 @@ MODELFILE*		AllocModelFile(void)
 {
 	MODELFILE* Ret;
 
-	Ret = (MODELFILE*)malloc(sizeof(MODELFILE));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (MODELFILE*)SMalloc(sizeof(MODELFILE));
 
 	Ret->FName = NULL;
 	Ret->ModelP = NULL;
@@ -243,9 +273,7 @@ size_t			GetFileSize(FILE *F)
 	size_t Ret, NR;
 	char		*B;
 
-	B = (char*)malloc(sizeof(char) * 1024);
-	if(B == NULL)
-		MallocErr();
+	B = (char*)SMalloc(sizeof(char) * 1024);
 
 	Ret = 0;
 	do
@@ -296,16 +324,10 @@ void	AlloModelMem(MODELFILE* MF)
 {
 	int Index;
 
-	MF->ModelP = (double**)malloc(sizeof(double*) * MF->NoModels);
-	if(MF->ModelP == NULL)
-		MallocErr();
+	MF->ModelP = (double**)SMalloc(sizeof(double*) * MF->NoModels);
 
 	for(Index=0;Index<MF->NoModels;Index++)
-	{
-		MF->ModelP[Index] = (double*)malloc(sizeof(double) * MF->NoParam);
-		if(MF->ModelP[Index] == NULL)
-			MallocErr();
-	}
+		MF->ModelP[Index] = (double*)SMalloc(sizeof(double) * MF->NoParam);
 }
 
 void	ReadModelFileData(MODELFILE* MF)
@@ -313,9 +335,14 @@ void	ReadModelFileData(MODELFILE* MF)
 	FILE *In;
 	int Index;
 
+
 	In = fopen(MF->FName, "rb");
 	if(In == NULL)
-		MallocErr();
+	{
+		printf("Cannot open model file %s for reading.\n", MF->FName);
+		exit(1);
+	}
+
 	fread((void*)&MF->NoParam, sizeof(int), 1, In);
 
 	for(Index=0;Index<MF->NoModels;Index++)
@@ -389,6 +416,7 @@ void			FreeModelFile(MODELFILE *MF)
 	for(Index=0;Index<MF->NoModels;Index++)
 		free(MF->ModelP[Index]);
 	free(MF->ModelP);
+	free(MF->FName);
 	free(MF);
 }
 

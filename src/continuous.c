@@ -1244,8 +1244,11 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 		}
 	}
 
+	if(Opt->LoadModels == TRUE)
+		return;
+
 	if(Opt->Model == M_CONTINUOUS_REG)
-	{
+	{		
 		Tree->ConVars->Sigma->me[0][0] = FindMLRegVar(Trees, Tree);
 		return;
 	}
@@ -1833,6 +1836,12 @@ int	CalcInvV(TREES *Trees, TREE *Tree)
 	return FindInvV(Trees, Tree);
 }
 
+void	SetConRegSigma(CONVAR *CV)
+{
+	CV->InvSigma->me[0][0] = 1.0 / CV->Sigma->me[0][0];
+	CV->LogDetOfSigma = log(CV->Sigma->me[0][0]);
+}
+
 double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 	double	Val;
@@ -1914,8 +1923,6 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	CalcSigma(Opt, Trees, Tree, Rates->Means, Rates->Beta);
 
-//	CV->Sigma->me[0][0]  = CV->Sigma->me[0][0]  / (2.0 * Rates->OU);
-
 
 #ifdef MATHMAT
 	PrintMathematicaMatrix(Tree->ConVars->Sigma, "Sigma = ", stdout);
@@ -1923,10 +1930,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
-		CV->InvSigma->me[0][0] = 1.0 / CV->Sigma->me[0][0];
-
-		CV->LogDetOfSigma = log(CV->Sigma->me[0][0]);
-
+		SetConRegSigma(CV);
 	}
 	else
 	{
