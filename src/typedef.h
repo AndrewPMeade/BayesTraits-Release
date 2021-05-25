@@ -25,7 +25,8 @@
 
 #define PPMASSDEL	10
 #define PPCOST		2.302585093
-#define PPJACOBIAN	2
+#define PPJACOBIAN	1
+#define PPMAXSCALE	10
 
 
 #define MINRATE 1.0e-16

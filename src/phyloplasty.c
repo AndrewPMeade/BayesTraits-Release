@@ -9,6 +9,9 @@
 #include "rand.h"
 #include "likelihood.h"
 #include "trees.h"
+#include "randdists.h"
+
+void	TestGenRand(OPTIONS *Opt, TREES *Trees, RATES* Rates);
 
 double**	MakeTrueBL(TREES *Trees)
 {
@@ -155,7 +158,7 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N)
 	if(GenRandState(Rates->RandStates) < 0.5)
 		PNode->Scale = GenRandState(Rates->RandStates);
 	else
-		PNode->Scale = 1 + (GenRandState(Rates->RandStates) * 9);
+		PNode->Scale = 1 + (GenRandState(Rates->RandStates) * (PPMAXSCALE-1));
 
 	Plasty->NodeList = (PLASTYNODE**) AddToList(&Plasty->NoNodes, Plasty->NodeList, (void*)PNode);
 
@@ -261,7 +264,7 @@ double	ChangePlastyRate(double Rate, double dev, RANDSTATES *RS)
 	{
 		Ret = (GenRandState(RS) * dev) - (dev / 2.0); 
 		Ret += Rate;
-	} while(Ret <= 0);
+	} while((Ret <= 0) || (Ret > PPMAXSCALE));
 
 	return Ret;
 }
@@ -596,9 +599,11 @@ void	GetNodeIDList(NODE N, int *Size, int *List)
 	GetNodeIDList(N->Right, Size, List);
 }
 
-
 void	InitPPFiles(OPTIONS *Opt, TREES *Trees, RATES* Rates)
 {
+	TestGenRand(Opt, Trees, Rates);
+
+
 	InitPPTreeFile(Opt, Trees);
 	IntiPPLogFile(Opt, Trees, Rates);
 }
@@ -674,4 +679,92 @@ void	PrintPPOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 {
 	PrintPPTree(Opt, Trees, Rates, It);
 	LogPPResults(Opt, Trees, Rates, It);
+}
+/*
+ double gengam(double a,double r)
+           GENerates random deviates from GAMma distribution
+                              Function
+     Generates random deviates from the gamma distribution whose
+     density is
+          (A**R)/Gamma(R) * X**(R-1) * Exp(-A*X)
+                              Arguments
+     a --> Location parameter of Gamma distribution
+     JJV   (a > 0)
+     r --> Shape parameter of Gamma distribution
+     JJV   (r > 0)
+                              Method
+*/
+
+extern double gamma(double x);
+
+double	GammPDF(double x, double Shape, double Scale)
+{
+	double T1, T2;
+
+	T1 = 1.0 / (Scale * gamma(Shape));
+
+	T2 = pow((x / Scale), Shape-1);
+	T2 = T2 * exp((-x)/Scale);
+
+	return T1 * T2;
+}
+
+double	RandGamma(double Shape, double Scale)
+{
+	return sgamma(Shape) * Scale;
+//	gengam(a, b)
+}
+
+double	PPGammaPDF(double x, double Alpha, double Beta)
+{
+	double Ret, s, T1, T2;
+
+	s = 1 / ((Alpha - 1) * Beta);
+
+	T1 = exp(-(x/s) / Beta);
+	T2 = pow(x/s, -1 + Alpha);
+	T2 = T1 * T2 * pow(Beta, -Alpha);
+	Ret = T2 / gamma(Alpha);
+	
+	return Ret / s;
+}
+
+void	TestGenRand(OPTIONS *Opt, TREES *Trees, RATES* Rates)
+{
+	int Index;
+	double x;
+	double Alpha, Beta;
+
+	printf("\n");
+
+	for(Index=0;Index<10000;Index++)
+	{
+
+		printf("%f\t%f\t", Alpha, Beta);
+		for(x=0.000001;x<20;x+=0.01)
+			printf("%f\t", PPGammaPDF(x, 1.5, 6));
+		printf("\n");
+	}
+	exit(0);
+
+	for(Index=0;Index<10000;Index++)
+	{
+		x = GenRandState(Rates->RandStates)*20;
+		printf("%d\t%f\t%f\n", Index, x, GammPDF(x, 2, 2));
+	}
+
+	exit(0);
+
+/*	int Index;
+	double a, b;
+
+	a = 0.5;
+	b = 2;
+
+	printf("\n");
+	for(Index=0;Index<10000;Index++)	
+		printf("%f\n", gengam(a, b));
+
+	exit(0);
+	*/
 }
