@@ -1403,7 +1403,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NO_SCHEDULE_OPT	23
+#define NO_SCHEDULE_OPT	25
 
 static char    *SHEDOP[] =
 {
@@ -1429,7 +1429,9 @@ static char    *SHEDOP[] =
 	"RJ Dummy Change Beta",
 	"Fat Tail Ans",
 	"Local Rates",
-	"Data Dist"
+	"Data Dist",
+	"Time Slice – Time",
+	"Time Slice – Scale"
 };
 
 typedef enum
@@ -1456,7 +1458,9 @@ typedef enum
 	S_RJ_DUMMY_CHANG_EBETA,
 	S_FAT_TAILANS,
 	S_LOCAL_RATES,
-	S_DATA_DIST
+	S_DATA_DIST,
+	S_TIME_SLICE_TIME,
+	S_TIME_SLICE_SCALE
 } OPERATORS;
 
 
@@ -1499,6 +1503,9 @@ typedef struct
 	int			NoFullATList;
 
 	AUTOTUNE	*LocalRatesAT;
+
+	AUTOTUNE	*TimeSliceTimeAT;
+	AUTOTUNE	*TimeSliceScaleAT;
 
 	AUTOTUNE	*CurrentAT;
 

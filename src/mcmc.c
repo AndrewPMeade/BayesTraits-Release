@@ -468,6 +468,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	double Lh, X;
 
+	Lh = 0;
 	X = Rates->LocalTransforms[0]->Scale ;
 	Rates->Lh = Likelihood(Rates, Trees, Opt);
 

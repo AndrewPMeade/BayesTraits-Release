@@ -2735,6 +2735,15 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		case S_DATA_DIST:
 			ChangeTreeDistData(Opt, Rates);
 		break;
+
+
+		case S_TIME_SLICE_TIME:
+			ChangeTimeSliceTime(Rates, Shed);
+		break;
+
+		case S_TIME_SLICE_SCALE:
+			ChangeTimeSliceScale(Rates, Shed);
+		break;
 	}
 }
 

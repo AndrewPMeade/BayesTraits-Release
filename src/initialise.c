@@ -59,6 +59,8 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	int		Index;
 	int		ID;
 
+	CheckSingleDescendent(Trees);
+
 	if(Opt->ScaleTrees != -1.0)
 		ScaleUserTrees(Trees, Opt->ScaleTrees);
 

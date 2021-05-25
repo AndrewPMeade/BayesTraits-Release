@@ -3421,6 +3421,26 @@ int		CompCShed(const void *CS1, const void *CS2)
 	return 1;
 }
 
+void	AddTimeSlicePriors(TIME_SLICE *TS, OPTIONS *Opt)
+{
+	PRIOR *Prior;
+
+	if(TS->FixedTime == FALSE)
+	{
+		RemovePriorFormOpt("TimeSlice-Time", Opt);
+		Prior = CreateUniformPrior("TimeSlice-Time", 0.0, 1.0);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+	if(TS->FixedScale == FALSE)
+	{
+		RemovePriorFormOpt("TimeSlice-Scale", Opt);
+		Prior = CreateSGammaPrior("TimeSlice-Scale", VARRATES_ALPHA, VARRATES_BETA);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+}
+
 
 void	OptAddTimeSlice(OPTIONS *Opt, int Tokes, char **Passed)
 {
@@ -3477,8 +3497,11 @@ void	OptAddTimeSlice(OPTIONS *Opt, int Tokes, char **Passed)
 		}
 	}
 	
-	AddTimeSlice(Opt->TimeSlices, Name, Time, Scale);
+	TS = AddTimeSlice(Opt->TimeSlices, Name, Time, Scale);
 	Opt->SaveTrees = TRUE;
+
+	if(Opt->Analsis == ANALMCMC)
+		AddTimeSlicePriors(TS, Opt);
 }
 
 
@@ -3814,8 +3837,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		printf("The AddTaxa command is no longer supported.\n");
 		exit(1);
 	}
-
-
+	
 	if(Command == CDELTAXA)
 	{
 		printf("The DelTaxa command is no longer supported.\n");

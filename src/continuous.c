@@ -345,7 +345,12 @@ void	SetNodesVPos(TREES *Trees, TREE *Tree)
 	{
 		N = Tree->NodeList[NIndex];
 		SetNodeVPos(N, Tree, Trees);
+//		printf("%f\t%d\t", N->Length, N->NoNodes);
+//		PrintPart(stdout, Trees, N->Part);
+//		printf("\n");
 	}
+
+//	exit(0);
 }
 
 void	VToTree(MATRIX *V, TREE *Tree)

@@ -4,7 +4,7 @@
 #include "typedef.h"
 #include "genlib.h"
 
-void			AddTimeSlice(TIME_SLICES *TSlices, char *Name, double Time, double Scale);
+TIME_SLICE*		AddTimeSlice(TIME_SLICES *TSlices, char *Name, double Time, double Scale);
 TIME_SLICE*		AllocTimeSlice(char *Name);
 TIME_SLICE*		GetTimeSlice(TIME_SLICES *TSlices, char *Name);
 
@@ -21,5 +21,12 @@ void			ApplyTimeSlices(RATES *Rates, TREES *Trees);
 
 void			PrintTimeSliceHeader(FILE *Str, TIME_SLICES *TS);
 void			PrintTimeSliceRates(FILE *Str, TIME_SLICES *TS_Opt, TIME_SLICES *TS_Rates);
+
+int				TimeSliceEstTime(TIME_SLICES *TS);
+int				TimeSliceEstScale(TIME_SLICES *TS);
+
+void			ChangeTimeSliceTime(RATES *Rates, SCHEDULE *Shed);
+void			ChangeTimeSliceScale(RATES *Rates, SCHEDULE *Shed);
+
 
 #endif

@@ -7,6 +7,8 @@
 #include "genlib.h"
 #include "TimeSlices.h"
 #include "trees.h"
+#include "LocalTransform.h"
+#include "priors.h"
 
 TIME_SLICE*		AllocTimeSlice(char *Name)
 {
@@ -46,7 +48,7 @@ TIME_SLICE*		CloneTimeSlice(TIME_SLICE* TS)
 	return Ret;
 }
 
-void	AddTimeSlice(TIME_SLICES *TSlices, char *Name, double Time, double Scale)
+TIME_SLICE*	AddTimeSlice(TIME_SLICES *TSlices, char *Name, double Time, double Scale)
 {
 	TIME_SLICE* TS;
 
@@ -65,6 +67,8 @@ void	AddTimeSlice(TIME_SLICES *TSlices, char *Name, double Time, double Scale)
 	}
 
 	TSlices->TimeSlices = (TIME_SLICE**)AddToList(&TSlices->NoTimeSlices, (void**)TSlices->TimeSlices, (void*)TS);
+
+	return TS;
 }
 
 void	FreeTimeSlices(TIME_SLICES *TSlices)
@@ -258,8 +262,8 @@ double	GetMaxRootToTip(TREE *Tree)
 
 double	FindPctBLOverLap(double BL_Start, double BL_End, double TS_Start, double TS_End)
 {
-	double Ret;
-	double A, Start, End;
+	double A, Ret;
+	
 
 	if(TS_Start > BL_End)
 		return 0.0;
@@ -393,4 +397,115 @@ void	PrintTimeSliceRates(FILE *Str, TIME_SLICES *TS_Opt, TIME_SLICES *TS_Rates)
 		fprintf(Str, "%f\t%f\t", Slice->Time, Slice->Scale);
 	}
 
+}
+
+int				TimeSliceEstTime(TIME_SLICES *TS)
+{
+	int Index;
+	TIME_SLICE *T;
+
+	if(TS == NULL)
+		return FALSE;
+
+	for(Index=0;Index<TS->NoTimeSlices;Index++)
+	{
+		T = TS->TimeSlices[Index];
+		if(T->FixedTime == FALSE)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+int				TimeSliceEstScale(TIME_SLICES *TS)
+{
+	int Index;
+	TIME_SLICE *T;
+
+	if(TS == NULL)
+		return FALSE;
+
+	for(Index=0;Index<TS->NoTimeSlices;Index++)
+	{
+		T = TS->TimeSlices[Index];
+		if(T->FixedScale == FALSE)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+TIME_SLICE*	GetTimeSliceEstTime(RANDSTATES *RS, TIME_SLICES *TS)
+{
+	int Pos;
+
+	while(TRUE)
+	{
+		Pos = RandUSInt(RS) % TS->NoTimeSlices;
+
+		if(TS->TimeSlices[Pos]->FixedTime == FALSE)
+			return TS->TimeSlices[Pos];
+	}
+
+	return NULL;
+}
+
+void	ChangeTimeSliceTime(RATES *Rates, SCHEDULE *Shed)
+{
+	double Dev, NTime;
+	TIME_SLICE *TS;
+
+	Shed->CurrentAT = Shed->TimeSliceTimeAT;
+	Dev = Shed->CurrentAT->CDev;
+
+
+	TS = GetTimeSliceEstTime(Rates->RS, Rates->TimeSlices);
+
+	do
+	{
+		NTime = RandNormal(Rates->RS, TS->Time, Dev);
+
+		if(NTime >= 0 && NTime <= 1.0)
+		{
+			TS->Time = NTime;
+			return;
+		}
+	} while(TRUE);
+}
+
+
+TIME_SLICE*	GetTimeSliceEstScale(RANDSTATES *RS, TIME_SLICES *TS)
+{
+	int Pos;
+
+	while(TRUE)
+	{
+		Pos = RandUSInt(RS) % TS->NoTimeSlices;
+
+		if(TS->TimeSlices[Pos]->FixedScale == FALSE)
+			return TS->TimeSlices[Pos];
+	}
+
+	return NULL;
+}
+
+
+void	ChangeTimeSliceScale(RATES *Rates, SCHEDULE *Shed)
+{
+	double NScale, Dev;
+	TIME_SLICE *TS;
+
+	Shed->CurrentAT = Shed->TimeSliceScaleAT;
+	Dev = Shed->CurrentAT->CDev;
+
+	TS = GetTimeSliceEstScale(Rates->RS, Rates->TimeSlices);
+
+	NScale = ChangeLocalScale(Rates->RS, TS->Scale, Dev);
+
+	Rates->LnHastings = CalcNormalHasting(TS->Scale, Dev);
+
+	if(NScale > MAX_LOCAL_RATE || NScale < MIN_LOCAL_RATE)
+		NScale = TS->Scale;
+
+	TS->Scale = NScale;
 }

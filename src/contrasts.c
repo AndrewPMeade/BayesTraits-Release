@@ -155,7 +155,6 @@ void	InitContrastTree(OPTIONS *Opt, TREES* Trees, int TNo, int NoSites)
 	Tree->NoContrast = GetTotalContrasts(Tree);
 
 	SetNodesVPos(Trees, Tree);
-
 }
 
 void	InitContrastAll(OPTIONS *Opt, TREES* Trees)

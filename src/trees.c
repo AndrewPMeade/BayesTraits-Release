@@ -86,9 +86,7 @@ NODE	AllocNode(void)
 
 	Ret->VPosX			=	-1;
 	Ret->VPosY			=	-1;
-
-
-
+	
 	return Ret;
 }
 
@@ -2166,4 +2164,14 @@ void	PrintTreeBL(TREE *Tree)
 		printf("BL:\t%d\t%f\t", Index, Tree->NodeList[Index]->Length);
 
 	printf("\n");
+}
+
+void	CheckSingleDescendent(TREES *Trees)
+{
+	int Index;
+
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
+	{
+
+	}
 }
