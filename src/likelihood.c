@@ -90,8 +90,8 @@ int	PreCalc(TREES *Trees, RATES *Rates)
 
 	CopyMatrix(InvInfo->Q, InvInfo->A);
 
-	PrintMathematicaMatrix(InvInfo->Q, "QMat", stdout);
-	fflush(stdout);
+//	PrintMathematicaMatrix(InvInfo->Q, "QMat", stdout);
+//	fflush(stdout);
 
 	if(DB == TRUE)
 	{
@@ -1248,18 +1248,11 @@ int		SetStdPMatrix(TREES *Trees, NODE N, MATRIX *P, double Gamma, double Kappa)
 		
 	Len = Len * Gamma;
 
-	Len = 1;
-	printf("Len\t%f\n", Len);
-
-	
 	ThrNo = GetThreadNo();
 	
 	ErrVal = CreatFullPMatrix(Len, P, Trees, Trees->InvInfo->As[ThrNo], Trees->InvInfo->Ets[ThrNo]);
 	if(ErrVal > 0.001)
 		return TRUE;
-
-	PrintMatrix(P, "P = ", stdout);
-	exit(0);
 
 	return FALSE;
 }

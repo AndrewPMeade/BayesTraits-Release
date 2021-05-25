@@ -113,7 +113,14 @@ int main(int argc, char** argv)
 
 //	./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
 //	./Seq/Lang/IE-M1P-RS.trees ./Seq/Lang/IE-MS.nex-0007.txt < in.txt > sout.txt
+
 //  ./Seq/Turk/ConTurkicAll.nex.trees ./Seq/Turk/TurkicAll.txt < in.txt > sout.txt
+//	./Seq/Turk/ConTurkicAll.nex.trees ./Seq/Turk/Turkic0010.txt < in.txt > sout.txt
+//	./Seq/Turk/ConTurkicAll.nex.trees ./Seq/Turk/Turkic0100.txt < in.txt > sout.txt
+
+//	./Seq/PrimatesCon.trees ./Seq/PrimatesMS.txt < in.txt > sout.txt
+//	./Seq/stu.trees ./Seq/stu.txt < in.txt > sout.txt
+
 
 int main(int argc, char** argv)
 {

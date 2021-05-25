@@ -24,8 +24,13 @@ void	SetNodePartition(NODE N, int* List, int *No)
 		SetNodePartition(N->NodeList[Index], List, No);
 }
 
-int PartComp(int *a, int *b)
+int PartComp(const void *av, const void *bv)
 {
+	int *a, *b;
+
+	a = (int*)av;
+	b = (int*)bv;
+
 	if(*a > *b)
 		return 1;
 
@@ -81,7 +86,7 @@ void	SetPart(NODE N)
 	No = 0;
 	SetNodePartition(N, N->Part, &No);
 
-	qsort(N->Part, N->PSize, sizeof(int), (void*)PartComp);
+	qsort(N->Part, N->PSize, sizeof(int), PartComp);
 }
 
 int		IsPartEqual(int *Part1, int Len1, int* Part2, int Len2)
@@ -220,7 +225,7 @@ void	SetTaxaIDList(RECNODE RNode)
 	for(Index=0;Index<RNode->NoOfTaxa;Index++)
 		RNode->TaxaID[Index] = RNode->Taxa[Index]->No;
 	
-	qsort(RNode->TaxaID, RNode->NoOfTaxa, sizeof(int), (void*)PartComp);
+	qsort(RNode->TaxaID, RNode->NoOfTaxa, sizeof(int), PartComp);
 }
 
 void	SetRecNodes(RECNODE RNode, OPTIONS *Opt)

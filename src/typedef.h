@@ -45,7 +45,10 @@
 #define RATE_CHANGE_NORM
 
 #define RATE_CHANGE_ALL
-//#define RATE_CHANGE_ONE
+// #define RATE_CHANGE_ONE
+
+// Information for the phomem cog est runs
+// #define	PHONEIM_RUN
 
 /* If defined Sigma in indep contrast is restricted to a given value */
 #define RES_SIGMA	0.0034
@@ -176,6 +179,7 @@ typedef enum
 	CEQUALTREES,
 	CPRECISION,
 	CCORES,
+	CSYMMETRICAL,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -238,12 +242,13 @@ static char    *COMMANDSTRINGS[] =
 	"fitnospersite","nps",
 	"schedule",		"sch",
 	"solotreemove",	"stree",
-	"setseed",		"ss",
+	"seed",			"se",
 	"makeum",		"mum",
 	"phyloplasty",	"pp",
 	"equaltrees",	"eqt",
 	"precision",	"pre",
 	"cores",		"cor",
+	"symmetrical",	"sym", 
 	""
 };
 
@@ -768,17 +773,33 @@ typedef struct
 
 typedef struct
 {
+	// Number of rate to esimate, or max num if RJ is used. 
 	int		NoOfRates;
+
+	// Total number of rates to use, inc, including resections and constatns. 
 	int		NoOfFullRates;
+
+	// RJ number of rates used currently
+	int		NoOfRJRates;
+
+	// Number of Priors. 
 	int		NoOfPriors;
 
+	// Values for the rates being estimated. 
 	double	*Rates;
+
+	// Values for the all rates, inc constants and resections.  
 	double	*FullRates;
-	double	*Root;
+	
+	// Base frequencies , can all be set to 1 for back capability
 	double	*Pis;
 
+	// The current tree being evaluated
 	int		TreeNo;
+	
+	// Lh of the rates
 	double	Lh;
+
 	double	LhPrior;
 	double	LnHastings;
 	double	LogJacobion;

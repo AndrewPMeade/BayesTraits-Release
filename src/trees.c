@@ -1902,7 +1902,7 @@ void	ListOddPPTaxa(TREES *Trees)
 		CT = &Trees->Taxa[TIndex];
 		CN = GetNodeFromTID(Tree, Tree->NoNodes, CT->No);
 
-		printf("%d\t%s\t%f\n", TIndex, CT->Name, CT->ConData[0], N->Length);
+		printf("%d\t%s\t%f\t%f\n", TIndex, CT->Name, CT->ConData[0], N->Length);
 
 
 		

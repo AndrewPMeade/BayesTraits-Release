@@ -422,6 +422,7 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	int		PIndex=0;
 	double	NLh;
 	double	Rate;
+	int		NoPRates;
 
 	Rates->LhPrior = 0;
 	NLh = 0;
@@ -429,7 +430,12 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	if(Opt->UsePhyloPlasty == TRUE)
 		Rates->LhPrior += CalcPPPriors(Rates, Opt);
 
-	for(PIndex=0;PIndex<Rates->NoOfRates;PIndex++)
+	if(Opt->UseRJMCMC == TRUE)
+		NoPRates = Rates->NoOfRJRates;
+	else
+		NoPRates = Rates->NoOfRates;
+
+	for(PIndex=0;PIndex<NoPRates;PIndex++)
 	{
 		if(Opt->UseRJMCMC == FALSE)
 		{

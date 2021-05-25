@@ -52,26 +52,22 @@ void	PrintOptRes(FILE* Str, OPTIONS *Opt)
 
 		free(FRateName);
 
-		if(Opt->UseRJMCMC == TRUE)
+		switch(Opt->ResTypes[Index])
 		{
-			fprintf(Str, "RJ MCMC\n");
-		}
-		else
-		{
-			switch(Opt->ResTypes[Index])
-			{
-				case RESNONE:
+			case RESNONE:
+				if(Opt->UseRJMCMC == TRUE)
+					fprintf(Str, "RJ MCMC\n");
+				else
 					fprintf(Str, "None\n");
-				break;
+			break;
+			
+			case RESCONST:
+				fprintf(Str, "%f\n", Opt->ResConst[Index]);
+			break;
 
-				case RESCONST:
-					fprintf(Str, "%f\n", Opt->ResConst[Index]);
-				break;
-
-				case RESRATE:
-					fprintf(Str, "%s\n", Opt->RateName[Opt->ResNo[Index]]);
-				break;
-			}
+			case RESRATE:
+				fprintf(Str, "%s\n", Opt->RateName[Opt->ResNo[Index]]);
+			break;
 		}
 
 	}
@@ -701,7 +697,6 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 					Opt->RateName[Index] = CreatRateName(SymbolList[Outter], SymbolList[Inner]);
 					Index++;
 				}
-
 			}
 		}
 	}
@@ -1080,7 +1075,8 @@ MODEL	GetModel(TREES *Trees)
 		}
 	}
 
-	return -1;
+	/* Code is unreachable, return value not valid */
+	return MULTISTATE;
 }
 
 
@@ -1134,7 +1130,7 @@ COMMANDS	StringToCommand(char *Str)
 	do
 	{
 		if((strcmp(Str, COMMANDSTRINGS[SIndex]) == 0) || (strcmp(Str, COMMANDSTRINGS[SIndex+1]) == 0))
-			return CIndex;
+			return (COMMANDS)CIndex;
 		
 		SIndex+=2;
 		CIndex++;
@@ -1292,15 +1288,18 @@ void		RestrictAll(OPTIONS *Opt, char *To)
 
 void		Restrict(OPTIONS *Opt, int Tokes, char *argv[])
 {
-	RESTYPES	*BackRes=NULL;
-	double		*BackConst=NULL;
-	int			*BackNo=NULL;
+	RESTYPES	*BackRes;
+	double		*BackConst;
+	int			*BackNo;
 	double		Const;
 	int			Safe;
-
+	
 	BackRes		= (RESTYPES*)malloc(sizeof(RESTYPES) * Opt->NoOfRates);
 	BackConst	= (double*)malloc(sizeof(double) * Opt->NoOfRates);
 	BackNo		= (int*)malloc(sizeof(int) * Opt->NoOfRates);
+
+	if((BackRes == NULL) || (BackConst == NULL) || (BackNo == NULL))
+		MallocErr();
 	
 	memcpy(BackRes, Opt->ResTypes, sizeof(RESTYPES) * Opt->NoOfRates); 
 	memcpy(BackConst, Opt->ResConst, sizeof(double) * Opt->NoOfRates);
@@ -1367,16 +1366,17 @@ void	UnRestictAll(OPTIONS *Opt)
 
 PRIORDIST	StrToPriorDist(char* Str)
 {
-	int			Index=0;
+	int			Index;
 	
+	Index = 0;
 	do
 	{
 		if(strcmp(Str, DISTNAMES[Index])==0)
-			return BETA+Index;
+			return (PRIORDIST)(BETA+Index);
 		Index++;
 	} while(DISTNAMES[Index][0] != '\0');
 
-	return -1;
+	return (PRIORDIST)-1;
 }
 
 int	SetPriorNo(OPTIONS *Opt, int RateNo, int Tokes, char *argv[])
@@ -2083,7 +2083,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 //			(Command == CPRIOR)		||
 			(Command == CPIS)		||
 			(Command == CPRECISION) ||
-			(Command == CNOSPERSITE) 
+			(Command == CNOSPERSITE)|| 
+			(Command == CSYMMETRICAL)
 			)
 		{
 			printf("Command %s (%s) is not valid with the current model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2341,8 +2342,7 @@ void	SetHyperPrior(OPTIONS *Opt, char* PName, char** Passed, int Tokes, PRIORS*	
 
 		PIndex+=2;
 	}
-
-
+	
 	free(Prior->DistVals);
 
 	Prior->UseHP = TRUE;
@@ -2797,6 +2797,71 @@ void	SetCores(OPTIONS *Opt, int Tokes, char** Passed)
 	Opt->Cores = Cores;
 }
 
+void	ResRateNo(OPTIONS *Opt, int From, int To)
+{
+	Opt->ResTypes[From] = RESRATE;
+	Opt->ResNo[From] = To;
+}
+
+void	SetMSSymmetrical(OPTIONS *Opt)
+{
+	int		x, y, NOS, From, To;
+	char	FromS[4], ToS[4];
+		
+	NOS = Opt->Trees->NoOfStates;
+
+	for(x=0;x<NOS;x++)
+	{
+		for(y=0;y<x;y++)
+		{
+			if(x != y)
+			{
+				sprintf(&FromS[0], "q%c%c", Opt->Trees->SymbolList[x], Opt->Trees->SymbolList[y]);
+				sprintf(&ToS[0], "q%c%c", Opt->Trees->SymbolList[y], Opt->Trees->SymbolList[x]);
+				
+				From	= StrToRate(Opt, &FromS[0]);
+				To		= StrToRate(Opt, &ToS[0]);
+				
+				ResRateNo(Opt, From, To);
+			}
+		}
+	}	
+}
+
+void	SetSymmetrical(OPTIONS *Opt)
+{
+	UnRestictAll(Opt);
+
+	if(Opt->Model == MULTISTATE)
+	{
+		SetMSSymmetrical(Opt);
+	}
+
+	if(Opt->Model == DESCINDEP)
+	{
+		/* Beta 1 = Alpha 1 */
+		ResRateNo(Opt, 1, 0);
+
+		/* Beta 2 = Alpha 2 */
+		ResRateNo(Opt, 3, 2);
+	}
+
+	if(Opt->Model == DESCDEP)
+	{
+		/* q21 = q12 */
+		ResRateNo(Opt, 2, 0);
+
+		/* q31 = q13 */
+		ResRateNo(Opt, 4, 1);
+		
+		/* q42 = q24 */ 
+		ResRateNo(Opt, 6, 3);
+		
+		/* q43 = q34 */
+		ResRateNo(Opt, 7, 5);
+	}
+}
+
 int		PassLine(OPTIONS *Opt, char *Buffer)
 {
 	char		*Passed[1024];
@@ -2835,7 +2900,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		if(Tokes >= 3)
 			Restrict(Opt, Tokes, Passed);
 		else
-			printf("The Restrict command takes two parimiters a paramiter to restict and a constant or rate to restict it to.\n");
+			printf("The Restrict command takes two parimiters, a rate to restict and a constant or rate to restict it to.\n");
 
 	}
 
@@ -3394,6 +3459,12 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 #else
 		SetCores(Opt, Tokes, Passed);
 #endif
+	}
+
+	if(Command == CSYMMETRICAL)
+	{
+		SetSymmetrical(Opt);
+		return FALSE;
 	}
 
 	return FALSE;

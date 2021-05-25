@@ -379,12 +379,19 @@ void	BildSymbolList(TREES *Trees)
 	free(Temp);
 }
 
-int CompChars(char *char1, char *char2)
+//int CompChars(char *char1, char *char2)
+int CompChars(const void* c1, const void *c2)
 {
-  if (*char1 <  *char2) 
-	  return -1;
-  if (*char1 == *char2) 
-	  return  0;
+	char *char1, *char2;
+	
+	char1 = (char*)c1;
+	char2 = (char*)c2;
+
+	if (*char1 <  *char2) 
+		return -1;
+	
+	if (*char1 == *char2) 
+		return  0;
   return 1;
 }
 
@@ -417,7 +424,8 @@ void	FindSiteSymbols(TREES *Trees, int SiteNo)
 		}
 	}
 
-	qsort(Buffer, strlen(Buffer), sizeof(char), (void *)CompChars);
+//	qsort(Buffer, strlen(Buffer), sizeof(char), (void *)CompChars);
+	qsort(Buffer, strlen(Buffer), sizeof(char), CompChars);
 	Trees->SiteSymbols[SiteNo] = StrMake(Buffer);
 	Trees->NOSList[SiteNo] = strlen(Trees->SiteSymbols[SiteNo]);
 
@@ -463,7 +471,7 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 
 	if(Model == MULTISTATE)
 	{
-		qsort(Trees->SymbolList, Trees->NoOfStates, sizeof(char), (void *)CompChars);
+		qsort(Trees->SymbolList, Trees->NoOfStates, sizeof(char), CompChars);
 
 		if(strlen(Trees->SymbolList) == 1)
 		{

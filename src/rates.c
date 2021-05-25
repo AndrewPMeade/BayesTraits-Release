@@ -53,23 +53,6 @@ int		FindNoOfRates(OPTIONS *Opt)
 	return Ret;
 }
 
-int		FindRatePos(int Rate, OPTIONS *Opt)
-{
-	int	Pos;
-
-	if((Opt->ResTypes[Rate] == RESNONE) ||(Opt->ResTypes[Rate] == RESCONST))
-		return Rate;
-
-	Pos = Rate;
-	do
-	{
-		Pos = Opt->ResNo[Pos];
-		if((Opt->ResTypes[Pos] == RESNONE) || (Opt->ResTypes[Pos] == RESCONST))
-			return Pos;
-
-	}while(1==1);
-	return Pos;
-}
 
 double	FindRateVal(int Pos, RATES *Rates, OPTIONS *Opt)
 {
@@ -123,6 +106,25 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 		Rates->Beta[Index - 1] = Rates->Rates[Index];
 }
 
+int		FindRatePos(int Rate, OPTIONS *Opt)
+{
+	int	Pos;
+
+	if((Opt->ResTypes[Rate] == RESNONE) ||(Opt->ResTypes[Rate] == RESCONST))
+		return Rate;
+
+	Pos = Rate;
+	do
+	{
+		Pos = Opt->ResNo[Pos];
+		if((Opt->ResTypes[Pos] == RESNONE) || (Opt->ResTypes[Pos] == RESCONST))
+			return Pos;
+
+	}while(1==1);
+	return Pos;
+}
+
+
 void	MapRates(RATES* Rates, OPTIONS *Opt)
 {
 	int	Index;
@@ -138,7 +140,8 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->UseRJMCMC == TRUE)
 	{
-		MapRJRates(Rates->Rates, Rates->MappingVect, Rates->NoOfFullRates, Rates->FullRates);
+//		MapRJRates(Rates->Rates, Rates->MappingVect, Rates->NoOfFullRates, Rates->FullRates);
+		MapRJRates(Opt, Rates);
 		return;
 	}
 
@@ -500,6 +503,7 @@ void	InitHMean(RATES* Rates, OPTIONS *Opt)
 #endif
 }
 
+
 RATES*	CreatRates(OPTIONS *Opt)
 {
 	RATES*	Ret=NULL;
@@ -515,10 +519,9 @@ RATES*	CreatRates(OPTIONS *Opt)
 		Ret->NoOfFullRates = 1;
 
 	Ret->NoOfRates		= FindNoOfRates(Opt);
-
+	Ret->NoOfRJRates	= -1;
 	Ret->TreeNo			= 0;
 	Ret->Prios			= NULL;
-	Ret->Root			= NULL;
 	Ret->Rates			= NULL;
 	Ret->Pis			= NULL;
 	Ret->FullRates		= NULL;
@@ -588,12 +591,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 		return Ret;
 	}
 
-	if(Opt->Model == DESCINDEP)
-		if(Opt->UseCovarion == FALSE)
-			Ret->Root = (double*)malloc(sizeof(double)*4);
-		else
-			Ret->Root = (double*)malloc(sizeof(double)*8);
-	
 	if(Ret->NoOfRates > 0)
 	{
 		Ret->Rates = (double*)malloc(sizeof(double)*Ret->NoOfRates);
@@ -624,24 +621,21 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	if(Opt->UseRJMCMC == TRUE)
 	{	
-		Ret->MappingVect = (int*)malloc(sizeof(int) * Ret->NoOfFullRates);
+		Ret->NoOfRJRates	= Ret->NoOfRates;
+
+		Ret->MappingVect = (int*)malloc(sizeof(int) * Ret->NoOfRates);
 		if(Ret->MappingVect == NULL)
 			MallocErr();
 
 		/* Inishal all rates to be in unique rate classes */
-		for(Index=0;Index<Ret->NoOfFullRates;Index++)
+		for(Index=0;Index<Ret->NoOfRates;Index++)
 			Ret->MappingVect[Index] = Index;
-		Ret->NoOfRates = Ret->NoOfFullRates;
+		Ret->NoOfRJRates = Ret->NoOfRates;
 	
 		/* Inishal all rates to be in the same classes */
-//		for(Index=0;Index<Ret->NoOfFullRates;Index++)
+//		for(Index=0;Index<Ret->NoRJRates;Index++)
 //			Ret->MappingVect[Index] = 0;
-//		Ret->NoOfRates = 1;
-
-/*		free(Ret->Rates);
-		Ret->Rates = (double*)malloc(sizeof(double) * 1);
-		Ret->Rates[0] = 1;
-*/
+//		Ret->NoOfRJRates = 1;
 	}
 	else
 		Ret->MappingVect = NULL;
@@ -669,9 +663,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 		Ret->FixedModels = LoadModelFile(Ret, Opt);
 		SetFixedModel(Ret, Opt);	
 	}
-
 	
-
 	return Ret;
 }
 
@@ -894,6 +886,7 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 	if(Opt->UseRJMCMC == TRUE)
 	{
 		fprintf(Str, "No Off Parmeters\t");
+		fprintf(Str, "No Off Zero\t");
 		fprintf(Str, "Model string\t");
 		if(Opt->Model == DESCDEP)
 			fprintf(Str, "Dep / InDep\t");
@@ -1397,7 +1390,18 @@ char	RJModelType(int *ModelStr)
 		return 'D';
 }
 
+int		NoZeroRate(RATES *Rates)
+{
+	int Ret, Index;
+	Ret = 0;
 
+	for(Index=0;Index<Rates->NoOfRates;Index++)
+		if(Rates->MappingVect[Index] == ZERORATENO)
+			Ret++;
+
+
+	return Ret;
+}
 
 void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
@@ -1421,19 +1425,23 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->UseRJMCMC == TRUE)
 	{
-		fprintf(Str, "%d\t'", NoOfPramGroups(Rates, NULL, NULL));
-		for(Index=0;Index<Rates->NoOfFullRates;Index++)
+		fprintf(Str, "%d\t", NoOfPramGroups(Rates, NULL, NULL));
+		fprintf(Str, "%d\t", NoZeroRate(Rates));
+		fprintf(Str, "'");
+//		for(Index=0;Index<Rates->NoOfFullRates;Index++)
+		for(Index=0;Index<Rates->NoOfRates;Index++)
 		{
 			if(Rates->MappingVect[Index] == ZERORATENO)
-				fprintf(Str, "Z");
+				fprintf(Str, "Z ");
+//				fprintf(Str, "Z");
 			else
 			{
 				// TODO Phoneim remove. 
-//				fprintf(Str, "%d ",  Rates->MappingVect[Index]);
-				if(Rates->MappingVect[Index] <= 9)
-					fprintf(Str, "%d", Rates->MappingVect[Index]);
-				else
-					fprintf(Str, "%c", Rates->MappingVect[Index] + 'A');
+				fprintf(Str, "%d ",  Rates->MappingVect[Index]);
+//				if(Rates->MappingVect[Index] <= 9)
+//					fprintf(Str, "%d", Rates->MappingVect[Index]);
+//				else
+//					fprintf(Str, "%c", Rates->MappingVect[Index] + 'A');
 			}
 		}
 		fprintf(Str, "\t");
@@ -1472,25 +1480,20 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 
 	// TODO Phoneim remove. 
+#ifndef PHONEIM_RUN
 	PrintNodeRec(Str, Opt->Trees->Tree[Rates->TreeNo].Root, Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
 
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 		PrintNodeRec(Str, Opt->RecNodeList[Index]->TreeNodes[Rates->TreeNo], Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
+#endif
 }
 
 void	CopyRJRtaes(RATES *A, RATES *B, OPTIONS *Opt)
 {
-	if(A->NoOfRates != B->NoOfRates)
-	{
-		free(A->Rates);
-		A->Rates = (double*)malloc(sizeof(double) * B->NoOfRates);
-		if(A->Rates == NULL)
-			MallocErr();
-		A->NoOfRates = B->NoOfRates;
-	}
+	A->NoOfRJRates = B->NoOfRJRates ;
 
-	memcpy(A->Rates, B->Rates, sizeof(double)*B->NoOfRates);
-	memcpy(A->MappingVect, B->MappingVect, sizeof(int)*B->NoOfFullRates);
+	memcpy(A->Rates, B->Rates, sizeof(double)*B->NoOfRJRates);
+	memcpy(A->MappingVect, B->MappingVect, sizeof(int)*B->NoOfRates);
 }
 
 
@@ -1838,8 +1841,8 @@ void	MutateEstRates(OPTIONS* Opt, RATES* Rates)
 
 void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 {
-	int		Index;
-	int		NoOfGroups;
+	int		Index, NoOfGroups, NoOfRates;
+	
 
 	Shed->Op = PickACat(Rates, Shed->OptFreq, Shed->NoOfOpts);
 
@@ -1857,15 +1860,19 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 			}
 			if(Opt->DataType == DISCRETE)
 			{
+				NoOfRates = Rates->NoOfRates;
+				if(Opt->UseRJMCMC == TRUE)
+					NoOfRates = Rates->NoOfRJRates;
+
 				/* Change all Rates */
 #ifdef RATE_CHANGE_ALL
-				for(Index=0;Index<Rates->NoOfRates;Index++)
+				for(Index=0;Index<NoOfRates;Index++)
 					Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Opt->RateDev);
 #endif
 
 #ifdef RATE_CHANGE_ONE
 				// TODO Phoneim remove. 
-				Index = RandUSLong(Rates->RS) % Rates->NoOfRates;
+				Index = RandUSLong(Rates->RS) % NoOfRates;
 				Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Opt->RateDev);
 #endif
 			}
@@ -1924,7 +1931,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 					break;
 
 					default:
-						if(NoOfGroups == Rates->NoOfFullRates)
+						if(NoOfGroups == Rates->NoOfRates)
 						{
 							RJMerge(Rates, Opt);
 							break;
@@ -1991,9 +1998,6 @@ void	FreeRates(RATES *Rates)
 
 	if(Rates->Rates != NULL)
 		free(Rates->Rates);
-
-	if(Rates->Root != NULL)
-		free(Rates->Root);
 
 	if(Rates->Pis != NULL)
 		free(Rates->Pis);

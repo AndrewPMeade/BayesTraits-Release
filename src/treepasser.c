@@ -810,8 +810,12 @@ void	SetPartitionTaxa(NNODE N, int* List, int *No)
 		SetPartitionTaxa(N->NodeList[Index], List, No);
 }
 
-int	TaxaIDComp(int *P1, int *P2)
+int	TaxaIDComp(const void *Pv1, const void *Pv2)
 {
+	int *P1, *P2;
+
+	P1 = (int*)Pv1;
+	P2 = (int*)Pv2;
 
 	if(*P1 > *P2)
 		return 1;
@@ -848,8 +852,7 @@ PARTITION* GetPartition(NNODE N)
 {
 	PARTITION*	Ret;
 	int			No;
-
-
+	
 	Ret = (PARTITION*)malloc(sizeof(PARTITION));
 	if(Ret == NULL)
 		MallocErr();
@@ -867,7 +870,7 @@ PARTITION* GetPartition(NNODE N)
 	No = 0;
 	SetPartitionTaxa(N, Ret->TaxaNo, &No);
 
-	qsort(Ret->TaxaNo, Ret->No, sizeof(int), (void *)TaxaIDComp);
+	qsort(Ret->TaxaNo, Ret->No, sizeof(int), TaxaIDComp);
 
 	return Ret;
 }
@@ -928,8 +931,15 @@ void	AddPartitonsToList(PARTITION**	PList, int *No, PARTITION* Part)
 	(*No)++;
 }
 
-int		CompPartFreq(PARTITION **P1, PARTITION **P2)
+//int		CompPartFreq(PARTITION **Pv1, PARTITION **P2)
+int		CompPartFreq(const void *Pv1, const void *Pv2)
 {
+	PARTITION **P1, **P2;
+
+	P1 = (PARTITION**)Pv1;
+	P2 = (PARTITION**)Pv2;
+
+
 	if((*P1)->Prob>= (*P2)->Prob)
 		return -1;
 
@@ -978,7 +988,7 @@ void	GetPartitons(NTREES *Trees)
 		Trees->PartList[PIndex]->Prob = (double)Trees->PartList[PIndex]->Freq / (double)Trees->NoOfTrees;
 	}
 
-	qsort(Trees->PartList, Trees->NoOfParts, sizeof(PARTITION*), (void*)CompPartFreq);
+	qsort(Trees->PartList, Trees->NoOfParts, sizeof(PARTITION*), CompPartFreq);
 
 	free(TempList);
 }
