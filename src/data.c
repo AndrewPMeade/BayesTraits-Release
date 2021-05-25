@@ -495,7 +495,7 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 	}
 	else
 	{
-		if(Model == M_DESCDEP || Model == M_DESCINDEP)
+		if(Model == M_DISC_DEP || Model == M_DISC_INDEP)
 			CheckDescData(Trees);
 	}
 
@@ -512,7 +512,7 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 void	PreProcessDataWithModel(TREES *Trees, MODEL Model)
 {
 
-	if(Model == M_DESCDEP || Model == M_DESCINDEP || Model == M_DESCCV || Model == M_DESCHET)
+	if(Model == M_DISC_DEP || Model == M_DISC_INDEP || Model == M_DISC_CV || Model == M_DISC_HET)
 		SquashDep(Trees);
 
 	if(GetModelType(Model) == MT_CONTINUOUS || GetModelType(Model) == MT_CONTRAST || GetModelType(Model) == MT_FATTAIL)

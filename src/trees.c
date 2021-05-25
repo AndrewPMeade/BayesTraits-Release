@@ -842,7 +842,7 @@ void	SetNodeTipData(OPTIONS *Opt, NODE N, TREE* Tree, TREES *Trees)
 		}
 
 		/* Copy for the Dep CV model */
-		if(Opt->Model == M_DESCCV)
+		if(Opt->Model == M_DISC_CV)
 			SetDescCVTipData(SiteIndex, N);
 
 		/* Copy the sites for the covarion mode */

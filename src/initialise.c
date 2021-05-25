@@ -75,6 +75,8 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 	else
 		Analsis = GetAnalsis(Trees);
 
+
+
 	CheckDataWithModel(DataFN, Trees, Model);
 
 	PreProcessDataWithModel(Trees, Model);
@@ -147,7 +149,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		if(Opt->UseCovarion == TRUE)
 			Trees->NoStates = Trees->NoStates * 2;
 
-		if(Opt->Model == M_DESCCV)
+		if(Opt->Model == M_DISC_CV)
 			Trees->NoStates = Trees->NoStates * 2;
 
 		if(Opt->UseKappa == TRUE && Opt->FixKappa != -1)

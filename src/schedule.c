@@ -215,7 +215,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		SetVarRatesShed(Opt, Shed);
 	}
 
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		Shed->OptFreq[S_HETERO] = 0.4;
 
 	Rates = 0;

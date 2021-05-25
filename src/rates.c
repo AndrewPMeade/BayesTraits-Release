@@ -916,7 +916,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 		}
 	}
 
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		Ret->Hetero = CreatHetero(Opt, Ret);
 
 	MapRates(Ret, Opt);
@@ -963,7 +963,7 @@ void	PrintEstDataHeader(FILE *Str, OPTIONS *Opt)
 
 	NOS = Trees->NoSites;
 
-	if((Opt->Model == M_DESCINDEP) || (Opt->Model == M_DESCDEP))
+	if((Opt->Model == M_DISC_INDEP) || (Opt->Model == M_DISC_DEP))
 		NOS = 2;
 
 	for(Index=0;Index<Trees->NoTaxa;Index++)
@@ -1198,7 +1198,7 @@ void	PrintRecNodeHeadder(FILE* Str, OPTIONS *Opt, char* Name, int SiteNo)
 	int		NOS;
 	TREES	*Trees;
 
-	if((Opt->Model == M_DESCDEP) || (Opt->Model == M_DESCINDEP))
+	if((Opt->Model == M_DISC_DEP) || (Opt->Model == M_DISC_INDEP))
 	{
 		fprintf(Str, "%s - P(0,0)\t", Name);
 		fprintf(Str, "%s - P(0,1)\t", Name);
@@ -1207,7 +1207,7 @@ void	PrintRecNodeHeadder(FILE* Str, OPTIONS *Opt, char* Name, int SiteNo)
 		return;
 	}
 
-	if(Opt->Model == M_DESCCV)
+	if(Opt->Model == M_DISC_CV)
 	{
 		fprintf(Str, "%s - I P(0,0)\t", Name);
 		fprintf(Str, "%s - I P(0,1)\t", Name);
@@ -1271,7 +1271,7 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "No Off Parmeters\t");
 		fprintf(Str, "No Off Zero\t");
 		fprintf(Str, "Model string\t");
-		if(Opt->Model == M_DESCDEP)
+		if(Opt->Model == M_DISC_DEP)
 			fprintf(Str, "Dep / InDep\t");
 	}
 
@@ -1294,7 +1294,7 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 	if(Opt->UseCovarion == TRUE)
 		fprintf(Str, "Covar On to Off\t Covar Off to On\t");
 
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		fprintf(Str, "No Indep\tNo Dep\tMap\t");
 
 
@@ -1999,7 +1999,7 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 		}
 		fprintf(Str, "\t");
 
-		if(Opt->Model == M_DESCDEP)
+		if(Opt->Model == M_DISC_DEP)
 			fprintf(Str, "%c\t", RJModelType(Rates->MappingVect));
 	}
 
@@ -2027,7 +2027,7 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 	if(Opt->UseCovarion == TRUE)
 		fprintf(Str, "%f\t%f\t", Rates->OffToOn, Rates->OnToOff);
 
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		PrintHetro(Str, Rates);
 
 	if(Opt->UseKappa == TRUE)

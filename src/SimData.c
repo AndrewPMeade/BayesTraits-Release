@@ -200,7 +200,8 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		Rates->Rates[0] = 0.00001;
 		Rates->Rates[0] = 0.000009;
 
-		Rates->Rates[0] = 2;
+		Rates->Rates[0] = 1.0;
+		Rates->Rates[0] = 0.01;
 
 	//	for(Index=0;Index<Rates->NoOfRates;Index++)
 	//		Rates->Rates[Index] = 1.0;

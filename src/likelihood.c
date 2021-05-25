@@ -481,7 +481,7 @@ void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *In
 			CreateMSAMatrixCoVar(InvInfo, Rates, Trees, RateP, Pi);
 	}
 	
-	if(Model == M_DESCDEP)
+	if(Model == M_DISC_DEP)
 	{
 		if(Trees->UseCovarion == FALSE)
 			CreateDEPAMatrix(InvInfo, Rates, Trees, RateP);
@@ -489,7 +489,7 @@ void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *In
 			CreateDEPAMatrixCoVar(InvInfo, Rates, Trees, RateP);
 	}
 
-	if(Model == M_DESCINDEP)
+	if(Model == M_DISC_INDEP)
 	{
 		if(Trees->UseCovarion == FALSE)
 			CreateInDEPAMatrix(InvInfo, Rates, Trees, RateP);
@@ -497,10 +497,10 @@ void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *In
 			CreateInDEPAMatrixCoVar(InvInfo, Rates, Trees, RateP);
 	}
 
-	if(Model == M_DESCCV)
+	if(Model == M_DISC_CV)
 		CreateDepCVAMatrix(InvInfo, Rates, Trees, RateP);
 
-	if(Model == M_DESCHET)
+	if(Model == M_DISC_HET)
 	{
 		if(Trees->UseCovarion == FALSE)
 		{
@@ -516,7 +516,7 @@ void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *In
 
 int		SetInvMat(MODEL Model, RATES *Rates, int NOS, INVINFO *InvInfo)
 {
-	if(Model != M_DESCHET)
+	if(Model != M_DISC_HET)
 		return InvMat(InvInfo, NOS);
 
 	if(InvMat(Rates->Hetero->ModelInv[0], NOS) == ERROR)
@@ -853,7 +853,7 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 				{
 					InvInfo = Trees->InvInfo[N->PatternNo];
 
-					if(Opt->Model == M_DESCHET)
+					if(Opt->Model == M_DISC_HET)
 					{
 						PMatNo = Rates->Hetero->MList[NIndex];
 						InvInfo = Rates->Hetero->ModelInv[PMatNo];

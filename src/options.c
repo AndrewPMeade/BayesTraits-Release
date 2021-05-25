@@ -566,7 +566,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->AnalyticalP == TRUE)
 		fprintf(Str, "Analytical P:                    True\n");
 	
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 	{
 		fprintf(Str, "Tree 1 Partitions :			   \t");
 	//	PrintTreePart(Str, Opt->Trees, 0);
@@ -586,7 +586,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			fprintf(Str, "          %s\n", Opt->Trees->RemovedTaxa[Index]);
 	}
 	
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		PrintHetMap(Str, Opt, Opt->Trees);
 	
 	if(Opt->DistData != NULL)
@@ -947,16 +947,16 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 		return;
 	}
 
-	if(Opt->Model == M_DESCINDEP)
+	if(Opt->Model == M_DISC_INDEP)
 		SetOptRateNamesFixed(Opt, 4, INDEPPRAMS);
 
-	if(Opt->Model == M_DESCDEP)
+	if(Opt->Model == M_DISC_DEP)
 		SetOptRateNamesFixed(Opt, 8, DEPPRAMS);
 
-	if(Opt->Model == M_DESCCV)
+	if(Opt->Model == M_DISC_CV)
 		SetOptRateNamesFixed(Opt, 14, DEPCVPRAMS);
 	
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		SetOptRateNamesFixed(Opt, 12, DEPHETROPRAMS);
 	
 	if(Opt->Model == M_MULTISTATE)
@@ -1095,16 +1095,16 @@ MODEL_TYPE	GetModelType(MODEL Model)
 	switch(Model)
 	{
 		case	M_MULTISTATE:		return MT_DISCRETE; break;
-		case	M_DESCINDEP:		return MT_DISCRETE; break;
-		case	M_DESCDEP:			return MT_DISCRETE; break;
+		case	M_DISC_INDEP:		return MT_DISCRETE; break;
+		case	M_DISC_DEP:			return MT_DISCRETE; break;
 		case	M_CONTINUOUS_RR:	return MT_CONTINUOUS; break;
 		case	M_CONTINUOUS_DIR:	return MT_CONTINUOUS; break;
 		case	M_CONTINUOUS_REG:	return MT_CONTINUOUS; break;
 		case	M_CONTRAST_CORREL:	return MT_CONTRAST; break;
 		case	M_CONTRAST_REG:		return MT_CONTRAST; break;
 		case	M_CONTRAST:			return MT_CONTRAST; break;
-		case	M_DESCCV:			return MT_DISCRETE; break;
-		case	M_DESCHET:			return MT_DISCRETE; break;
+		case	M_DISC_CV:			return MT_DISCRETE; break;
+		case	M_DISC_HET:			return MT_DISCRETE; break;
 		case	M_FATTAIL:			return MT_FATTAIL; break;
 		case	M_GEO:				return MT_FATTAIL; break;
 	}
@@ -1359,7 +1359,7 @@ void	PrintModelChoic(TREES *Trees)
 {
 	printf("Please select the model of evolution to use.\n");
 	printf("1)	MultiState\n");
-	if((Trees->NoSites == 2) && (Trees->NoStates == 2))
+	if(Trees->NoSites == 2 && Trees->NoStates == 2)
 	{
 		printf("2)\tDiscrete: Independent\n");
 		printf("3)\tDiscrete: Dependant\n");
@@ -1430,16 +1430,16 @@ int		ValidModelChoice(TREES *Trees, MODEL Model)
 	if(Model == M_MULTISTATE)
 		return TRUE;
 
-	if((Model == M_DESCINDEP) || (Model == M_DESCINDEP) || (Model == M_DESCCV) || (Model == M_DESCHET))
+	if(Model == M_DISC_INDEP || Model == M_DISC_DEP || Model == M_DISC_CV || Model == M_DISC_HET)
 	{
-		if((Trees->NoSites != 2) || (Trees->NoStates != 2))
+		if(Trees->NoSites != 2 || Trees->NoStates != 2)
 		{
 			printf("Discrete analisis requiers two two state characters\n");
 			printf("There are %d states and %d sites in the current data set.\n", Trees->NoStates, Trees->NoSites);
 			return FALSE;
 		}
 
-		if(Model == M_DESCHET && Trees->NoTrees != 1)
+		if(Model == M_DISC_HET && Trees->NoTrees != 1)
 		{
 			printf("Discrete: Heterogeneous requires a single tree.\n");
 			return FALSE;
@@ -1454,7 +1454,7 @@ int		ValidModelChoice(TREES *Trees, MODEL Model)
 		return FALSE;
 	}
 
-	if((Model == M_CONTINUOUS_REG) || (Model == M_CONTRAST_REG))
+	if(Model == M_CONTINUOUS_REG || Model == M_CONTRAST_REG)
 	{
 		if(Trees->NoSites < 2)
 		{
@@ -1481,10 +1481,10 @@ MODEL	IntToModel(int No)
 		return M_MULTISTATE;
 
 	if(No == 2)
-		return M_DESCINDEP;
+		return M_DISC_INDEP;
 
 	if(No == 3)
-		return M_DESCDEP;
+		return M_DISC_DEP;
 
 	if(No == 4)
 		return M_CONTINUOUS_RR;
@@ -1505,10 +1505,10 @@ MODEL	IntToModel(int No)
 		return M_CONTRAST_REG;
 
 	if(No == 10)
-		return M_DESCCV;
+		return M_DISC_CV;
 
 	if(No == 11)
-		return M_DESCHET;
+		return M_DISC_HET;
 
 	if(No == 12)
 		return M_FATTAIL;
@@ -3124,7 +3124,7 @@ void	SetSymmetrical(OPTIONS *Opt)
 		SetMSSymmetrical(Opt);
 	}
 
-	if(Opt->Model == M_DESCINDEP)
+	if(Opt->Model == M_DISC_INDEP)
 	{
 		/* Beta 1 = Alpha 1 */
 		ResRateNo(Opt, 1, 0);
@@ -3133,7 +3133,7 @@ void	SetSymmetrical(OPTIONS *Opt)
 		ResRateNo(Opt, 3, 2);
 	}
 
-	if(Opt->Model == M_DESCDEP)
+	if(Opt->Model == M_DISC_DEP)
 	{
 		/* q21 = q12 */
 		ResRateNo(Opt, 2, 0);

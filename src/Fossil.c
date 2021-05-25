@@ -136,7 +136,7 @@ int*	MakeFossilMask(RECNODE *RNode, int NOS, MODEL M)
 		return Ret;
 	}
 
-	if(M == M_DESCINDEP || M == M_DESCDEP)
+	if(M == M_DISC_INDEP || M == M_DISC_DEP)
 	{
 		MakeDiscreteFossilMask(Ret, RNode->FossilStates[0]);
 		return Ret;
