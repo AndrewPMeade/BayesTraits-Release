@@ -172,7 +172,7 @@ void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Rates->NoOfRates == 0)
 		return;
 
-	if(Opt->ModelType == MT_CONTRAST)
+	if(Opt->ModelType == MT_CONTRAST || Opt->ModelType == MT_FATTAIL)
 	{
 		Lh = Likelihood(Rates, Trees, Opt);
 		if(Lh == ERRLH)

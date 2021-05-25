@@ -2778,7 +2778,8 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case SFATTAILANS:
-			SliceSampleFatTail(Opt, Opt->Trees, Rates);
+		//	SliceSampleFatTail(Opt, Opt->Trees, Rates);
+			AllSliceSampleFatTail(Opt, Opt->Trees, Rates);
 		break;
 
 	}

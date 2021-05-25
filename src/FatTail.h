@@ -23,7 +23,10 @@ void			CopyFatTailRates(TREES *Trees, FATTAILRATES *A, FATTAILRATES *B);
 double			CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
 void			SliceSampleFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void			AllSliceSampleFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
 void			InitFattailFile(OPTIONS *Opt, TREES *Trees);
 void			OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates);
+
+void			InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 #endif

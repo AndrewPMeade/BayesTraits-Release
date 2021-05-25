@@ -238,6 +238,9 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->Model == M_CONTRAST_REG)
 		NormaliseReg(Opt, Trees, Rates);
 
+	if(Opt->ModelType == M_FATTAIL)
+		InitFatTailRates(Opt, Trees, Rates);
+
 	if(Opt->MCMCMLStart == TRUE)
 		MLTree(Opt, Trees, Rates);
 	else
@@ -392,7 +395,26 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	exit(0);
 }
 
+int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RATES *CRates, RATES *NRates)
+{
+	double Heat;
 
+	if(Shed->Op == SFATTAILANS)
+		return TRUE;
+	
+	Heat = NRates->Lh - CRates->Lh;
+						
+	if(Opt->Stones != NULL)
+		Heat = GetStoneHeat(Opt->Stones, Itters, Heat);
+			
+	Heat += NRates->LhPrior - CRates->LhPrior;
+	Heat += NRates->LnHastings;
+
+	if(log(RandDouble(CRates->RS)) <= Heat)
+		return TRUE;
+
+	return FALSE;
+}
 
 
 #ifdef	 JNIRUN
@@ -434,6 +456,9 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	SetRatesToPriors(Opt, CRates);
 	SetRatesToPriors(Opt, NRates);
+
+	if(Opt->ModelType == MT_FATTAIL)
+		InitFatTailRates(Opt, Trees, CRates);
 
 	if(Opt->UseVarRates == TRUE)
 		InitPPFiles(Opt, Trees, CRates);
@@ -526,16 +551,8 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		else
 		{
 			CalcPriors(NRates, Opt);
-
-			Heat = NRates->Lh - CRates->Lh;
-						
-			if(Opt->Stones != NULL)
-				Heat = GetStoneHeat(Opt->Stones, Itters, Heat);
 			
-			Heat += NRates->LhPrior - CRates->LhPrior;
-			Heat += NRates->LnHastings;
-
-			if(log(RandDouble(CRates->RS)) <= Heat)
+			if(MCMCAccept(Itters, Opt, Trees, Shed, CRates, NRates) == TRUE)
 			{
 				Swap((void**)&NRates, (void**)&CRates);
 				UpDateShedAcc(TRUE, Shed);

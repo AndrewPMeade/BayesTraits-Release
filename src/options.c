@@ -861,7 +861,7 @@ void	SetFatTailPrior(OPTIONS *Opt)
 	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 	{
 		Opt->Priors[Pos++] = CreatUniPrior(0.2, 2.0);
-		Opt->Priors[Pos++] = CreatUniPrior(0.0, 10.0);
+		Opt->Priors[Pos++] = CreatUniPrior(0.0, 1.0);
 	}
 }
 

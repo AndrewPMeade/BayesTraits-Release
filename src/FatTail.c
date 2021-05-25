@@ -12,6 +12,7 @@
 #include "likelihood.h"
 #include "part.h"
 #include "trees.h"
+#include "praxis.h"
 
 #define NO_SLICE_STEPS 1000
 #define	MAX_STEP_DIFF	5.0
@@ -801,12 +802,125 @@ void	SliceSampleFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		NAns = Min + (RandDouble(Rates->RS) * (Max - Min));
 	else
 		NAns = GetSlices(FTR, Rates->RS, PCAns);
-	
+
 	TNode->FatTailNode->Ans[TSite] = NAns;
-		
+	
 	MapTreeToRates(Tree, Trees->NoOfSites, FTR);
 	
 	return;
+}
+
+void	NodeSliceSampleFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates) 
+{
+	int Changed, Valid, Index;
+	double CLh, CAns, NAns, NLh, Min, Max;
+	FATTAILRATES *FTR;
+
+	FTR = Rates->FatTailRates;
+	
+	CAns = N->FatTailNode->Ans[SiteNo];
+	CLh = AnsStateLh(CAns, SiteNo, N, FTR->SDList[SiteNo]);
+
+	FTR = Rates->FatTailRates;
+	
+	GetSiteMinMax(FTR, SiteNo, &Min, &Max);
+
+	SetXPosVect(Min, Max, NO_SLICE_STEPS, FTR->SliceX); 
+	
+	Valid = SetYPosVect(Opt, N, SiteNo, FTR->SDList[SiteNo], NO_SLICE_STEPS, FTR->SliceX, FTR->SliceY);
+	
+	Changed = FALSE;
+	do
+	{
+		if(Valid == FALSE)
+			NAns = Min + (RandDouble(Rates->RS) * (Max - Min));
+		else
+			NAns = GetSlices(FTR, Rates->RS, CLh);
+
+		NLh = AnsStateLh(NAns, SiteNo, N, FTR->SDList[SiteNo]);
+
+		if(log(RandDouble(Rates->RS)) < (NLh - CLh))
+		{
+		//	printf("New:\t%f\tOld\t%f\tDiffer\t%f\t%f\t%f\n", NLh, CLh, NLh - CLh, NAns, CAns);fflush(stdout);
+			Changed = TRUE;
+		}
+	} while(Changed == FALSE);
+
+	N->FatTailNode->Ans[SiteNo] = NAns;
+}
+
+
+void	TestSample(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double Lh;
+	TREE *Tree;
+	NODE N;
+	FATTAILRATES *FTR;
+
+	Rates->Rates[0] = 1.657206;
+	Rates->Rates[1] = 0.036151;
+	
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	FTR = Rates->FatTailRates;
+	
+	Lh = Likelihood(Rates, Trees, Opt);
+
+	printf("Lh:\t%f\n", Lh);
+
+	MapRatesToTree(Tree, Trees->NoOfSites, FTR);
+
+
+	SliceSampleFatTail(Opt, Trees, Rates);
+
+
+	MapTreeToRates(Tree, Trees->NoOfSites, FTR);
+
+	Lh = Likelihood(Rates, Trees, Opt);
+	
+	printf("Lh:\t%f\n", Lh);
+
+	exit(0);
+}
+
+void	AllSliceSampleFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int SIndex, NIndex;
+	double Lh;
+	TREE *Tree;
+	NODE N;
+	FATTAILRATES *FTR;
+
+//	TestSample(Opt, Trees, Rates);
+
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	FTR = Rates->FatTailRates;
+
+//	Lh = Likelihood(Rates, Trees, Opt);
+//	printf("Lh:\t%f\n", Lh);
+//	exit(0);
+
+	MapRatesToTree(Tree, Trees->NoOfSites, FTR);
+
+	for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+	{
+		SetStableDist(FTR->SDList[SIndex], FTR->Alpha[SIndex], FTR->Scale[SIndex]);
+
+		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
+		{
+			N = Tree->NodeList[NIndex];
+
+			if(N->Tip == FALSE)
+				NodeSliceSampleFatTail(N, SIndex, Opt, Trees, Rates);
+		}
+	}
+
+	MapTreeToRates(Tree, Trees->NoOfSites, FTR);
+
+//	Lh = Likelihood(Rates, Trees, Opt);
+//	printf("Lh:\t%f\n", Lh);
+//	exit(0);
 }
 
 void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
@@ -910,4 +1024,78 @@ void	OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	fprintf(Opt->LogFatTail, "\n");
 	fflush(Opt->LogFatTail);
+}
+
+double	FatTailLhPraxis(void* P, double *List)
+{
+	PRAXSTATE	*PState;
+	double		Ret;
+
+	PState = (PRAXSTATE*)P;
+
+	memcpy(PState->Rates->Rates, List, sizeof(double) * PState->n);
+
+	Ret = Likelihood(PState->Rates, PState->Trees, PState->Opt);
+
+	printf("Lh:\t%f\n", Ret);fflush(stdout);
+
+	return Ret;
+}
+
+void	SetRandFatTail(RATES *Rates, int SiteNo)
+{
+	int Pos;
+	PRIORS *P;
+
+	Pos = SiteNo * 2;
+		
+	P = Rates->Prios[Pos];
+	Rates->Rates[Pos] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
+	Pos++;
+
+	P = Rates->Prios[Pos];
+	Rates->Rates[Pos] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
+	Pos++;
+
+}
+
+void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double Lh;
+	int Index;
+	
+	do
+	{
+		for(Index=0;Index<Trees->NoOfSites;Index++)
+			SetRandFatTail(Rates, Index);
+
+		Lh = Likelihood(Rates, Trees, Opt);
+	} while(Lh == ERRLH);
+
+	return;
+/*
+	PRAXSTATE* PS;
+	double		*TempVect;
+	double		Lh;
+
+	TempVect = (double*)malloc(sizeof(double) * Rates->NoOfRates);
+	if(TempVect == NULL)
+		MallocErr();
+	memcpy(TempVect, Rates->Rates, sizeof(double) * Rates->NoOfRates);
+	
+
+	PS = IntiPraxis(FatTailLhPraxis, TempVect, Rates->NoOfRates, 0, 0, 4, 10000);
+	
+	PS->Opt		= Opt;
+	PS->Trees	= Trees;
+	PS->Rates	= Rates;
+	
+	Lh = praxis(PS);
+
+	memcpy(Rates->Rates, TempVect, sizeof(double) * Rates->NoOfRates);
+		
+	FreePracxStates(PS);
+
+	printf("%f\t%f\t%f\n", Lh, Rates->Rates[0], Rates->Rates[1]);
+	exit(0);*/
 }
