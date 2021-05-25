@@ -84,7 +84,7 @@ void	SetStonesP(STONES *Stones)
 	}
 }
 
-STONES*	CratesStones(int Start, int K, int Sample, double Alpha, double Beta)
+STONES*	CratesStones(int K, int Sample, double Alpha, double Beta)
 {
 	STONES *Ret;
 	int Index;
@@ -106,7 +106,7 @@ STONES*	CratesStones(int Start, int K, int Sample, double Alpha, double Beta)
 	Ret->NoStones = K;
 
 	Ret->ItPerStone = Sample;
-	Ret->ItStart	= Start;
+	Ret->ItStart	= -1;
 	Ret->SampleFreq = 1;
 	Ret->Started	= FALSE;
 	

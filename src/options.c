@@ -3136,77 +3136,64 @@ void	SetSteppingstone(OPTIONS *Opt, char **Passed, int Tokes)
 	Beta = 1.0;
 	Alpha= 0.4;
 
-	if((Tokes != 4) && (Tokes != 6))
+	if((Tokes != 3) && (Tokes != 5))
 	{
-		printf("Stones takes the starting iterations, number of stones and length to sample each stone.\n");
-		printf("Or\nStones takes the starting iterations, number of stones, length to sample each stone, alpha and beta values of each stone.\n");
+		printf("Stones takes the number of stones and length to sample each stone.\n");
+		printf("Or\nStones takes the number of stones, length to sample each stone, alpha and beta values of each stone.\n");
 		return;
 	}
-
+	
 	if(IsValidInt(Passed[1]) == FALSE)
 	{
-		printf("Stones: could not convert %s to a valid starting iteration.\n", Passed[1]);
+		printf("Stones: could not convert %s to a valid number of stones.\n", Passed[1]);
 		return;
 	}
 
-	Start = atoi(Passed[1]);
-	if(Start < 1)
+	K = atoi(Passed[1]);
+	if(K < 1)
 	{
-		printf("Stones: could not convert %s to a valid starting iteration.\n", Passed[1]);
+		printf("Stones: could not convert %s to a valid number of stones.\n", Passed[1]);
 		return;
 	}
 
 	if(IsValidInt(Passed[2]) == FALSE)
 	{
-		printf("Stones: could not convert %s to a valid number of stones.\n", Passed[2]);
+		printf("Stones: could not convert %s to a valid number of itterations per stone.\n", Passed[2]);
 		return;
 	}
 
-	K = atoi(Passed[2]);
-	if(K < 1)
-	{
-		printf("Stones: could not convert %s to a valid number of stones.\n", Passed[2]);
-		return;
-	}
-
-	if(IsValidInt(Passed[3]) == FALSE)
-	{
-		printf("Stones: could not convert %s to a valid number of itterations per stone.\n", Passed[3]);
-		return;
-	}
-
-	Sample = atoi(Passed[3]);
+	Sample = atoi(Passed[2]);
 	if(Sample < 1)
 	{
-		printf("Stones: could not convert %s to a valid number of iterations per stone \n", Passed[3]);
+		printf("Stones: could not convert %s to a valid number of iterations per stone \n", Passed[2]);
 		return;
 	}	
 
-	if(Tokes == 6)
+	if(Tokes == 5)
 	{
-		if(IsValidDouble(Passed[4]) == FALSE)
+		if(IsValidDouble(Passed[3]) == FALSE)
 		{
-			printf("Stones: could not convert %s to a valid alpha.\n", Passed[4]);
+			printf("Stones: could not convert %s to a valid alpha.\n", Passed[3]);
 			return;
 		}
 
-		Alpha = atof(Passed[4]);
+		Alpha = atof(Passed[3]);
 		if(Alpha < 0)
 		{
-			printf("Stones: could not convert %s to a valid alpha.\n", Passed[4]);
+			printf("Stones: could not convert %s to a valid alpha.\n", Passed[3]);
 			return;
 		}		
 		
-		if(IsValidDouble(Passed[5]) == FALSE)
+		if(IsValidDouble(Passed[4]) == FALSE)
 		{
-			printf("Stones: could not convert %s to a valid beta.\n", Passed[5]);
+			printf("Stones: could not convert %s to a valid beta.\n", Passed[4]);
 			return;
 		}
 
-		Beta = atof(Passed[5]);
+		Beta = atof(Passed[4]);
 		if(Beta < 0)
 		{
-			printf("Stones: could not convert %s to a valid beta.\n", Passed[5]);
+			printf("Stones: could not convert %s to a valid beta.\n", Passed[4]);
 			return;
 		}		
 	}
@@ -3214,7 +3201,7 @@ void	SetSteppingstone(OPTIONS *Opt, char **Passed, int Tokes)
 	if(Opt->Stones != NULL)
 		FreeStones(Opt->Stones);
 
-	Opt->Stones = CratesStones( Start,  K,  Sample,  Alpha,  Beta);
+	Opt->Stones = CratesStones(K,  Sample,  Alpha,  Beta);
 }
 
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
