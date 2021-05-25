@@ -20,6 +20,6 @@ void		MapConParams(OPTIONS *Opt, RATES *Rates, double *List);
 
 
 int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt);
-int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, double Kappa);
+int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma);
 
 #endif

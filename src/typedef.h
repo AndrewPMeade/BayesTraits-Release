@@ -912,14 +912,11 @@ typedef struct
 	int			NoNodes;
 	PLASTYNODE **NodeList;
 
-	int			NoTrees;
-	double		**TrueBL;
-
 	NODE		*TempList;
 	int			NoTempList;
 
 	double		Alpha;
-} PLASTY;
+} VARRATES;
 
 typedef struct
 {
@@ -1313,7 +1310,7 @@ typedef struct
 	RANDSTATES		*RS;
 	RANDSTATES		**RSList;
 
-	PLASTY			*Plasty;
+	VARRATES		*VarRates;
 	CONTRASTR		*Contrast;
 	HETERO			*Hetero;
 	RJDUMMY			*RJDummy;

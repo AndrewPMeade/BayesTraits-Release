@@ -15,7 +15,7 @@
 #include "part.h"
 #include "matrix.h"
 #include "linalg.h"
-#include "ContrastsTrans.h"
+#include "TransformTree.h"
 #include "likelihood.h"
 #include "contrastsstd.h"
 #include "priors.h"
@@ -1397,24 +1397,13 @@ void	DummCodePreLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
-//	TransContNodeDelta(Trees->Tree[Rates->TreeNo]->Root, 60, TRUE);
+//	TransformTreeDelta(Trees->Tree[Rates->TreeNo]->Root, 60, TRUE);
 //	TransContNodeKappa(Trees->Tree[Rates->TreeNo]->Root, 0.1, TRUE);
-//	TransContNodeOU(Trees->Tree[Rates->TreeNo]->Root, 0.000000000000001, TRUE);
-//	TransContNodeOU(Trees->Tree[Rates->TreeNo]->Root, 0.25, TRUE);
+//	TransformTreeOU(Trees->Tree[Rates->TreeNo]->Root, 0.000000000000001, TRUE);
+//	TransformTreeOU(Trees->Tree[Rates->TreeNo]->Root, 0.25, TRUE);
 //	SaveTrees("DTest.trees", Trees); exit(0);
-//	TransContNodeLambda(Trees->Tree[Rates->TreeNo]->Root, 0.5, TRUE);
+//	TransformTreeLambda(Trees->Tree[Rates->TreeNo]->Root, 0.5, TRUE);
 
-	if(NeedToReSetBL(Opt, Rates) == TRUE)
-	{
-		ReSetBranchLength(Trees->Tree[Rates->TreeNo]);
-	
-		TransformContrastTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
-
-		if(Rates->Plasty != NULL)
-			VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
-
-	//		SaveTrees("DTest.trees", Trees); exit(0);
-	}
 
 	if(Opt->RJDummy == TRUE)
 		DummCodePreLh(Opt, Trees, Rates);

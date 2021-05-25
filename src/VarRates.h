@@ -5,8 +5,8 @@
 
 int		UseNonParametricMethods(OPTIONS *Opt);
 
-PLASTY*	CreatVarRates(RATES *Rates, TREES *Trees, OPTIONS *Opt);
-void	FreeVarRates(PLASTY* Plasty);
+VARRATES*	CreatVarRates(RATES *Rates, TREES *Trees, OPTIONS *Opt);
+void	FreeVarRates(VARRATES* Plasty);
 
 void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed, long long It);
 void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* Shed);

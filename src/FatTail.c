@@ -424,6 +424,7 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	{
 		if(Tree->NodeList[Index]->Tip == FALSE)
 			Ret += CalcNodeStableLh(Tree->NodeList[Index], NoSites, FTR->SDList, Opt->UseGeoData);
+
 	}
 
 	if(Ret != Ret || Ret == Ret + 1.0)
@@ -970,15 +971,14 @@ void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 	Pos = SiteNo * 2;
 		
 	P = Rates->Prios[Pos];
-	if(Opt->FatTailNormal == FALSE)
-		Rates->Rates[Pos] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
-	else
-		Rates->Rates[Pos] = FAT_TAIL_NORMAL_VAL;
+	Rates->Rates[Pos] = FAT_TAIL_NORMAL_VAL;
 	Pos++;
 
 	P = Rates->Prios[Pos];
 //	Rates->Rates[Pos] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
-	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 2);
+	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 10);
+
+//	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 0.000001);
 	Pos++;
 
 }

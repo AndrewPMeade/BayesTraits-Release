@@ -157,7 +157,7 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		exit(0);
 	}
 
-	Err = SetAllPMatrix(Rates, Trees, Opt, 1.0, 1.0);
+	Err = SetAllPMatrix(Rates, Trees, Opt, 1.0);
 	if(Err == TRUE)
 	{
 		printf("P matrix err\n");

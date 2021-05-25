@@ -232,9 +232,12 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // 1.0 0.5 -10 10 1000 > sout.txt
 
-// ./Seq/Lloydcroptyrannonotmt.trees ./Seq/Lloydcroptyrannonotmt.txt < ./Seq/in.txt > ./Seq/sout.txt
+// ./Seq/Testing/Lloydcroptyrannonotmt.trees ./Seq/Testing/Lloydcroptyrannonotmt.txt < ./Seq/Testing/in.txt > ./Seq/Testing/sout.txt
 
 // ./Seq/Primates1.trees ./Seq/Primates.txt < in.txt > sout.txt
+
+// ./Seq/Testing/PrimatesBrainBody.trees ./Seq/Testing/PrimatesBrainBody.txt < ./Seq/Testing/PIn.txt > ./Seq/Testing/sout.txt
+// ./Seq/Testing/PrimatesBody.trees ./Seq/Testing/PrimatesBody.txt < ./Seq/Testing/in.txt > ./Seq/Testing/sout.txt
 
 int main(int argc, char** argv)
 {

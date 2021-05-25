@@ -2325,7 +2325,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 	{
 		if(Command == CVARRATES)
 		{
-			if(Opt->ModelType != MT_CONTRAST)
+			if(Opt->ModelType == MT_CONTINUOUS)
 				return FALSE;
 
 			if(Opt->Analsis == ANALMCMC)
@@ -2333,8 +2333,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 
 			return FALSE;
 		}
-
-
+		
 		if((Opt->Model != M_CONTRAST_REG) && (Command == CRJDUMMY))
 			return FALSE;
 

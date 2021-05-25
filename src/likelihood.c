@@ -22,6 +22,8 @@
 #include "modelfile.h"
 #include "QuadDouble.h"
 #include "FatTail.h"
+#include "TransformTree.h"
+#include "VarRates.h"
 
 #ifdef BTOCL
 	#include "btocl_discrete.h"
@@ -910,17 +912,13 @@ void SetDiscEstData(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	}
 }
 
-int		SetStdPMatrix(INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gamma, double Kappa)
+int		SetStdPMatrix(INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gamma)
 {
 	double Len;
 	double ErrVal;
 	int		ThrNo;
 
-	Len = N->Length;
-	if(Kappa != -1)
-		Len = pow(Len, Kappa);
-		
-	Len = Len * Gamma;
+	Len = N->Length * Gamma;
 
 	ThrNo = GetThreadNo();
 	
@@ -945,15 +943,13 @@ int		SetStdPMatrix(INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gam
 	return FALSE;
 }
 
-int		SetAnalyticalPMatrix(TREES *Trees, NODE N, MATRIX *P, double Rate, double Gamma, double Kappa)
+int		SetAnalyticalPMatrix(TREES *Trees, NODE N, MATRIX *P, double Rate, double Gamma)
 {
 	double Len, ErrVal;
 	
-	Len = N->Length;
-	if(Kappa != -1)
-		Len = pow(Len, Kappa);
-		
-	Len = Len * Gamma;
+	Len = N->Length * Gamma;
+	
+	
 
 	ErrVal = CreatFullAP(Len, Rate, Trees->NoOfStates, P);			
 
@@ -961,13 +957,13 @@ int		SetAnalyticalPMatrix(TREES *Trees, NODE N, MATRIX *P, double Rate, double G
 }
 
 
-int		SetRPMatrix(TREES *Trees, NODE N, MATRIX *P, double Gamma, double Kappa)
+int		SetRPMatrix(TREES *Trees, NODE N, MATRIX *P, double Gamma)
 {
 	return FALSE;
 	/* Needs to be fiex for R model as its not fixed form polytomie code. */
 }
 
-int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, double Kappa)
+int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 {
 	int NIndex, Err, NoErr, PMatNo;
 	TREE *Tree;
@@ -991,27 +987,26 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 		if(NoErr == 0)
 		{
 			if(Opt->UseRModel == TRUE)
-				Err = SetRPMatrix(Trees, N, Trees->PList[N->ID], Gamma, Kappa);
+				Err = SetRPMatrix(Trees, N, Trees->PList[N->ID], Gamma);
 			else
 			{
 				if(Opt->AnalyticalP == FALSE)
 				{
 					if(Opt->Model != M_DESCHET)
-						Err = SetStdPMatrix(Trees->InvInfo, Trees, N, Trees->PList[N->ID], Gamma, Kappa);
+						Err = SetStdPMatrix(Trees->InvInfo, Trees, N, Trees->PList[N->ID], Gamma);
 					else
 					{
 						PMatNo = Rates->Hetero->MList[NIndex];
-						Err = SetStdPMatrix(Rates->Hetero->ModelInv[PMatNo], Trees, N, Trees->PList[N->ID], Gamma, Kappa);
+						Err = SetStdPMatrix(Rates->Hetero->ModelInv[PMatNo], Trees, N, Trees->PList[N->ID], Gamma);
 					}
 				}
 				else
-					Err = SetAnalyticalPMatrix(Trees, N, Trees->PList[N->ID], Rates->FullRates[0], Gamma, Kappa);
+					Err = SetAnalyticalPMatrix(Trees, N, Trees->PList[N->ID], Rates->FullRates[0], Gamma);
 			}
 		}
 
 		if(Err == TRUE)
 			NoErr++;
-
 	}
 	
 	if(NoErr > 0)
@@ -1133,6 +1128,24 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	return Ret;
 }
 
+void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
+{
+	if(Opt->ModelType == MT_CONTINUOUS)
+		return;
+
+	if(NeedToReSetBL(Opt, Rates) == TRUE)
+	{
+		ReSetBranchLength(Trees->Tree[Rates->TreeNo]);
+
+		TransformTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
+
+		if(Rates->VarRates != NULL)
+			VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
+
+	//		SaveTrees("DTest.trees", Trees); exit(0);
+	}
+}
+
 double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
 	double	Ret;
@@ -1147,6 +1160,8 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	else
 		MapModelFile(Opt, Rates);
 
+	LhTransformTree(Rates, Trees, Opt);
+
 	if(Opt->Model == M_FATTAIL)
 		return CalcTreeStableLh(Opt, Trees, Rates);
 
@@ -1155,9 +1170,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	
 	if(Opt->ModelType == MT_CONTINUOUS)
 		return LHRandWalk(Opt, Trees, Rates);
-
 	
-
 	Tree = Trees->Tree[Rates->TreeNo];
 
 	if(Rates->UseEstData == TRUE)
@@ -1182,20 +1195,19 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			RateMult = Rates->GammaMults[GammaCat];
 
 #ifndef BTOCL
-		Err = SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
+		Err = SetAllPMatrix(Rates, Trees, Opt, RateMult);
 #else
 		// use GPU for setting PMatrix
-		Err = btocl_SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
+		Err = btocl_SetAllPMatrix(Rates, Trees, Opt, RateMult);
 		// Use CPU
-		//Err = SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
+		//Err = SetAllPMatrix(Rates, Trees, Opt, RateMult);
 #endif
 		//}
 		//btdebug_exit("setpmatrix");			
 		//exit(0);
 			
-		if(Err == TRUE) {
-			//printf("error!!!!\n");
-			//exit(0);
+		if(Err == TRUE) 
+		{
 			return ERRLH;
 		}
 		

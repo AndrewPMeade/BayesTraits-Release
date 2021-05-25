@@ -514,8 +514,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 			Rates->EstData[Index] = 0;
 	}
 
-	if(UseNonParametricMethods(Opt) == TRUE)
-		Rates->Plasty = CreatVarRates(Rates, Trees, Opt);
+
 	
 	if(Opt->ModelType == MT_CONTRAST)
 		Rates->Contrast = CreatContrastRates(Opt, Rates);
@@ -711,7 +710,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->Delta			=	-1;
 	Ret->OU				=	-1;
 
-	Ret->Plasty			=	NULL;
+	Ret->VarRates		=	NULL;
 	Ret->Hetero			=	NULL;
 	Ret->ModelFile		=	NULL;
 
@@ -743,7 +742,10 @@ RATES*	CreatRates(OPTIONS *Opt)
 			Ret->Kappa = Opt->FixKappa;
 		else
 			Ret->Kappa = 1;
-	}	
+	}
+
+	if(UseNonParametricMethods(Opt) == TRUE)
+		Ret->VarRates = CreatVarRates(Ret, Opt->Trees, Opt);
 	
 	if(Opt->DataType == CONTINUOUS)
 	{
@@ -1580,7 +1582,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	PrintConRecNodes(Str, Rates, Opt);
 
 	if(Opt->UseVarRates == TRUE)
-		fprintf(Str, "%d\t", Rates->Plasty->NoNodes);
+		fprintf(Str, "%d\t", Rates->VarRates->NoNodes);
 }
 
 double	GetPartailPi(RATES *Rates, NODE N, int StateNo, int SiteNo)
@@ -2086,16 +2088,16 @@ void	TestMult(RATES *Rates, double Val, double Min, double Max, double Dev)
 
 int		ValidMove(RATES *Rates, int No)
 {
-	PLASTY *PP;
+	VARRATES *PP;
 
-	if((No == SPPMOVE) || (No == SPPCHANGESCALE))
+	if(No == SPPMOVE || No == SPPCHANGESCALE)
 	{
-		PP = Rates->Plasty	;
+		PP = Rates->VarRates;
 		if(PP->NoNodes == 0)
 			return FALSE;
 	}
 
-	if((No == SRJDUMMYMOVE) || (No == SRJDUMMYCHANGEBETA))
+	if(No == SRJDUMMYMOVE || No == SRJDUMMYCHANGEBETA)
 	{
 		if(Rates->RJDummy->NoDummyCode == 0)
 			return FALSE;
@@ -2637,8 +2639,8 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 	if(Rates->EstDescData != NULL)
 		free(Rates->EstDescData);
 
-	if(Rates->Plasty != NULL)
-		FreeVarRates(Rates->Plasty);
+	if(Rates->VarRates != NULL)
+		FreeVarRates(Rates->VarRates);
 		
 #ifdef BIG_LH
 	mpfr_clear(Rates->HMeanSum);

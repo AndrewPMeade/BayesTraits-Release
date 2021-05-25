@@ -5,14 +5,10 @@
 #include "typedef.h"
 #include "genlib.h"
 #include "trees.h"
-#include "ContrastsTrans.h"
+#include "TransformTree.h"
 
 void	SetFixedConTrans(OPTIONS *Opt, TREES *Trees);
 void	SetConTrans(TREE *Tree, double Kappa, double Lambda, double Delta, double OU);
-
-
-
-
 
 void	RecTransContNodeDelta(NODE N, double Delta, double PathLen)
 {
@@ -30,7 +26,7 @@ void	RecTransContNodeDelta(NODE N, double Delta, double PathLen)
 		RecTransContNodeDelta(N->NodeList[Index], Delta, TLen);
 }
 
-void	TransContNodeDelta(NODE N, double Delta, int Norm)
+void	TransformTreeDelta(NODE N, double Delta, int Norm)
 {
 	double SumBL,Scale;
 
@@ -64,7 +60,7 @@ void	RecTransContNodeKappa(NODE N, double Kappa, double KappaPathLen)
 		RecTransContNodeKappa(N->NodeList[Index], Kappa, TLen);
 }
 
-void	TransContNodeKappa(NODE N, double Kappa, int Norm)
+void	TransformTreeKappa(NODE N, double Kappa, int Norm)
 {
 	double SumBL,Scale;
 	int Index;
@@ -129,7 +125,7 @@ void FindOUT(NODE N, double *T)
 		FindOUT(N->NodeList[Index], T);
 }
 
-void	TransContNodeOU(NODE N, double OU, int Norm)
+void	TransformTreeOU(NODE N, double OU, int Norm)
 {
 	double SumBL,Scale, T;
 	int Index;
@@ -169,7 +165,7 @@ void	RecTransContNodeLambda(NODE N, double Lambda,  double PathLen)
 		RecTransContNodeLambda(N->NodeList[Index], Lambda, TLen);
 }
 
-void	TransContNodeLambda(NODE N, double Lambda, int Norm)
+void	TransformTreeLambda(NODE N, double Lambda, int Norm)
 {
 	double SumBL, Scale;
 	int Index;
@@ -189,7 +185,7 @@ void	TransContNodeLambda(NODE N, double Lambda, int Norm)
 
 int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates)
 {
-	if(Rates->Plasty != NULL)
+	if(Rates->VarRates != NULL)
 		return TRUE;
 
 	if(Opt->UseKappa  == TRUE)
@@ -207,7 +203,7 @@ int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates)
 	return FALSE;
 }
 
-void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
+void	TransformTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 {
 	TREE *Tree;
 	NODE Root;
@@ -221,9 +217,9 @@ void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 	if(Opt->UseKappa == TRUE)
 	{
 		if(Opt->EstKappa == TRUE)
-			TransContNodeKappa(Root, Rates->Kappa, Norm);
+			TransformTreeKappa(Root, Rates->Kappa, Norm);
 		else
-			TransContNodeKappa(Root, Opt->FixKappa, Norm);
+			TransformTreeKappa(Root, Opt->FixKappa, Norm);
 	}
 
 	if(Opt->UseOU == TRUE)
@@ -231,17 +227,17 @@ void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 		SetTreeDistToRoot(Tree);
 
 		if(Opt->EstOU == TRUE)
-			TransContNodeOU(Root, Rates->OU, Norm);
+			TransformTreeOU(Root, Rates->OU, Norm);
 		else
-			TransContNodeOU(Root, Opt->FixOU, Norm);
+			TransformTreeOU(Root, Opt->FixOU, Norm);
 	}
 	
 	if(Opt->UseDelta == TRUE)
 	{
 		if(Opt->EstDelta == TRUE)
-			TransContNodeDelta(Root, Rates->Delta, Norm);
+			TransformTreeDelta(Root, Rates->Delta, Norm);
 		else
-			TransContNodeDelta(Root, Opt->FixDelta, Norm);
+			TransformTreeDelta(Root, Opt->FixDelta, Norm);
 	}
 		
 	if(Opt->UseLambda == TRUE)
@@ -249,41 +245,8 @@ void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 		SetTreeDistToRoot(Tree);
 
 		if(Opt->EstLambda == TRUE)
-			TransContNodeLambda(Root, Rates->Lambda, Norm);
+			TransformTreeLambda(Root, Rates->Lambda, Norm);
 		else
-			TransContNodeLambda(Root, Opt->FixLambda, Norm);
+			TransformTreeLambda(Root, Opt->FixLambda, Norm);
 	}
 }
-/*
-void	TransformContrastTreeFixed(OPTIONS *Opt, TREES *Trees)
-{
-	TREE *Tree;
-	NODE Root;
-	int		Index;
-
-	for(Index=0;Index<Trees->NoOfTrees;Index++)
-	{
-		Tree = Trees->Tree[Index];
-		Root = Tree->Root;
-	
-		if((Opt->UseKappa == TRUE) && (Opt->FixKappa != -1))
-			TransContNodeKappa(Root, Opt->FixKappa, FALSE);
-	
-		if((Opt->UseOU == TRUE) && (Opt->FixOU != -1))
-			TransContNodeOU(Root, Opt->FixOU, FALSE);
-	
-		if((Opt->UseDelta == TRUE) && (Opt->FixDelta != -1))
-			TransContNodeDelta(Root, Opt->FixDelta, FALSE);
-
-		if((Opt->UseLambda == TRUE) && (Opt->FixLambda != -1))
-		{
-			SetTreeDistToRoot(Tree);
-			TransContNodeLambda(Root, Opt->FixLambda, FALSE);
-		}
-
-		SetAsUserBranchLength(Tree);
-		SetTreeDistToRoot(Tree);
-	}
-}
-
-*/
