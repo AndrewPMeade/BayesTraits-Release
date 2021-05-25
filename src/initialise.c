@@ -117,7 +117,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		ID = 0;
 		SetNodeIDs(Trees->Tree[Index]);
 	}
-	
+
 	Opt->LogFile		= OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_LOG);
 
 	#ifdef JNIRUN
@@ -129,6 +129,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	Trees->UseCovarion	= Opt->UseCovarion;
 
 	SetPTrees(Opt, Trees);
+
 
 	if(Opt->ModelType == MT_CONTINUOUS)
 		InitContinus(Opt, Trees);
@@ -176,6 +177,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		//btocl_AllocLhInfo(Trees);
 #endif
 	}
+
 		
 	if(FindNoEstDataPoint(Trees) > 0)
 		Opt->EstData = TRUE;

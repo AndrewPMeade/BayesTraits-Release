@@ -498,7 +498,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *Shed)
 	RATES*		CRates;
 	RATES*		NRates;
 	long long	Itters;
-	double		StartT, EndT, TLh;
+	double		StartT, EndT;
 	SCHEDULE*	Shed;
 	FILE*		ShedFile;
 	FILE*		SaveModelF;

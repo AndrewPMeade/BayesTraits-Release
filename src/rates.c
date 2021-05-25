@@ -539,6 +539,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 
 	Rates->NoEstData	=	FindNoEstDataPoint(Trees);
 
+
 	if(Rates->NoEstData > 0)
 	{
 		Rates->UseEstData = TRUE;
@@ -3020,7 +3021,6 @@ void	SetEstDataFromPrior(RATES *Rates)
 {
 	int Index, SiteNo;
 	PRIOR *Prior;
-
 
 	for(Index=0;Index<Rates->NoEstData;Index++)
 	{
