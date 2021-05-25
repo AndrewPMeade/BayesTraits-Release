@@ -186,9 +186,7 @@ void	TransContNodeLambda(NODE N, double Lambda, int Norm)
 	
 	for(Index=0;Index<N->NoNodes;Index++)
 		RecTransContNodeLambda(N->NodeList[Index], Lambda,  N->DistToRoot);
-
 	
-
 	if(Norm == FALSE)
 		return;
 

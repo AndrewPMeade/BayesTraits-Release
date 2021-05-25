@@ -1631,7 +1631,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		for(Index=0;Index<Trees->NoOfSites-1;Index++)
 			fprintf(Str, "%0.12f\t", Rates->Contrast->RegBeta[Index]);
 		
-		PrintRegSE(Rates, Opt);
+	//	PrintRegSE(Rates, Opt);
 	}
 
 	if(Opt->Model == M_CONTINUOUS_REG)

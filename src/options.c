@@ -2007,7 +2007,9 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	RECNODE		RNode;
 	int			Index, FState, NoTaxa;
 	char**		ConFState;
-		
+	
+//	if(Opt->ModelType 
+
 	FState = -1;
 	
 	ConFState = NULL;

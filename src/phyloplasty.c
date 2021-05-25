@@ -37,6 +37,8 @@ double	PPSGammaPDF(double x, double Alpha, double Beta)
 	return Ret;
 }
 
+
+
 double	RandGamma(double Shape, double Scale)
 {
 	double x;
@@ -175,11 +177,21 @@ void	FreePlasty(PLASTY* Plasty)
 	free(Plasty);
 }
 
+void	ScaleTest()
+{
+	double x;
+
+	for(x=0.0001;x<100;x+=0.01)
+		printf("%f\t%f\n", x, log(PPSGammaPDF(x, PPALPHA, PPBETA)));
+	exit(0);
+}
 
 void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, long long It)
 {
 	PLASTYNODE	*PNode;
 	PLASTY		*Plasty;
+	
+	ScaleTest();
 
 	Plasty = Rates->Plasty;
 

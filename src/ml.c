@@ -180,6 +180,7 @@ void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			printf("Starting likelihood for contrast is invalid.\n");
 			exit(0);
 		}
+		return;
 	}
 
 	if(Opt->DataType == CONTINUOUS)

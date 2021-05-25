@@ -501,9 +501,14 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	fflush(stdout);
 	StartT = GetSeconds();	
 	for(Itters=1;;Itters++)
-	{ 
-		printf("Itter:\t%d\t%d\n", Itters, CRates->TreeNo);
+	{ /*
+		printf("Itter:\t%llu\t%d\t", Itters, CRates->TreeNo);
 
+		if(BurntIn == TRUE)
+			printf("True\n");
+		else
+			printf("False\n");
+		*/
  		CopyRates(NRates, CRates, Opt);
 		MutateRates(Opt, NRates, Shed, Itters);
 
@@ -642,14 +647,11 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 			if(Itters == Opt->BurnIn)
 			{
-				if(Opt->UseEqualTrees == TRUE)
+				if((Opt->UseEqualTrees == TRUE) && (GBurntIn == FALSE))
 				{
-					if(GBurntIn == FALSE)
-					{
-						GBurntIn = TRUE;
-						Itters = 1;
-						BurntIn = FALSE;
-					}
+					GBurntIn = TRUE;
+					Itters = 1;
+					BurntIn = FALSE;
 				}
 				else
 					BurntIn = TRUE;

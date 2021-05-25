@@ -77,7 +77,8 @@ extern void PMatrixTest(void);
 	./Seq/TestTree.trees ./Seq/TestTree.txt < TestIn.txt > sout.txt
 
 	./Seq/MamTrees-50.trees ./Seq/MamData.txt < in.txt > sout.txt
-
+	./Seq/MamTrees-50.trees ./Seq/MammalBrainBodyGt.txt < in.txt > sout.txt
+	
 	./Seq/WConTree.trees ./Seq/Wres.txt < in.txt > sout.txt
 
 	./Seq/SmallIE.trees ./Seq/SmallIELex.txt < in.txt > sout.txt
@@ -201,6 +202,9 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // ./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
 
 
+// ./Seq/testree.trees ./Seq/MamBrainBody.txt < in.txt > sout.txt
+
+// ./Seq/Yunes.trees ./Seq/Yunes.txt < in.txt > sout.txt
 
 int main(int argc, char** argv)
 {
@@ -212,7 +216,6 @@ int main(int argc, char** argv)
 	DISPLAY_INFO;
 
 	//btdebug_init();
-	
 	NoSites = 0;
 
 	if(argc == 2)

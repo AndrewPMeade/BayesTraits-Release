@@ -1397,21 +1397,24 @@ void	DummCodePreLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
-//	TransContNodeDelta(Trees->Tree[Rates->TreeNo]->Root, 2, TRUE);
+//	TransContNodeDelta(Trees->Tree[Rates->TreeNo]->Root, 60, TRUE);
 //	TransContNodeKappa(Trees->Tree[Rates->TreeNo]->Root, 0.1, TRUE);
-//	TransContNodeOU(Trees->Tree[Rates->TreeNo]->Root, 0.5, TRUE);
+//	TransContNodeOU(Trees->Tree[Rates->TreeNo]->Root, 0.000000000000001, TRUE);
+//	TransContNodeOU(Trees->Tree[Rates->TreeNo]->Root, 0.25, TRUE);
+//	SaveTrees("DTest.trees", Trees); exit(0);
 //	TransContNodeLambda(Trees->Tree[Rates->TreeNo]->Root, 0.5, TRUE);
 
 	if(NeedToReSetBL(Opt) == TRUE)
 	{
 		ReSetBranchLength(Trees->Tree[Rates->TreeNo]);
 	
+		Rates->OU = 0;
 		TransformContrastTree(Opt, Trees, Rates, NORM_TRANSFORMS);
 
 		if(Opt->UseVarRates == TRUE)
 			Plasty(Opt, Trees, Rates, NORM_TRANSFORMS);
 		
-//		SaveTrees("DTest.trees", Trees); exit(0);
+	//	SaveTrees("DTest.trees", Trees); exit(0);
 	}
 
 	if(Opt->RJDummy == TRUE)

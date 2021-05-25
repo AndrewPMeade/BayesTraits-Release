@@ -984,6 +984,8 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 	for(NIndex=1;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = Tree->NodeList[NIndex];
+
+	
 		Err = FALSE;
 		if(NoErr == 0)
 		{
@@ -1008,8 +1010,9 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 
 		if(Err == TRUE)
 			NoErr++;
-	}
 
+	}
+	
 	if(NoErr > 0)
 		return TRUE;
 	
@@ -1117,6 +1120,7 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			SiteLh += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
 		}
 
+//		printf("site:\t%d\t%f\t%f\n", SiteNo, log(SiteLh), Rates->Rates[0]);fflush(stdout);
 		if(IsNum(log(SiteLh)) == FALSE)
 			return ERRLH;
 
