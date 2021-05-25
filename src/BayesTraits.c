@@ -75,6 +75,7 @@ extern void PMatrixTest(void);
 	./Seq/LhInDep.trees ./Seq/LhInDep.txt < in.txt > sout.txt
 	./Seq/ContrastTestLh.trees ./Seq/ContrastTestLh.txt < in.txt > sout.txt
 	./Seq/MammalBig.trees ./Seq/MammalBig.txt < in.txt > sout.txt
+	./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < in.txt > sout.txt
 */
 
 #ifdef JNIRUN

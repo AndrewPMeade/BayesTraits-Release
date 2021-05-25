@@ -31,6 +31,7 @@
 #define PPBETA		6
 #define	PPSCALEDEV	5
 
+#define PPUNIFORM
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000
