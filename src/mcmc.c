@@ -302,14 +302,17 @@ FILE*	SetScheduleFile(OPTIONS *Opt, SCHEDULE*	Shed)
 void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 {
 	int Index;
-	double Alpha;
+	double OU;
 
 
-	for(Alpha=-10;Alpha<10;Alpha+=0.1)
+	NRates->Rates[0] = -0.373331342633;
+	NRates->Rates[1] =	2.614639593935;
+
+	for(OU=0;OU<20;OU+=0.01)
 	{
-		CRates->Rates[0] = Alpha;
+		CRates->OU = OU;
 		CRates->Lh = Likelihood(CRates, Trees, Opt);
-		printf("%f\t%f\t%f\n", Alpha, CRates->Lh, Trees->Tree[0]->ConVars->Sigma->me[0][0]);
+		printf("%f\t%f\n", OU, CRates->Lh);
 	}
 
 	exit(0);
@@ -396,14 +399,11 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 		ShedFile = SetScheduleFile(Opt, Shed);
 //		ShedFile = OpenWrite(Opt->ScheduleFile);
 	}
-
-
-	
 		
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
 
-	MCMCTest(Opt, Trees, NRates, CRates);
+//	MCMCTest(Opt, Trees, NRates, CRates);
 
 	GBurntIn = BurntIn = FALSE;
 	if(Opt->BurnIn == 0)

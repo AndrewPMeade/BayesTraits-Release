@@ -532,3 +532,12 @@ int	RandIntRange(RANDSTATES* RS, int Range)
 	USL = USL % Range;
 	return (int)USL;
 }
+
+double			RandUniDouble(RANDSTATES* RS, double Min, double Max)
+{
+	double Ret;
+
+	Ret = RandDouble(RS) * (Max - Min);
+	Ret += Min;
+	return Ret;
+}

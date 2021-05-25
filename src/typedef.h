@@ -73,6 +73,9 @@
 
 // #define RATE_CHANGE_ONE
 
+// Used to test if tree transforms are normalised, so there is no cahnge in tree lenght. 
+#define		NORM_TRANSFORMS		TRUE
+
 /* If defined Sigma in indep contrast is restricted to a given value */
 //#define RES_SIGMA	0.0034
 //#define RES_ALPHA	0
@@ -315,6 +318,7 @@ static char		*MODELNAMES[] =
 	"Continuous Regression",
 	"Independent Contrasts",
 	"Independent Contrasts Regression",
+	"Independent Contrasts Full",
 	"Discrete Covarion", 
 	"Discrete Heterogeneous"
 };
@@ -425,6 +429,7 @@ typedef enum
 	M_CONTINUOUSREG,
 	M_CONTRAST_STD,
 	M_CONTRAST_REG,
+	M_CONTRAST_FULL,
 	M_DESCCV,
 	M_DESCHET
 } MODEL;
@@ -785,10 +790,10 @@ typedef struct
 typedef struct
 {
 	double*	Alpha;
-//	double* Sigma;
+	double* Sigma;
 
 	MATRIX_INVERT	*SigmaInvInfo;
-	MATRIX*	Sigma;
+	MATRIX*	SigmaMat;
 //	MATRIX*	EstSigma;
 
 //	double*	EstAlpha;

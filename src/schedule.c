@@ -376,9 +376,8 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 	Ret->SNoAcc = Ret->SNoTried = 0;
 
 	if(Opt->AutoTuneRD == TRUE)
-	{
 		SetRateDevPerParm(Ret, Opt, RS);
-	}
+	
 	
 	if(Opt->AutoTuneDD == TRUE)
 	{
@@ -415,7 +414,6 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 	{
 		Ret->OUAT = CreatAutoTune(0.2, 0.4);
 		Opt->RateDevOU = RandDouble(RS) * 10;
-
 	}
 
 	return Ret;
@@ -548,7 +546,11 @@ void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 		Acc = GetAccRate(SKAPPA, Shed);
 
 		if(Tried > 2)
+		{
 			Opt->RateDevKappa = AutoTuneNextRD(Shed->KappaAT, RS, Opt->RateDevKappa, Acc);
+			if(Opt->RateDevKappa > MAX_KAPPA)
+				Opt->RateDevKappa = MAX_KAPPA;
+		}
 	}
 
 	if(Shed->DeltaAT != NULL)
@@ -557,7 +559,11 @@ void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 		Acc = GetAccRate(SDELTA, Shed);
 
 		if(Tried > 2)
+		{
 			Opt->RateDevDelta = AutoTuneNextRD(Shed->DeltaAT, RS, Opt->RateDevDelta, Acc);
+			if(Opt->RateDevDelta > MAX_DELTA)
+				Opt->RateDevDelta = MAX_DELTA;
+		}
 	}
 
 	if(Shed->LambdaAT != NULL)
@@ -566,7 +572,11 @@ void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 		Acc = GetAccRate(SLABDA, Shed);
 
 		if(Tried > 2)
+		{
 			Opt->RateDevLambda = AutoTuneNextRD(Shed->LambdaAT, RS, Opt->RateDevLambda, Acc);
+			if(Opt->RateDevLambda > MAX_LAMBDA)
+				Opt->RateDevLambda = MAX_LAMBDA;
+		}
 	}
 
 	if(Shed->OUAT != NULL)
@@ -575,7 +585,11 @@ void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 		Acc = GetAccRate(SOU, Shed);
 
 		if(Tried > 2)
+		{
 			Opt->RateDevOU = AutoTuneNextRD(Shed->OUAT, RS, Opt->RateDevOU, Acc);
+			if(Opt->RateDevOU  > MAX_OU)
+				Opt->RateDevOU = MAX_OU;
+		}
 	}
 }
 

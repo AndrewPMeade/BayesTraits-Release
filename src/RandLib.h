@@ -58,6 +58,8 @@ long			RandLong(RANDSTATES* RS);
 unsigned int	RandUSInt(RANDSTATES* RS);
 int				RandInt(RANDSTATES*	RS);
 
+double			RandUniDouble(RANDSTATES* RS, double Min, double Max);
+
 int				RandIntBetween(RANDSTATES* RS, int l, int t);
 int				RandIntRange(RANDSTATES* RS, int Range);
 

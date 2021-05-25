@@ -201,6 +201,25 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/croptree2.trees ./Seq/croptree2.txt < in.txt > sout.txt
 
+extern double igam(double a, double x);
+
+
+void	PTest(void)
+{
+	double	Ret=0;
+	double	x, Mean, CatSize;
+
+	Mean = 5;
+	CatSize = 1.0/10.0;
+	for(x=0;x<20;x+=0.01)
+	{
+//		Ret = Mean * exp(-Mean * x);
+		Ret = igam(1.0, (x+CatSize)/Mean) - igam(1.0, x/Mean);
+		printf("%f\t%f\n", log(Ret), x);
+	}
+	exit(0);
+}
+
 int main(int argc, char** argv)
 {
 	TREES*		Trees;
@@ -209,7 +228,7 @@ int main(int argc, char** argv)
 	char		*TreeFN, *DataFN; 
 
 	DISPLAY_INFO;
-
+//	PTest();
 	//btdebug_init();
 	
 	NoSites = 0;

@@ -55,8 +55,13 @@ int		FindNoConRates(OPTIONS *Opt)
 		break;
 
 		case M_CONTRAST_REG:
-			return Opt->Trees->NoOfSites - 1; 
+			return Opt->Trees->NoOfSites; 
 		break;
+
+		case M_CONTRAST_FULL:
+			return Opt->Trees->NoOfSites * 2;
+		break;
+
 	}
 
 	printf("Unkonwn model %s::%d\n", __FILE__, __LINE__);
@@ -122,17 +127,29 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 	int	Index;
 
 	if(Opt->ModelType == MT_CONTRAST)
+	{
+		MapRatesToConVals(Opt, Rates, Rates->Contrast);
 		return;
+	}
 
 	if(Opt->Model == M_CONTINUOUSREG)
 	{
 		Rates->Means[0] = Rates->Rates[0];
+
+		for(Index=1;Index<Rates->NoOfRates;Index++)
+		{
+			if(Opt->TestCorrel == FALSE)
+				Rates->Beta[Index - 1] = Rates->Rates[Index] = 0;
+			else
+				Rates->Beta[Index - 1] = Rates->Rates[Index];
+		}
+
+		return;
 	}
-	else
-	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			Rates->Means[Index] = Rates->Rates[Index];
-	}
+	
+	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		Rates->Means[Index] = Rates->Rates[Index];
+	
 
 	if(Opt->Model == M_CONTINUOUSRR)
 		return;
@@ -142,14 +159,6 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 		for(;Index<Rates->NoOfRates;Index++)
 			Rates->Beta[Index - Opt->Trees->NoOfSites] = Rates->Rates[Index];
 		return;
-	}
-
-	for(Index=1;Index<Rates->NoOfRates;Index++)
-	{
-		if(Opt->TestCorrel == FALSE)
-			Rates->Beta[Index - 1] = Rates->Rates[Index] = 0;
-		else
-			Rates->Beta[Index - 1] = Rates->Rates[Index];
 	}
 }
 
@@ -262,9 +271,7 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 		if(Rates->Gamma > GAMMAMAX)
 			Rates->Gamma = GAMMAMAX;
 	}
-
 }
-
 
 void	FindEmpPis(RATES *Rates, OPTIONS *Opt)
 {
@@ -394,10 +401,8 @@ void	CreatMCMCContrastRates(OPTIONS *Opt, RATES *Rates)
 	Trees = Opt->Trees;
 
 	if(Opt->Model == M_CONTRAST_STD)
-	{
 		Rates->NoOfRates = Trees->NoOfSites;
-	}
-
+	
 	if(Opt->Model == M_CONTRAST_REG)
 	{
 		if(Opt->TestCorrel == FALSE)
@@ -406,7 +411,9 @@ void	CreatMCMCContrastRates(OPTIONS *Opt, RATES *Rates)
 			Rates->NoOfRates = Trees->NoOfSites;
 	}
 	
-
+	if(Opt->Model == M_CONTRAST_FULL)
+		Rates->NoOfRates = Trees->NoOfSites * 2;
+	
 	Rates->NoOfFullRates = Rates->NoOfRates;
 
 	Rates->Rates = (double*)malloc(sizeof(double) * Rates->NoOfRates);
@@ -940,6 +947,23 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		return Ret;
 	}
 
+	if(Opt->Model == M_CONTRAST_FULL)
+	{
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		{
+			sprintf(Buffer, "Alpha %d", Index+1);
+			Ret[PIndex++] = StrMake(Buffer);
+		}
+		
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		{
+			sprintf(Buffer, "Sigma %d", Index+1);
+			Ret[PIndex++] = StrMake(Buffer);
+		}
+		
+		free(Buffer);
+		return Ret;
+	}
 
 	if(Opt->Model == M_CONTINUOUSREG)
 	{
@@ -1068,6 +1092,15 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 			for(y=0;y<x;y++)
 				fprintf(Str, "CoVar %d-%d\t", y+1, x+1);
 		}
+	}
+
+	if(Opt->Model == M_CONTRAST_FULL)
+	{
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+			fprintf(Str, "Alpha %d\t", Index+1);
+
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+			fprintf(Str, "Sigma %d\t", Index+1);
 	}
 
 	if(Opt->Model == M_CONTRAST_REG)
@@ -1580,13 +1613,22 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 			fprintf(Str, "%0.12f\t", Rates->Contrast->Alpha[Index]);
 
 		for(Index=0;Index<NOS;Index++)
-			fprintf(Str, "%0.12f\t", Rates->Contrast->Sigma->me[Index][Index]);
+			fprintf(Str, "%0.12f\t", Rates->Contrast->SigmaMat->me[Index][Index]);
 
 		for(x=0;x<NOS;x++)
 		{
 			for(y=0;y<x;y++)
-				fprintf(Str, "%0.12f\t", Rates->Contrast->Sigma->me[x][y]);
+				fprintf(Str, "%0.12f\t", Rates->Contrast->SigmaMat->me[x][y]);
 		}
+	}
+	
+	if(Opt->Model == M_CONTRAST_FULL)
+	{
+		for(Index=0;Index<NOS;Index++)
+			fprintf(Str, "%0.12f\t", Rates->Contrast->Alpha[Index]);
+
+		for(Index=0;Index<NOS;Index++)
+			fprintf(Str, "%0.12f\t", Rates->Contrast->Sigma[Index]);
 	}
 
 	if(Opt->Model == M_CONTRAST_REG)
@@ -2172,6 +2214,7 @@ double	MultePram(RATES *Rates, double Val, double Min, double Max, double Dev)
 
 		Ret = (RandDouble(Rates->RS) * Dev) - (Dev / 2.0); 
 		Ret += Val;
+//		Ret = RandNormal(Rates->RS, Val, Dev);
 
 		if(Ret > Max)
 			Exit = FALSE;
@@ -2184,6 +2227,23 @@ double	MultePram(RATES *Rates, double Val, double Min, double Max, double Dev)
 	return Ret;		
 }
 
+
+void	TestMult(RATES *Rates, double Val, double Min, double Max, double Dev)
+{
+	int Index;
+	double Ret;
+
+	Val = 10;
+	Dev = 5;
+
+	for(Index=0;Index<10000;Index++)
+	{
+		Ret = MultePram(Rates, Val, Min, Max, Dev);
+		printf("%d\t%f\n", Index, Ret);
+	}
+
+	exit(0);
+}
 
 void	MutateRatesOld(OPTIONS* Opt, RATES* Rates)
 {
@@ -2567,19 +2627,31 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 		break;
 
 		case SKAPPA:
-			Rates->Kappa = MultePram(Rates, Rates->Kappa, MIN_KAPPA, MAX_KAPPA, Opt->RateDevKappa);
+			if(Opt->RateDevKappa == MAX_KAPPA)
+				Rates->Kappa = RandUniDouble(Rates->RS, MIN_KAPPA, MAX_KAPPA);
+			else
+				Rates->Kappa = MultePram(Rates, Rates->Kappa, MIN_KAPPA, MAX_KAPPA, Opt->RateDevKappa);
 		break;
 
 		case SDELTA:
-			Rates->Delta = MultePram(Rates, Rates->Delta, MIN_DELTA, MAX_DELTA, Opt->RateDevDelta);
+			if(Opt->RateDevDelta == MAX_DELTA)
+				Rates->Delta = RandUniDouble(Rates->RS, MIN_DELTA, MAX_DELTA);
+			else
+				Rates->Delta = MultePram(Rates, Rates->Delta, MIN_DELTA, MAX_DELTA, Opt->RateDevDelta);
 		break;
 
 		case SLABDA:
-			Rates->Lambda = MultePram(Rates, Rates->Lambda, MIN_LAMBDA, MAX_LAMBDA, Opt->RateDevLambda);
+			if(Opt->RateDevLambda == MAX_OU)
+				Rates->Lambda = RandUniDouble(Rates->RS, MIN_LAMBDA, MAX_LAMBDA);
+			else
+				Rates->Lambda = MultePram(Rates, Rates->Lambda, MIN_LAMBDA, MAX_LAMBDA, Opt->RateDevLambda);
 		break;
 
 		case SOU:
-			Rates->OU = MultePram(Rates, Rates->OU, MIN_OU, MAX_OU, Opt->RateDevOU);
+			if(Opt->RateDevOU == MAX_OU)
+				Rates->OU = RandUniDouble(Rates->RS, MIN_OU, MAX_OU);
+			else
+				Rates->OU = MultePram(Rates, Rates->OU, MIN_OU, MAX_OU, Opt->RateDevOU);
 		break;
 
 		case SJUMP:

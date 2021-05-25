@@ -17,6 +17,8 @@ void		FreeContrastRates(RATES *Rates);
 
 void	MLContrast(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
+void	MapRatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR);
+
 void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed);
 void	CopyContrastRates(OPTIONS *Opt, RATES* R1, RATES* R2, int NoSites);
 

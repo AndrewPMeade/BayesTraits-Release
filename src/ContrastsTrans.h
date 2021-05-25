@@ -3,7 +3,8 @@
 
 #include "typedef.h"
 
-void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+
+void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm);
 void	TransformContrastTreeFixed(OPTIONS *Opt, TREES *Trees);
 
 void	TransContNodeDelta(NODE N, double Delta, int Norm);

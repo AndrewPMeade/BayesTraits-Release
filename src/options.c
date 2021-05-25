@@ -628,8 +628,8 @@ char**	ContrastRateNames(OPTIONS *Opt)
 {
 	char	**Ret;
 	char	*Buffer;
-	int		Index, NOS;
-	int		i,x,y;
+	int		Index, NOS, i;
+	
 
 	Opt->NoOfRates = Opt->Trees->NoOfSites;
 
@@ -647,6 +647,37 @@ char**	ContrastRateNames(OPTIONS *Opt)
 		Ret[i++] = StrMake(Buffer);
 	}
 
+	free(Buffer);
+	return Ret;
+}
+
+char**	ContrastFullRateNames(OPTIONS *Opt)
+{
+	char	**Ret;
+	char	*Buffer;
+	int		Index, NOS, i;
+	
+	Opt->NoOfRates = Opt->Trees->NoOfSites * 2;
+
+	NOS = Opt->Trees->NoOfSites;
+	 
+	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
+	if((Ret == NULL) || (Buffer == NULL))
+		MallocErr();
+	
+	i = 0;
+	for(Index=0;Index<NOS;Index++)
+	{
+		sprintf(Buffer, "Alpha-%d", Index+1);
+		Ret[i++] = StrMake(Buffer);
+	}
+
+	for(Index=0;Index<NOS;Index++)
+	{
+		sprintf(Buffer, "Sigma-%d", Index+1);
+		Ret[i++] = StrMake(Buffer);
+	}
 
 	free(Buffer);
 	return Ret;
@@ -697,6 +728,9 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 
 		case M_CONTRAST_REG:
 			return ContrastRegRateNames(Opt);
+
+		case M_CONTRAST_FULL:
+			return ContrastFullRateNames(Opt);
 	}
 
 	return NULL;
@@ -853,6 +887,7 @@ MODEL_TYPE	GetModelType(MODEL Model)
 		case	M_CONTINUOUSREG:	return MT_CONTINUOUS; break;
 		case	M_CONTRAST_STD:		return MT_CONTRAST; break;
 		case	M_CONTRAST_REG:		return MT_CONTRAST; break;
+		case	M_CONTRAST_FULL:	return MT_CONTRAST; break;
 		case	M_DESCCV:			return MT_DISCRETE; break;
 		case	M_DESCHET:			return MT_DISCRETE; break;
 	}
@@ -1102,6 +1137,8 @@ void	PrintModelChoic(TREES *Trees)
 
 		if(Trees->NoOfSites > 1)
 			printf("8)	Independent Contrast: Regression\n");
+
+		printf("9)	Independent Contrast: Full\n");
 	}
 
 #ifndef PUBLIC_BUILD
@@ -1148,7 +1185,7 @@ int		ValidModelChoice(TREES *Trees, int ModelNo)
 	MaxModelNo = 10;
 
 #ifdef PUBLIC_BUILD
-	MaxModelNo = 8;
+	MaxModelNo = 9;
 #endif
 
 	if((ModelNo < 1) || (ModelNo > MaxModelNo))
@@ -1160,7 +1197,7 @@ int		ValidModelChoice(TREES *Trees, int ModelNo)
 	if(ModelNo == 1)
 		return TRUE;
 
-	if((ModelNo == 2) || (ModelNo == 3) || (ModelNo == 9) || (ModelNo == 10))
+	if((ModelNo == 2) || (ModelNo == 3) || (ModelNo == 10) || (ModelNo == 11))
 	{
 		if((Trees->NoOfSites != 2) || (Trees->NoOfStates != 2))
 		{
@@ -1219,9 +1256,12 @@ MODEL	IntToModel(int No)
 		return M_CONTRAST_REG;
 
 	if(No == 9)
-		return M_DESCCV;
+		return M_CONTRAST_FULL;
 
 	if(No == 10)
+		return M_DESCCV;
+
+	if(No == 11)
 		return M_DESCHET;
 
 	printf("Unkown model\n");

@@ -679,7 +679,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 	fprintf(Out, "%d\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, P->NoNodes);
 
 
-	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Rates->Contrast->Sigma->me[0][0], P->Alpha);
+	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Rates->Contrast->SigmaMat->me[0][0], P->Alpha);
 
 	for(Index=0;Index<P->NoNodes;Index++)
 	{

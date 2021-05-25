@@ -264,7 +264,7 @@ int		NeedToReSetBL(OPTIONS *Opt)
 	return FALSE;
 }
 
-void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 {
 	TREE *Tree;
 	NODE Root;
@@ -279,25 +279,25 @@ void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->UseKappa == TRUE)
 	{
 		if(Opt->EstKappa == TRUE)
-			TransContNodeKappa(Root, Rates->Kappa, FALSE);
+			TransContNodeKappa(Root, Rates->Kappa, Norm);
 		else
-			TransContNodeKappa(Root, Opt->FixKappa, FALSE);
+			TransContNodeKappa(Root, Opt->FixKappa, Norm);
 	}
 
 	if(Opt->UseOU == TRUE)
 	{
 		if(Opt->EstOU == TRUE)
-			TransContNodeOU(Root, Rates->OU, FALSE);
+			TransContNodeOU(Root, Rates->OU, Norm);
 		else
-			TransContNodeOU(Root, Opt->FixOU, FALSE);
+			TransContNodeOU(Root, Opt->FixOU, Norm);
 	}
 	
 	if(Opt->UseDelta == TRUE)
 	{
 		if(Opt->EstDelta == TRUE)
-			TransContNodeDelta(Root, Rates->Delta, FALSE);
+			TransContNodeDelta(Root, Rates->Delta, Norm);
 		else
-			TransContNodeDelta(Root, Opt->FixDelta, FALSE);
+			TransContNodeDelta(Root, Opt->FixDelta, Norm);
 	}
 
 	
@@ -305,9 +305,9 @@ void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	{
 		SetTreeDistToRoot(Tree);
 		if(Opt->EstLambda == TRUE)
-			TransContNodeLambda(Root, Rates->Lambda, FALSE);
+			TransContNodeLambda(Root, Rates->Lambda, Norm);
 		else
-			TransContNodeLambda(Root, Opt->FixLambda, FALSE);
+			TransContNodeLambda(Root, Opt->FixLambda, Norm);
 	}
 }
 

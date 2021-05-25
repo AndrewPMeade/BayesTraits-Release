@@ -23,6 +23,8 @@
 	#include "btocl_continuous.h"
 #endif
 
+double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree);
+
 void	InitEstData(OPTIONS *Opt, TREES *Trees)
 {
 	int		*TempEst;
@@ -855,6 +857,8 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 		}
 	}
 
+
+
 //	PrintMatrix(CV->InvV, "M=", stdout);exit(0);
 
 	/* Calc X'.InvV.Y */
@@ -878,9 +882,7 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 
 
 	MatrixByVectMult(CV->InvXVX, CV->TVect2, CV->TVect1);
-
 	
-
 	if(Opt->AlphaZero == FALSE)
 	{
 		CV->Alpha[0] = CV->TVect1[0];
@@ -896,6 +898,8 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 
 	if(Opt->TestCorrel == FALSE)
 	{
+		CV->Alpha[0] = MLFindAlphaMeanRegTC(Trees, Tree);
+
 		for(x=0;x<Trees->NoOfSites;x++)
 			CV->Beta[x] = 0;
 	}
@@ -1036,11 +1040,12 @@ double	MLFindAlphaReg(TREES* Trees, TREE *Tree)
 */
 double	MLFindAlphaMean(TREES* Trees, TREE *Tree, int Site)
 {
-	double	P1=0;
+	double	P1;
 	double	P2;
 	double	ColTemp;
 	int		x,y;
 
+	P1 = 0;
 	for(x=0;x<Trees->NoOfTaxa;x++)
 	{
 		for(y=x+1;y<Trees->NoOfTaxa;y++)
@@ -1059,10 +1064,43 @@ double	MLFindAlphaMean(TREES* Trees, TREE *Tree, int Site)
 		for(x=0;x<Trees->NoOfTaxa;x++)
 			ColTemp = ColTemp + Tree->ConVars->InvV->me[x][y];
 		P2 += ColTemp * Trees->Taxa[y]->ConData[Site];
+	//	P2 += ColTemp * Trees->Taxa[y]->Dependant;
 	}
 
 	return P1 * P2;
 }
+
+double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree)
+{
+	double	P1;
+	double	P2;
+	double	ColTemp;
+	int		x,y;
+
+	P1 = 0;
+	for(x=0;x<Trees->NoOfTaxa;x++)
+	{
+		for(y=x+1;y<Trees->NoOfTaxa;y++)
+			P1 = P1 + (2 * Tree->ConVars->InvV->me[x][y]);
+	}
+
+	for(x=0;x<Trees->NoOfTaxa;x++)
+		P1 = P1 + Tree->ConVars->InvV->me[x][x];
+
+	P1 = 1 / P1;
+
+	P2 = 0;
+	for(y=0;y<Trees->NoOfTaxa;y++)
+	{
+		ColTemp = 0;
+		for(x=0;x<Trees->NoOfTaxa;x++)
+			ColTemp = ColTemp + Tree->ConVars->InvV->me[x][y];
+		P2 += ColTemp * Trees->Taxa[y]->Dependant;
+	}
+
+	return P1 * P2;
+}
+
 
 double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 {
