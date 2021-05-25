@@ -9,7 +9,61 @@
 #include "likelihood.h"
 #include "ml.h"
 
+#define	NO_ML_ALG	7
+
+static char		*ML_ALG_NAMES[] =
+{
+	"BOBYQA",
+	"NEWUOA",
+	"NELDERMEAD",
+	"PRAXIS",
+	"COBYLA",
+	"SBPLX",
+	"AUGLAG"
+};
+
+int		ValidMLAlgName(char *Name)
+{
+	int Index;
+
+	for(Index=0;Index<NO_ML_ALG;Index++)
+	{
+		if(StrICmp(Name, ML_ALG_NAMES[Index]) == 0)
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+void	PrintAlgNames(void)
+{
+	int Index;
+
+	for(Index=0;Index<NO_ML_ALG;Index++)
+		printf("%s ", ML_ALG_NAMES[Index]);
+}
+
+#ifndef NLOPT
+	double NLOptBT(RATES *Rates, OPTIONS *Opt, TREES *Trees, ML_MAP *MLMap)
+	{
+		return 0;
+	}
+#endif
+
 #ifdef NLOPT
+	#include <nlopt.h>
+
+static nlopt_algorithm	ML_ALG_TYPE[] =
+{
+	NLOPT_LN_BOBYQA,
+	NLOPT_LN_NEWUOA,
+	NLOPT_LN_NELDERMEAD,
+	NLOPT_LN_PRAXIS,
+	NLOPT_LN_COBYLA,
+	NLOPT_LN_SBPLX,
+	NLOPT_LN_AUGLAG
+};
+
 
 typedef struct
 {
@@ -81,34 +135,27 @@ NLOPT_LH*	CreateNLOptLh(RATES *Rates, OPTIONS *Opt, TREES *Trees, ML_MAP *MLMap)
 	return Ret;
 }
 
-
-// ./Seq/Primates-25.trees ./Seq/Primates.txt <in.txt > sout.txt
-
-double NLOptBT(RATES *Rates, OPTIONS *Opt, TREES *Trees, ML_MAP *MLMap)
+nlopt_algorithm	MLStrToAlg(char *AlgName)
 {
-	nlopt_opt NLOpt;
-	double	*TRates;
-	double	Lh;
-	NLOPT_LH *OStruct;
-	
+	int Index;
 
-	TRates = (double*)CloneMem(sizeof(double) * MLMap->NoP, MLMap->PVal);
+	for(Index=0;Index<NO_ML_ALG;Index++)
+		if(StrICmp(AlgName, ML_ALG_NAMES[Index]) == 0)
+			return ML_ALG_TYPE[Index];
 
-	nlopt_srand(RandUSLong(Rates->RS));
-
-
-	OStruct = CreateNLOptLh(Rates, Opt, Trees, MLMap);
-
-	Lh 	= Likelihood(Rates, Trees, Opt);
-
+	printf("Unkown ML Alg %s\n", AlgName);
+	exit(0);
+	return ML_ALG_TYPE[0];
+}
 
 /* Good ones */
 //	NLOpt = nlopt_create(NLOPT_LN_BOBYQA, MLMap->NoP);
 
-	// Seems quite good for large MS data sets
+// Seems quite good for large MS data sets
 //	NLOpt = nlopt_create(NLOPT_LN_NEWUOA, MLMap->NoP);
 //	NLOpt = nlopt_create(NLOPT_LN_NELDERMEAD, MLMap->NoP);
-	NLOpt = nlopt_create(NLOPT_LN_PRAXIS, MLMap->NoP);
+//	NLOpt = nlopt_create(NLOPT_LN_PRAXIS, MLMap->NoP);
+//	NLOpt = nlopt_create(NLOPT_LN_COBYLA, MLMap->NoP);
 
 //	NLOpt = nlopt_create(NLOPT_LN_PRAXIS, MLMap->NoP);
 //	NLOpt = nlopt_create(NLOPT_LN_COBYLA, MLMap->NoP);
@@ -133,11 +180,32 @@ double NLOptBT(RATES *Rates, OPTIONS *Opt, TREES *Trees, ML_MAP *MLMap)
 //	NLOpt = nlopt_create(NLOPT_GN_MLSL_LDS, MLMap->NoP);
 //	NLOpt = nlopt_create(NLOPT_GN_ISRES, MLMap->NoP);
 //	NLOpt = nlopt_create(NLOPT_GN_ESCH, MLMap->NoP);
-			
+
+double NLOptBT(RATES *Rates, OPTIONS *Opt, TREES *Trees, ML_MAP *MLMap)
+{
+	nlopt_opt NLOpt;
+	double	*TRates;
+	double	Lh;
+	NLOPT_LH *OStruct;
+	nlopt_algorithm	Alg;
+
+	TRates = (double*)CloneMem(sizeof(double) * MLMap->NoP, MLMap->PVal);
+
+	nlopt_srand(RandUSLong(Rates->RS));
+
+
+	OStruct = CreateNLOptLh(Rates, Opt, Trees, MLMap);
+
+	Lh 	= Likelihood(Rates, Trees, Opt);
+
+
+	Alg = MLStrToAlg(Opt->MLAlg);
+	NLOpt = nlopt_create(Alg, MLMap->NoP);
+
 	SetMinMax(NLOpt, MLMap);
 	
-	nlopt_set_xtol_rel(NLOpt, 0.000001);
-	nlopt_set_maxeval(NLOpt, 20000);
+	nlopt_set_xtol_rel(NLOpt, Opt->MLTol);
+	nlopt_set_maxeval(NLOpt, Opt->MLMaxEVals);
 
 	nlopt_set_max_objective(NLOpt, NLOptLh, (void*)OStruct);
 		

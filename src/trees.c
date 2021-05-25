@@ -1597,20 +1597,20 @@ void	ReLinkAns(NODE N)
 
 }
 
-void	AddNewRecNodeTree(TREES *Trees, TREE *Tree, RECNODE *RecNode)
+void	AddNewRecNodeTree(TREES *Trees, int TreeNo, RECNODE *RecNode)
 {
 	NODE	NewTaxa, Node;
 	NODE	*NList;
-	int		NoNodes, Index;
-	
-	NoNodes = 0;
-	Node = FindNode(RecNode, Tree, &NoNodes);
+	int		Index;
+	TREE	*Tree;
+
+	Tree = Trees->Tree[TreeNo];
+
+	Node = RecNode->Tag->NodeList[TreeNo];
 	
 	NewTaxa = AllocNode();
 
-	NList = (NODE*)malloc(sizeof(NODE) * (Node->NoNodes + 1));
-	if(NList == NULL)
-		MallocErr();
+	NList = (NODE*)SMalloc(sizeof(NODE) * (Node->NoNodes + 1));
 
 	memcpy(NList, Node->NodeList, sizeof(NODE) * Node->NoNodes);
 	NList[Node->NoNodes] = NewTaxa;
@@ -1644,7 +1644,7 @@ void	AddNewRecNode(TREES* Trees, RECNODE *RecNode)
 	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		Tree = Trees->Tree[TIndex];
-		AddNewRecNodeTree(Trees, Tree, RecNode);
+		AddNewRecNodeTree(Trees, TIndex, RecNode);
 	}
 } 
 

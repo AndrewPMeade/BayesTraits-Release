@@ -20,6 +20,7 @@
 #include "DistData.h"
 #include "schedule.h"
 #include "TimeSlices.h"
+#include "NLOptBT.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHT_INDENT	4
@@ -152,18 +153,6 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 	}
 }
 
-double	FindAveNodeDepth(RECNODE *RNode, OPTIONS *Opt)
-{
-	double Ret=0;
-
-	Ret = Opt->Trees->NoTaxa * Opt->Trees->NoTrees;
-	Ret = Ret - RNode->Hits;
-	Ret = Ret / Opt->Trees->NoTrees;
-	Ret = Opt->Trees->NoTaxa - Ret;
-
-	return Ret;
-}
-
 void	PrintConPar(FILE* Str, int InUse, int Est, double Const)
 {
 	if(Est == TRUE)
@@ -247,11 +236,45 @@ void	PrintHetMap(FILE *Str, OPTIONS *Opt, TREES *Trees)
 	}
 }
 
+void	PrintRecNodes(FILE* Str, OPTIONS *Opt)
+{
+	int Index, RIndex;
+	RECNODE *RNode;
+
+	if(Opt->NoOfRecNodes == 0)
+		return;
+
+	fprintf(Str, "Node reconstruction / fossilisation:\n");
+
+	for(RIndex=0;RIndex<Opt->NoOfRecNodes;RIndex++)
+	{
+
+		RNode = Opt->RecNodeList[RIndex];
+		if(RNode->NodeType == MRCA)
+			fprintf(Str, "\tMRCA %s %s\n", RNode->Name, RNode->Tag->Name);
+
+		if(RNode->NodeType == NODEREC)
+			fprintf(Str, "\tNode %s %s\n", RNode->Name, RNode->Tag->Name);
+
+		if(RNode->NodeType == FOSSIL)
+		{
+			if(Opt->Model == M_MULTISTATE)
+			{
+				fprintf(Str, "\tFossil %s %s ", RNode->Name, RNode->Tag->Name);
+				for(Index=0;Index<RNode->NoFossilStates;Index++)
+					fprintf(Str, "%c ", Opt->Trees->SymbolList[RNode->FossilStates[Index]]);
+				fprintf(Str, "\n");
+			}
+			else
+				fprintf(Str, "\tFossil %s %s (%d)\n", RNode->Name, RNode->Tag->Name, RNode->FossilStates[0]);
+		}
+	}
+}
+
 void	PrintOptions(FILE* Str, OPTIONS *Opt)
 {
-	RECNODE	*RNode;
-	int		Index, RIndex;
-	int		NOS;
+	int		Index, NOS;
+	
 
 	fprintf(Str, "Options:\n");
 
@@ -294,6 +317,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	{
 		fprintf(Str, "Analsis Type:                    Maximum Likelihood\n" );
 		fprintf(Str, "ML attempt per tree:             %d\n", Opt->MLTries);
+		fprintf(Str, "ML Max Evaluations:              %d\n", Opt->MLMaxEVals);
+		fprintf(Str, "ML Tolerance:                    %f\n", Opt->MLTol);
+		fprintf(Str, "ML Algorithm:                    %s\n", Opt->MLAlg);
 	}
 	
 	fprintf(Str, "Precision:                       %d bits\n", Opt->Precision);
@@ -462,36 +488,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		PrintPriorOpt(Str, Opt);
 
 	if(Opt->Model != M_CONTINUOUS_RR && Opt->Model != M_CONTINUOUS_DIR)
-	{
-		for(RIndex=0;RIndex<Opt->NoOfRecNodes;RIndex++)
-		{
-		
-			RNode = Opt->RecNodeList[RIndex];
-			if(RNode->NodeType == MRCA)
-				fprintf(Str, "MRCA:         %s                    %f\n", RNode->Name, FindAveNodeDepth(RNode, Opt));
-			
-		
-			if(RNode->NodeType == NODEREC)
-				fprintf(Str, "Node:         %s                    %f\n", RNode->Name, ((double)RNode->Hits / Opt->Trees->NoTrees)*100);
-		
-
-			if(RNode->NodeType == FOSSIL)
-			{
-				if(Opt->Model == M_MULTISTATE)
-				{
-					fprintf(Str, "Fossil:       %s                    %f ", RNode->Name, FindAveNodeDepth(RNode, Opt));
-					for(Index=0;Index<RNode->NoFossilStates;Index++)
-						fprintf(Str, "%c ", Opt->Trees->SymbolList[RNode->FossilStates[Index]]);
-					fprintf(Str, "\n");
-				}
-				else
-					fprintf(Str, "Fossil:       %s                    %f (%d)\n", RNode->Name, FindAveNodeDepth(RNode, Opt), RNode->FossilStates[0]);
-			}
-		
-			for(Index=0;Index<RNode->Part->NoTaxa;Index++)
-				fprintf(Str, "             %d\t%s\n", RNode->Taxa[Index]->No, RNode->Taxa[Index]->Name);
-		}
-	}
+		PrintRecNodes(Str, Opt);
 
 	if(Opt->Trees->NoOfRemovedTaxa != 0)
 	{
@@ -544,6 +541,9 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	free(Opt->TreeFN);
 	free(Opt->LogFN);
 	fclose(Opt->LogFile);
+
+	if(Opt->MLAlg != NULL)
+		free(Opt->MLAlg);
 
 	if(Opt->LogFileRead != NULL)
 		fclose(Opt->LogFileRead);
@@ -676,13 +676,8 @@ char**	RetModelRateName(OPTIONS* Opt)
 	char*	Buffer;
 	int		Index;
 	
-	Ret = (char**)malloc(sizeof(char*) * Opt->NoOfRates);
-	if(Ret == NULL)
-		MallocErr();
-
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
+	Ret = (char**)SMalloc(sizeof(char*) * Opt->NoOfRates);
+	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
 	sprintf(Buffer, "Alpha");
 	Ret[0] = StrMake(Buffer);
@@ -1084,9 +1079,13 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->PassedOut		= NULL;		
 	Ret->UseSchedule	= FALSE;
 
-	Ret->MLTries		= 10;
 	Ret->MCMCMLStart	= FALSE; 
 
+
+	Ret->MLTries		=	-1;
+	Ret->MLTol			=	-1;
+	Ret->MLMaxEVals		=	-1;
+	Ret->MLAlg			=	NULL;
 
 
 	Ret->NoAllPriors	= 0;
@@ -1099,6 +1098,12 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		Ret->Itters		=	-1;
 		Ret->Sample		=	-1;
 		Ret->BurnIn		=	-1;
+
+
+		Ret->MLTries		=	10;
+		Ret->MLTol			=	0.000001;
+		Ret->MLMaxEVals		=	20000;
+		Ret->MLAlg			=	StrMake("BOBYQA");
 	}
 	
 	if(Ret->Analsis == ANALMCMC)
@@ -1973,33 +1978,24 @@ int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 	
 	return TRUE;
 }
-
-TAXA*	GetTaxaFromNameNo(char *ID, TREES* Trees)
+/*
+TAXA*	GetTaxaFromName(char *ID, TREES* Trees)
 {
 	int	Index;
-
-//	if(IsValidInt(ID) == TRUE)
-//		return GetTaxaFromID(atoi(ID), Trees->Taxa, Trees->NoOfTaxa);
 
 	for(Index=0;Index<Trees->NoTaxa;Index++)
 		if(strcmp(ID, Trees->Taxa[Index]->Name) == 0)
 			return Trees->Taxa[Index];
 
 	return NULL;
-}					  
+}*/		  
 
 char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char *argv[])
 {
 	int		Index;
 	char	**Ret;
 
-	if(Opt->DataType == DISCRETE) 
-		return NULL;
-
-	Ret = (char**)malloc(sizeof(char*) * Opt->Trees->NoSites);
-	if(Ret == NULL)
-		MallocErr();
-
+	Ret = (char**)SMalloc(sizeof(char*) * Opt->Trees->NoSites);
 
 	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 	{
@@ -2011,7 +2007,7 @@ char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char *argv[])
 
 	return Ret;
 }
-
+/*
 void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 {
 	RECNODE		*RNode;
@@ -2091,6 +2087,77 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 
 	SetRecNodes(RNode, Opt->Trees);
 
+	Opt->RecNodeList = (RECNODE**)AddToList(&Opt->NoOfRecNodes, (void**)Opt->RecNodeList, RNode);
+}
+*/
+
+RECNODE*	CreateRecNode(void)
+{
+	RECNODE *Ret;
+
+	Ret = (RECNODE*)SMalloc(sizeof(RECNODE));
+
+	Ret->FossilStates	= NULL;
+	Ret->NoFossilStates	= -1;
+	Ret->ConData		= NULL;
+	Ret->Name			= NULL;
+	Ret->Hits			= 0;
+	Ret->Tag			= NULL;
+
+	return Ret;
+}
+
+void	AddRecNodeCheck(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
+{
+	if(NodeType == MRCA || NodeType == NODEREC)
+	{
+		if(Tokes != 3)
+		{
+			printf("Reconstructing an internal node requires a unique name and tag.\n");
+			exit(1);
+		}
+	}
+
+	if(NodeType == FOSSIL)
+	{
+		if(Tokes < 4)
+		{
+			printf("The fossil command requires a unique name, a tag and the states to fossilise.\n");
+			exit(1);
+		}
+	}
+	
+	if(OptFindRecNode(Opt, argv[1]) != NULL)
+	{
+		printf("Node name %s is allready is use please chose another\n", argv[1]);
+		exit(1);
+	}
+
+	if(GetTagFromName(Opt, argv[2]) == NULL)
+	{
+		printf("Could not find tag %s.", argv[2]);
+		exit(1);
+	}
+}
+
+void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
+{
+	RECNODE	*RNode;
+	
+	AddRecNodeCheck(Opt, NodeType, Tokes, argv);
+	
+	RNode = CreateRecNode();
+	
+	RNode->Name = StrMake(argv[1]);
+	RNode->Tag	= GetTagFromName(Opt, argv[2]);
+	RNode->NodeType	 = NodeType;
+	
+	if(NodeType == FOSSIL && Opt->DataType == DISCRETE)
+		RNode->FossilStates = FossilState(argv[3], Opt, &RNode->NoFossilStates);
+
+	if(Opt->DataType == CONTINUOUS)		
+		RNode->ConData = SetConFState(Opt, NodeType, &argv[3]);
+		
 	Opt->RecNodeList = (RECNODE**)AddToList(&Opt->NoOfRecNodes, (void**)Opt->RecNodeList, RNode);
 }
 
@@ -2526,13 +2593,14 @@ void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
 	PRIOR		*Prior;
 
 	RemoveRatePriors(Opt);
-
 	RemovePriorFormOpt("RJRates", Opt);
 
 	Opt->UseRJMCMC = TRUE;
 
 	Prior = CreatePriorFromStr("RJRates", Tokes, Passed);
 	AddPriorToOpt(Opt, Prior);
+
+	
 
 	Opt->UseRJMCMC = TRUE;
 }
@@ -2671,14 +2739,10 @@ void	FreeRecNode(RECNODE *R, int NoSites)
 		free(R->ConData);
 	}
 
-	free(R->TreeNodes);
 	free(R->Name);
-	FreePart(R->Part);
 
 	if(R->FossilStates != NULL)
 		free(R->FossilStates);
-
-	free(R->Taxa);
 
 	free(R);
 }
@@ -2731,13 +2795,6 @@ void	OptSetSeed(OPTIONS *Opt, char	*CSeed)
 //	Opt->Seed = atoi(CSeed);
 }
 
-int	FossilNoPramOK(OPTIONS *Opt, char **Passed, int Tokes)
-{
-	if(Tokes < 5)
-		return FALSE;
-
-	return TRUE;
-}
 
 void	SetEqualTrees(OPTIONS *Opt, int Tokes, char **Passed)
 {
@@ -3670,6 +3727,75 @@ void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
 	}
 }
 
+void	SetMLTol(OPTIONS *Opt, int Tokes, char **Passed)
+{
+
+	if(Tokes != 2)
+	{
+		printf("MLTol Takes a likelihood tolerance used as a terminate criteria.\n");
+		exit(1);
+	}
+
+	if(IsValidDouble(Passed[1]) == FALSE)
+	{
+		printf("Cannot convert %s to a valid tolerance.\n", Passed[1]);
+		exit(1);
+	}
+
+	Opt->MLTol = atof(Passed[1]);
+
+	if(Opt->MLTol < 0)
+	{
+		printf("MLTol must be >0.\n");
+		exit(1);
+	}
+}
+
+void	SetMLMaxEval(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 2)
+	{
+		printf("MLMaxEVal takes the maximum number of likelihood evaluations to try.");
+		exit(1);
+	}
+
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("Cannot convert maximum number of evaluations to a valid number.\n");
+		exit(1);
+	}
+
+	Opt->MLMaxEVals = atoi(Passed[1]);
+
+	if(Opt->MLMaxEVals <= 0)
+	{
+		printf("maximum number of evaluations must be greater than zero.\n");
+		exit(1);
+	}
+}
+
+void	SetMLAlg(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 2)
+	{
+		printf("MLAlg takes an algorithm name, valid names are ");
+		PrintAlgNames();
+		exit(1);
+	}
+
+	if(ValidMLAlgName(Passed[1]) == FALSE)
+	{
+		printf("Invalid algorithm name %s\n", Passed[1]);
+		PrintAlgNames();
+		exit(1);
+	}
+
+	if(Opt->MLAlg != NULL)
+		free(Opt->MLAlg);
+
+	Opt->MLAlg = StrMake(Passed[1]);
+}
+
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 {
 	int			Tokes;
@@ -3800,7 +3926,16 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		else
 			printf("Itters requires a number that spesifies the number of times to run the optermising function (per tree).\n");
 	}
-		
+	
+	if(Command == CMLTOL)
+		SetMLTol(Opt, Tokes, Passed);
+	
+	if(Command == CMLEVAL)
+		SetMLMaxEval(Opt, Tokes, Passed);
+
+	if(Command == CMLALG)
+		SetMLAlg(Opt, Tokes, Passed);
+
 	if(Command == CINFO)
 		PrintOptions(stdout, Opt);
 		
@@ -3814,23 +3949,12 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		}while(COMMANDSTRINGS[Index][0] != '\0');
 	}
 
-	if((Command == CNODE) || (Command == CMRCA))
-	{
-		if(Tokes >= 4)
-		{
-			if(Command == CNODE)
-				AddRecNode(Opt, NODEREC, Tokes, Passed);
+	if(Command == CNODE)
+		AddRecNode(Opt, NODEREC, Tokes, Passed);
 
-			if(Command == CMRCA)
-				AddRecNode(Opt, MRCA, Tokes, Passed);
-		}
-		else
-		{
-			printf("Command must supplie a name and two or more taxa numbers\n");
-		}
-	}
+	if(Command == CMRCA)
+		AddRecNode(Opt, MRCA, Tokes, Passed);
 
-	
 
 	if(Command == CADDTAXA)
 	{
@@ -3944,21 +4068,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CFOSSIL)
-	{
-		if(FossilNoPramOK(Opt, Passed, Tokes) == TRUE)
-			AddRecNode(Opt, FOSSIL, Tokes, Passed);
-		else
-		{
-			if(Opt->DataType == DISCRETE)
-			{
-				printf("Error: The fossil command take a node name, a state to fossilise in and a list of taxa that define the node of interest.\n");
-			}
-			else
-			{
-				printf("Error: The fossil command take a node name, a state to fossilise in for each site and a list of taxa that define the node of interests.\n");
-			}
-		}
-	}
+		AddRecNode(Opt, FOSSIL, Tokes, Passed);
 
 
 	if(Command == CNODEDATA)

@@ -545,10 +545,15 @@ int			MakeArgvChar(char*	string, char *argv[], int argvsize, char Break)
 
 int		IsValidDouble(char* Str)
 {
-	int	Point=FALSE;
+	int	Point;
+
+	if(atof(Str) != 0.0)
+		return TRUE;
 
 	/* Skip Leading whitespace */
 	while(isspace(*Str)) Str++;
+
+	Point = FALSE;
 
 	if(*Str == '-')
 		Str++;
@@ -576,6 +581,9 @@ int		IsValidDouble(char* Str)
 
 int		IsValidInt(char* Str)
 {
+	if(atoi(Str) != 0)
+		return TRUE;
+
 	if(*Str == '-')
 		Str++;
 

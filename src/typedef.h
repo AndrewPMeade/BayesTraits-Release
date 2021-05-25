@@ -228,6 +228,9 @@ typedef enum
 	CSAMPLE,
 	CPRIORCAT,
 	CMLTRIES,
+	CMLTOL, 
+	CMLEVAL,
+	CMLALG,
 	CINFO,
 	CPRIORALL,
 	CHELP,
@@ -307,6 +310,9 @@ static char    *COMMANDSTRINGS[] =
 	"sample",		"sa",
 	"priorcats",	"pcat",
 	"mltries",		"mlt",
+	"mltol",		"mlto",
+	"mlmaxeval",	"mlme",
+	"mlalg",		"mla",
 	"info",			"in",
 	"priorall",		"pa",
 	"help",			"he",
@@ -703,26 +709,6 @@ struct INODE
 
 typedef struct INODE*	NODE;
 
-typedef struct
-{
-	NODETYPE	NodeType;
-	char*		Name;
-
-	int			PresInTrees;
-
-	int			*FossilStates;
-	int			NoFossilStates;
-
-	PART		*Part;
-
-	TAXA		**Taxa;
-
-	int			Hits;
-	NODE*		TreeNodes;
-
-	char**		ConData;
-
-} RECNODE;
 
 typedef struct
 {
@@ -735,6 +721,23 @@ typedef struct
 
 	PART	*Part;
 } TAG;
+
+typedef struct
+{
+	NODETYPE	NodeType;
+	char		*Name;
+
+	int			*FossilStates;
+	int			NoFossilStates;
+		
+	int			Hits;
+	
+	char		**ConData;
+
+	TAG			*Tag;
+
+} RECNODE;
+
 
 
 typedef struct 
@@ -1070,7 +1073,11 @@ typedef struct
 	long long	Itters;
 	int			Sample;
 	long long	BurnIn;
+	
 	int			MLTries;
+	int			MLMaxEVals;
+	double		MLTol;
+	char		*MLAlg;
 
 	int			NoOfRecNodes;
 	RECNODE		**RecNodeList;

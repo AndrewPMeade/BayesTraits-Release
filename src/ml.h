@@ -1,4 +1,4 @@
-#if !defined (MLHEADDER)
+#ifndef MLHEADDER
 #define MLHEADDER
 
 #include "typedef.h"

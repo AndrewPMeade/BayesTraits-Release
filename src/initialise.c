@@ -116,7 +116,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		if(Opt->Model == M_DESCCV)
 			Trees->NoStates = Trees->NoStates * 2;
 
-		if((Opt->UseKappa == TRUE) && (Opt->FixKappa != -1))
+		if(Opt->UseKappa == TRUE && Opt->FixKappa != -1)
 		{
 			for(Index=0;Index<Trees->NoTrees;Index++)
 				TreeBLToPower(Trees, Trees->Tree[Index], Opt->FixKappa);

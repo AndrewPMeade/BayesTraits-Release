@@ -1503,8 +1503,7 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 	int			Index, SiteIndex;
 	RECNODE		*RNode;
 	NODE		N;
-//	CONTRAST	*Con;
-	double		Alpha; //, Sigma, Lh;
+	double		Alpha;
 
 	if(Opt->ModelType == MT_CONTINUOUS)
 		return;
@@ -1512,7 +1511,10 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
 		RNode = Opt->RecNodeList[Index];
-		N = RNode->TreeNodes[Rates->TreeNo];
+		N = RNode->Tag->NodeList[Rates->TreeNo];
+		
+		if(N->Part->NoTaxa != RNode->Tag->NoTaxa && RNode->NodeType == NODEREC)
+			N = NULL;
 
 		if(N == NULL)
 		{
@@ -1909,6 +1911,8 @@ void	PrintAutoTune(FILE* Str, OPTIONS *Opt, SCHEDULE* Shed)
 void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 {
 	int		Index;
+	RECNODE	*RNode;
+	NODE	Node;
 	
 
 	if(Opt->Analsis == ANALML)
@@ -1986,7 +1990,15 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 	PrintNodeRec(Str, Opt->Trees->Tree[Rates->TreeNo]->Root, Opt->Trees->NoStates, Opt->Trees->NoSites, Rates, Opt);
 
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
-		PrintNodeRec(Str, Opt->RecNodeList[Index]->TreeNodes[Rates->TreeNo], Opt->Trees->NoStates, Opt->Trees->NoSites, Rates, Opt);
+	{
+		RNode = Opt->RecNodeList[Index];
+		Node = RNode->Tag->NodeList[Rates->TreeNo];
+
+		if(Node->Part->NoTaxa != RNode->Tag->NoTaxa && RNode->NodeType == NODEREC)
+			Node = NULL;
+
+		PrintNodeRec(Str, Node, Opt->Trees->NoStates, Opt->Trees->NoSites, Rates, Opt);
+	}
 
 }
 

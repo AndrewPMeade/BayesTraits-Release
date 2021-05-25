@@ -140,7 +140,7 @@ void	SetFossils(TREES *Trees, OPTIONS *Opt)
 		{
 			for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 			{
-				N = RNode->TreeNodes[TIndex];
+				N = RNode->Tag->NodeList[TIndex];
 							
 				N->FossilMask = MakeFossilMask(RNode, Trees->NoStates, Opt->Model);
 			}

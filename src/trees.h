@@ -42,8 +42,6 @@ void	ListOddPPTaxa(TREES *Trees);
 double	FindTreeNormalise(TREES *Trees);
 void	NormaliseTrees(double NormC, TREES *Trees);
 
-
-
 void	SetVisitedNode(NODE N, int Val);
 void	SetVisitedTree(TREE *Tree, int Val);
 

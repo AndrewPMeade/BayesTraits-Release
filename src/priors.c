@@ -1187,8 +1187,12 @@ void		AddPriorToOpt(OPTIONS *Opt, PRIOR *Prior)
 
 void		RemovePriorFormOpt(char *Name, OPTIONS *Opt)
 {
-	PRIOR **NPList;
+	PRIOR **NPList, *Prior;
 	int Index, Pos;
+
+	Prior = GetPriorFromName(Name, Opt->AllPriors, Opt->NoAllPriors);
+	if(Prior == NULL)
+		return;
 
 	NPList = (PRIOR**)SMalloc(sizeof(PRIOR*) * Opt->NoAllPriors);
 
@@ -1197,10 +1201,22 @@ void		RemovePriorFormOpt(char *Name, OPTIONS *Opt)
 	{
 		if(strcmp(Name, Opt->AllPriors[Index]->Name) != 0)
 			NPList[Pos++] = Opt->AllPriors[Index];
+		else
+			Prior = Opt->AllPriors[Index];
 	}
 
+	FreePrior(Prior);
+
 	free(Opt->AllPriors);
-	Opt->AllPriors = NPList;
+
+	if(Pos == 0)
+	{
+		free(NPList);
+		Opt->AllPriors = NULL;
+	}
+	else
+		Opt->AllPriors = NPList;
+	
 	Opt->NoAllPriors = Pos;
 }
 

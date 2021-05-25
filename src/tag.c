@@ -40,25 +40,19 @@ TAG*	CreateTag(TREES *Trees, char *Name, int NoTaxa, char **TaxaNames)
 	TAG *Ret;
 	int Index;
 
-	Ret = (TAG*)malloc(sizeof(TAG));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (TAG*)SMalloc(sizeof(TAG));
 
 	Ret->Name = StrMake(Name);
 	Ret->NoTaxa = NoTaxa;
 
-	Ret->Taxa = (char**)malloc(sizeof(char*) * NoTaxa);
-	if(Ret->Taxa == NULL)
-		MallocErr();
+	Ret->Taxa = (char**)SMalloc(sizeof(char*) * NoTaxa);
 
 	for(Index=0;Index<NoTaxa;Index++)
 		Ret->Taxa[Index] = StrMake(TaxaNames[Index]);
 
 	Ret->Part = CreatePart(Trees, Ret->NoTaxa, Ret->Taxa);
 
-	Ret->NodeList = (NODE*)malloc(sizeof(NODE) * Trees->NoTrees);
-	if(Ret->NodeList == NULL)
-		MallocErr();
+	Ret->NodeList = (NODE*)SMalloc(sizeof(NODE) * Trees->NoTrees);
 
 	for(Index=0;Index<Trees->NoTrees;Index++)
 		Ret->NodeList[Index] = PartGetMRCA(Trees->Tree[Index], Ret->Part);		
