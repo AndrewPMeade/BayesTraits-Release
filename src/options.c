@@ -1568,7 +1568,7 @@ int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 
 			if(GetTaxaFromID(TaxaNo, Opt->Trees->Taxa, Opt->Trees->NoOfTaxa) == NULL)
 			{
-				printf("Could not convert %s to a vlid taxa number\n", List[Index]);
+				printf("Could not convert %s to a valid taxa number\n", List[Index]);
 				return FALSE;
 			}
 		}
@@ -1576,7 +1576,7 @@ int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 		{
 			if(GetTaxaNoFormName(List[Index], Opt->Trees, &TaxaNo) == FALSE)
 			{
-				printf("Could not convert %s to a vlid taxa name\n", List[Index]);
+				printf("Could not convert %s to a valid taxa name\n", List[Index]);
 				return FALSE;
 			}
 		}
@@ -1599,13 +1599,52 @@ TAXA*	GetTaxaFromNameNo(char *ID, TREES* Trees)
 	return NULL;
 }					  
 
+int	CheckConFState(char *State, int No)
+{
+	if(strcmp(State, ESTDATAPOINT) == 0)
+		return TRUE;
+
+	if(IsValidDouble(State) == FALSE)
+	{
+		
+	}
+}
+
+char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
+{
+	int		Index;
+	char	**Ret;
+
+	if(Opt->DataType == DISCRETE)
+		return NULL;
+
+	Ret = (char**)malloc(sizeof(char*) * Opt->Trees->NoOfSites);
+	if(Ret == NULL)
+		MallocErr();
+
+	if(NodeType != FOSSIL)
+	{
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+			Ret[Index] = StrMake(ESTDATAPOINT); 
+	}
+
+	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	{
+		
+	}
+}
+
 void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 {
 	RECNODE		RNode;
 	int			Index;
 	int			FState;
+	char**		ConFState;
+	
 
 	FState = -1;
+	
+	ConFState = NULL;
 
 	if(OptFindRecNode(Opt, argv[1]) != NULL)
 	{
@@ -1617,13 +1656,21 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 
 	if(NodeType == FOSSIL)
 	{
-		FState = FossilState(argv[2], Opt);
-		if(FState == -1)
-			return;
-		
-		Index++;
+		if(Opt->DataType == DISCRETE)
+		{
+			FState = FossilState(argv[2], Opt);
+			if(FState == -1)
+				return;
+				
+			Index++;
+		}
+		else
+		{
+			Index += Opt->Trees->NoOfSites;
+		}
 	}
 
+	
 	if(ValidTaxaList(argv, Index, Tokes, Opt) == FALSE)
 		return;
 
@@ -1632,6 +1679,7 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 		MallocErr();
 
 	RNode->TaxaID	= NULL;
+	RNode->ConData	= NULL;
 
 	RNode->Name = (char*)malloc(sizeof(char)*strlen(argv[1])+1);
 	if(RNode->Name == NULL)
@@ -2575,6 +2623,11 @@ void	OptSetSeed(OPTIONS *Opt, char	*CSeed)
 	Opt->Seed = GetSeed();
 }
 
+int	FossilNoPramOK(OPTIONS *Opt, int Tokes)
+{
+	return TRUE;
+}
+
 
 int		PassLine(OPTIONS *Opt, char *Buffer)
 {
@@ -2933,7 +2986,19 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 
 	if(Command == CFOSSIL)
 	{
-		AddRecNode(Opt, FOSSIL, Tokes, Passed);
+		if(FossilNoPramOK(Opt, Tokes) == TRUE)
+			AddRecNode(Opt, FOSSIL, Tokes, Passed);
+		else
+		{
+			if(Opt->DataType == DISCRETE)
+			{
+				printf("Error: The fossil command take a node name, a state to fossilise in and a list of taxa that define the node of interest.\n");
+			}
+			else
+			{
+				printf("Error: The fossil command take a node name, a state to fossilise in for each site and a list of taxa that define the node of interests.\n");
+			}
+		}
 	}
 
 

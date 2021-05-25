@@ -24,7 +24,7 @@
 #include "./MathLib/dcalc.h"
 #include "./MathLib/mconf.h"
 
-#include <jni.h>
+#include "jni.h"
 
 #define	MAXJANALYSIS 128
 			 

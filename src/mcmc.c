@@ -182,6 +182,7 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	char		Buffer[1024];
 	SCHEDULE*	Shed=NULL;
 	FILE*		ShedFile=NULL;
+	long		FP;
 
 	if(Opt->UseSchedule == TRUE)
 		ShedFile	= OpenWrite(Opt->ScheduleFile);
@@ -214,7 +215,8 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	#ifdef JNIRUN
 		fflush(Opt->LogFile);
-		GotoFileEnd(Opt->LogFileRead, Opt->LogFileBuffer, LOGFILEBUFFERSIZE);
+		FP = ftell(Opt->LogFile);	
+/*		GotoFileEnd(Opt->LogFileRead, Opt->LogFileBuffer, LOGFILEBUFFERSIZE); */
 	#endif
 
 	PrintRatesHeadder(Opt->LogFile, Opt);
@@ -222,6 +224,7 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	#ifdef JNIRUN
 		fflush(Opt->LogFile);
+		fseek(Opt->LogFileRead, FP, SEEK_SET);
 		fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
 		ProcessHeaders(Env, Obj, Opt);
 	#endif

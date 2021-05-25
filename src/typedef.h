@@ -8,11 +8,10 @@
 
 //CRITICAL_SECTION CriticalSection;
 
-
-//#define	JNIRUN
+#define	JNIRUN
 
 #ifdef	 JNIRUN
-	#include <JNI.h>
+	#include "jni.h"
 #endif
 
 
@@ -28,6 +27,7 @@
 #define LOGFILEEXT		"log.txt"
 #define UNKNOWNSTATE	'-'
 #define SUMMARYFILEEXT	"sum.txt"
+#define ESTDATAPOINT	"?"
 
 #define ERRLH -999999
 
@@ -360,6 +360,8 @@ struct RNODE
 	int			Hits;
 	NODE*		TreeNodes;
 
+	char**		ConData;
+	
 	struct		RNODE *Next;
 };
 

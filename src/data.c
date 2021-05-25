@@ -1023,34 +1023,55 @@ int		GetFreeTaxaNo(TREES* Trees)
 	int		EstDepData;
 */
 
-void	SetNewConTaxa(TAXA* Taxa, char* Name, TREES* Trees)
+void	SetNewConTaxaData(TAXA *Taxa, RECNODE RNode, TREES* Trees)
 {
 	int	Index;
-
-	Taxa->Name			= StrMake(Name);
-	Taxa->No			= GetFreeTaxaNo(Trees);
-	Taxa->DesDataChar	= NULL;
 
 	Taxa->ConData		= (double*)malloc(sizeof(double) * Trees->NoOfSites);
 	if(Taxa->ConData == NULL)
 		MallocErr();
 
-	Taxa->Exclude		= FALSE;
-	Taxa->EstDepData	= FALSE;
+/* Will have to chagne */
 
-	Taxa->EstData		= TRUE;
 	Taxa->EstDataP		= (char*)malloc(sizeof(char) * Trees->NoOfSites);
 	if(Taxa->EstDataP == NULL)
 		MallocErr();
+
+	Taxa->EstData		= FALSE;
 	
 	for(Index=0;Index<Trees->NoOfSites;Index++)
 	{
-		Taxa->EstDataP[Index] = TRUE;	
-		Taxa->ConData[Index] = 0;
+		if(strcmp(RNode->ConData[Index], "?") == 0)
+		{
+			Taxa->EstData = TRUE;
+			Taxa->EstDataP[Index] = TRUE;	
+			Taxa->ConData[Index] = 0;
+		}
+		else
+		{
+			Taxa->EstDataP[Index] = FALSE;
+			Taxa->ConData[Index] = atof(RNode->ConData[Index]);
+		}
 	}
+	
 }
 
-void	AddNewConTaxa(TREES* Trees, char* Name)
+void	SetNewConTaxa(TAXA* Taxa, RECNODE RNode, TREES* Trees)
+{
+	int	Index;
+
+	Taxa->Name			= StrMake(RNode->Name);
+	Taxa->No			= GetFreeTaxaNo(Trees);
+	Taxa->DesDataChar	= NULL;
+
+	Taxa->Exclude		= FALSE;
+	Taxa->EstDepData	= FALSE;
+
+
+	SetNewConTaxaData(Taxa, RNode, Trees);
+}
+
+void	AddNewConTaxa(TREES* Trees, RECNODE	RNode)
 {
 	TAXA	*NewTaxa;
 	TAXA	*NT;
@@ -1064,7 +1085,7 @@ void	AddNewConTaxa(TREES* Trees, char* Name)
  
 	NT = &NewTaxa[Trees->NoOfTaxa];
 
-	SetNewConTaxa(NT, Name, Trees);
+	SetNewConTaxa(NT, RNode, Trees);
 	
 	free(Trees->Taxa);
 	Trees->Taxa = NewTaxa;
@@ -1080,7 +1101,7 @@ void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
 		RNode = Opt->RecNodeList[Index];
-		AddNewConTaxa(Trees, RNode->Name);
+		AddNewConTaxa(Trees, RNode);
 		AddNewRecNode(Trees, RNode);
 	}
 }

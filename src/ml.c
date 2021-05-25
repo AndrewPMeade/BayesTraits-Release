@@ -154,6 +154,7 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	SUMMARY	*Summary;
 	char	Buffer[1024];
 	int		ti;
+	long	FP;
 
 	if(Opt->Summary == TRUE)
 		Summary = CreatSummary(Opt);
@@ -183,13 +184,15 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		
 		#ifdef JNIRUN
 			fflush(Opt->LogFile);
-			GotoFileEnd(Opt->LogFileRead, Opt->LogFileBuffer, LOGFILEBUFFERSIZE);
+			FP = ftell(Opt->LogFile);
+		/*	GotoFileEnd(Opt->LogFileRead, Opt->LogFileBuffer, LOGFILEBUFFERSIZE); */
 		#endif	
 
 		PrintRatesHeadder(Opt->LogFile, Opt);
 
 		#ifdef JNIRUN
 			fflush(Opt->LogFile);
+			fseek(Opt->LogFileRead, FP, SEEK_SET);
 			fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
 			ProcessHeaders(Env, Obj, Opt);
 		#endif
