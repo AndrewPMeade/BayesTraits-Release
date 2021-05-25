@@ -17,7 +17,7 @@
 #include "randdists.h"
 
 double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
-void	SetFixedModel(RATES *Rates, OPTIONS *Opt);
+void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
 
 int		FindNoOfRates(OPTIONS *Opt)
 {
@@ -98,7 +98,7 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 	else
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-				Rates->Means[Index] = Rates->Rates[Index];
+			Rates->Means[Index] = Rates->Rates[Index];
 	}
 
 	if(Opt->Model == CONTINUOUSRR)
@@ -476,6 +476,9 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->Kappa			=	-1;
 	Ret->Lambda			=	-1;
 	Ret->Delta			=	-1;
+
+	Ret->RandStates		= CreateRandStates();
+
 
 	if(Opt->UseGamma == TRUE)
 	{
@@ -1410,18 +1413,18 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 
 
 /* MrBays Rare Changes */
-double ChangeRates(double Rate, double dev)
+double ChangeRates(RATES *Rates, double RateV, double dev)
 {
 	int		Exit;
 	double	Ret;
 
-	if(Rate >= MAXRATE)
+	if(RateV >= MAXRATE)
 		return  MAXRATE;
 	do
 	{
 		Exit = TRUE;
-		Ret = (GenRand() * dev) - (dev / 2.0); 
-		Ret += Rate;
+		Ret = (GenRandState(Rates->RandStates) * dev) - (dev / 2.0); 
+		Ret += RateV;
 
 		if(Ret > MAXRATE)
 			Exit = FALSE;
@@ -1434,7 +1437,7 @@ double ChangeRates(double Rate, double dev)
 	return Ret;
 }
 
-double	MultePram(double Val, double Min, double Max, double Dev)
+double	MultePram(RATES *Rates, double Val, double Min, double Max, double Dev)
 {
 	double	Ret;
 	int		Exit;
@@ -1443,7 +1446,7 @@ double	MultePram(double Val, double Min, double Max, double Dev)
 	{
 		Exit = TRUE;
 
-		Ret = (GenRand() * Dev) - (Dev / 2.0); 
+		Ret = (GenRandState(Rates->RandStates) * Dev) - (Dev / 2.0); 
 		Ret += Val;
 
 		if(Ret > Max)
@@ -1464,44 +1467,44 @@ void	MutateRatesOld(OPTIONS* Opt, RATES* Rates)
 
 	if(Rates->Rates != NULL)
 		for(Index=0;Index<Rates->NoOfRates;Index++)
-			Rates->Rates[Index] = ChangeRates(Rates->Rates[Index], Opt->RateDev);
+			Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Opt->RateDev);
 
 	if(Opt->DataType == CONTINUOUS)
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			Rates->Means[Index] += (GenRand() * Opt->RateDev) - (Opt->RateDev / 2.0);
+			Rates->Means[Index] += (GenRandState(Rates->RandStates) * Opt->RateDev) - (Opt->RateDev / 2.0);
 
 		if(Opt->EstDelta == TRUE)
-			Rates->Delta = MultePram(Rates->Delta, 0.000001, 3.0, Opt->RateDev);
+			Rates->Delta = MultePram(Rates, Rates->Delta, 0.000001, 3.0, Opt->RateDev);
 
 		if(Opt->EstKappa == TRUE)
-			Rates->Kappa = MultePram(Rates->Kappa, 0.000001, 3.0, Opt->RateDev);
+			Rates->Kappa = MultePram(Rates, Rates->Kappa, 0.000001, 3.0, Opt->RateDev);
 
 		if(Opt->EstLambda == TRUE)
-			Rates->Lambda = MultePram(Rates->Lambda, 0.000001, 1, Opt->RateDev);
+			Rates->Lambda = MultePram(Rates, Rates->Lambda, 0.000001, 1, Opt->RateDev);
 	}
 	else
 		if(Opt->EstKappa == TRUE)
-			Rates->Kappa = MultePram(Rates->Kappa, 0.000001, 3.0, Opt->RateDev);
+			Rates->Kappa = MultePram(Rates, Rates->Kappa, 0.000001, 3.0, Opt->RateDev);
 
 	if(Opt->UseCovarion == TRUE)
 	{
-		Rates->OffToOn = ChangeRates(Rates->OffToOn, Opt->RateDev);
-		Rates->OnToOff = ChangeRates(Rates->OnToOff, Opt->RateDev);
+		Rates->OffToOn = ChangeRates(Rates, Rates->OffToOn, Opt->RateDev);
+		Rates->OnToOff = ChangeRates(Rates, Rates->OnToOff, Opt->RateDev);
 		
 	}
 	
 
-	Rates->TreeNo = IntRand() % Opt->Trees->NoOfTrees;
+	Rates->TreeNo = rand() % Opt->Trees->NoOfTrees;
 }
 
 
-int	PickACat(double *Vect, int Size)
+int	PickACat(RATES *Rates, double *Vect, int Size)
 {
 	double	Val;
 	int		Index;
 
-	Val = GenRand();
+	Val = GenRandState(Rates->RandStates);
 	for(Index=0;Index<Size;Index++)
 		if(Val<Vect[Index])
 			return Index;
@@ -1726,10 +1729,10 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 	int		Index;
 	int		NoOfGroups;
 
-	Shed->Op = PickACat(Shed->OptFreq, Shed->NoOfOpts);
+	Shed->Op = PickACat(Rates, Shed->OptFreq, Shed->NoOfOpts);
 
 	if(Opt->SoloTreeMove == FALSE)
-		Rates->TreeNo = IntRand() % Opt->Trees->NoOfTrees;
+		Rates->TreeNo = rand() % Opt->Trees->NoOfTrees;
 
 	switch(Shed->Op)
 	{
@@ -1743,12 +1746,12 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 			if(Opt->DataType == DISCRETE)
 			{
 				for(Index=0;Index<Rates->NoOfRates;Index++)
-					Rates->Rates[Index] = ChangeRates(Rates->Rates[Index], Opt->RateDev);
+					Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Opt->RateDev);
 			}
 			else
 			{
 				for(Index=0;Index<Rates->NoOfRates;Index++)
-					Rates->Rates[Index] += (GenRand() * Opt->RateDevList[Index]) - (Opt->RateDevList[Index] / 2.0);
+					Rates->Rates[Index] += (GenRandState(Rates->RandStates) * Opt->RateDevList[Index]) - (Opt->RateDevList[Index] / 2.0);
 
 				if(Opt->AlphaZero == TRUE)
 				{
@@ -1764,28 +1767,28 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 		break;
 
 		case(SCV):
-			Rates->OffToOn = ChangeRates(Rates->OffToOn, Opt->RateDev);
-			Rates->OnToOff = ChangeRates(Rates->OnToOff, Opt->RateDev);
+			Rates->OffToOn = ChangeRates(Rates, Rates->OffToOn, Opt->RateDev);
+			Rates->OnToOff = ChangeRates(Rates, Rates->OnToOff, Opt->RateDev);
 
 			Rates->OffToOn = Rates->OnToOff;
 		break;
 
 		case(SKAPPA):
-			Rates->Kappa = MultePram(Rates->Kappa, 0.000001, 5.0, Opt->RateDev);
+			Rates->Kappa = MultePram(Rates, Rates->Kappa, 0.000001, 5.0, Opt->RateDev);
 		break;
 
 		case(SDELTA):
-			Rates->Delta = MultePram(Rates->Delta, 0.000001, 3.0, Opt->RateDev);
+			Rates->Delta = MultePram(Rates, Rates->Delta, 0.000001, 3.0, Opt->RateDev);
 		break;
 
 		case(SLABDA):
-			Rates->Lambda = MultePram(Rates->Lambda, 0.000001, 1.0, Opt->RateDev);
+			Rates->Lambda = MultePram(Rates, Rates->Lambda, 0.000001, 1.0, Opt->RateDev);
 		break;
 
 		case(SJUMP):
 			NoOfGroups = NoOfPramGroups(Rates, NULL, NULL);
 
-			if(GenRand() < 0.75)
+			if(GenRandState(Rates->RandStates) < 0.75)
 			{
 				switch(NoOfGroups)
 				{
@@ -1800,7 +1803,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 							break;
 						}
 
-						if(GenRand() < 0.5)
+						if(GenRandState(Rates->RandStates) < 0.5)
 							RJSplit(Rates, Opt);
 						else
 							RJMerge(Rates, Opt);
@@ -1809,7 +1812,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 			}
 			else 
 			{
-				if(GenRand() < 0.5)
+				if(GenRandState(Rates->RandStates) < 0.5)
 					RJAugment(Rates, Opt);
 				else
 					RJReduce(Rates, Opt);
@@ -1823,7 +1826,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 		case(SESTDATA):
 			MutateEstRates(Opt, Rates);
 		/*	for(Index=0;Index<Rates->NoEstData;Index++)
-				Rates->EstData[Index] += (GenRand() * Opt->EstDataDev) - (Opt->EstDataDev / 2.0);*/
+				Rates->EstData[Index] += (GenRandState(Rates->RandStates) * Opt->EstDataDev) - (Opt->EstDataDev / 2.0);*/
 		break;
 
 		case(SVARDATA):
@@ -1831,7 +1834,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 		break;
 
 		case(SSOLOTREEMOVE):
-			Rates->TreeNo = IntRand() % Opt->Trees->NoOfTrees;
+			Rates->TreeNo = rand() % Opt->Trees->NoOfTrees;
 		break;
 
 	}
@@ -1874,6 +1877,7 @@ void	FreeRates(RATES *Rates)
 	if(Rates->EstDescData != NULL)
 		free(Rates->EstDescData);
 
+	FreeRandStates(Rates->RandStates);
 	free(Rates);
 }
 

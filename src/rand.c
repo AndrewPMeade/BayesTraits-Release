@@ -3,6 +3,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 
+#include "genlib.h"
 #include "rand.h"
 #include "typedef.h"
 
@@ -209,6 +210,7 @@ double nrand(void)
 
 /* See: ACM Transactions on Modelling and Computer Simulation, */
 /* Vol. 4, No. 3, 1994, pages 254-266. */
+#ifdef adkasdaslj
 
 double GenRand(void)
 {
@@ -216,6 +218,7 @@ double GenRand(void)
 	static int k = 0;
 	int kk;
 
+//	return (double)(rand() % 10000) / 10000;
 	/* generate N words at one time */
 	if (k==N) 
 	{ 
@@ -237,8 +240,8 @@ double GenRand(void)
 	k++;
 	return( (double) y / (unsigned long) 0xffffffff);
 }
-
-
+#endif
+/*
 int		OneInTen(void)
 {
 	unsigned int	r;
@@ -256,7 +259,8 @@ int		OneInTen(void)
 	if(r>=1000)	return 1;
 	return 0;
 }
-
+*/
+/*
 int		SmallRand(unsigned int Mag)
 {
 	while(Mag > 0)
@@ -269,12 +273,13 @@ int		SmallRand(unsigned int Mag)
 			else return FALSE;
 	}
 
-	/* an error as occured */
 	printf("Eror\n");
 	exit(1);
 	return -1;
 }
+*/
 
+/*
 int	IntRand()
 {
 	double Ret;
@@ -283,7 +288,7 @@ int	IntRand()
 	
 	return (int)Ret;
 }
-
+*/
 
 /*
 double	LnRGamma (double alpha)
@@ -404,3 +409,65 @@ void DirichletRandomVariable (double *alp, double *z, int n)
 
 }			 
 							 
+RANDSTATES*	CreateRandStates(void)
+{
+	RANDSTATES*		Ret;
+	int				Index;
+
+	Ret = (RANDSTATES*)malloc(sizeof(RANDSTATES));
+	if(Ret == NULL)
+		MallocErr();
+	Ret->States = (unsigned long*) malloc(sizeof(long) * N);
+	if(Ret->States == NULL)
+		MallocErr();
+
+	for(Index=0;Index<N;Index++)
+		Ret->States[Index] = RandomLong();
+
+	Ret->K = 0;
+	return Ret;
+}
+
+/* A C-program for TT800 : July 8th 1996 Version */
+/* by M. Matsumoto, email: matumoto@math.keio.ac.jp */
+/* genrand() generate one pseudorandom number with double precision */
+/* which is uniformly distributed on [0,1]-interval */
+/* for each call.  One may choose any initial 25 seeds */
+/* except all zeros. */
+
+/* See: ACM Transactions on Modelling and Computer Simulation, */
+/* Vol. 4, No. 3, 1994, pages 254-266. */
+
+double GenRandState(RANDSTATES*	RandS)
+{
+	unsigned long y;
+	int kk;
+
+	
+	/* generate N words at one time */
+	if (RandS->K == N) 
+	{ 
+		for (kk=0;kk<N-MAGIC;kk++) 
+			RandS->States[kk] = RandS->States[kk+MAGIC] ^ (RandS->States[kk] >> 1) ^ mag01[RandS->States[kk] % 2];
+
+		for (; kk<N;kk++) 
+			RandS->States[kk] = RandS->States[kk+(MAGIC-N)] ^ (RandS->States[kk] >> 1) ^ mag01[RandS->States[kk] % 2];
+
+		RandS->K = 0;
+    }
+
+	y = RandS->States[RandS->K];
+	y ^= (y << 7) & 0x2b5b2500;		/* s and b, magic vectors */
+	y ^= (y << 15) & 0xdb8b0000;	/* t and c, magic vectors */
+	y &= 0xffffffff;				/* you may delete this line if word size = 32 */
+
+	y ^= (y >> 16);					/* added to the 1994 version */
+	RandS->K++;
+	return( (double) y / (unsigned long) 0xffffffff);
+}
+
+void			FreeRandStates(RANDSTATES* RandS)
+{
+	free(RandS->States);
+	free(RandS);
+}

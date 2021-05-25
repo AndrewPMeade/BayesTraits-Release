@@ -16,44 +16,61 @@
 double	Min1D(RATES* Rates, TREES *Trees, OPTIONS *Opt, double From, double To, int Steps);
 
 #ifdef	 JNIRUN
-	extern	void JavaProgress(int No);
+	#include "BayesTraitsJNI.h"
+//	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
 #endif
 
 
 void	FindValidStartSet(double *Vec, RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
-	double	Lh;
-	int		Index;
-	int		i=0;
+	double		Lh;
+	int			Index;
+	int			i;
+	PRAXSTATE	*PState;
 
 	if(Rates->NoOfRates == 0)
 		return;
 
+	PState			= IntiPraxis(LhPraxis, NULL, Rates->NoOfRates, 0, 1, 4, 5000);
+	PState->Opt		= Opt;
+	PState->Trees	= Trees;
+	PState->Rates	= Rates;
+
+	i = 0;
 	do
-	{
+	{ 
 		for(Index=0;Index<Rates->NoOfRates;Index++)
 		{
 			if(Opt->DataType == CONTINUOUS)
-				Vec[Index] = 1;
+			{
+				if(i == 0)		
+					Vec[Index] = 1;
+				else
+					Vec[Index] = GenRandState(Rates->RandStates);
+			}
 			else
 			{
-				if(GenRand()<0.1)
-					Vec[Index] = GenRand() * 10;
+				if(GenRandState(Rates->RandStates)<0.1)
+					Vec[Index] = GenRandState(Rates->RandStates) * 10;
 				else
-					Vec[Index] = GenRand() * 0.1;
+					Vec[Index] = GenRandState(Rates->RandStates) * 0.1;
 			}
 		}	
+	
+		Lh = LhPraxis(PState, Vec);
 		
-		Lh = LhPraxis(Vec);
 		i++;
 	} while(Lh == -ERRLH);
+
+	FreePracxStates(PState);
 }
 
 double	PraxisGo(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 {
-	double	*TempVec;
-	int		Index;
-	double	Ret;
+	double		*TempVec;
+	int			Index;
+	double		Ret;
+	PRAXSTATE*	PState;
 
 	TempVec = (double*)malloc(sizeof(double)*Rates->NoOfRates);
 	if(TempVec == NULL)
@@ -61,13 +78,19 @@ double	PraxisGo(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 
 	FindValidStartSet(TempVec, Rates, Trees, Opt);
 
-	BlankPraxisGlobal();
 	if(Rates->NoOfRates > 0)
 	{
 		if(Rates->NoOfRates > 1)
-			Ret = praxis(LhPraxis, TempVec, Rates->NoOfRates, 0, 1, 4, 5000);
+			PState = IntiPraxis(LhPraxis, TempVec, Rates->NoOfRates, 0, 1, 4, 5000);	
 		else
-			Ret = praxis(LhPraxis, TempVec, Rates->NoOfRates, 0, 1, 4, 250);
+			PState = IntiPraxis(LhPraxis, TempVec, Rates->NoOfRates, 0, 1, 4, 250);
+
+		PState->Opt		= Opt;
+		PState->Trees	= Trees;
+		PState->Rates	= Rates;
+
+		Ret = praxis(PState);
+		FreePracxStates(PState);		
 	}
 
 	for(Index=0;Index<Rates->NoOfRates;Index++)
@@ -115,8 +138,11 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	return;
 }
-
-void	FindML(OPTIONS *Opt, TREES* Trees)
+#ifdef	 JNIRUN
+	void	FindML(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
+#else
+	void	FindML(OPTIONS *Opt, TREES *Trees)
+#endif
 {
 	int		TIndex;
 	int		OIndex;
@@ -173,7 +199,6 @@ void	FindML(OPTIONS *Opt, TREES* Trees)
 		{		
 			for(OIndex=0;OIndex<Opt->MLTries;OIndex++)
 			{
-				SetUpPrarix(Rates, Trees, Opt);
 				CLh = PraxisGo(Opt, Rates, Trees);
 			
 				if((CLh < BLh) || (BLh == ERRLH))
@@ -183,7 +208,7 @@ void	FindML(OPTIONS *Opt, TREES* Trees)
 						BRates[ti] = Rates->Rates[ti];
 
 					if(Opt->DataType == CONTINUOUS)
-						LhPraxisCon(BRates);
+						LHRandWalk(Opt, Trees, Rates);
 				}
 			}
 
@@ -191,7 +216,8 @@ void	FindML(OPTIONS *Opt, TREES* Trees)
 				Rates->Rates[ti] = BRates[ti];
 
 			if(Opt->DataType == CONTINUOUS)
-				LhPraxisCon(BRates);
+			//	LhPraxisCon(BRates);
+				LHRandWalk(Opt, Trees, Rates);
 		}
 		else
 		{
@@ -209,7 +235,14 @@ void	FindML(OPTIONS *Opt, TREES* Trees)
 			printf("\n");
 			fflush(stdout);
 		#else
-			JavaProgress(TIndex);
+			SetProgress(Env, Obj, TIndex);
+			CheckStop(Env, Obj, Trees);
+			if(Trees->JStop == TRUE)
+			{
+				FreeRates(Rates);
+				free(BRates);
+				return;
+			}
 		#endif
 
 		PrintRates(Opt->LogFile, Rates, Opt);
