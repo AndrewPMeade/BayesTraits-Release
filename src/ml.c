@@ -199,8 +199,6 @@ void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	exit(0);
 }
 
-
-
 double	PraxisGo(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 {
 	double		*TempVec;

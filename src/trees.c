@@ -18,6 +18,7 @@
 #include "part.h"
 #include "RandLib.h"
 #include "QuadDouble.h"
+#include "contrasts.h"
 
 #ifdef BTOCL
 #include "btocl_discrete.h"
@@ -185,6 +186,9 @@ void	FreeTree(TREE* Tree, int NoOfSites, int NoOfTaxa)
 void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 {
 	int	Index;
+
+	if(Opt->ModelType == MT_CONTRAST)
+		FreeAllContrast(Opt, Trees);
 
 	FreeTreeBigLh(Opt, Trees);
 

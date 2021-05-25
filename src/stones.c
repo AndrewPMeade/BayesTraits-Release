@@ -139,7 +139,7 @@ void	NewStone(STONES *Stones, int Itter, double Lh, int CStone, FILE *Out)
 		fprintf(Out, "%d\t%f\t%d\t%f\t%f\n", CStone-1, Stones->Power[CStone-1], Stones->N, Stones->MLh[CStone-1], GetMLhStoneSum(Stones, CStone));
 
 		if(CStone == Stones->NoStones)
-			fprintf(Out, "MLh:\t%f\n", GetMLhStoneSum(Stones, CStone));
+			fprintf(Out, "Log marginal likelihood:\t%f\n", GetMLhStoneSum(Stones, CStone));
 	}
 	else
 		Stones->Length = 1.0 - Stones->Power[CStone];

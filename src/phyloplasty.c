@@ -580,7 +580,7 @@ void	PPLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		fprintf(Opt->PPLog, "\n");
 	}
 
-	fprintf(Opt->PPLog, "It\tLh\tLh + Prior\tNo Pram\tAlpha\tSigma\tAlpha Scale Prior\t");
+	fprintf(Opt->PPLog, "It\tLh\tLh + Prior\tNo Pram\tAlpha\tSigma^2\tAlpha Scale Prior\t");
 	fprintf(Opt->PPLog, "Node ID\tScale\tCreat It\tNode / Branch\t");
 
 	fprintf(Opt->PPLog, "\n");

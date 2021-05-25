@@ -57,8 +57,8 @@ int		FindNoConRates(OPTIONS *Opt)
 
 		case M_CONTRAST_REG:
 			if(Opt->TestCorrel == FALSE)
-				return 1;
-			return Opt->Trees->NoOfSites; 
+				return 0;
+			return Opt->Trees->NoOfSites - 1; 
 		break;
 
 		case M_CONTRAST:
@@ -879,9 +879,9 @@ void	PrintConRecNodesHeadder(FILE *Str, OPTIONS *Opt)
 		for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
 		{
 			if(Opt->Trees->NoOfSites == 1)
-				fprintf(Str, "%s Alpha\t%s Sigma\t%s Lh\t", RNode->Name, RNode->Name, RNode->Name);
+				fprintf(Str, "%s Alpha\t%s Sigma^2\t%s Lh\t", RNode->Name, RNode->Name, RNode->Name);
 			else
-				fprintf(Str, "%s %d Alpha\t%s %d Sigma\t%s %d Lh\t", RNode->Name, SiteIndex + 1, RNode->Name, SiteIndex + 1,RNode->Name, SiteIndex + 1);
+				fprintf(Str, "%s %d Alpha\t%s %d Sigma^2\t%s %d Lh\t", RNode->Name, SiteIndex + 1, RNode->Name, SiteIndex + 1,RNode->Name, SiteIndex + 1);
 		}
 	}
 }
@@ -942,7 +942,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 		{
-			sprintf(Buffer, "Sigma %d", Index+1);
+			sprintf(Buffer, "Sigma^2 %d", Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
 		}
 		
@@ -2684,8 +2684,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 		case STREEMOVE:
 			Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoOfTrees;
 		break;
-
-
+		
 		case SGAMMA:
 			Rates->Gamma =  ChangeRate(Rates, Rates->Gamma, Opt->RateDev);
 		break;
