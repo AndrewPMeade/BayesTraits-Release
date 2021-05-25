@@ -210,30 +210,6 @@ void	SumLikeDep(NODE N, TREES *Trees, int SiteNo, double Kappa, int *Err)
 }
 */
 
-void	SetFossilStates(NODE N, int SiteNo, int s00, int s01, int s10, int s11)
-{
-#ifdef BIG_LH
-	FossilDepLhBig(N, SiteNo, s00, s01, s10, s11);
-	return;
-#endif
-
-#ifdef QUAD_DOUBLE
-	FossilDepLhQuadDobule(N, SiteNo, s00, s01, s10, s11);
-	return;
-#endif
-
-	if(s00 == 0)
-		N->Partial[SiteNo][0] = 0;
-
-	if(s01 == 0)
-		N->Partial[SiteNo][1] = 0;
-
-	if(s10 == 0)
-		N->Partial[SiteNo][2] = 0;
-
-	if(s11 == 0)
-		N->Partial[SiteNo][3] = 0;
-}
 /*
 X 	Likilhood values unchanged
 -	Likilhood set to zero
@@ -258,77 +234,7 @@ Symbol	0,0	0,1	1,0	1,1
 23		-	X	X	X
 */
 
-void	FossilLh(NODE N, TREES *Trees, int SiteNo)
-{
-	int	Index;
 
-	/* Are we using the expanded discite fossil states? */
-	if(N->FossilState < Trees->NoOfStates)
-	{
-		#ifdef BIG_LH
-			FossilLhBig(N, Trees, SiteNo);
-			return;
-		#endif
-
-		for(Index=0;Index<Trees->NoOfStates;Index++)
-		{
-			if(Index != N->FossilState)
-			{
-#ifdef QUAD_DOUBLE
-				N->BigPartial[SiteNo][Index] = 0.0;
-#else
-				N->Partial[SiteNo][Index] = 0.0;
-#endif
-			}
-		}
-	}
-	else
-	{
-		switch(N->FossilState)
-		{
-			case 10:
-				SetFossilStates(N, SiteNo, 1, 1, 0, 0);
-			break;
-
-			case 11:
-				SetFossilStates(N, SiteNo, 1, 0, 1, 0);
-			break;
-
-			case 12:
-				SetFossilStates(N, SiteNo, 1, 0, 0, 1);
-			break;
-
-			case 13:
-				SetFossilStates(N, SiteNo, 0, 1, 1, 0);
-			break;
-
-			case 14:
-				SetFossilStates(N, SiteNo, 0, 1, 0, 1);
-			break;
-
-			case 15:
-				SetFossilStates(N, SiteNo, 0, 0, 1, 1);
-			break;
-
-			case 20:
-				SetFossilStates(N, SiteNo, 1, 1, 1, 0);
-			break;
-
-			case 21:
-				SetFossilStates(N, SiteNo, 1, 1, 0, 1);
-			break;
-
-			case 22:
-				SetFossilStates(N, SiteNo, 1, 0, 1, 1);
-			break;
-
-			case 23:
-				SetFossilStates(N, SiteNo, 0, 1, 1, 1);
-			break;
-		}
-	}
-
-}
 
 double	CreatFullAP(double T, double Mue, int K, MATRIX *Mat)
 {
@@ -357,116 +263,8 @@ double	CreatFullAP(double T, double Mue, int K, MATRIX *Mat)
 
 	return 0;
 }
-/*
-void	SumLikeMultiStateAP(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err, double BLMult, double Rate)
-{
-	int		Inner;
-	int		Outter;
-	double	Lr;
-	double	Ll;
-	double	Len;
-	double	Val;
-	int		NOS;
 
-	if(N->Left->Tip == FALSE)
-		SumLikeMultiStateAP(N->Left, Trees, SiteNo, Kappa, Err, BLMult, Rate);
-
-	if(N->Right->Tip == FALSE)
-		SumLikeMultiStateAP(N->Right, Trees, SiteNo, Kappa, Err, BLMult, Rate);
-
-	if(Trees->NOSPerSite == TRUE)
-		NOS = Trees->NOSList[SiteNo];
-	else
-		NOS = Trees->NoOfStates;
-
-	Len = N->Left->Length;
-	if(Kappa != -1)
-		Len = pow(Len, Kappa);
-	Len = Len * BLMult;
-	Val = CreatFullAP(Len, Rate, NOS, Trees->PLeft);
-
-	Len = N->Right->Length;
-	if(Kappa != -1)
-		Len = pow(Len, Kappa);
-	Len = Len * BLMult;
-	Val = CreatFullAP(Len, Rate, NOS, Trees->PRight);
-	
-	for(Outter=0;Outter<NOS;Outter++)
-	{
-		Ll = 0;
-		Lr = 0;
-
-		for(Inner=0;Inner<NOS;Inner++)
-		{
-			Ll += N->Left->Partial[SiteNo][Inner] * Trees->PLeft->me[Outter][Inner];
-			Lr += N->Right->Partial[SiteNo][Inner] * Trees->PRight->me[Outter][Inner];
-		}
-
-		N->Partial[SiteNo][Outter] = Ll * Lr;
-	}
-
-	if(N->FossilState != -1)
-		FossilLh(N, Trees, SiteNo);
-}
-
-void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err, double BLMult)
-{
-	int		Inner, Outter, NIndex;
-	double	Lr, Ll, Lh;
-	double	Len;
-	double	Val;
-
-	if(N->Left->Tip == FALSE)
-		SumLikeMultiState(N->Left, Trees, SiteNo, Kappa, Err, BLMult);
-
-	if(N->Right->Tip == FALSE)
-		SumLikeMultiState(N->Right, Trees, SiteNo, Kappa, Err, BLMult);
-
-	Len = N->Left->Length;
-	if(Kappa != -1)
-		Len = pow(Len, Kappa);
-	
-	Len = Len * BLMult;
-
-	Val = CreatFullPMatrix(Len, Trees->PLeft, Trees);
-	if(Val > 0.001)
-	{
-		(*Err) = TRUE;
-		return;
-	}
-
-	Len = N->Right->Length;
-	if(Kappa != -1)
-		Len = pow(Len, Kappa);
-
-	Len = Len * BLMult;
-	Val = CreatFullPMatrix(Len, Trees->PRight, Trees);
-	if(Val > 0.001)
-	{
-		(*Err) = TRUE;
-		return;
-	}
-
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-	{
-		Ll = 0;
-		Lr = 0;
-
-		for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-		{
-			Ll += N->Left->Partial[SiteNo][Inner] * Trees->PLeft->me[Outter][Inner];
-			Lr += N->Right->Partial[SiteNo][Inner] * Trees->PRight->me[Outter][Inner];
-		}
-
-		N->Partial[SiteNo][Outter] = Ll * Lr;
-	}
-
-	if(N->FossilState != -1)
-		FossilLh(N, Trees, SiteNo);
-}
-*/
-
-void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo,  int Rec)
+void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo,  int Rec)
 {
 	int		Inner, Outter, NIndex;
 	double	Lh;
@@ -477,7 +275,7 @@ void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo,  int Rec)
 		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
 		{
 			if(N->NodeList[NIndex]->Tip == FALSE)
-				SumLikeMultiState(N->NodeList[NIndex], Trees, SiteNo, Rec);
+				SumLikeMultiState(N->NodeList[NIndex], Opt, Trees, SiteNo, Rec);
 		}
 	}
 
@@ -498,8 +296,8 @@ void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo,  int Rec)
 		}
 	}
 
-	if(N->FossilState != -1)
-		FossilLh(N, Trees, SiteNo);
+	if(N->FossilMask != NULL)
+		FossilLh(N, Opt, Trees, SiteNo);
 }
 
 
@@ -1026,7 +824,7 @@ void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Tr
 				#ifdef QUAD_DOUBLE
 					NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo);
 				#else
-					SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo, FALSE);	
+					SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo, FALSE);	
 				#endif
 			#endif
 		}
@@ -1045,7 +843,7 @@ void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Tr
 			#ifdef QUAD_DOUBLE
 				NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo);
 			#else
-				SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo, FALSE);
+				SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo, FALSE);
 			#endif
 		#endif
 	}
@@ -1098,7 +896,7 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		Ret += CombineBigLh(Rates, Trees, Opt, SiteNo, NOS);
 #else
 	#ifdef QUAD_DOUBLE
-		Ret = CombineQuadDoubleLh(Rates, Trees, Opt, SiteNo, NOS);
+		Ret += CombineQuadDoubleLh(Rates, Trees, Opt, SiteNo, NOS);
 	#else
 		Sum = 0;
 		for(Index=0;Index<NOS;Index++)

@@ -46,6 +46,8 @@ typedef struct
 	int		*NoPerLine;
 } NUMFILE;
 
+void*		CloneMem(size_t Size, void *Mem);
+
 TEXTFILE*	LoadTextFile(char* Name, char DelComments);
 void		FreeTextFile(TEXTFILE* TextFile);
 

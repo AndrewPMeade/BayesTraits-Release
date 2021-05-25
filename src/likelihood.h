@@ -3,7 +3,7 @@
 
 #include "praxis.h"
 
-void	FossilLh(NODE N, TREES *Trees, int SiteNo);
+void	FossilLh(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo);
 
 double		Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt);
 void		AllocLHInfo(TREES *Trees, OPTIONS *Opt);

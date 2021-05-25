@@ -115,8 +115,6 @@ void	TestTreeLh(OPTIONS *Opt, TREES *Trees)
 void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 {
 	char Line[1024];
-	char *Buffer;
-	size_t Len;
 
 	if(argc == 3)
 	{
@@ -144,6 +142,8 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // Threaded + quad math
 // gcc *.c -O3 -fomit-frame-pointer -lgsl -DQUAD_DOUBLE -DOPENMP_THR -lquadmath -fopenmp
 
+
+// ./Seq/francoisT.nex.trees ./Seq/francoisT.txt < ./Seq/in.txt > ./Seq/sout.txt
 int main(int argc, char** argv)
 {
 	TREES*		Trees;

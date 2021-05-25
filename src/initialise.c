@@ -25,6 +25,7 @@
 #include "QuadDouble.h"
 #include "contrasts.h"
 #include "FatTail.h"
+#include "Fossil.h"
 
 #ifdef BTOCL
 #include "btocl_discrete.h"
@@ -127,8 +128,8 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		AllocPartial(Opt, Trees, Opt->UseGamma);
 		AllocLHInfo(Trees, Opt);
 
-		SetFossiles(Trees, Opt);
-
+		SetFossils(Trees, Opt);
+		
 		SetNOSPerSite(Opt);
 
 		InitTreeBigLh(Opt, Trees);

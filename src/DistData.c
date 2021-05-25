@@ -34,17 +34,13 @@ double*	PassDataDist(char *Taxa, char *Str, int *NoPoint)
 
 	ReplaceChar(',', ' ', Str);
 
-	Passed = (char**)malloc(sizeof(char*) * s);
-	if(Passed == NULL)
-		MallocErr();
-
-	Tokes = MakeArgv(Str, Passed, s);
+	Passed = (char**)SMalloc(sizeof(char*) * s);
+	
+	Tokes = MakeArgv(Str, Passed, (int)s);
 	
 	*NoPoint = Tokes;
-	Ret = (double*)malloc(sizeof(double) * Tokes);
-	if(Ret == NULL)
-		MallocErr();
-
+	Ret = (double*)SMalloc(sizeof(double) * Tokes);
+	
 	for(Index=0;Index<Tokes;Index++)
 	{
 		if(IsValidDouble(Passed[Index]) == FALSE)

@@ -65,9 +65,7 @@ NODE	AllocNode(void)
 {
 	NODE	Ret;
 
-	Ret = (NODE)malloc(sizeof(struct INODE));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (NODE)SMalloc(sizeof(struct INODE));
 
 	Ret->ID				=	-1;
 	Ret->Ans			=	NULL;
@@ -77,9 +75,8 @@ NODE	AllocNode(void)
 	Ret->DistToRoot		=	-1;
 	Ret->Taxa			=	NULL;
 	Ret->Partial		=	NULL;
-	Ret->FossilState	=	-1;
+	Ret->FossilMask		=	NULL;
 	Ret->Part			=	NULL;
-//	Ret->PSize			=	-1;
 	Ret->GammaPartial	=	NULL;
 
 	Ret->NodeList		=	NULL;
@@ -89,13 +86,6 @@ NODE	AllocNode(void)
 	Ret->VPosY			=	-1;
 
 	return Ret;
-}
-
-void	FreeNode(NODE N)
-{
-	if(N->NodeList != NULL)
-		free(N->NodeList);
-	free(N);
 }
 
 TAXA*	GetTaxaFromID(int ID, TAXA **Taxa, int NoOfTaxa)
@@ -139,6 +129,26 @@ void	LinkTipsToTaxa(NODE N, TAXA **Taxa, int NoOfTaxa)
 
 }
 
+void	FreeNode(NODE N)
+{
+	if(N->Partial != NULL)
+		free(N->Partial);
+
+	if(N->FatTailNode != NULL)
+		free(N->FatTailNode);
+
+	if(N->GammaPartial != NULL)
+		free(N->GammaPartial);
+
+	if(N->NodeList != NULL)
+		free(N->NodeList);
+
+	if(N->FossilMask != NULL)
+		free(N->FossilMask);
+
+	free(N);
+}
+
 void	FreeTree(TREE* Tree, int NoOfSites, int NoOfTaxa)
 {
 	int		NIndex;
@@ -152,22 +162,7 @@ void	FreeTree(TREE* Tree, int NoOfSites, int NoOfTaxa)
 		free(N->GammaPartial[0]);
 	
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
-	{
-		N = Tree->NodeList[NIndex];
-
-		if(N->Partial != NULL)
-			free(N->Partial);
-
-		if(N->FatTailNode != NULL)
-			free(N->FatTailNode);
-		
-		if(N->GammaPartial != NULL)
-			free(N->GammaPartial);
-
-		if(N->NodeList != NULL)
-			free(N->NodeList);
-		free(N);
-	}
+		FreeNode(Tree->NodeList[NIndex]);
 
 	free(Tree->NodeList);
 
@@ -1155,32 +1150,7 @@ void	ReBuildTree(NODE N, NODE NewNodeList)
 			ReBuildTree(N->NodeList[NIndex], NewNodeList);
 	}
 }
-/*
-void	RemoveNode(NODE N)
-{
-	int		NIndex, Pos;
-	NODE	*NList, Ans;
 
-	Ans = N->Ans;
-
-	NList = (NODE*)malloc(sizeof(NODE) * (Ans->NoNodes - 1));
-	if(NList == NULL)
-		MallocErr();
-	
-	Pos = 0;
-	for(NIndex=0;NIndex<Ans->NoNodes;NIndex++)
-		if(Ans->NodeList[NIndex] != N)
-			NList[Pos++] = Ans->NodeList[NIndex];
-
-	free(Ans->NodeList);
-	Ans->NodeList = NList;
-
-	Ans->NoNodes--;
-
-	FreeNode(N);
-}
-
-*/
 
 void	SetDelNodeIDs(NODE N, int *ID)
 {
@@ -1518,26 +1488,6 @@ void	SetNodeIDs(TREE *Tree)
 		Tree->NodeList[Index]->ID = Index;
 }
 
-
-
-void	SetFossiles(TREES *Trees, OPTIONS *Opt)
-{
-	RECNODE	RNode;
-	int		TIndex;
-
-	RNode = Opt->RecNode;
-
-	while(RNode != NULL)
-	{
-		if(RNode->NodeType == FOSSIL)
-		{
-			for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
-				RNode->TreeNodes[TIndex]->FossilState = RNode->FossilState;
-		}
-
-		RNode = RNode->Next;
-	}
-}
 
 void SetMinBL(TREES *Trees)
 {

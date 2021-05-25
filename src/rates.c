@@ -1478,8 +1478,6 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 
 void	PrintLocalTransformNo(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
-	int No;
-
 	if(Opt->UseVarRates == TRUE)
 	{
 		fprintf(Str, "%d\t", GetNoTransformType(VR_BL, Rates));

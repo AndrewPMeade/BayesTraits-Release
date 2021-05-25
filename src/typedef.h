@@ -602,7 +602,6 @@ typedef struct
 typedef struct
 {
 	double	*Ans;
-//	double	Lh;
 
 	double	Data, Cont, Err, Var, v;
 	
@@ -650,7 +649,10 @@ struct INODE
 	
 	PART		*Part;
 	
-	int			FossilState;
+	int			*FossilMask;
+
+//	int			NoFossilStates;
+//	int			*FossilStates;
 
 	CONDATA		*ConData;
 	FATTAILNODE	*FatTailNode;
@@ -664,7 +666,9 @@ struct RNODE
 	char*		Name;
 
 	int			PresInTrees;
-	int			FossilState;
+
+	int			*FossilStates;
+	int			NoFossilStates;
 
 	PART		*Part;
 
@@ -1019,7 +1023,6 @@ typedef struct
 	int			MLTries;
 
 	int			NoOfRecNodes;
-
 	RECNODE		RecNode;
 	RECNODE		*RecNodeList;
 

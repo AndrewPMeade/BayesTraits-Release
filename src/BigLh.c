@@ -17,8 +17,8 @@ double	CombineBigLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NO
 
 void	SetBigLhNodeRec(NODE N, int NOS, int NoOfSites, RATES *Rates, OPTIONS *Opt) { }
 
-void	FossilLhBig(NODE N, TREES *Trees, int SiteNo) { }
-void	FossilDepLhBig(NODE N, int SiteNo, int s00, int s01, int s10, int s11) { }
+void	FossilLhBig(NODE N, TREES *Trees, int *Mask, int SiteNo) { }
+
 #else
 
 void	AllocNodeMemBigLh(NODE N, OPTIONS *Opt, TREES *Trees)
@@ -143,38 +143,16 @@ void	FreeTreeBigLh(OPTIONS *Opt, TREES *Trees)
 	}
 }
 
-void SetBigLHZero(mpfr_t State)
-{
-	mpfr_set_d(State, 0.0, DEF_ROUND);
-}
-
-void	FossilLhBig(NODE N, TREES *Trees, int SiteNo)
+void	FossilLhBig(NODE N, TREES *Trees, int *Mask, int SiteNo)
 {
 	int Index;
 	
 	for(Index=0;Index<Trees->NoOfStates;Index++)
 	{
-		if(Index != N->FossilState)
-			SetBigLHZero(N->BigPartial[SiteNo][Index]);
+		if(Mask[Index] == 0)
+			mpfr_set_d(State, 0.0, DEF_ROUND);
 	}
 }
-
-void	FossilDepLhBig(NODE N, int SiteNo, int s00, int s01, int s10, int s11)
-{
-	if(s00 == 0)
-		SetBigLHZero(N->BigPartial[SiteNo][0]);
-
-	if(s01 == 0)
-		SetBigLHZero(N->BigPartial[SiteNo][1]);
-
-	if(s10 == 0)
-		SetBigLHZero(N->BigPartial[SiteNo][2]);
-
-	if(s11 == 0)
-		SetBigLHZero(N->BigPartial[SiteNo][3]);
-}
-
-
 
 void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo)
 { 
@@ -205,7 +183,7 @@ void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo)
 		}
 	}
 
-	if(N->FossilState != -1)
+	if(N->FossilMask != NULL)
 		FossilLh(N, Trees, SiteNo);
 }
 

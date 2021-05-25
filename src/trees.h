@@ -25,7 +25,7 @@ void	CheckDelTaxa(OPTIONS *Opt, TREES *Trees, char *TName);
 
 void	SaveTrees(char	*FileName, TREES* Trees);
 
-void	SetFossiles(TREES *Trees, OPTIONS *Opt);
+void	SetFossils(TREES *Trees, OPTIONS *Opt);
 
 void	SetMinBL(TREES *Trees);
 void	SetNOSPerSite(OPTIONS *Opt);

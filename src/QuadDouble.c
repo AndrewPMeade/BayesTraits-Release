@@ -75,69 +75,6 @@ void	FreeQuadLh(OPTIONS *Opt, TREES *Trees)
 	}
 }
 
-void	FossiQuadlLh(NODE N, TREES *Trees, int SiteNo)
-{
-	int	Index;
-
-	/* Are we using the expanded discite fossil states? */
-	if(N->FossilState < Trees->NoOfStates)
-	{
-
-		for(Index=0;Index<Trees->NoOfStates;Index++)
-		{
-			if(Index != N->FossilState)
-				N->BigPartial[SiteNo][Index] = 0;
-		}
-	}
-	else
-	{
-		switch(N->FossilState)
-		{
-			case 10:
-				SetFossilStates(N, SiteNo, 1, 1, 0, 0);
-			break;
-
-			case 11:
-				SetFossilStates(N, SiteNo, 1, 0, 1, 0);
-			break;
-
-			case 12:
-				SetFossilStates(N, SiteNo, 1, 0, 0, 1);
-			break;
-
-			case 13:
-				SetFossilStates(N, SiteNo, 0, 1, 1, 0);
-			break;
-
-			case 14:
-				SetFossilStates(N, SiteNo, 0, 1, 0, 1);
-			break;
-
-			case 15:
-				SetFossilStates(N, SiteNo, 0, 0, 1, 1);
-			break;
-
-			case 20:
-				SetFossilStates(N, SiteNo, 1, 1, 1, 0);
-			break;
-
-			case 21:
-				SetFossilStates(N, SiteNo, 1, 1, 0, 1);
-			break;
-
-			case 22:
-				SetFossilStates(N, SiteNo, 1, 0, 1, 1);
-			break;
-
-			case 23:
-				SetFossilStates(N, SiteNo, 0, 1, 1, 1);
-			break;
-		}
-	}
-
-}
-
-
 void	NodeLhQuadDouble(NODE N, TREES *Trees, int SiteNo)
 {
 	int		Inner, Outter, NIndex;
@@ -162,9 +99,8 @@ void	NodeLhQuadDouble(NODE N, TREES *Trees, int SiteNo)
 		}
 	}
 	
-	if(N->FossilState != -1)
-		FossiQuadlLh(N, Trees, SiteNo);
-	
+	if(N->FossilMask != NULL)
+		FossilLh(N, Opt, Trees, SiteNo);
 }
 
 double	CombineQuadDoubleLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS)

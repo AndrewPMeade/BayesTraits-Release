@@ -473,7 +473,17 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		
 
 		if(RNode->NodeType == FOSSIL)
-			fprintf(Str, "Fossil:       %s                    %f (%d)\n", RNode->Name, FindAveNodeDepth(RNode, Opt), RNode->FossilState);
+		{
+			if(Opt->Model == M_MULTISTATE)
+			{
+				fprintf(Str, "Fossil:       %s                    %f ", RNode->Name, FindAveNodeDepth(RNode, Opt));
+				for(Index=0;Index<RNode->NoFossilStates;Index++)
+					fprintf(Str, "%c ", Opt->Trees->SymbolList[RNode->FossilStates[Index]]);
+				fprintf(Str, "\n");
+			}
+			else
+				fprintf(Str, "Fossil:       %s                    %f (%d)\n", RNode->Name, FindAveNodeDepth(RNode, Opt), RNode->FossilStates[0]);
+		}
 		
 		for(Index=0;Index<RNode->Part->NoTaxa;Index++)
 			fprintf(Str, "             %d\t%s\n", RNode->Taxa[Index]->No, RNode->Taxa[Index]->Name);
@@ -1937,16 +1947,16 @@ Symbol	0,0	0,1	1,0	1,1
 23		-	X	X	X
 */
 
-int	ValidDescFossileState(int FNo)
+void	ValidDescFossileState(int FNo)
 {
 	if((FNo >= 0) && (FNo <= 3))
-		return TRUE;
+		return;
 
 	if((FNo >= 10) && (FNo <= 15))
-		return TRUE;
+		return;
 
 	if((FNo >= 20) && (FNo <= 23))
-		return TRUE;
+		return ;
 
 	printf("Unknown discrete fossilisation sate.\nKnown values are\n");
 
@@ -1971,44 +1981,64 @@ int	ValidDescFossileState(int FNo)
 	printf("23         -     X     X     X\n");
 
 
-	return FALSE;
+	exit(1);
 }
 
 /* Will have to add support for extra states (10 to 23) */
-int	DesFossilSate(char* State, OPTIONS *Opt)
+int*	DesFossilSate(char* State, OPTIONS *Opt)
 {
-	int	Ret;
+	int FState;
+	int	*Ret;
 
 	if(IsValidInt(State) == FALSE)
 	{
 		printf("Could not convert %s to a valid Discrete state", State);
-		return -1;
+		exit(1);
 	}
 
-	Ret = atoi(State);
-	if(ValidDescFossileState(Ret) == FALSE)
-		return -1;
+	FState = atoi(State);
+	ValidDescFossileState(FState);
+
+	Ret = (int*)SMalloc(sizeof(int));
+	Ret[0] = FState;
 
 	return Ret;
 }
 
-int	FossilState(char *State, OPTIONS *Opt)
+int		MSStateToNo(char State, char *SList, int NoS)
 {
-	int	Index;
+	int Index;
 
+	for(Index=0;Index<NoS;Index++)
+		if(State == SList[Index])
+			return Index;
+
+	printf("Cannot convert %c to a valid multi-state value.\n", State);
+	exit(1);
+	return -1;
+}
+
+int*	CrateMSFossilStateList(char *List, OPTIONS *Opt, int *No)
+{
+	int *Ret, Index;
+	
+	*No = (int)strlen(List);
+
+	Ret = (int*)SMalloc(sizeof(int) * *No);
+
+	for(Index=0;Index<*No;Index++)
+		Ret[Index] = MSStateToNo(List[Index], Opt->Trees->SymbolList, Opt->Trees->NoOfStates);
+
+	return Ret;
+}
+
+int*	FossilState(char *States, OPTIONS *Opt, int *No)
+{
 	if(Opt->Model == M_MULTISTATE)
-	{
-		for(Index=0;Index<Opt->Trees->NoOfStates;Index++)
-		{
-			if(State[0] == Opt->Trees->SymbolList[Index])
-				return Index;
-		}
+		return CrateMSFossilStateList(States, Opt, No);
 
-		printf("State %s is invalid\n", State);
-		return -1;
-	}
-
-	return DesFossilSate(State, Opt);
+	*No = 1;
+	return DesFossilSate(States, Opt);
 }
 
 int		GetTaxaNoFormName(char* Name, TREES* Trees, int *No)
@@ -2105,12 +2135,13 @@ char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char *argv[])
 void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 {
 	RECNODE		RNode;
-	int			Index, FState, NoTaxa;
+	int			Index, NoTaxa;
+	int			*FStates, NoFStates;
 	char**		ConFState;
 	
-	FState = -1;
 	
 	ConFState = NULL;
+	FStates = NULL;
 
 	if(OptFindRecNode(Opt, argv[1]) != NULL)
 	{
@@ -2124,16 +2155,11 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	{
 		if(Opt->DataType == DISCRETE)
 		{
-			FState = FossilState(argv[2], Opt);
-			if(FState == -1)
-				return;
-				
+			FStates = FossilState(argv[2], Opt, &NoFStates);
 			Index++;
 		}
 		else
-		{
 			Index += Opt->Trees->NoOfSites;
-		}
 	}
 
 	if(Opt->DataType == CONTINUOUS)		
@@ -2146,34 +2172,30 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	if(ValidTaxaList(argv, Index, Tokes, Opt) == FALSE)
 		return;
 
-	RNode = (RECNODE)malloc(sizeof(struct RNODE));
-	if(RNode == NULL)
-		MallocErr();
+	RNode = (RECNODE)SMalloc(sizeof(struct RNODE));
 
-	RNode->Part		= NULL;
-	RNode->ConData	= NULL;
+	RNode->Part				= NULL;
+	RNode->FossilStates		= NULL;
+	RNode->NoFossilStates	= -1;
+	RNode->ConData			= NULL;
 	if(Opt->DataType == CONTINUOUS)		
 		RNode->ConData	= ConFState;
 
-	RNode->Name = (char*)malloc(sizeof(char)*(strlen(argv[1])+1));
-	if(RNode->Name == NULL)
-		MallocErr();
-	strcpy(RNode->Name, argv[1]);
-
+	RNode->Name = StrMake(argv[1]);
+		
 	RNode->NodeType		= NodeType;
-	RNode->FossilState	= FState;
 
 	if(RNode->NodeType == FOSSIL)
-		RNode->NodeType = MRCA;
-
-	if(NodeType == FOSSIL)
+	{
+//		RNode->NodeType = MRCA;
+		RNode->FossilStates = FStates;
+		RNode->NoFossilStates = NoFStates;
 		NoTaxa = Tokes - 3;
+	}
 	else
 		NoTaxa= Tokes - 2;
 
-	RNode->Taxa = (TAXA**)malloc(sizeof(TAXA*)*NoTaxa);
-	if(RNode->Taxa == NULL)
-		MallocErr();
+	RNode->Taxa = (TAXA**)SMalloc(sizeof(TAXA*)*NoTaxa);
 
 	for(Index=0;Index<NoTaxa;Index++)
 	{
@@ -2188,15 +2210,11 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	RNode->Next = Opt->RecNode;
 	Opt->RecNode = RNode;
 
-	RNode->TreeNodes = (NODE*)malloc(sizeof(NODE)*Opt->Trees->NoOfTrees);
-	if(RNode->TreeNodes == NULL)
-		MallocErr();
+	RNode->TreeNodes = (NODE*)SMalloc(sizeof(NODE)*Opt->Trees->NoOfTrees);
 
 	SetRecNodes(RNode, Opt->Trees);
 	
 	Opt->NoOfRecNodes++;
-
-	RNode->NodeType = NodeType;
 }
 
 void	DelRecNode(OPTIONS *Opt, char* NodeName)
@@ -2476,7 +2494,6 @@ int		SetConVar(int Tokes, char** Passed, int *InUse, int *Est, double *Const)
 void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	int		Index;
-	int		No;
 	char	*Name;
 	TAXA	*Taxa;
 
@@ -2755,6 +2772,29 @@ void	FlattenRecNode(OPTIONS *Opt)
 		Opt->RecNodeList[Index] = RNode;
 }
 
+void	FreeRecNode(RECNODE R, int NoSites)
+{
+	int Index;
+
+	if(R->ConData != NULL)
+	{
+		for(Index=0;Index<NoSites;Index++)
+			free(R->ConData[Index]);
+		free(R->ConData);
+	}
+
+	free(R->TreeNodes);
+	free(R->Name);
+	FreePart(R->Part);
+
+	if(R->FossilStates != NULL)
+		free(R->FossilStates);
+
+	free(R->Taxa);
+
+	free(R);
+}
+
 void	FreeRecNodes(OPTIONS *Opt, int NoSites)
 {
 	int	Index, CIndex;
@@ -2768,21 +2808,7 @@ void	FreeRecNodes(OPTIONS *Opt, int NoSites)
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
 		R = Opt->RecNodeList[Index];
-
-		if(R->ConData != NULL)
-		{
-			for(CIndex=0;CIndex<NoSites;CIndex++)
-				free(R->ConData[CIndex]);
-			free(R->ConData);
-		}
-
-		free(R->TreeNodes);
-		free(R->Name);
-		FreePart(R->Part);
-		
-		free(R->Taxa);		
-
-		free(R);
+		FreeRecNode(R);
 	}
 	
 	free(Opt->RecNodeList);

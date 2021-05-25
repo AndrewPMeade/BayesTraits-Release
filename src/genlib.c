@@ -1068,3 +1068,13 @@ int			CountChar(char *Str, char C)
 
 	return Ret;
 }
+
+void*		CloneMem(size_t Size, void *Mem)
+{
+	void* Ret;
+
+	Ret = SMalloc(Size);
+	memcpy(Ret, Mem, Size);
+
+	return Ret;
+}
