@@ -469,7 +469,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 
 
 	PrintTreesInfo(Str, Opt->Trees, Opt->DataType);
-	fflush(stdout);
+	fflush(Str);
 }
 
 void	FreeOptions(OPTIONS *Opt, int NoSites)
@@ -886,7 +886,7 @@ void	SetFatTailPrior(OPTIONS *Opt)
 	{
 		Opt->Priors[Pos++] = CreateUniformPrior(0.2, 2.0);
 		Opt->Priors[Pos++] = CreateInvGammaPrior(2.0, 0.130435);
-//		Opt->Priors[Pos++] = CreateUniformPrior(0.0, 1000.0);
+//		Opt->Priors[Pos++] = CreateUniformPrior(0.1, 100.0);
 	}
 }
 

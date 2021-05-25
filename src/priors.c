@@ -616,14 +616,56 @@ void InverseGammaTest(void)
 //		P = PInvGamma(X, 2, 0.130435);
 	//	P = PGamaWidth(X, 1.0, 2.0, 0.01);
 	//	P = PExpWidth(X, 1.0, 0.01);
-
-
-
+		
 		P = PBetaWidth(X, Alpha, Beta, 1.0 / 100);
 
 		P = log(P);
 		printf("%f\t%f\n", X, P);
 	}
+
+	exit(0);
+}
+
+void	PriorLhTest(PRIORS *Prior, double Width)
+{
+	double *List;
+	int Index, No;
+	double P;
+
+	No = 0;
+	List = LoadDouble("./Seq/Bug/LHTest.txt", &No);
+
+	for(Index=0;Index<No;Index++)
+	{
+	//	P = PDFInvGamma(List[Index], Prior->DistVals[0], Prior->DistVals[1]);
+		P = PInvGammaWidth(List[Index], Prior->DistVals[0], Prior->DistVals[1], Width);
+		printf("%f\t%f\n", log(P), List[Index]);
+	}
+}
+
+void	FatTailTest(PRIORS *Prior, double Width)
+{
+	double X,P;
+	STABLEDIST*	SD;
+
+	SD = CreatStableDist();
+
+//	SetStableDist(SD, 0.398682036619, 0.028880948364);
+	SetStableDist(SD, 0.248217153037, 0.000014251091);
+//	0.248217153	1.42511E-05
+	
+
+	for(X=-10;X<10;X+=0.1)
+	{
+
+		P = StableDistPDF(SD, X);	
+
+	//	P = PDFInvGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
+
+		printf("%f\t%f\n", X, P);
+	}
+
+//	PriorLhTest(Prior, Width);
 
 	exit(0);
 }
@@ -636,6 +678,7 @@ double	CaclPriorCost(double Val, PRIORS *Prior, int NoCats)
 	Width = 1.0 / NoCats;
 
 //	InverseGammaTest();
+//	FatTailTest(Prior, Width);
 
 	switch(Prior->Dist)
 	{
@@ -662,7 +705,9 @@ double	CaclPriorCost(double Val, PRIORS *Prior, int NoCats)
 		break;
 
 		case INVGAMMA:
-			Ret = PInvGammaWidth(Val, Prior->DistVals[0], Prior->DistVals[1], Width);
+			Ret = PDFInvGamma(Val, Prior->DistVals[0], Prior->DistVals[1]);
+//			InvGammaTest(Prior, Width);
+//			Ret = PInvGammaWidth(Val, Prior->DistVals[0], Prior->DistVals[1], Width);
 		break;
 	}
 

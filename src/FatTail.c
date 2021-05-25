@@ -740,7 +740,7 @@ void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed
 
 	Pos = Shed->PNo;
 	Dev = Opt->RateDevList[Shed->PNo];
-
+	Dev = 0.5;
 	OldR = Rates->Rates[Pos];
 
 	do
@@ -805,8 +805,8 @@ void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
 	for(Index=0;Index<NID;Index++)
 	{
 		if(Opt->UseGeoData == TRUE)
-		//	fprintf(Opt->LogFatTail, "Node-%05d - Long\tNode-%05d - Lat\t", Index, Index);
-			fprintf(Opt->LogFatTail, "Node-%05d - X\tNode-%05d - Y\tNode-%05d - Z\t", Index, Index, Index);
+			fprintf(Opt->LogFatTail, "Node-%05d - Long\tNode-%05d - Lat\t", Index, Index);
+		//	fprintf(Opt->LogFatTail, "Node-%05d - X\tNode-%05d - Y\tNode-%05d - Z\t", Index, Index, Index);
 		else
 		{
 			for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
@@ -841,18 +841,17 @@ void	OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		N = Tree->NodeList[Index];
 		if(N->Tip == FALSE)
 		{
-		//	if(Opt->UseGeoData == TRUE)
-		//	{
-		//		NodeToLongLat(N, &Long, &Lat);
-		//		fprintf(Opt->LogFatTail, "%f\t%f\t", Long, Lat);
-		//	}
-		//	else
+			if(Opt->UseGeoData == TRUE)
+			{
+				NodeToLongLat(N, &Long, &Lat);
+				fprintf(Opt->LogFatTail, "%f\t%f\t", Long, Lat);
+			}
+			else
 			{
 				NodeToLongLat(N, &Long, &Lat);
 				for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 					fprintf(Opt->LogFatTail, "%f\t", N->FatTailNode->Ans[SIndex]);
 			}
-			
 		}
 	}
 

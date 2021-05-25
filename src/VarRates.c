@@ -1317,6 +1317,8 @@ double	LhVarRatesList(OPTIONS *Opt, RATES *Rates, TREES *Trees, PLASTYNODE** VRa
 }
 
 
+
+
 void	RemoveEachVarRate(OPTIONS *Opt, RATES *Rates)
 {
 	PLASTY		*Plasty;
@@ -1326,19 +1328,36 @@ void	RemoveEachVarRate(OPTIONS *Opt, RATES *Rates)
 
 	Plasty = Rates->Plasty;
 	
+	printf("\n\n\n");
+
+	printf("Removing nodes one at a time\n");
+
 	for(Index=0;Index<Plasty->NoNodes;Index++)
 	{
 
 		RList = MakeNewList(Plasty, Index);
 		Lh = LhVarRatesList(Opt, Rates, Opt->Trees, RList, Plasty->NoNodes - 1);
 
-		printf("Del\t%d\tLh\t%f\n", Index, Lh);
+		printf("%d\tLh\t%f\n", Index, Lh);
 				
 		free(RList);
 	}
+
+//	exit(0);
 }
 
-PLASTYNODE** CreateVRateList(PLASTY *Plasty, int No1, int No2)
+PLASTYNODE** CreateVRateList1(PLASTY *Plasty, int No1)
+{
+	PLASTYNODE** Ret;
+
+	Ret = (PLASTYNODE**)malloc(sizeof(PLASTYNODE*) * 1);
+	
+	Ret[0] = Plasty->NodeList[No1];
+
+	return Ret;
+}
+
+PLASTYNODE** CreateVRateList2(PLASTY *Plasty, int No1, int No2)
 {
 	PLASTYNODE** Ret;
 
@@ -1351,21 +1370,40 @@ PLASTYNODE** CreateVRateList(PLASTY *Plasty, int No1, int No2)
 	return Ret;
 }
 
-void	TestEachVarRatePair(OPTIONS *Opt, RATES *Rates)
+void	OneRateAtOnce(OPTIONS *Opt, RATES *Rates)
 {
-	int X, Y;
+	int Index;
 	PLASTY		*Plasty;
 	PLASTYNODE**	List;
 	double Lh;
 
 	Plasty = Rates->Plasty;
 
-	List = CreateVRateList(Plasty, 1, 3);
-//	Lh = LhVarRatesList(Opt, Rates, Opt->Trees, List, 2);
+	printf("Testing each node, one at a time\n");
+
+//	for(X=0;X<Plasty->NoNodes;X++)
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+	{
+		List = CreateVRateList1(Plasty, Index);
+		Lh = LhVarRatesList(Opt, Rates, Opt->Trees, List, 1);
+
+		printf("Using:\t%d\t%f\n", Index, Lh);
+
+		free(List);
+	}
+}
+
+void	SpecifcPairTest(OPTIONS *Opt, RATES *Rates)
+{
+	double		Lh;
+	PLASTY		*Plasty;
+	PLASTYNODE**	List;
+
+	Plasty = Rates->Plasty;
+
+	List = CreateVRateList2(Plasty, 1, 6);
 
 	SetVarRatesList(Plasty, List, 2);
-
-	
 
 	Lh = Likelihood(Rates, Opt->Trees, Opt);
 	printf("Lh:\t%f\n", Lh);
@@ -1375,14 +1413,44 @@ void	TestEachVarRatePair(OPTIONS *Opt, RATES *Rates)
 	PrintPPTree(Opt, Opt->Trees, Rates, 1);
 		
 	exit(0);
-	
+}
+
+void	TestEachVarRatePair(OPTIONS *Opt, RATES *Rates)
+{
+	int X, Y;
+	PLASTY		*Plasty;
+	PLASTYNODE**	List;
+	double Lh;
+
+	Plasty = Rates->Plasty;
+
+	SpecifcPairTest(Opt, Rates);
+/*
+	List = CreateVRateList(Plasty, 1, 3);
+
+
+	SetVarRatesList(Plasty, List, 2);
+
+	Lh = Likelihood(Rates, Opt->Trees, Opt);
+	printf("Lh:\t%f\n", Lh);
+
+	CalcPriors(Rates, Opt);
+
+	PrintPPTree(Opt, Opt->Trees, Rates, 1);
+		
+	exit(0);
+*/	
+
+	printf("\n\n\n");
+	printf("Testing each pair of node\n");
+
 	for(X=0;X<Plasty->NoNodes;X++)
 	{
 		for(Y=0;Y<Plasty->NoNodes;Y++)
 		{
 			if(X != Y)
 			{
-				List = CreateVRateList(Plasty, X, Y);
+				List = CreateVRateList2(Plasty, X, Y);
 				Lh = LhVarRatesList(Opt, Rates, Opt->Trees, List, 2);
 
 				printf("%d\t%d\t%f\n", X, Y, Lh);
@@ -1410,16 +1478,49 @@ void	TestVarRates(OPTIONS *Opt, RATES *Rates)
 
 	printf("Lh = %f\n", Lh);
 //	exit(0);
-//	RemoveEachVarRate(Opt, Rates);
+
+	OneRateAtOnce(Opt, Rates);
+	
+	RemoveEachVarRate(Opt, Rates);
+
+
 
 	TestEachVarRatePair(Opt, Rates);
-
-
+	
 //	PrintPPTree(Opt, Opt->Trees, Rates, 1);
 
 	exit(0);
 }
 
+void	DumpVarRates(RATES *Rates)
+{
+	int Index;
+	NODE N;
+	PLASTYNODE	*PNode;
+	PLASTY		*Plasty;
+	
+	Plasty = Rates->Plasty;
+
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+	{
+		PNode = Plasty->NodeList[Index];
+		N = PNode->Node;
+		
+		printf("%d\t", Index);
+		printf("%d\t", N->ID);
+		printf("%f\t", PNode->Scale);
+		printf("%llu\t", PNode->NodeID);
+
+		OutputVarRatesType(stdout, PNode->Type);
+
+		printf("\n");
+	}
+
+	printf("\n\n\n\n\n\n");
+
+	fflush(stdout);
+//	exit(0);
+}
 
 
 void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt)
@@ -1427,6 +1528,8 @@ void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt)
 	char **Passed;
 	int Index, Tokes;
 	char *S;
+
+	PrintPPTree(Opt, Opt->Trees, Rates, 1);
 	
 
 	S = StrMake(Str);
@@ -1445,13 +1548,11 @@ void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt)
 		AddTextVarRate(Opt->Trees->Tree[0], Rates, 4, &Passed[Index]);
 //		printf("%s\n", Passed[Index]);
 	
-
+	DumpVarRates(Rates);
 
 	TestVarRates(Opt, Rates);
 	
-
 	free(Passed);
-
 }
 
 /*

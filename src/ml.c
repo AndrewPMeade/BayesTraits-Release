@@ -399,6 +399,7 @@ void	InitML(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		#endif
 	} 
 
+	fflush(Opt->LogFile);
 	fflush(stdout);
 	
 //	Test(Opt, Trees, Rates);

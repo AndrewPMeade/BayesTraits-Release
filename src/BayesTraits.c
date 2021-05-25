@@ -225,9 +225,14 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/funnydelta.trees ./Seq/funnydelta.txt < in.txt > sout.txt
 
-// ./Seq/prim10k.trees ./Seq/lambda-vr.LogBM-2.txt < in.txt > sout.txt
+
 
 // ./Seq/cc-discrete.trees ./Seq/infbreeding-islandcont.txt < in.txt > sout.txt
+
+// ./Seq/prim10k.trees ./Seq/lambda-vr.LogBM-2.txt < in.txt > sout.txt
+// ./Seq/Bug/Lloydcroptyrannonotmt.trees ./Seq/Bug/Lloydcroptyrannonotmt.txt < ./Seq/Bug/in.txt > ./Seq/Bug/sout.txt
+// ./Seq/Bug/Lloydcroptyrannonotmt.trees ./Seq/Bug/ConSim-000001.txt < ./Seq/Bug/in.txt > ./Seq/Bug/sout.txt
+
 
 int main(int argc, char** argv)
 {
