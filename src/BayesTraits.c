@@ -76,6 +76,8 @@ extern void PMatrixTest(void);
 	./Seq/ContrastTestLh.trees ./Seq/ContrastTestLh.txt < in.txt > sout.txt
 	./Seq/MammalBig.trees ./Seq/MammalBig.txt < in.txt > sout.txt
 	./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < in.txt > sout.txt
+
+	./Seq/MamTreesPoly-50.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
 */
 
 #ifdef JNIRUN
@@ -98,6 +100,8 @@ int main(int argc, char** argv)
 // ./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < BigMamIn.txt > sout.txt
 // ./Seq/PhyCorrectT.trees ./Seq/PhyCorrectT.txt < in.txt > sout.txt
 // ./Seq/Zuzana/Chiroptera.trees ./Seq/Zuzana/Chiroptera_BrW.txt  < ./Seq/Zuzana/in.txt > sout.txt
+// ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt  < BigMamIn.txt > sout.txt
+// ./Seq/MamBigTrimCNodes.trees ./Seq/MamBigTrim.txt < BigMamIn.txt > sout.txt
 int main(int argc, char** argv)
 {
 	TREES*		Trees;

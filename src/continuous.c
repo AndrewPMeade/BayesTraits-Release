@@ -177,9 +177,7 @@ void	CheckZeroTaxaBL(TREES *Trees)
 			if((Node->Tip == TRUE) && (Node != Trees->Tree[TIndex].Root))
 			{
 				if(Node->Length < TinyBL)
-				{
 					Node->Length = TinyBL;
-				}
 			}
 		}
 	}
@@ -1489,7 +1487,6 @@ void		FreeTempConVars(TEMPCONVAR* TempCon)
 	FreeMatrix(TempCon->NX);
 	free(TempCon->Y);
 
-
 	FreeMatrix(TempCon->RVX);
 	FreeMatrix(TempCon->XT);
 	FreeMatrix(TempCon->TempV1);
@@ -1572,14 +1569,14 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 {
 	int		TIndex;
 
+	CheckZeroTaxaBL(Trees);
+
 	if(Opt->Model == CONTRASTM)
 	{
 		if(Opt->Analsis == ANALMCMC)
 			InitContrastAll(Opt, Trees);
 		return;
 	}
-
-	CheckZeroTaxaBL(Trees);
 
 	if(Opt->Model == CONTINUOUSREG)
 		RemoveDependantData(Opt, Trees);

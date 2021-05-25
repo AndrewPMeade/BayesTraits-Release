@@ -563,6 +563,8 @@ TREES*	LoadTrees(char* FileName)
 	Ret->ValidCData			= TRUE;
 	Ret->ValidDData			= TRUE;
 
+	Ret->TempConVars		= NULL;
+
 	PTrees = LoadNTrees(FileName, &Err);
 
 	if(PTrees == NULL)

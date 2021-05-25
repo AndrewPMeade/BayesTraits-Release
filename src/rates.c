@@ -307,9 +307,6 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 
 	if(Opt->Analsis == ANALMCMC)
 	{
-		
-			
-
 		Rates->NoOfRates = Opt->Trees->NoOfSites;
 		
 		switch(Opt->Model)

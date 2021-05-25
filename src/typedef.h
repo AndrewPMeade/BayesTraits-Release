@@ -25,7 +25,6 @@
 
 /* Cost of Uniform prior */
 #define PPUNICOST		2.302585093
-
 #define PPJACOBIAN	1
 
 /* Max uniform vlaue */
@@ -44,6 +43,7 @@
 
 /* Use uniform or gamma value priors*/
 #define PPUNIFORM
+//#define PPGAMMA
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000
@@ -344,10 +344,10 @@ typedef struct
 
 typedef struct
 {
-	double	Data;
-	double	Cont;
-	double	Var;
-	double	Err;
+	double	*Data;
+	double	*Cont;
+	double	*Var;
+	double	*Err;
 } CONTRAST;
 
 struct INODE
@@ -358,8 +358,6 @@ struct INODE
 
 	double	Length;
 
-//	struct INODE	*Left;
-//	struct INODE	*Right;
 	struct INODE	*Ans;
 
 	struct	INODE	**NodeList;
@@ -379,7 +377,8 @@ struct INODE
 
 	int			FossilState;
 
-	CONTRAST*	Contrast;
+	CONTRAST	**Contrast;
+	int			NoContrast;
 };
 
 typedef enum
@@ -593,7 +592,7 @@ typedef struct
 	double*	EstAlpha;
 	double*	EstSigma;
 
-	double	AlphaErr;
+	double*	AlphaErr;
 } CONTRASTR;
 
 typedef struct
