@@ -4,7 +4,7 @@
 #include <math.h>
 
 #include "TypeDef.h"
-#include "genlib.h"
+#include "GenLib.h"
 
 
 void	StochasticCharacterMapping(OPTIONS *Opt, TREES  *Trees, RATES *Rates)

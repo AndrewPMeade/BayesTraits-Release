@@ -630,6 +630,7 @@ typedef struct
 {
 	int NoRates;
 	int	NoGroups;
+	int	*RateList;
 
 	RATE_GROUP	**RateGroupList;
 

@@ -845,7 +845,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	if(Opt->UseRJLandscapeRateGroup == TRUE)
 	{
-		Ret->LandscapeRateGroups = CreateLandRateGroups(Ret, Opt->Trees->Tree[0]->NoNodes-1);
+		Ret->LandscapeRateGroups = CreateLandRateGroups(Ret, Opt->Trees);
 //		SetNoFixedGroups(Ret, Ret->LandscapeRateGroups, Opt->NoLandscapeRateGroup);
 	}
 
