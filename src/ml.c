@@ -16,22 +16,11 @@
 #include "options.h"
 #include "data.h"
 #include "TimeSlices.h"
+#include "NLOptBT.h"
 
 #define MAX_ML_FREE_P 1048576
 #define NO_RAND_TRIES 10000
 
-
-typedef struct
-{
-	int NoP;
-
-	double	*PVal;
-	double	*PMin;
-	double	*PMax;
-	double	*PDef;
-	PRIOR	**Priors;
-
-} ML_MAP;
 
 void Opt1D(ML_MAP* Map, OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
@@ -39,6 +28,7 @@ void Opt1D(ML_MAP* Map, OPTIONS *Opt, TREES *Trees, RATES *Rates);
 ML_MAP*	AllocMLMap(void)
 {
 	ML_MAP*	Ret;
+	
 
 	Ret = (ML_MAP*)SMalloc(sizeof(ML_MAP));
 	
@@ -46,7 +36,8 @@ ML_MAP*	AllocMLMap(void)
 	Ret->PMin = (double*)SMalloc(sizeof(double) * MAX_ML_FREE_P);
 	Ret->PMax = (double*)SMalloc(sizeof(double) * MAX_ML_FREE_P);
 	Ret->PDef = (double*)SMalloc(sizeof(double) * MAX_ML_FREE_P);
-
+	Ret->PType = (ML_P_TYPE*)SMalloc(sizeof(ML_P_TYPE) * MAX_ML_FREE_P);
+		
 	Ret->NoP = 0;
 
 	return Ret;
@@ -58,6 +49,7 @@ void	FreeMLMap(ML_MAP *MLMap)
 	free(MLMap->PDef);
 	free(MLMap->PMin);
 	free(MLMap->PMax);
+	free(MLMap->PType);
 	
 	free(MLMap);
 }
@@ -70,20 +62,28 @@ void	CopyMLMap(ML_MAP *A, ML_MAP *B)
 	memcpy(A->PMin, B->PMin, sizeof(double) * A->NoP);
 	memcpy(A->PMax, B->PMax, sizeof(double) * A->NoP);
 	memcpy(A->PDef, B->PDef, sizeof(double) * A->NoP);
+	memcpy(A->PType, B->PType, sizeof(ML_P_TYPE) * A->NoP);
 }
 
-void	AddPToMLMap(ML_MAP*	MLMap, double DefV, double MinV, double MaxV)
+void	AddTypePToMLMap(ML_MAP*	MLMap, double DefV, double MinV, double MaxV, ML_P_TYPE Type)
 {
 	MLMap->PDef[MLMap->NoP] = DefV;
 	MLMap->PMin[MLMap->NoP] = MinV;
 	MLMap->PMax[MLMap->NoP] = MaxV;
+	MLMap->PType[MLMap->NoP] = Type;
 	MLMap->NoP++;
+}
+
+void	AddPToMLMap(ML_MAP*	MLMap, double DefV, double MinV, double MaxV)
+{
+	AddTypePToMLMap(MLMap, DefV, MinV, MaxV, ML_P_TYPE_NONE);
 }
 
 void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Index;
 	TIME_SLICE *TS;
+	LOCAL_TRANSFORM *LT;
 
 	for(Index=0;Index<Rates->NoOfRates;Index++)
 		AddPToMLMap(MLMap, 1.0, MINRATE, MAXRATE);
@@ -105,13 +105,21 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		AddPToMLMap(MLMap, 1.0, MIN_GAMMA, MAX_GAMMA);
 
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
-		if(Rates->LocalTransforms[Index]->Est == TRUE)
+	{
+		LT = Rates->LocalTransforms[Index];
+		if(LT->Est == TRUE)
 		{
-			if(Rates->LocalTransforms[Index]->Type == VR_OU)
+			if(LT->Type == VR_OU)
 				AddPToMLMap(MLMap, MIN_OU, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
 			else
-				AddPToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
+			{
+				if(LT->Type == VR_NODE || LT->Type == VR_BL)
+					AddTypePToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE, ML_P_TYPE_RATE_S);
+				else
+					AddPToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
+			}
 		}
+	}
 
 	if(Rates->TimeSlices != NULL)
 	{
@@ -122,7 +130,7 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				AddPToMLMap(MLMap, RandDouble(Rates->RS), 0.0, 1.0);
 
 			if(TS->FixedScale == FALSE)
-				AddPToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
+				AddTypePToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE, ML_P_TYPE_RATE_S);
 		}
 	}
 }
@@ -203,14 +211,25 @@ void	MLMapSetDefVals(ML_MAP* MLMap)
 	memcpy(MLMap->PVal, MLMap->PDef, sizeof(double) * MLMap->NoP);
 }
 
+double	GetRandRateScale(RANDSTATES *RS, double Min, double Max)
+{
+	if(RandDouble(RS) < 0.5)
+		return RandUniDouble(RS, Min, 1.0);
+
+	return RandUniDouble(RS, 1.0, Max);
+}
+
 void	MLMapSetRandVals(ML_MAP* MLMap, RANDSTATES *RS)
 {
 	int Index;
 
 	for(Index=0;Index<MLMap->NoP;Index++)
 	{
-		MLMap->PVal[Index] = RandDouble(RS) * (MLMap->PMax[Index] - MLMap->PMin[Index]);
-		MLMap->PVal[Index] += MLMap->PMin[Index];
+		if(MLMap->PType[Index] == ML_P_TYPE_NONE)
+			MLMap->PVal[Index] = RandUniDouble(RS, MLMap->PMin[Index], MLMap->PMax[Index]);
+		
+		if(MLMap->PType[Index] == ML_P_TYPE_RATE_S)
+			MLMap->PVal[Index] = GetRandRateScale(RS, MLMap->PMin[Index], MLMap->PMax[Index]);
 	}
 }
 
@@ -271,13 +290,7 @@ double	LhPraxis(void* P, double *List)
 
 double*	MLMapClonePVect(ML_MAP*	MLMap)
 {
-	double *Ret;
-
-	Ret = (double*)SMalloc(sizeof(double) * MLMap->NoP);
-
-	memcpy(Ret, MLMap->PVal, sizeof(double) * MLMap->NoP);
-
-	return Ret;
+	return (double*)CloneMem(sizeof(double) * MLMap->NoP, (void*)MLMap->PVal);
 }
 
 ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -296,6 +309,9 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	TVect = MLMapClonePVect(Ret);
 
+	PState = NULL;
+
+#ifndef NLOPT
 	if(Ret->NoP > 1)
 		PState = IntiPraxis(LhPraxis, TVect, Ret->NoP, 0, 1, 4, 50000);
 	else
@@ -306,48 +322,28 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	PState->Rates	= Rates;
 	PState->Pt		= (void*)Ret;
 
-
 	Lh = praxis(PState);
-
 	memcpy(Ret->PVal, TVect, sizeof(double) * Ret->NoP);
-
-	Lh = LikelihoodML(Ret, Opt, Trees, Rates);
-	
-
-
 	FreePracxStates(PState);
+#else
+	NLOptBT(Rates, Opt, Trees, Ret);
+#endif
+	
+	Lh = LikelihoodML(Ret, Opt, Trees, Rates);
 
+	
 	free(TVect);
 	return Ret;
 }
 
-void	MLTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	double Rate, Lh;
 
-	for(Rate=0;Rate<1000;Rate+=0.01)
-	{
-		Rates->Rates[0] = Rate;
-		Lh = Likelihood(Rates, Trees, Opt);
 
-		printf("%f\t%f\n", Rate, Lh);
-	}
-
-	exit(0);
-}
-
-//./Seq/AASacra.trees ./Seq/AASacra.txt < in.txt > sout.txt
-//./Seq/a67.1000.trees ./Seq/descent.txt < in.txt > sout.txt
-
-// ./Seq/MLTest/Tree-00000717.trees ./Seq/MLTest/Data-00000717.txt < in.txt > sout.txt
-// ./Seq/Testing/PrimatesBody.trees ./Seq/Testing/PrimatesBody.txt < ./Seq/Testing/in.txt > ./Seq/Testing/sout.txt
 void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	ML_MAP*	CMap, *BMap;
 	double CLh, BLh;
 	int Index;
 
-//	MLTest(Opt, Trees, Rates);
 		
 	BMap = AllocMLMap();
 
@@ -357,9 +353,11 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	if(BMap->NoP != 0)
 	{
+#ifndef NLOPT
 		if(BMap->NoP == 1)
 			Opt1D(BMap, Opt, Trees, Rates);
 		else
+#endif
 		{
 			for(Index=0;Index<Opt->MLTries;Index++)
 			{
@@ -447,6 +445,9 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 		PrintRates(stdout, Rates, Opt, NULL);
 		printf("\n");
 		fflush(stdout);
+
+		if(Opt->SaveTrees == TRUE)
+			OutputTree(Opt, Trees, Rates, Index+1, Opt->OutTrees);
 		
 		if(Opt->ModelType == MT_CONTINUOUS)
 		{

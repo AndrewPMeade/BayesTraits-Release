@@ -237,7 +237,10 @@ void	ApplyNodeScalars(TREE *Tree)
 	int Index;
 
 	for(Index=0;Index<Tree->NoNodes;Index++)
-		Tree->NodeList[Index]->Length = Tree->NodeList[Index]->Length + Tree->NodeList[Index]->ScaleFactor;
+	{
+		if(Tree->NodeList[Index]->Length != 0)
+			Tree->NodeList[Index]->Length = Tree->NodeList[Index]->Length + Tree->NodeList[Index]->ScaleFactor;
+	}
 }
 
 double	GetMaxRootToTip(TREE *Tree)
@@ -340,8 +343,6 @@ void	ApplyTimeSlices(RATES *Rates, TREES *Trees)
 
 	qsort(TS->TimeSlices, TS->NoTimeSlices, sizeof(TIME_SLICE*), CompTimeSlices);
 
-//	printf("===============\n");
-//	printf("MaxRootToTip\t%f\n", RootToTip);
 
 	for(Index=0;Index<TS->NoTimeSlices;Index++)
 	{
@@ -365,10 +366,7 @@ void	ApplyTimeSlices(RATES *Rates, TREES *Trees)
 
 	ApplyNodeScalars(Tree);
 
-
-//	SaveTrees("TimeSliced.trees", Trees);	
-	
-//	exit(0);
+//	SaveTrees("TimeSliced.trees", Trees);		exit(0);
 }
 
 void	PrintTimeSliceHeader(FILE *Str, TIME_SLICES *TS)

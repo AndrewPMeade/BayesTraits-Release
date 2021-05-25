@@ -1,4 +1,4 @@
-#if !defined (PHYLOPLASTYHEADDER)
+#ifndef PHYLOPLASTYHEADDER
 #define PHYLOPLASTYHEADDER
 
 #include "typedef.h"

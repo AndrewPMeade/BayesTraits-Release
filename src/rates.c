@@ -31,6 +31,7 @@
 #include "DistData.h"
 #include "TimeSlices.h"
 
+
 //double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 //void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
 
@@ -763,6 +764,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
 	Ret->RNG			=	gsl_rng_alloc(gsl_rng_mt19937);
 	gsl_rng_set(Ret->RNG, Opt->Seed);
+
 
 	SetRatesLocalRates(Ret, Opt);
 

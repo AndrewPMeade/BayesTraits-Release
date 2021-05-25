@@ -3476,8 +3476,9 @@ void	OptAddTimeSlice(OPTIONS *Opt, int Tokes, char **Passed)
 			exit(1);
 		}
 	}
-
+	
 	AddTimeSlice(Opt->TimeSlices, Name, Time, Scale);
+	Opt->SaveTrees = TRUE;
 }
 
 

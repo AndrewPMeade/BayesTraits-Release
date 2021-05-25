@@ -32,8 +32,14 @@
 // Information for the phomem cog est runs
 // #define	PHONEIM_RUN
 
-//#define NLOPT_BT
+
 //#define QUAD_DOUBLE
+
+// use nlopt libray for ML esitmates, much better than praxis if available 
+#define NLOPT
+#ifdef NLOPT
+	#include <nlopt.h>
+#endif
 
 #ifdef BIG_LH
 	#include <gmp.h>
