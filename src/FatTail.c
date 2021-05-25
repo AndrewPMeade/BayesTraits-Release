@@ -421,7 +421,7 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			Ret += CalcNodeStableLh(Tree->NodeList[Index], NoSites, FTR->SDList, UseGeoModel);
 	}
 
-	if(ValidLh(Ret) == FALSE)
+	if(ValidLh(Ret, Opt->ModelType) == FALSE)
 		return ERRLH;
 
 

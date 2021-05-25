@@ -337,6 +337,9 @@ void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 	int		Inner, Outter, NIndex;
 	double	Lh;
 	double	**Mat, **Partial;
+	double *CPart;
+
+	CPart = N->Partial[SiteNo];
 
 	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
 	{
@@ -823,6 +826,7 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 	int NIndex, Err, NoErr, PMatNo;
 	TREE *Tree;
 	NODE N;
+	INVINFO *InvInfo;
 	
 	NoErr = 0;
 	Err = FALSE;
@@ -844,13 +848,15 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 			{
 				if(Opt->AnalyticalP == FALSE)
 				{
-					if(Opt->Model != M_DESCHET)
-						Err = SetStdPMatrix(Trees->InvInfo, Trees, N, Trees->PList[N->ID], Gamma);
-					else
+					InvInfo = Trees->InvInfo;
+
+					if(Opt->Model == M_DESCHET)
 					{
 						PMatNo = Rates->Hetero->MList[NIndex];
-						Err = SetStdPMatrix(Rates->Hetero->ModelInv[PMatNo], Trees, N, Trees->PList[N->ID], Gamma);
+						InvInfo = Rates->Hetero->ModelInv[PMatNo];
 					}
+
+					Err = SetStdPMatrix(InvInfo, Trees, N, Trees->PList[N->ID], Gamma);
 				}
 				else
 					Err = SetAnalyticalPMatrix(Trees, N, Trees->PList[N->ID], Rates->FullRates[0], Gamma);
@@ -990,9 +996,12 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	}
 }
 
-int		ValidLh(double LH)
+int		ValidLh(double LH, MODEL_TYPE MT)
 {
-	if(LH > 0 || LH == LH+1 || LH != LH || LH == ERRLH)
+	if(LH == LH+1 || LH != LH || LH == ERRLH)
+		return FALSE;
+
+	if(LH > 0 && MT == MT_DISCRETE)
 		return FALSE;
 
 	return TRUE;
@@ -1123,7 +1132,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	Ret = CombineLh(Rates, Trees, Opt);
 
 	
-	if(ValidLh(Ret) == FALSE)
+	if(ValidLh(Ret, Opt->ModelType) == FALSE)
 		return ERRLH;
 
 	return Ret;

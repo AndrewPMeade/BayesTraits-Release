@@ -475,26 +475,6 @@ double	Create2SPMat(double t, INVINFO *InvInfo, MATRIX *Mat, TREES* Trees, MATRI
 		
 		t1 += t2 * t2;
 
-/*	for(i=0;i<NOS;i++)
-	{
-		t2=1.0;
-
-		M[i][0] =	Am[i][0] * InvVec[0][0] +
-					Am[i][1] * InvVec[1][0];
-		t2-=M[i][0];
-		if(M[i][0] < 0)
-			return 1000;
-
-	
-		M[i][1] =	Am[i][0] * InvVec[0][1] +
-					Am[i][1] * InvVec[1][1];
-		t2-=M[i][1];
-		if(M[i][1] < 0)
-			return 1000;
-		
-		t1 += t2 * t2;
-	}
-*/
 	return t1;
 }
 
@@ -573,7 +553,6 @@ double	Create4SPMat(double t, INVINFO *InvInfo, MATRIX *Mat, TREES* Trees, MATRI
 					Am[i][1] * InvVec[1][3] +
 					Am[i][2] * InvVec[2][3] +
 					Am[i][3] * InvVec[3][3];
-			
 
 		t2-=M[i][3];
 
@@ -585,8 +564,6 @@ double	Create4SPMat(double t, INVINFO *InvInfo, MATRIX *Mat, TREES* Trees, MATRI
 
 	return t1;
 }
-
-
 /*
 double	CreateDiscretePMat(double t, INVINFO *InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et)
 {

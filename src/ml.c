@@ -227,7 +227,7 @@ double	LhPraxis(void* P, double *List)
 
 	PState->NoLhCalls++;
 
-	if(ValidLh(Ret) == FALSE)
+	if(Ret == ERRLH)
 		return -ERRLH;
 	
 	return -Ret;
@@ -237,9 +237,7 @@ double*	MLMapClonePVect(ML_MAP*	MLMap)
 {
 	double *Ret;
 
-	Ret = (double*)malloc(sizeof(double) * MLMap->NoP);
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (double*)SMalloc(sizeof(double) * MLMap->NoP);
 
 	memcpy(Ret, MLMap->PVal, sizeof(double) * MLMap->NoP);
 
@@ -353,7 +351,7 @@ void	MLTest2(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	for(R=0.0001;R<1;R+=0.0001)
 	{
-		Rates->Rates[0] = R;
+		Rates->Lambda = R;
 		Lh = Likelihood(Rates, Trees, Opt);
 		printf("%f\t%f\n", R, Lh);
 	}
@@ -502,9 +500,9 @@ double	Opt1DFunc(double Pram)
 	return -Ret;
 }
 
-void Opt1DAcc(double *BLh, double *BVal, double *CLh, double *CVal)
+void Opt1DAcc(double *BLh, double *BVal, double *CLh, double *CVal, MODEL_TYPE MT)
 {
-	if(ValidLh(*CLh) == FALSE)
+	if(ValidLh(*CLh, MT) == FALSE)
 		return;
 
 	if(*CLh > *BLh)
@@ -533,22 +531,22 @@ void Opt1D(ML_MAP* Map, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	// Test Min
 	CLh = -GoldenOpt(500, 1, Map->PMin[0], Map->PMin[0], Map->PMax[0], Opt1DFunc, Tol, &CVal);
-	Opt1DAcc(&BLh, &BVal, &CLh, &CVal);
+	Opt1DAcc(&BLh, &BVal, &CLh, &CVal, Opt->ModelType);
 
 	// Test Max
 	CLh = -GoldenOpt(500, 1, Map->PMin[0], Map->PMax[0], Map->PMax[0], Opt1DFunc, Tol, &CVal);
-	Opt1DAcc(&BLh, &BVal, &CLh, &CVal);
+	Opt1DAcc(&BLh, &BVal, &CLh, &CVal, Opt->ModelType);
 
 	// Def Min
 	CLh = -GoldenOpt(500, 1, Map->PMin[0], Map->PDef[0], Map->PMax[0], Opt1DFunc, Tol, &CVal);
-	Opt1DAcc(&BLh, &BVal, &CLh, &CVal);
+	Opt1DAcc(&BLh, &BVal, &CLh, &CVal, Opt->ModelType);
 
 	// A set of Random
 	for(Index=0;Index<Opt->MLTries;Index++)
 	{
 		Val = Map->PMin[0] + (RandDouble(Rates->RS) * (Map->PMax[0] - Map->PMin[0]));
 		CLh = -GoldenOpt(500, 1, Map->PMin[0], Val, Map->PMax[0], Opt1DFunc, Tol, &CVal);
-		Opt1DAcc(&BLh, &BVal, &CLh, &CVal);
+		Opt1DAcc(&BLh, &BVal, &CLh, &CVal, Opt->ModelType);
 	}
 
 	Map->PVal[0] = BVal;

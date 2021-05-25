@@ -1990,6 +1990,7 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	if(OptFindRecNode(Opt, argv[1]) != NULL)
 	{
 		printf("Node name %s is allready is use please chose another\n", argv[1]);
+		exit(0);
 		return;
 	}
 
@@ -3223,7 +3224,6 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 		Prior = CreateSGammaPrior("VRNode", VARRATES_ALPHA, VARRATES_BETA);
 		AddPriorToOpt(Opt, Prior);
 	}
-
 }
 
 void	SetRJLocalTransform(OPTIONS *Opt, char **Passed, int Tokes)

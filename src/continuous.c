@@ -1912,10 +1912,9 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	
 	Ret = Ret + Det + Val;
 	
-	if(Ret == Ret + 1)
-		return ERRLH;
-
-
+	if(ValidLh(Rates->Lh, Opt->ModelType) == FALSE)
+		Ret = ERRLH;
+	
 	Rates->Lh = Ret;
 
 	return Ret;
