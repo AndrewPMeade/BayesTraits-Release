@@ -758,14 +758,17 @@ void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed
 
 void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
 {
-	int Index, Pos;
+	int Pos;
 	double NewR, OldR, Dev;
 
 //	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
 	Shed->PNo = GetMutateFatTailRatesPos(Opt, Trees, Rates, Shed);
 
 	Pos = Shed->PNo;
-	Dev = Opt->RateDevList[Shed->PNo];
+
+	Shed->CurrentAT = Shed->RateDevATList[Shed->PNo];
+
+	Dev = Shed->CurrentAT->CDev;
 	OldR = Rates->Rates[Pos];
 
 	do

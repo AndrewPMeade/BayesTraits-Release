@@ -455,24 +455,28 @@ double	ChangePlastyRateLambda(RANDSTATES	*RS, double Scale, double SD)
 	return Ret;
 }
 
-void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* Shed)
 {
 	PLASTY		*Plasty;
 	PLASTYNODE	*Node;
 	int			No;
+	double		Dev;
+	
+	Shed->CurrentAT = Shed->VarRateAT;
+	Dev = Shed->CurrentAT->CDev;
 
 	Plasty = Rates->Plasty;
 
 	No = RandUSLong(Rates->RS) % Plasty->NoNodes;
 	Node = Plasty->NodeList[No];
 
-	Rates->LnHastings = CalcNormalHasting(Node->Scale, Opt->VarRatesScaleDev);
+	Rates->LnHastings = CalcNormalHasting(Node->Scale, Dev);
 //	Rates->LnHastings = 0;
 
 	if(Node->Type == VR_LAMBDA)
-		Node->Scale = ChangePlastyRateLambda(Rates->RS, Node->Scale, Opt->VarRatesScaleDev);
+		Node->Scale = ChangePlastyRateLambda(Rates->RS, Node->Scale, Dev);
 	else
-		Node->Scale = ChangePlastyRate(Rates->RS, Node->Scale, Opt->VarRatesScaleDev);
+		Node->Scale = ChangePlastyRate(Rates->RS, Node->Scale, Dev);
 }
 
 int		NodeScaled(int NID, PLASTY *Plasty)

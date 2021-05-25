@@ -10,6 +10,7 @@
 #include "matrix.h"
 #include "RandLib.h"
 #include "StableDist.h"
+#include "AutoTune.h"
 
 //#define	JNIRUN
 //#define THREADED
@@ -185,6 +186,10 @@
 #define FAT_TAIL_NORMAL_VAL 2.0
 
 #define NO_PRIOR_DIST 5
+
+// Minimum and maximum acceptance rates, set for Auto tuning  
+#define MIN_VALID_ACC 0.2
+#define MAX_VALID_ACC 0.4
 
 static char    *RJ_LOCAL_SCALAR_NAMES[] =
 {
@@ -972,13 +977,13 @@ typedef struct
 	int			*ResNo;
 	double		*ResConst;
 
-	double		RateDev;
-	double		*RateDevList;
-	int			AutoTuneRD;
-	int			RateDevPerParm;
+//	double		RateDev;
+//	double		*RateDevList;
+//	int			AutoTuneRD;
+//	int			RateDevPerParm;
 
 
-	double		RateDevKappa;
+/*	double		RateDevKappa;
 	double		RateDevLambda;
 	double		RateDevDelta;
 	double		RateDevOU;
@@ -989,7 +994,7 @@ typedef struct
 	
 	double		VarRatesScaleDev;
 	int			AutoTuneVarRates;
-	
+	*/
 	//	PPSCALEDEV
 
 	PRIORS		**Priors;
@@ -1366,16 +1371,7 @@ typedef enum
 	SFATTAILANS
 } OPERATORS;
 
-typedef struct 
-{
-	int No;
-	
-	double	Min, Max, Target;
-	double	Last;	
-	
-	double	*RateAcc;
-	double	*RateDev;
-} AUTOTUNE;
+
 
 typedef struct
 {
@@ -1385,10 +1381,6 @@ typedef struct
 	int		GNoAcc, GNoTried;
 	int		SNoAcc, SNoTried;
 	
-//	double	OptFreq[NOOFOPERATORS];
-//	int		Tryed[NOOFOPERATORS];
-//	int		Accepted[NOOFOPERATORS];
-
 	double		*OptFreq;
 	int			*Tryed;
 	int			*Accepted;
@@ -1413,7 +1405,14 @@ typedef struct
 	AUTOTUNE	*LambdaAT;
 	AUTOTUNE	*OUAT;
 
+	AUTOTUNE	*GammaAT;
+
 	AUTOTUNE	*RJDummyBetaAT;
+
+	AUTOTUNE	**FullATList;
+	int			NoFullATList;
+
+	AUTOTUNE	*CurrentAT;
 
 } SCHEDULE;
 

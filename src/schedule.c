@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "typedef.h"
 #include "genlib.h"
@@ -9,6 +10,27 @@
 #include "AutoTune.h"
 #include "rates.h"
 #include "VarRates.h"
+
+void	AddToFullATList(SCHEDULE* Shed, AUTOTUNE *AT)
+{
+	AUTOTUNE **NList;
+
+	NList = (AUTOTUNE**)malloc(sizeof(AUTOTUNE*) * (Shed->NoFullATList + 1));
+	if(NList == NULL)
+		MallocErr();
+
+	if(Shed->FullATList != NULL)
+	{
+		memcpy(NList, Shed->FullATList, sizeof(AUTOTUNE*) * Shed->NoFullATList);
+		free(Shed->FullATList);
+	}
+
+	NList[Shed->NoFullATList] = AT;
+
+	Shed->FullATList = NList;
+
+	Shed->NoFullATList++;
+}
 
 void	UpDateShedAcc(int Acc, SCHEDULE* Shed)
 {
@@ -382,11 +404,16 @@ SCHEDULE*	AllocSchedule()
 	Ret->LambdaAT		= NULL;
 	Ret->OUAT			= NULL;
 
+	Ret->GammaAT		= NULL;
+
 	Ret->RJDummyBetaAT	=	NULL;
 	
 	Ret->NoVarRatesOp	= 0;
 	Ret->FreqVarRatesOp = NULL;
 	Ret->VarRatesOp		= NULL;
+
+	Ret->NoFullATList	= 0;
+	Ret->FullATList		= 0;
 	
 	return Ret;
 }
@@ -405,19 +432,15 @@ void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, RANDSTATES *RS)
 
 	Shed->RateDevPerParm	= TRUE;
 	Shed->NoParm			= FindNoOfAutoCalibRates(Opt);
-	Shed->PAcc				= (int*)malloc(sizeof(int) * Shed->NoParm);
-	Shed->PTried			= (int*)malloc(sizeof(int) * Shed->NoParm);
 	Shed->RateDevATList		= (AUTOTUNE**)malloc(sizeof(AUTOTUNE*) * Shed->NoParm);
 
-	if((Shed->PAcc == NULL) || (Shed->PTried == NULL) || (Shed->RateDevATList == NULL))
+	if(Shed->RateDevATList == NULL)
 		MallocErr();
 
 	for(Index=0;Index<Shed->NoParm;Index++)
 	{
-		Shed->PTried[Index] = Shed->PAcc[Index] = 0;
-		Shed->RateDevATList[Index] = CreatAutoTune(0.2, 0.4);
-//		Opt->RateDevList[Index] = RandDouble(RS) * 10;
-		Opt->RateDevList[Index] = 1.0;
+		Shed->RateDevATList[Index] = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		AddToFullATList(Shed, Shed->RateDevATList[Index]);
 	}
 }
 
@@ -434,54 +457,56 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 	Ret->GNoAcc = Ret->GNoTried = 0;
 	Ret->SNoAcc = Ret->SNoTried = 0;
 
-	if(Opt->AutoTuneRD == TRUE)
-		SetRateDevPerParm(Ret, Opt, RS);
-		
-	if(Opt->AutoTuneDD == TRUE)
-	{
-		Ret->DataDevAT = CreatAutoTune(0.2, 0.4);
-		Opt->EstDataDev= RandDouble(RS) * 10;
-	}
+	SetRateDevPerParm(Ret, Opt, RS);
 
-	if(Opt->AutoTuneVarRates == TRUE)
-	{
+	// Set Auto tune Data Dev
+	Ret->DataDevAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+	AddToFullATList(Ret, Ret->DataDevAT);
 
-		Ret->VarRateAT = CreatAutoTune(0.2, 0.4);
+	// Set VarRates Auto Tune
+	Ret->VarRateAT = CreatAutoTune(RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+	AddToFullATList(Ret, Ret->VarRateAT);
+
 	//	Opt->VarRatesScaleDev = RandDouble(RS) * 100;
-		Opt->VarRatesScaleDev = RandDouble(RS);
-	}
+//		Opt->VarRatesScaleDev = RandDouble(RS);
+	
 
 	if(Opt->EstKappa == TRUE)
 	{
-		Ret->KappaAT = CreatAutoTune(0.2, 0.4);
-		Opt->RateDevKappa = RandDouble(RS) * 10;
+		Ret->KappaAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		AddToFullATList(Ret, Ret->KappaAT);
 	}
 
 	if(Opt->EstLambda == TRUE)
 	{
-		Ret->LambdaAT = CreatAutoTune(0.2, 0.4);
-		Opt->RateDevLambda = RandDouble(RS) * 10;
+		Ret->LambdaAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		AddToFullATList(Ret, Ret->LambdaAT);
 	}
 
 	if(Opt->EstDelta == TRUE)
 	{
-		Ret->DeltaAT = CreatAutoTune(0.2, 0.4);
-		Opt->RateDevDelta = RandDouble(RS) * 10;
-
+		Ret->DeltaAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		AddToFullATList(Ret, Ret->DeltaAT);
 	}
 
 	if(Opt->EstOU == TRUE)
 	{
-		Ret->OUAT = CreatAutoTune(0.2, 0.4);
-		Opt->RateDevOU = RandDouble(RS) * 10;
+		Ret->OUAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		AddToFullATList(Ret, Ret->OUAT);
 	}
 
 	if(Opt->RJDummy == TRUE)
 	{
-		Ret->RJDummyBetaAT = CreatAutoTune(0.2, 0.4);
-		Opt->RJDummyBetaDev= RandDouble(RS);
+		Ret->RJDummyBetaAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		AddToFullATList(Ret, Ret->RJDummyBetaAT);
 	}
 	
+
+	if(Opt->EstGamma == TRUE)
+	{
+		Ret->GammaAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		AddToFullATList(Ret, Ret->GammaAT);
+	}
 
 	return Ret;
 }
@@ -522,15 +547,20 @@ void		FreeeSchedule(SCHEDULE* Sched)
 	if(Sched->OUAT != NULL)
 		FreeAutoTune(Sched->OUAT);
 
+	if(Sched->GammaAT != NULL)
+		FreeAutoTune(Sched->GammaAT);
+
 	if(Sched->RJDummyBetaAT != NULL)
 		FreeAutoTune(Sched->RJDummyBetaAT);
-
-
+	
 	if(Sched->VarRatesOp != NULL)
 		free(Sched->VarRatesOp);
 
 	if(Sched->FreqVarRatesOp != NULL)
 		free(Sched->FreqVarRatesOp);
+
+	if(Sched->FullATList != NULL)
+		free(Sched->FullATList);
 
 	free(Sched);
 }

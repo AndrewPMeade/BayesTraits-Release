@@ -8,6 +8,11 @@
 
 void		CalcRSqr(double *x, double *y, int Size, double *R2, double *Slope, double *Intercept);
 
+void		ReSetAutoTune(AUTOTUNE *AutoTune)
+{
+	AutoTune->NoTried	= 0;
+	AutoTune->NoAcc		= 0;
+}
 
 int			GetAutoTuneSize(AUTOTUNE *AutoTune)
 {
@@ -17,8 +22,7 @@ int			GetAutoTuneSize(AUTOTUNE *AutoTune)
 	return  AT_HSIZE;
 }
 
-
-AUTOTUNE*	CreatAutoTune(double Min, double Max)
+AUTOTUNE*	CreatAutoTune(double InitDev, double Min, double Max)
 {
 	AUTOTUNE *Ret;
 	int		Index;
@@ -30,7 +34,7 @@ AUTOTUNE*	CreatAutoTune(double Min, double Max)
 	Ret->RateAcc = (double*)malloc(sizeof(double) * AT_HSIZE);
 	Ret->RateDev = (double*)malloc(sizeof(double) * AT_HSIZE);
 	
-	if((Ret->RateAcc == NULL) || (Ret->RateDev == NULL))
+	if(Ret->RateAcc == NULL || Ret->RateDev == NULL)
 		MallocErr();
 
 	for(Index=0;Index<AT_HSIZE;Index++)
@@ -39,12 +43,17 @@ AUTOTUNE*	CreatAutoTune(double Min, double Max)
 		Ret->RateDev[Index] = 0;
 	}
 
+	Ret->Last	= -1.0;
+
 	Ret->Min	= Min;
 	Ret->Max	= Max;
 	Ret->Target = ((Max - Min) * 0.5) + Min;
-//	Ret->Target = 0.2;
 	Ret->No		= 0;
 	
+	Ret->CDev	= InitDev;
+	
+	ReSetAutoTune(Ret);
+
 	return Ret;
 }
 
@@ -74,21 +83,16 @@ int			GetClosest(AUTOTUNE *AutoTune, double RD, double Acc)
 	return Ret;
 }
 
-double		BlindUpDate(AUTOTUNE *AutoTune, RANDSTATES *RS, double RD, double Acc)
+void		BlindUpDate(AUTOTUNE *AT, RANDSTATES *RS, double Acc)
 {
 	double Scale;
 
-	if(Acc < AutoTune->Target)
+	if(Acc < AT->Target)
 		Scale = (RandDouble(RS) * 0.5) + 0.5;
 	else
 		Scale = RandDouble(RS) + 1;
-		
-	return RD * Scale;
-
-/*	if(Acc < AutoTune->Target)
-		return RD * (1.0 / AT_SCALE);
-	else
-		return RD * AT_SCALE;*/
+	
+	AT->CDev = AT->CDev * Scale;
 }
 
 int			InList(double *List, int Size, double RD)
@@ -104,25 +108,26 @@ int			InList(double *List, int Size, double RD)
 	return FALSE;
 }
 
-void		AddAutoTune(AUTOTUNE *AutoTune, double RD, double Acc)
+void		AddAutoTune(AUTOTUNE *AT, double Acc)
 {
 	int Pos;
 
-	Pos = AutoTune->No % AT_HSIZE;
+	Pos = AT->No % AT_HSIZE;
 
-	if((AutoTune->No < AT_HSIZE)  || (AutoTune->Last != RD))
+	if(AT->Last != AT->CDev)
 	{
-		AutoTune->RateAcc[Pos] = Acc;
-		AutoTune->RateDev[Pos] = RD;
+		AT->RateAcc[Pos] = Acc;
+		AT->RateDev[Pos] = AT->CDev;
+		AT->No++;
 	}
 
-	AutoTune->Last = RD;
-	AutoTune->No++;
+	AT->Last = AT->CDev;
+	
 }
 
 int			AutoTuneValid(AUTOTUNE *AutoTune, double Acc)
 {
-	if((Acc >= AutoTune->Min) && (Acc <= AutoTune->Max))
+	if(Acc >= AutoTune->Min && Acc <= AutoTune->Max)
 		return TRUE;
 
 	return FALSE;
@@ -140,52 +145,43 @@ void		PrintAutoTuneRates(AUTOTUNE *AutoTune)
 	printf("\n");
 }
 
+double		CalcAcc(AUTOTUNE *AT)
+{
+	return (double)(AT->NoAcc / AT->NoTried);
+}
 
-double		AutoTuneNextRD(AUTOTUNE *AutoTune, RANDSTATES *RS, double RD, double Acc)
+void		AutoTuneUpDate(AUTOTUNE *AT, RANDSTATES *RS)
 {
 	double Ret;
 	double R2, Slope, Int;
-	
-//	return 0.548;
-//	return 1;
-	
-//	return RandDouble(RS) * 2;
-	
+	double	Acc;
 
-//	if(AutoTuneValid(AutoTune, Acc) == TRUE)
-		AddAutoTune(AutoTune, RD, Acc);
+	if(AT->NoTried < AT_MIN_TRIED)
+		return;
 
-	if(AutoTune->No > AT_HSIZE)
+	Acc = CalcAcc(AT);
+
+	AddAutoTune(AT, Acc);
+
+	if(AT->No > AT_HSIZE)
 	{		
-		if(AutoTuneValid(AutoTune, Acc) == FALSE)
-			return  BlindUpDate(AutoTune, RS, RD, Acc);
+		if(AutoTuneValid(AT, Acc) == FALSE)
+		{
+			BlindUpDate(AT, RS, Acc);
+			return;
+		}
 
-	//	CalcRSqr(AutoTune->RateDev, AutoTune->RateAcc, AT_HSIZE, &R2, &Slope, &Int);
-		CalcRSqr(AutoTune->RateAcc, AutoTune->RateDev, AT_HSIZE, &R2, &Slope, &Int);
-		Ret = Int + (AutoTune->Target * Slope);
-		
-		/*	PrintAutoTuneRates(AutoTune);
-		
-			printf("%f\t%f\t%f\n", R2, Slope, Int);
-			printf("New RD\t%f\n", Ret);
-
-			printf("\n\n\n\n"); 
-			fflush(stdout); */
+		CalcRSqr(AT->RateAcc, AT->RateDev, AT_HSIZE, &R2, &Slope, &Int);
+		Ret = Int + (AT->Target * Slope);
 
 		if(Ret < 0)
-			Ret = BlindUpDate(AutoTune, RS, RD, Acc);
+			BlindUpDate(AT, RS, Acc);
 		
-		return Ret;
+		return;
 	}
 	
-//	PrintAutoTuneRates(AutoTune);
+	if(AutoTuneValid(AT, Acc) == TRUE)
+		return;
 	
-	if(AutoTuneValid(AutoTune, Acc) == TRUE)
-		return RD;
-
-	Ret = BlindUpDate(AutoTune, RS, RD, Acc);
-	
-	return Ret;
+	BlindUpDate(AT, RS, Acc);
 }
-
-

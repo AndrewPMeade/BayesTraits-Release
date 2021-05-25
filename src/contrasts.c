@@ -1791,7 +1791,10 @@ void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	She
 	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
 
 	Pos = Shed->PNo;
-	Dev = Opt->RateDevList[Shed->PNo];
+
+	Shed->CurrentAT = Shed->RateDevATList[Pos];
+	Dev = Shed->CurrentAT->CDev;
+	
 
 	Rates->Rates[Pos] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
 	

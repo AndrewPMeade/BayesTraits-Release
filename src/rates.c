@@ -2267,6 +2267,16 @@ double ChangeRate(RATES *Rates, double RateV, double dev)
 	return Ret;
 }
 
+void	ChangeGammaRates(RATES *Rates, SCHEDULE* Shed)
+{
+	double Dev;
+
+	Shed->CurrentAT = Shed->GammaAT;
+	Dev = Shed->CurrentAT->CDev;
+
+	Rates->Gamma =  ChangeRate(Rates, Rates->Gamma, Dev);
+}
+
 double	MultePram(RATES *Rates, double Val, double Min, double Max, double Dev)
 {
 	double	Ret;
@@ -2444,12 +2454,14 @@ int*	PickEstChangeSites(int No, int Max, RANDSTATES *RS)
 	return Ret;
 }
 
-double*	GetMultVarChanges(RATES *Rates, OPTIONS *Opt)
+double*	GetMultVarChanges(RATES *Rates, OPTIONS *Opt, SCHEDULE* Shed)
 {
 	double	*Ret;
 	TREE	*Tree;
 	TREES	*Trees;
 	int		Index;
+
+	Shed->CurrentAT = Shed->DataDevAT;
 
 	Trees = Opt->Trees;
 	Tree = Trees->Tree[Rates->TreeNo];
@@ -2461,7 +2473,7 @@ double*	GetMultVarChanges(RATES *Rates, OPTIONS *Opt)
 	genmn(Tree->ConVars->MultiVarNormState, Ret, Tree->ConVars->MultiVarNormTemp);
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		Ret[Index] = Opt->EstDataDev * Ret[Index];
+		Ret[Index] = Shed->CurrentAT->CDev * Ret[Index];
 	
 	return Ret;
 }
@@ -2497,41 +2509,38 @@ double*	GetMultVarChanges(RATES *Rates, OPTIONS *Opt)
 	return Ret;
 }
 */
-void	Change1EstData(OPTIONS* Opt, RATES* Rates)
+
+void	MutateEstRatesDiscrete(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 {
-//	double Change;
-	int		No;
+	int		Old, New;
+	int		Site;
 
-	No = RandUSLong(Rates->RS) % Rates->NoEstData;
-
-	Rates->EstData[No] += (RandDouble(Rates->RS) * Opt->EstDataDev) - (Opt->EstDataDev / 2.0);
-	
-//	Rates->EstData[No] = ChangeRate
+	Site = RandUSLong(Rates->RS) % Rates->NoEstData;
+	Old = Rates->EstDescData[Site];
+//	do
+//	{
+		if(Opt->Model == M_MULTISTATE)
+			New = RandUSLong(Rates->RS) % Opt->Trees->NoOfStates;
+		else
+			New = RandUSLong(Rates->RS) % 2;
+//	} while(New == Old);
+	Rates->EstDescData[Site] = New;
 }
 
-void	MutateEstRates(OPTIONS* Opt, RATES* Rates)
+void	MutateEstRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 {
 	double	*Changes;
-	int		Site;
+	
 	int		RIndex, SIndex, TIndex;
 	TAXA	*Taxa;
 	TREES	*Trees;
-	int		Old, New;
-
+	int		Site;
+	
 	Trees = Opt->Trees;
 
 	if(Opt->DataType == DISCRETE)
 	{
-		Site = RandUSLong(Rates->RS) % Rates->NoEstData;
-		Old = Rates->EstDescData[Site];
-//		do
-//		{
-			if(Opt->Model == M_MULTISTATE)
-				New = RandUSLong(Rates->RS) % Opt->Trees->NoOfStates;
-			else
-				New = RandUSLong(Rates->RS) % 2;
-//		} while(New == Old);
-		Rates->EstDescData[Site] = New;
+		MutateEstRatesDiscrete(Opt, Rates, Shed);
 		return;
 	}
 
@@ -2539,7 +2548,7 @@ void	MutateEstRates(OPTIONS* Opt, RATES* Rates)
 
 //	Change1EstData(Opt, Rates); return;
 
-	Changes	=	GetMultVarChanges(Rates, Opt);
+	Changes	=	GetMultVarChanges(Rates, Opt, Shed);
 
 //	Changes =	GetPhyChanges(Trees, Trees->Tree[Rates->TreeNo], Opt->EstDataDev, Rates->RS);
 			
@@ -2619,19 +2628,20 @@ void	RJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 
 void	ChangeConRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 {
-	int Index;
+	int Index, Pos;
+	double Dev;
 
-//	All	
-//	for(Index=0;Index<Rates->NoOfRates;Index++)
+	Pos = RandUSLong(Rates->RS) % Rates->NoOfRates;
+	Shed->PNo = Pos;
+	Shed->CurrentAT = Shed->RateDevATList[Pos];
 
-//	One
-		Shed->PNo = RandUSLong(Rates->RS) % Rates->NoOfRates;
+	Dev = Shed->CurrentAT->CDev;
 
-//		Uniform
-		Rates->Rates[Shed->PNo] += (RandDouble(Rates->RS) * Opt->RateDevList[Shed->PNo]) - (Opt->RateDevList[Shed->PNo] / 2.0);
+//	Uniform
+	Rates->Rates[Shed->PNo] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
 
 //		Normal Does not seem to work well. 
-//		Rates->Rates[Shed->PNo] = RandNormal(Rates->RS, Rates->Rates[Shed->PNo], Opt->RateDevList[Shed->PNo]); 
+//		Rates->Rates[Shed->PNo] = RandNormal(Rates->RS, Rates->Rates[Shed->PNo], Dev); 
 
 	if(Opt->AlphaZero == TRUE)
 	{
@@ -2661,12 +2671,14 @@ void	ChangeRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		if(Opt->UseRJMCMC == TRUE)
 			NoOfRates = Rates->NoOfRJRates;
 		
+		Shed->CurrentAT = Shed->RateDevATList[0];
+
 #ifdef RATE_CHANGE_ONE
 		Index = RandUSLong(Rates->RS) % NoOfRates;
-		Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Opt->RateDev);
+		Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Shed->CurrentAT->CDev);
 #else
 		for(Index=0;Index<NoOfRates;Index++)
-			Rates->Rates[Index] = ChangeRate(Rates, Rates->Rates[Index], Opt->RateDev);
+			Rates->Rates[Index] = ChangeRate(Rates, Rates->Rates[Index], Shed->CurrentAT->CDev);
 #endif
 		Shed->PNo = 0;
 	}
@@ -2685,9 +2697,78 @@ void	ChangeRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 	}
 }
 
+void	ChangeCVRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
+{
+	double Dev;
+
+	Shed->CurrentAT = Shed->RateDevATList[0];
+	Dev = Shed->CurrentAT->CDev;
+	
+	Rates->OffToOn = ChangeRate(Rates, Rates->OffToOn, Dev);
+	Rates->OnToOff = ChangeRate(Rates, Rates->OnToOff, Dev);
+
+	// Set the off / on rate to the same. 
+	Rates->OffToOn = Rates->OnToOff;
+}
+
+
+void	ChangeKappa(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
+{
+	double Dev;
+
+	Shed->CurrentAT = Shed->KappaAT;
+	Dev = Shed->CurrentAT->CDev;
+
+	if(Dev > MAX_KAPPA)
+		Rates->Kappa = RandUniDouble(Rates->RS, MIN_KAPPA, MAX_KAPPA);
+	else
+		Rates->Kappa = MultePram(Rates, Rates->Kappa, MIN_KAPPA, MAX_KAPPA, Dev);
+}
+
+void	ChangeDelta(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
+{
+	double Dev;
+
+	Shed->CurrentAT = Shed->DeltaAT;
+	Dev = Shed->CurrentAT->CDev;
+
+	if(Dev > MAX_DELTA)
+		Rates->Delta = RandUniDouble(Rates->RS, MIN_DELTA, MAX_DELTA);
+	else
+		Rates->Delta = MultePram(Rates, Rates->Delta, MIN_DELTA, MAX_DELTA, Dev);
+}
+
+void	ChangeLambda(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
+{
+	double Dev;
+
+	Shed->CurrentAT = Shed->LambdaAT;
+	Dev = Shed->CurrentAT->CDev;
+
+	if(Dev > MAX_LAMBDA)
+		Rates->Lambda = RandUniDouble(Rates->RS, MIN_LAMBDA, MAX_LAMBDA);
+	else
+		Rates->Lambda = MultePram(Rates, Rates->Lambda, MIN_LAMBDA, MAX_LAMBDA, Dev);
+}
+
+void	ChangeOU(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
+{
+	double Dev;
+
+	Shed->CurrentAT = Shed->OUAT;
+	Dev = Shed->CurrentAT->CDev;
+
+	if(Dev > MAX_OU)
+		Rates->OU = RandUniDouble(Rates->RS, MIN_OU, MAX_OU);
+	else
+		Rates->OU = MultePram(Rates, Rates->OU, MIN_OU, MAX_OU, Dev);
+}
+
 void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 {
 	Shed->Op = PickACat(Rates, Shed->OptFreq, Shed->NoOfOpts);
+
+	Shed->CurrentAT = NULL;
 
 	switch(Shed->Op)
 	{
@@ -2696,39 +2777,23 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case SCV:
-			Rates->OffToOn = ChangeRate(Rates, Rates->OffToOn, Opt->RateDev);
-			Rates->OnToOff = ChangeRate(Rates, Rates->OnToOff, Opt->RateDev);
-
-			// Set the off / on rate to the same. 
-			Rates->OffToOn = Rates->OnToOff;
+			ChangeCVRates(Opt, Rates, Shed);
 		break;
 
 		case SKAPPA:
-			if(Opt->RateDevKappa == MAX_KAPPA)
-				Rates->Kappa = RandUniDouble(Rates->RS, MIN_KAPPA, MAX_KAPPA);
-			else
-				Rates->Kappa = MultePram(Rates, Rates->Kappa, MIN_KAPPA, MAX_KAPPA, Opt->RateDevKappa);
+			ChangeKappa(Opt, Rates, Shed);
 		break;
 
 		case SDELTA:
-			if(Opt->RateDevDelta == MAX_DELTA)
-				Rates->Delta = RandUniDouble(Rates->RS, MIN_DELTA, MAX_DELTA);
-			else
-				Rates->Delta = MultePram(Rates, Rates->Delta, MIN_DELTA, MAX_DELTA, Opt->RateDevDelta);
+			ChangeDelta(Opt, Rates, Shed);
 		break;
 
 		case SLABDA:
-			if(Opt->RateDevLambda == MAX_LAMBDA)
-				Rates->Lambda = RandUniDouble(Rates->RS, MIN_LAMBDA, MAX_LAMBDA);
-			else
-				Rates->Lambda = MultePram(Rates, Rates->Lambda, MIN_LAMBDA, MAX_LAMBDA, Opt->RateDevLambda);
+			ChangeLambda(Opt, Rates, Shed);
 		break;
 
 		case SOU:
-			if(Opt->RateDevOU == MAX_OU)
-				Rates->OU = RandUniDouble(Rates->RS, MIN_OU, MAX_OU);
-			else
-				Rates->OU = MultePram(Rates, Rates->OU, MIN_OU, MAX_OU, Opt->RateDevOU);
+			ChangeOU(Opt, Rates, Shed);
 		break;
 
 		case SJUMP:
@@ -2740,7 +2805,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case SESTDATA:
-			MutateEstRates(Opt, Rates);
+			MutateEstRates(Opt, Rates, Shed);
 		/*	for(Index=0;Index<Rates->NoEstData;Index++)
 				Rates->EstData[Index] += (GenRandState(Rates->RandStates) * Opt->EstDataDev) - (Opt->EstDataDev / 2.0);*/
 		break;
@@ -2762,7 +2827,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 		
 		case SPPCHANGESCALE:
-			ChangeVarRatesScale(Rates, Opt->Trees, Opt);
+			ChangeVarRatesScale(Rates, Opt->Trees, Opt, Shed);
 		break;
 
 		case SPPHYPERPRIOR:
@@ -2778,7 +2843,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 		
 		case SGAMMA:
-			Rates->Gamma =  ChangeRate(Rates, Rates->Gamma, Opt->RateDev);
+			ChangeGammaRates(Rates, Shed);
 		break;
 
 		case SRJDUMMY:
