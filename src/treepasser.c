@@ -1081,15 +1081,15 @@ void	ResolveNode(NNODE N, double Len)
 
 void	ResolveTreeDet(NNODE N, double Len)
 {
-	int	I;
-
+	int	Index;
+	
 	if(N->NoOfNodes > 2)
 		ResolveNode(N, Len);
 
 	if(N->Tip == FALSE)
 	{
-		for(I=0;I<N->NoOfNodes;I++)
-			ResolveTreeDet(N->NodeList[I], Len);
+		for(Index=0;Index<N->NoOfNodes;Index++)
+			ResolveTreeDet(N->NodeList[Index], Len);
 
 		N->Right = N->NodeList[0];
 		N->Left	 = N->NodeList[1];

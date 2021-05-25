@@ -1876,15 +1876,6 @@ void	SimRandChange(NODE N, double RateDev, RANDSTATES *RS)
 
 }
 
-double*	GetPhyChanges(TREES *Trees, TREE *Tree, double RateDev, RANDSTATES *RS)
-{
-	double	*Ret;
-
-	Ret = NULL;
-
-	return Ret;
-}
-
 void	AddTaxaErr(TREES *Trees, int TaxaID, double Err)
 {
 	int TIndex;

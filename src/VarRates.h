@@ -33,4 +33,7 @@ void	SetVarRatesFromStr(RATES *Rates, OPTIONS *Opt, char *Str);
 
 double	CalcNormalHasting(double x, double SD);
 
+NODE	GetVRNode(TREES *Trees, int TreeNo, VAR_RATES_NODE *VR_Node);
+
+
 #endif

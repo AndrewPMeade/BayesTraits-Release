@@ -985,31 +985,30 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
 	if(Opt->ModelType == MT_CONTINUOUS)
 		return;
-
-	if(Opt->UseLandscape == TRUE)
-		MapLandscape(Opt, Trees, Rates);
 	
-	if(NeedToReSetBL(Opt, Rates) == TRUE)
-	{
-		SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
+	if(NeedToReSetBL(Opt, Rates) == FALSE)
+		return;
 
-		if(Rates->TimeSlices != NULL)
-			ApplyTimeSlices(Rates, Trees);
+	SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
 
-//		PrintTreeBL(Trees->Tree[Rates->TreeNo]); exit(0);			
+//	if(Opt->UseRJLocalScalar[VR_LS_BL]	== TRUE)
+	MapLandscape(Opt, Trees, Rates);
 
-		TransformTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
+	if(Rates->TimeSlices != NULL)
+		ApplyTimeSlices(Rates, Trees);
 
-		ApplyLocalTransforms(Rates, Trees, Opt, NORMALISE_TREE_CON_SCALING);
+//	PrintTreeBL(Trees->Tree[Rates->TreeNo]); exit(0);			
 
-		if(Rates->VarRates != NULL)
-			VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
-		
-		
-	}
+	TransformTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
+
+	ApplyLocalTransforms(Rates, Trees, Opt, NORMALISE_TREE_CON_SCALING);
+
+	if(Rates->VarRates != NULL)
+		VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
+	
 //	ScaleTrees(Trees, 0.0000000001);
 //	ScaleTrees(Trees, 0.000000001);
-//	SaveTrees("DTest.trees", Trees); exit(0);
+//	SaveTrees("DTest.trees", Trees); 
 }
 
 int		ValidLh(double LH, MODEL_TYPE MT)

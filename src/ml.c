@@ -48,6 +48,7 @@
 #include "NLOptBT.h"
 #include "Landscape.h"
 #include "Part.h"
+#include <gsl/gsl_matrix.h>
 
 #define MAX_ML_FREE_P 1048576
 #define NO_RAND_TRIES 10000
@@ -174,13 +175,6 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				AddTypePToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE, ML_P_TYPE_RATE_S);
 		}
 	}
-
-	if(Opt->UseLandscape == TRUE)
-	{
-		for(Index=0;Index<Rates->Landscape->NoNodes;Index++)
-			AddPToMLMap(MLMap, 0.0, -10, 10);
-	}
-
 }
 
 void	CheckMLMapVals(ML_MAP* MLMap)
@@ -245,10 +239,6 @@ void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
 			Rates->LocalTransforms[Index]->Scale = MLMap->PVal[Pos++];
 
 	MLMapToRatesTimeSlices(MLMap, Opt, Rates, &Pos);
-
-	if(Opt->UseLandscape == TRUE)
-		for(Index=0;Index<Rates->Landscape->NoNodes;Index++)
-			Rates->Landscape->NodeList[Index]->Beta = MLMap->PVal[Pos++];
 }
 
 double	LikelihoodML(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -389,14 +379,12 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 }
 
 
-
 void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	ML_MAP*	CMap, *BMap;
 	double CLh, BLh;
 	int Index;
-
-		
+			
 	BMap = AllocMLMap();
 
 //	BLh = LikelihoodML(BMap, Opt, Trees, Rates);
@@ -468,7 +456,7 @@ void	CalclAllNodeBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 }
 */
 
-
+/*
 void	CalclAllNodeBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE *Tree;
@@ -501,7 +489,7 @@ void	CalclAllNodeBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		fflush(stdout);
 	}
 }
-
+*/
 void	CalcAllNodeTransfroms(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE *Tree;
@@ -555,7 +543,6 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 	TStart = GetSeconds();
 
-	CalclAllNodeBeta(Opt, Trees, Rates); return;
 //	CalcAllNodeTransfroms(Opt, Trees, Rates); return;
 //	MLTestF(Opt, Trees, Rates);
 

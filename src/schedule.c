@@ -141,18 +141,7 @@ void	SetVarRatesShed(OPTIONS *Opt, SCHEDULE *Shed)
 			No++;
 		}
 	}
-	
-	if(Opt->UseVarRates == TRUE)
-	{
-		Shed->VarRatesOp[No] = VR_NODE;
-		Shed->FreqVarRatesOp[No] = 0.1;
-		No++;
 
-		Shed->VarRatesOp[No] = VR_BL;
-		Shed->FreqVarRatesOp[No] = 0.1;
-		No++;
-	}
-	
 	Shed->NoVarRatesOp = No;
 
 	NormaliseVector(Shed->FreqVarRatesOp, Shed->NoVarRatesOp);
@@ -589,6 +578,7 @@ CUSTOM_SCHEDULE* CloneCustomSchedule(CUSTOM_SCHEDULE* CShed)
 	return Ret;
 
 }
+
 CUSTOM_SCHEDULE**		CloneCustomScheduleList(int NoCShed, CUSTOM_SCHEDULE **CShedList)
 {
 	int Index;

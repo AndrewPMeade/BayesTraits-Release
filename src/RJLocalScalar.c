@@ -47,7 +47,7 @@ TRANSFORM_TYPE	NameToRJLocalType(char *Name, int *Err)
 
 	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
 	{
-		if(strcmp(Name, RJ_LOCAL_SCALAR_NAMES[Index]) == 0)
+		if(StrICmp(Name, RJ_LOCAL_SCALAR_NAMES[Index]) == 0)
 			return (TRANSFORM_TYPE)Index;
 	}
 

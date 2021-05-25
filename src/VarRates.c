@@ -50,9 +50,6 @@ int		UseNonParametricMethods(OPTIONS *Opt)
 {
 	int Index;
 
-	if(Opt->UseVarRates == TRUE)
-		return TRUE;
-
 	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
 		if(Opt->UseRJLocalScalar[Index] == TRUE)
 			return TRUE;
@@ -62,26 +59,26 @@ int		UseNonParametricMethods(OPTIONS *Opt)
 
 TRANSFORM_TYPE	StrToVarRatesType(char *Str)
 {
-	MakeLower(Str);
-
-	if(strcmp("node", Str) == 0)
+	if(StrICmp("Node", Str) == 0)
 		return VR_NODE;
 
-	if(strcmp("branch", Str) == 0)
+	if(StrICmp("Branch", Str) == 0)
 		return VR_BL;
 
-	if(strcmp("kappa", Str) == 0)
+	if(StrICmp("Kappa", Str) == 0)
 		return VR_KAPPA;
 
-	if(strcmp("lambda", Str) == 0)
+	if(StrICmp("Lambda", Str) == 0)
 		return VR_LAMBDA;
 
-	if(strcmp("delta", Str) == 0)
+	if(StrICmp("Delta", Str) == 0)
 		return VR_DELTA;
 
-	if(strcmp("ou", Str) == 0)
+	if(StrICmp("OU", Str) == 0)
 		return VR_OU;
 
+	if(StrICmp("LandscapeBL", Str) == 0)
+		return VR_LS_BL;
 
 	printf("uknown varaible rate type %s\n", Str); 
 	exit(0);
@@ -106,6 +103,9 @@ char* VarRatesTypeToStr(TRANSFORM_TYPE Type)
 
 	if(Type == VR_OU)
 		return "OU";
+
+	if(Type == VR_LS_BL)
+		return "LandscapeBL";
 
 	printf("%s::%d unkonwn RJ Variable type\n", __FILE__, __LINE__);
 	exit(0);
@@ -324,6 +324,24 @@ void	CheckPlasyNodes(VARRATES *VarRates)
 	}
 }
 
+void	SetScalar(OPTIONS *Opt, RATES *Rates,  VAR_RATES_NODE *PNode)
+{
+	if(PNode->Type == VR_BL || PNode->Type == VR_NODE)
+	{
+		SetVRNodeBLRates(PNode, Rates->RS);
+		return;
+	}
+
+	if(PNode->Type == VR_LS_BL)
+	{
+		PNode->Scale = RandNormal(Rates->RS, 0.0, 1.0);
+		return;
+	}
+	
+	SetVRScalar(Opt, Rates, PNode);
+
+}
+
 void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, TRANSFORM_TYPE Type, NODE N, long long It)
 {
 	VAR_RATES_NODE	*PNode;
@@ -334,14 +352,9 @@ void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, TRANSFORM_TYPE Ty
 	PNode = CreateVarRatesNode(It, N->Part, Trees->NoTrees);
 
 	PNode->Type = Type;
+	
+	SetScalar(Opt, Rates, PNode);
 
-//	PNode->Part = N->Part;
-//	PNode->NodeList[Rates->TreeNo] = N;
-
-	if(PNode->Type == VR_BL || PNode->Type == VR_NODE)
-		SetVRNodeBLRates(PNode, Rates->RS);
-	else
-		SetVRScalar(Opt, Rates, PNode);
 
 	VarRates->NodeList = (VAR_RATES_NODE**)AddToList(&VarRates->NoNodes, (void**)VarRates->NodeList, (void*)PNode);
 
@@ -475,9 +488,18 @@ void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* She
 //	Rates->LnHastings = 0;
 
 	if(Node->Type == VR_LAMBDA)
+	{
 		Node->Scale = ChangePlastyRateLambda(Rates->RS, Node->Scale, Dev);
-	else
-		Node->Scale = ChangePlastyRate(Rates->RS, Node->Scale, Dev);
+		return;
+	}
+
+	if(Node->Type == VR_LS_BL )
+	{
+		Node->Scale = RandNormal(Rates->RS, Node->Scale, Dev);
+		return;
+	}
+	
+	Node->Scale = ChangePlastyRate(Rates->RS, Node->Scale, Dev);
 }
 
 int		IsVarRateTypeRate(TRANSFORM_TYPE Type)
@@ -785,6 +807,9 @@ void	VarRatesNode(TREES *Trees, TREE *Tree, NODE N, double Scale, TRANSFORM_TYPE
 		SetTreeDistToRoot(Tree);
 		TransformTreeOU(Trees, N, Scale, Norm);
 	}
+
+	if(Type == VR_LS_BL)
+		return;
 }
 
 void	CheckVarRatesData(OPTIONS *Opt, TREES *Trees, RATES *Rates)	
@@ -824,7 +849,7 @@ void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 	VAR_RATES_NODE *VR_Node;
 	NODE Node;
 
-//	return;
+	
 
 	VarRates = Rates->VarRates;
 	TNo = Rates->TreeNo;
@@ -1003,6 +1028,9 @@ void	OutputVarRatesType(FILE *Out, TRANSFORM_TYPE Type)
 
 	if(Type == VR_OU)
 		fprintf(Out, "OU\t");
+	
+	if(Type == VR_LS_BL)
+		fprintf(Out, "LS_Beta\t");
 }
 
 void	LogVarRatesResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
@@ -1117,6 +1145,9 @@ PRIOR*	GetVRPrior(TRANSFORM_TYPE Type, RATES *Rates)
 	if(Type == VR_OU)
 		return GetPriorFromName("OU", Rates->Priors, Rates->NoPriors);
 
+	if(Type == VR_LS_BL)
+		return GetPriorFromName("VR_LS_BL", Rates->Priors, Rates->NoPriors);
+
 	return NULL;
 }
 
@@ -1202,6 +1233,9 @@ TRANSFORM_TYPE	StrToRJVarRatesType(char *Str)
 
 	if(strcmp("ou", Str) == 0)
 		return VR_OU;
+
+	if(strcmp("ls_beta", Str) == 0)
+		return VR_LS_BL;
 
 	printf("Unkown string (%s) in %s::%d.\n", Str, __FILE__, __LINE__);
 	exit(0);
@@ -1467,14 +1501,14 @@ void	SetVarRatesFromStr(RATES *Rates, OPTIONS *Opt, char *Str)
 	
 	Tokes = MakeArgv(S, Passed, (int)strlen(S));
 
-//	Rates->Contrast->Alpha[0] = atof(Passed[4]);
-//	Rates->Contrast->Sigma[0] = atof(Passed[5]);
+	Rates->Rates[0] = atof(Passed[4]);
+	Rates->Rates[1] = atof(Passed[5]);
 
 	Index = 7;
 	for(;Index<Tokes;Index+=4)
 		AddTextVarRate(Opt->Trees->Tree[0], Rates, 4, &Passed[Index]);
 	
-//	DumpVarRates(Rates);
+//	PrintVarRatesOutput(Opt, Opt->Trees, Rates, 1); exit(0);
 
 //	TestVarRates(Opt, Rates);
 

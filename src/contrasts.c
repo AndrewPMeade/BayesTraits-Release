@@ -77,7 +77,6 @@ CONTRAST*	AllocContrastMem(int NoSites)
 	Ret->Cont = (double*)SMalloc(sizeof(double) * NoSites);
 //	Ret->Var  = (double*)SMalloc(sizeof(double) * NoSites);
 //	Ret->Err  = (double*)SMalloc(sizeof(double) * NoSites);
-	Ret->v		= (double*)SMalloc(sizeof(double) * NoSites);
 
 	return Ret;
 }
@@ -116,9 +115,6 @@ void	AllocContrast(NODE N, TREES *Trees, int NoSites)
 					Ret->Data[SIndex] = N->Taxa->ConData[SIndex];
 			}
 			
-			Ret->v[SIndex]			= 0;
-			if(N->Tip == TRUE)
-				Ret->v[SIndex] = N->Length;
 		}
 
 		ConData->Contrast[Index] = Ret;
@@ -190,7 +186,6 @@ void	FreeContrastS(CONTRAST* C)
 {
 	free(C->Cont);
 	free(C->Data);
-	free(C->v);
 	free(C);
 }
 
@@ -239,8 +234,6 @@ CONTRAST*	CopyC(CONTRAST *Con, int NoSites)
 	{
 		Ret->Cont[Index] = Con->Cont[Index];
 		Ret->Data[Index] = Con->Data[Index];
-
-		Ret->v[Index]	= Con->v[Index];
 	}
 
 	return Ret;
@@ -295,7 +288,6 @@ void	PrintNodeContrast(NODE N, int NoSites)
 			printf("%12.12f\t", ConData->Contrast[CIndex]->Var);
 			printf("%12.12f\t", ConData->Contrast[CIndex]->Err);
 
-			printf("%12.12f\t", ConData->Contrast[CIndex]->v[Index]);
 
 			printf("%12.12f\t", N->Length);
 			printf("%12.12f\t", N->DistToRoot);
@@ -388,7 +380,7 @@ void	PrintContrast(RATES *Rates, TREES *Trees)
 		PrintNodeContrast(N, CR->NoSites);
 	}
 
-	exit(0);
+//	exit(0);
 }
 
 
@@ -432,6 +424,7 @@ void	CalcNodeContrast(NODE N, int NoSites)
 	C = N->ConData->Contrast[0];
 	N->ConData->Contrast[0] = N->ConData->Contrast[N->ConData->NoContrast-1];
 	N->ConData->Contrast[N->ConData->NoContrast-1] = C;
+
 }
 
 
@@ -1481,7 +1474,6 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		DummCodePreLh(Opt, Trees, Rates);
 
 	CalcContrast(Opt, Trees, Rates);	
-
 	
 	if(Opt->Model == M_CONTRAST)
 		Lh = CaclStdContrastLh(Opt, Trees, Rates);
@@ -1505,9 +1497,7 @@ CONTRASTR*	AllocContrastRates(OPTIONS *Opt, RATES *Rates)
 {
 	CONTRASTR*	Ret;
 
-	Ret = (CONTRASTR*)malloc(sizeof(CONTRASTR));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (CONTRASTR*)SMalloc(sizeof(CONTRASTR));
 
 	Ret->Alpha		= NULL;
 	Ret->Sigma		= NULL;
@@ -1794,7 +1784,7 @@ void	MutateRegContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	
 void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
 {
 	int Pos;
-	double Dev;
+	double Dev, Scale;
 
 	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
 
@@ -1802,9 +1792,15 @@ void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	She
 
 	Shed->CurrentAT = Shed->RateDevATList[Pos];
 	Dev = Shed->CurrentAT->CDev;
-	
 
-	Rates->Rates[Pos] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
+	if(Opt->Model == M_CONTRAST && Pos % 2 == 1)
+	{
+		Scale = exp(Dev * (RandDouble(Rates->RS) - 0.5));
+		Rates->LnHastings = (Rates->Rates[Pos] * Scale) / Rates->Rates[Pos];
+		Rates->Rates[Pos] = Rates->Rates[Pos] * Scale;
+	}
+	else
+		Rates->Rates[Pos] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
 }
 
 void	CopyContrastRatesStd(RATES *R1, RATES* R2, CONTRASTR *C1, CONTRASTR	*C2, int NoSites)

@@ -867,10 +867,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 	if(Opt->TimeSlices->NoTimeSlices > 0)
 		Ret->TimeSlices = CreateRatesTimeSlices(Ret, Opt->TimeSlices);
 
-
-	if(Opt->UseLandscape == TRUE)
-		Ret->Landscape = CreateLandscape(Opt);
-
 	if(Opt->DataType == CONTINUOUS)
 	{
 		CreatCRates(Opt, Ret);
@@ -1055,12 +1051,12 @@ void	PrintLocalRateHeader(FILE *Str, OPTIONS *Opt)
 
 void	PrintLocalTransformHeadder(FILE *Str, OPTIONS *Opt)
 {
-	if(Opt->UseVarRates == TRUE)
-	{
+	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
 		fprintf(Str, "No RJ Local Branch\t");
+	
+	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
 		fprintf(Str, "No RJ Local Node\t");
-	}
-
+	
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
 		fprintf(Str, "No RJ Local Kappa\t");
 
@@ -1072,6 +1068,9 @@ void	PrintLocalTransformHeadder(FILE *Str, OPTIONS *Opt)
 
 	if(Opt->UseRJLocalScalar[VR_OU] == TRUE)
 		fprintf(Str, "No RJ Local OU\t");
+	
+	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
+		fprintf(Str, "No RJ LS Betas\t");
 }
 
 void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
@@ -1604,11 +1603,12 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 
 void	PrintLocalTransformNo(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
-	if(Opt->UseVarRates == TRUE)
-	{
+
+	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_BL, Rates));
+
+	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_NODE, Rates));
-	}
 
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_KAPPA, Rates));
@@ -1621,6 +1621,10 @@ void	PrintLocalTransformNo(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->UseRJLocalScalar[VR_OU] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_OU, Rates));
+
+	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
+		fprintf(Str, "%d\t", GetNoTransformType(VR_LS_BL, Rates));
+
 }
 
 void	PrintRateLocalTransform(FILE *Str, RATES *Rates)
@@ -2492,7 +2496,6 @@ void	MutateEstRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 
 	Changes	=	GetMultVarChanges(Rates, Opt, Shed);
 
-//	Changes =	GetPhyChanges(Trees, Trees->Tree[Rates->TreeNo], Opt->EstDataDev, Rates->RS);
 
 	Site	=	Opt->EstDataSites[RandUSLong(Rates->RS) % Opt->NoEstDataSite];
 	RIndex	=	0;

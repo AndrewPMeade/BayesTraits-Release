@@ -304,6 +304,17 @@ void	PrintRJLocalTrans(FILE* Str, OPTIONS *Opt)
 {
 	fprintf(Str, "Min Trans Taxa No:               %d\n", Opt->MinTransTaxaNo);
 	
+	fprintf(Str, "RJ Local Branch:                 ");
+	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
+		fprintf(Str, "True\n");
+	else
+		fprintf(Str, "False\n");	
+
+	fprintf(Str, "RJ Local Node:                   ");
+	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
+		fprintf(Str, "True\n");
+	else
+		fprintf(Str, "False\n");	
 
 	fprintf(Str, "RJ Local Kappa:                  ");
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
@@ -328,6 +339,13 @@ void	PrintRJLocalTrans(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "True\n");
 	else
 		fprintf(Str, "False\n");	
+
+	fprintf(Str, "RJ Local Landscape BL:           ");
+	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
+		fprintf(Str, "True\n");
+	else
+		fprintf(Str, "False\n");	
+
 }
 
 void	PrintEmpPis(FILE* Str, OPTIONS *Opt)
@@ -517,9 +535,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		if(Opt->NodeBLData == TRUE)
 			fprintf(Str, "Model for Node BLS Data:         True\n");
 	
-		if(Opt->UseVarRates == TRUE)
-			fprintf(Str, "Using VarRates:                  True\n");
-
 	}
 	else
 	{
@@ -578,14 +593,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->AnalyticalP == TRUE)
 		fprintf(Str, "Analytical P:                    True\n");
 	
-	fprintf(Str, "Landscape Model:                 ");
-	if(Opt->UseLandscape == FALSE)
-		fprintf(Str, "False\n");
-	else
-		fprintf(Str, "True\n");
-
-
-
 	if(Opt->Model == M_DISC_HET)
 	{
 		fprintf(Str, "Tree 1 Partitions :			   \t");
@@ -1309,8 +1316,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->MakeUM			=	FALSE;
 
-	Ret->UseVarRates	=	FALSE; 
-
 	Ret->UseEqualTrees	=	FALSE;
 	Ret->ETreeBI		=	-1;
 
@@ -1373,8 +1378,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->UsePisInAncStates = TRUE;
 	Ret->RJZero			   = TRUE;
 	
-	Ret->UseLandscape		= FALSE;
-
 	free(Buffer);
 
 	return Ret; 
@@ -3482,12 +3485,6 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 		return FALSE;
 	}
 
-	if(Opt->Trees->NoTrees != 1)
-	{
-		printf("RJ Local Scalar is only valid with a single tree.\n");
-		return FALSE;
-	}
-
 	NameToRJLocalType(Passed[1], &Err);
 
 	if(Err == TRUE)
@@ -3545,6 +3542,14 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	{
 		RemovePriorFormOpt("VRNode", Opt);
 		Prior = CreateSGammaPrior("VRNode", VARRATES_ALPHA, VARRATES_BETA);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+	if(Type == VR_LS_BL)
+	{
+		RemovePriorFormOpt("VR_LS_BL", Opt);
+//		Prior = CreateUniformPrior("VR_LS_BL", -5, 5);
+		Prior = CreateNormalPrior("VR_LS_BL", 0, 2.0);
 		AddPriorToOpt(Opt, Prior);
 	}
 }
@@ -3970,21 +3975,47 @@ void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
 
 void	SetVarRatesOpt(OPTIONS *Opt)
 {
-	if(Opt->UseVarRates == TRUE)
+	if(	Opt->UseRJLocalScalar[VR_BL]	== TRUE ||
+		Opt->UseRJLocalScalar[VR_NODE]	== TRUE)
 	{
-		RemovePriorFormOpt("VRNode", Opt);
-		RemovePriorFormOpt("VRBL", Opt);
-		Opt->UseVarRates = FALSE;
-		return;
+		printf("Node or branch RJ allready set.\n");
+		exit(1);
 	}
-
-	Opt->UseVarRates = TRUE;
 
 	SetLocalTransformPrior(Opt, VR_BL);
 	SetLocalTransformPrior(Opt, VR_NODE);
 
+	Opt->UseRJLocalScalar[VR_BL]	= TRUE;
+	Opt->UseRJLocalScalar[VR_NODE]	= TRUE;
+	
 	Opt->SaveTrees = TRUE;
 }
+
+
+void	SetLandscape(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("Landscape Does not take any parameters.\n");
+		exit(1);
+	}
+
+	if(	Opt->UseRJLocalScalar[VR_NODE]	== TRUE ||
+		Opt->UseRJLocalScalar[VR_LS_BL]	== TRUE)
+	{
+		printf("Node or Landscape BL allready set.\n");
+		exit(1);
+	}
+
+	SetLocalTransformPrior(Opt, VR_LS_BL);
+	SetLocalTransformPrior(Opt, VR_NODE);
+
+	Opt->UseRJLocalScalar[VR_LS_BL]	= TRUE;
+	Opt->UseRJLocalScalar[VR_NODE]	= TRUE;
+
+	Opt->SaveTrees = TRUE;
+}
+
 
 void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
 {
@@ -4217,20 +4248,6 @@ void	SetRJZero(OPTIONS *Opt, int Tokes, char **Passed)
 }
 
 
-void	SetLandscape(OPTIONS *Opt, int Tokes, char **Passed)
-{
-	if(Tokes != 1)
-	{
-		printf("Landscape Does not take any parameters.\n");
-		exit(1);
-	}
-
-	if(Opt->UseLandscape == TRUE)
-		Opt->UseLandscape = FALSE;
-	else
-		Opt->UseLandscape = TRUE;
-
-}
 
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 {
