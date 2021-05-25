@@ -231,6 +231,7 @@ typedef enum
 	CLOADMODELS,
 	COU,
 	CVARRATES,
+	CSTONES,
 	CADDERR,
 	CUNKNOWN,
 } COMMANDS;
@@ -304,6 +305,7 @@ static char    *COMMANDSTRINGS[] =
 	"loadmodels",	"lm", 
 	"ou",			"ou",
 	"varrates",		"vr",
+	"stones",		"st",
 	"adderr",		"er",
 	""
 };
@@ -810,6 +812,26 @@ typedef struct
 
 typedef struct
 {
+	double	*Power;
+	double	*MLh;
+	double	LastLh;
+	double	Diff;
+	double	Sum;
+	double	Scalar, Length;
+
+	int		NoStones;
+	double	Alpha, Beta;
+	
+	int		ItPerStone;
+	int		ItStart;
+
+	int		SampleFreq;
+	int		Started;
+	int		N;
+} STONES;
+
+typedef struct
+{
 	MODEL		Model;
 	ANALSIS		Analsis;
 	MODEL_TYPE	ModelType;
@@ -966,6 +988,8 @@ typedef struct
 
 	int			LoadModels;
 	char		*LoadModelsFN;
+
+	STONES		*Stones;
 } OPTIONS;
 
 typedef struct

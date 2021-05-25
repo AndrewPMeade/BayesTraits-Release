@@ -33,6 +33,8 @@ int	PreCalc(INVINFO	*InvInfo, TREES *Trees, RATES *Rates)
 		PrintMatrix(InvInfo->A, "A Matrix", stdout);		
 	}
 
+//	PrintMatrix(InvInfo->A, "A = ", stdout);exit(0);
+
 	Ret = EigenRealGeneral(NoOfStates, InvInfo->A->me, InvInfo->val, vi, InvInfo->vec->me, iwork, work);
 	
 	if(DB == TRUE)

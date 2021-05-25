@@ -20,6 +20,7 @@
 #include "threaded.h"
 #include "schedule.h"
 #include "modelfile.h"
+#include "stones.h"
 
 #ifdef	 JNIRUN
 //	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
@@ -299,6 +300,36 @@ FILE*	SetScheduleFile(OPTIONS *Opt, SCHEDULE*	Shed)
 	return Ret;
 }
 
+FILE*	CreatStoneOuput(OPTIONS *Opt)
+{
+	FILE*	Ret;
+	char*	Buffer;
+
+	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
+	if(Buffer == NULL)
+		MallocErr();
+
+	sprintf(Buffer, "%s.Stones.txt", Opt->LogFN);
+	Ret = OpenWrite(Buffer);
+
+	OutputStoneHeadder(Ret, Opt->Stones);
+
+	free(Buffer);
+
+	return Ret;
+}
+
+int		ExitMCMC(OPTIONS *Opt, int Itters)
+{
+	if(Opt->Stones != NULL)
+		return StoneExit(Opt->Stones, Itters);
+	
+	if((Opt->Itters == Itters) && (Opt->Itters != -1))
+		return TRUE;	
+
+	return FALSE;
+}
+
 void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 {
 	double OU;
@@ -331,6 +362,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 	SCHEDULE*	Shed;
 	FILE*		ShedFile;
 	FILE*		SaveModelF;
+	FILE*		StoneF;
 	int			BurntIn, GBurntIn;
 #ifdef	JNIRUN
 	long		FP;
@@ -388,6 +420,10 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 	if(Opt->SaveModels == TRUE)
 		SaveModelF = InitSaveModelFile(Opt->SaveModelsFN, Opt, Trees, CRates);
 
+	StoneF = NULL;
+	if(Opt->Stones != NULL)
+		StoneF = CreatStoneOuput(Opt);
+
 //	if(Opt->LoadModels == TRUE)
 //		TestModelFile(Opt, Trees, CRates);
 
@@ -407,6 +443,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 	GBurntIn = BurntIn = FALSE;
 	if(Opt->BurnIn == 0)
 		BurntIn = TRUE;
+
 // PrintTime(stdout); printf("\n");
 
 	StartT = GetSeconds();	
@@ -424,9 +461,15 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 			Itters--;
 		else
 		{
-			CalcPriors(NRates, Opt);		
+			CalcPriors(NRates, Opt);	
 		
 			Heat = NRates->Lh - CRates->Lh;
+						
+			if(Opt->Stones != NULL)
+			{
+				Heat = GetStoneHeat(Opt->Stones, Itters, Heat);
+			}
+
 	//		printf("LH:\t%f\t%f\t%f\n", Heat, NRates->Lh , CRates->Lh);
 			Heat += NRates->LhPrior - CRates->LhPrior;
 			Heat += NRates->LnHastings;
@@ -439,13 +482,16 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 			else
 				UpDateShedAcc(FALSE, Shed);
 
-			if((Itters%Opt->Sample==0) && (BurntIn == TRUE))
+			if( (Itters % Opt->Sample==0) && 
+				(BurntIn == TRUE) && 
+				(StonesStarted(Opt->Stones, Itters) == FALSE))
 			{
 				UpDateHMean(Opt, CRates);
 				CRates->Lh = Likelihood(CRates, Trees, Opt);
 
 				#ifndef JNIRUN
-					PrintMCMCSample(Itters, Shed, Opt, CRates, stdout);
+				//	if(StonesStarted(Opt->Stones, Itters) == FALSE)
+						PrintMCMCSample(Itters, Shed, Opt, CRates, stdout);
 					fflush(stdout);
 				#endif
 
@@ -477,9 +523,10 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 				BlankSchedule(Shed);
 			}
 
-			if((Opt->Itters == Itters) && (Opt->Itters != -1))
+			if(ExitMCMC(Opt, Itters) == TRUE)
 			{
-				if((Opt->UseEqualTrees == FALSE) || (CRates->TreeNo == Trees->NoOfTrees - 1))
+				if( (Opt->UseEqualTrees == FALSE) || 
+					(CRates->TreeNo == Trees->NoOfTrees - 1))
 				{	
 					FreePriors(CRates);
 					FreePriors(NRates);
@@ -488,6 +535,10 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 					FreeRates(NRates);
 
 					FreeeSchedule(Shed);
+
+					if(StoneF != NULL)
+						fclose(StoneF);
+					
 				
 					if(Opt->UseSchedule == TRUE)
 						fclose(ShedFile);
@@ -551,6 +602,9 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 				if((Itters == Opt->ETreeBI) && (GBurntIn == TRUE))
 					BurntIn = TRUE;
 			}
+
+			if(Opt->Stones != NULL)
+				StoneItter(Opt->Stones, Itters, CRates->Lh, StoneF);
 		}
 	}
 }

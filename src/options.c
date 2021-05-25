@@ -13,6 +13,7 @@
 #include "threaded.h"
 #include "part.h"
 #include "rates.h"
+#include "stones.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHTINDENT		4
@@ -516,6 +517,9 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->LoadModelsFN != NULL)
 		free(Opt->LoadModelsFN);
+
+	if(Opt->Stones != NULL)
+		FreeStones(Opt->Stones);
 
 	free(Opt);
 }
@@ -1110,6 +1114,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->LoadModels		=	FALSE;
 	Ret->LoadModelsFN	=	NULL;
 
+	Ret->Stones			=	NULL;
 
 	free(Buffer);
 	return Ret; 
@@ -3119,6 +3124,102 @@ void	LoadAddErr(OPTIONS *Opt, char *FName)
 	FreeTextFile(TF);
 }
 
+void	SetSteppingstone(OPTIONS *Opt, char **Passed, int Tokes)
+{
+	int K, Sample, Start;
+	double	Alpha, Beta;
+
+	if(Tokes == 1)
+	{
+		if(Opt->Stones != NULL)
+			FreeStones(Opt->Stones);
+		Opt->Stones = NULL;
+	}
+
+	Beta = 1.0;
+	Alpha= 0.4;
+
+	if((Tokes != 4) && (Tokes != 6))
+	{
+		printf("Stones takes the starting iterations, number of stones and length to sample each stone.\n");
+		printf("Or\nStones takes the starting iterations, number of stones, length to sample each stone, alpha and beta values of each stone.\n");
+		return;
+	}
+
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("Stones: could not convert %s to a valid starting iteration.\n", Passed[1]);
+		return;
+	}
+
+	Start = atoi(Passed[1]);
+	if(Start < 1)
+	{
+		printf("Stones: could not convert %s to a valid starting iteration.\n", Passed[1]);
+		return;
+	}
+
+	if(IsValidInt(Passed[2]) == FALSE)
+	{
+		printf("Stones: could not convert %s to a valid number of stones.\n", Passed[2]);
+		return;
+	}
+
+	K = atoi(Passed[2]);
+	if(K < 1)
+	{
+		printf("Stones: could not convert %s to a valid number of stones.\n", Passed[2]);
+		return;
+	}
+
+	if(IsValidInt(Passed[3]) == FALSE)
+	{
+		printf("Stones: could not convert %s to a valid number of itterations per stone.\n", Passed[3]);
+		return;
+	}
+
+	Sample = atoi(Passed[3]);
+	if(Sample < 1)
+	{
+		printf("Stones: could not convert %s to a valid number of iterations per stone \n", Passed[3]);
+		return;
+	}	
+
+	if(Tokes == 6)
+	{
+		if(IsValidDouble(Passed[4]) == FALSE)
+		{
+			printf("Stones: could not convert %s to a valid alpha.\n", Passed[4]);
+			return;
+		}
+
+		Alpha = atof(Passed[4]);
+		if(Alpha < 0)
+		{
+			printf("Stones: could not convert %s to a valid alpha.\n", Passed[4]);
+			return;
+		}		
+		
+		if(IsValidDouble(Passed[5]) == FALSE)
+		{
+			printf("Stones: could not convert %s to a valid beta.\n", Passed[5]);
+			return;
+		}
+
+		Beta = atof(Passed[5]);
+		if(Beta < 0)
+		{
+			printf("Stones: could not convert %s to a valid beta.\n", Passed[5]);
+			return;
+		}		
+	}
+
+	if(Opt->Stones != NULL)
+		FreeStones(Opt->Stones);
+
+	Opt->Stones = CratesStones( Start,  K,  Sample,  Alpha,  Beta);
+}
+
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 {
 	int			Tokes;
@@ -3739,6 +3840,11 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		}
 		
 		LoadAddErr(Opt, Passed[1]);
+	}
+
+	if(Command == CSTONES)
+	{
+		SetSteppingstone(Opt, Passed, Tokes);
 	}
 
 	return FALSE;

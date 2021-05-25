@@ -2641,26 +2641,13 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 		break;
 
 		case SLABDA:
-			if(Opt->RateDevLambda == MAX_OU)
+			if(Opt->RateDevLambda == MAX_LAMBDA)
 				Rates->Lambda = RandUniDouble(Rates->RS, MIN_LAMBDA, MAX_LAMBDA);
 			else
 				Rates->Lambda = MultePram(Rates, Rates->Lambda, MIN_LAMBDA, MAX_LAMBDA, Opt->RateDevLambda);
 		break;
 
 		case SOU:
-			if(Rates->OU == MIN_OU)
-			{
-				if(RandDouble(Rates->RS) < 0.1)
-					Rates->OU = RandUniDouble(Rates->RS, MIN_OU, MAX_OU);
-				return;	
-			}
-	
-			if(RandDouble(Rates->RS) < 0.1)
-			{
-				Rates->OU = MIN_OU;
-				return;
-			}
-
 			if(Opt->RateDevOU == MAX_OU)
 				Rates->OU = RandUniDouble(Rates->RS, MIN_OU, MAX_OU);
 			else
