@@ -27,6 +27,8 @@
 #define PPCOST		2.302585093
 #define PPJACOBIAN	1
 #define PPMAXSCALE	10
+#define	PPALPHA		1.5
+#define PPBETA		6
 
 
 #define MINRATE 1.0e-16
@@ -723,6 +725,7 @@ typedef struct
 	double	*Pis;
 
 	int		TreeNo;
+//	double	LhHastings;
 	double	LhPrior;
 	double	Lh;
 

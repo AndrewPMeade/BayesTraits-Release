@@ -13,6 +13,29 @@
 
 void	TestGenRand(OPTIONS *Opt, TREES *Trees, RATES* Rates);
 
+extern double gamma(double x);
+extern double ndtr(a);
+
+double	CalcNormalHasting(double x, double SD)
+{
+	return log(ndtr(x/SD));
+}
+
+double	PPSGammaPDF(double x, double Alpha, double Beta)
+{
+	double Ret, s, T1, T2;
+
+	s = 1 / ((Alpha - 1) * Beta);
+
+	T1 = exp(-(x/s) / Beta);
+	T2 = pow(x/s, -1 + Alpha);
+	T2 = T1 * T2 * pow(Beta, -Alpha);
+	Ret = T2 / gamma(Alpha);
+	
+	return Ret / s;
+}
+
+
 double**	MakeTrueBL(TREES *Trees)
 {
 	double **Ret;
@@ -139,6 +162,7 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N)
 {
 	PLASTYNODE	*PNode;
 	PLASTY		*Plasty;
+	double		Cost;
 
 	Plasty = Rates->Plasty;
 
@@ -154,65 +178,21 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N)
 		PNode->Type = PPBRANCH;
 	else
 		PNode->Type = PPNODE;
-
+/*
 	if(GenRandState(Rates->RandStates) < 0.5)
 		PNode->Scale = GenRandState(Rates->RandStates);
 	else
 		PNode->Scale = 1 + (GenRandState(Rates->RandStates) * (PPMAXSCALE-1));
+*/
+	PNode->Scale = GenRandState(Rates->RandStates) * PPMAXSCALE;
 
 	Plasty->NodeList = (PLASTYNODE**) AddToList(&Plasty->NoNodes, Plasty->NodeList, (void*)PNode);
 
-	Rates->LogHRatio += -PPCOST + log(PPJACOBIAN);
-}
+	Cost = log(PPSGammaPDF(PNode->Scale, PPALPHA, PPBETA));
+	Rates->LogHRatio = Cost;
 
-void	DelNNodes(PLASTY *Plasty, int NoDel)
-{
-	int No;
-	int Pos;
 
-	No = 0;
-	do
-	{
-		do
-		{
-			Pos = rand() % Plasty->NoNodes;
-		}while(Plasty->NodeList[Pos] == NULL);
-
-		free(Plasty->NodeList[Pos]);
-		Plasty->NodeList[Pos] = NULL;
-		No++;
-	} while(No != NoDel);
-}
-
-void	MassRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt)
-{
-	PLASTY		*Plasty;
-	PLASTYNODE	**NList;
-	int			Index;
-	int			No;
-
-	Plasty = Rates->Plasty;
-
-	if(Plasty->NoNodes <= PPMASSDEL)
-		return;
-
-	DelNNodes(Plasty, PPMASSDEL);
-
-	NList = (PLASTYNODE**)malloc(sizeof(PLASTYNODE*) * (Plasty->NoNodes - PPMASSDEL));
-	if(NList == NULL) MallocErr();
-
-	No = 0;
-	for(Index=0;Index<Plasty->NoNodes;Index++)
-	{
-		if(Plasty->NodeList[Index] != NULL)
-			NList[No++] = Plasty->NodeList[Index];
-	}
-
-	free(Plasty->NodeList);
-	Plasty->NodeList = NList;
-	Plasty->NoNodes = Plasty->NoNodes - PPMASSDEL;
-
-	Rates->LogHRatio= PPCOST * PPMASSDEL;
+//	Rates->LogHRatio += -PPCOST + log(PPJACOBIAN);
 }
 
 void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
@@ -220,22 +200,26 @@ void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
 	PLASTY		*Plasty;
 	PLASTYNODE	**NList;
 	int			Index;
+	double		Cost;
 	
-	Plasty = Rates->Plasty;
 
+	Plasty = Rates->Plasty;
+	
 	if(Plasty->NoNodes == 1)
 	{
 		free(Plasty->NodeList[0]);
 		free(Plasty->NodeList);
 		Plasty->NodeList = NULL;
 		Plasty->NoNodes = 0;
-		Rates->LogHRatio= PPCOST;
+		Cost = -log(PPSGammaPDF(Plasty->NodeList[0]->Scale, PPALPHA, PPBETA));
+		Rates->LogHRatio= Cost;
 		return;
 	}
 
+	Cost = -log(PPSGammaPDF(Plasty->NodeList[No]->Scale, PPALPHA, PPBETA));
+
 	free(Plasty->NodeList[No]);
 	Plasty->NodeList[No] = NULL;
-
 
 	NList = (PLASTYNODE**)malloc(sizeof(PLASTYNODE*) * (Plasty->NoNodes - 1));
 	if(NList == NULL)
@@ -251,9 +235,10 @@ void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
 	free(Plasty->NodeList);
 	Plasty->NodeList = NList;
 	Plasty->NoNodes--;
+	
+	Rates->LogHRatio = Cost;
 
-
-	Rates->LogHRatio = PPCOST + log(1.0 / PPJACOBIAN);
+//	Rates->LogHRatio = PPCOST + log(1.0 / PPJACOBIAN);
 }
 
 double	ChangePlastyRate(double Rate, double dev, RANDSTATES *RS)
@@ -322,6 +307,7 @@ void	MutatePlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	PLASTY		*Plasty;
 	PLASTYNODE	*Node;
 	int			No;
+	double		POld, PNew;
 
 	Plasty = Rates->Plasty;
 
@@ -338,9 +324,16 @@ void	MutatePlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	}
 
 	if(GenRandState(Rates->RandStates) < 0.25)
+	{
 		MoveNode(Rates, Trees, Opt);
-	else
-		Node->Scale = ChangePlastyRate(Node->Scale, Opt->RateDev, Rates->RandStates);
+		return;
+	}
+
+	POld = PPSGammaPDF(Node->Scale, PPALPHA, PPBETA);
+	Node->Scale = ChangePlastyRate(Node->Scale, Opt->RateDev, Rates->RandStates);
+	PNew = PPSGammaPDF(Node->Scale, PPALPHA, PPBETA);
+
+	Rates->LhPrior = log(PNew / POld);
 }
 
 int GetPlastyNode(int ID, PLASTY *Plasty)
@@ -601,9 +594,7 @@ void	GetNodeIDList(NODE N, int *Size, int *List)
 
 void	InitPPFiles(OPTIONS *Opt, TREES *Trees, RATES* Rates)
 {
-	TestGenRand(Opt, Trees, Rates);
-
-
+//	TestGenRand(Opt, Trees, Rates);
 	InitPPTreeFile(Opt, Trees);
 	IntiPPLogFile(Opt, Trees, Rates);
 }
@@ -695,8 +686,6 @@ void	PrintPPOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
                               Method
 */
 
-extern double gamma(double x);
-
 double	GammPDF(double x, double Shape, double Scale)
 {
 	double T1, T2;
@@ -711,60 +700,40 @@ double	GammPDF(double x, double Shape, double Scale)
 
 double	RandGamma(double Shape, double Scale)
 {
-	return sgamma(Shape) * Scale;
-//	gengam(a, b)
+	double x;
+
+	x = sgamma(Shape) * Scale;
+	return x / (Scale* (Shape  - 1));
 }
 
-double	PPGammaPDF(double x, double Alpha, double Beta)
+
+
+
+void	NormalTest(void)
 {
-	double Ret, s, T1, T2;
+	double	x;
 
-	s = 1 / ((Alpha - 1) * Beta);
+	printf("\n");
 
-	T1 = exp(-(x/s) / Beta);
-	T2 = pow(x/s, -1 + Alpha);
-	T2 = T1 * T2 * pow(Beta, -Alpha);
-	Ret = T2 / gamma(Alpha);
-	
-	return Ret / s;
+	for(x=0;x<10;x+=0.01)
+		printf("Normal\t%f\t%f\n", x, CalcNormalHasting(x, 2));
+
+	exit(0);
 }
 
 void	TestGenRand(OPTIONS *Opt, TREES *Trees, RATES* Rates)
 {
 	int Index;
-	double x;
-	double Alpha, Beta;
+	double	 dev;
+
+	dev = 2;
+
+	NormalTest();
 
 	printf("\n");
-
-	for(Index=0;Index<10000;Index++)
-	{
-
-		printf("%f\t%f\t", Alpha, Beta);
-		for(x=0.000001;x<20;x+=0.01)
-			printf("%f\t", PPGammaPDF(x, 1.5, 6));
-		printf("\n");
-	}
+	for(Index=0;Index<100000;Index++)
+		printf("%f\n", nrand(Rates->RandStates));
+		
+//		printf("%f\n", RandGamma(1.5, 6));
 	exit(0);
-
-	for(Index=0;Index<10000;Index++)
-	{
-		x = GenRandState(Rates->RandStates)*20;
-		printf("%d\t%f\t%f\n", Index, x, GammPDF(x, 2, 2));
-	}
-
-	exit(0);
-
-/*	int Index;
-	double a, b;
-
-	a = 0.5;
-	b = 2;
-
-	printf("\n");
-	for(Index=0;Index<10000;Index++)	
-		printf("%f\n", gengam(a, b));
-
-	exit(0);
-	*/
 }
