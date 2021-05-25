@@ -954,9 +954,7 @@ int	RemoveTaxa(OPTIONS *Opt, TREES *Trees, char *TName)
 			NewTaxaList[NewTIndex].Exclude		= Trees->Taxa[OldTIndex].Exclude;
 			NewTaxaList[NewTIndex].EstData		= Trees->Taxa[OldTIndex].EstData;
 			NewTaxaList[NewTIndex].EstDataP		= Trees->Taxa[OldTIndex].EstDataP;
-			NewTaxaList[NewTIndex].EstDepData	= Trees->Taxa[OldTIndex].EstDepData;
-			NewTaxaList[NewTIndex].Dependant	= Trees->Taxa[OldTIndex].Dependant;
-			NewTaxaList[NewTIndex].RealData		= Trees->Taxa[OldTIndex].RealData;
+
 			NewTIndex++;
 		}
 	}

@@ -199,7 +199,6 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	char		Buffer[1024];
 	SCHEDULE*	Shed=NULL;
 	FILE*		ShedFile=NULL;
-	int			BurntIn, GBurntIn;
 #ifdef	JNIRUN
 	long		FP;
 #endif
@@ -262,8 +261,6 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 /*	FindNoBL(Opt, Trees, CRates);  */
 
-	GBurntIn = BurntIn = FALSE;
-
 	for(Itters=0;;Itters++)
 	{ 
 		CopyRates(NRates, CRates, Opt);
@@ -291,35 +288,38 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			Itters--;
 		else
 		{
-			if((Itters%Opt->Sample==0) && (BurntIn == TRUE))
+			if(Itters%Opt->Sample==0)
 			{
-				#ifndef JNIRUN
-					PrintMCMCSample(Itters, Acc, Opt, CRates, stdout);
-					fflush(stdout);
-				#endif
+				if(Itters >= Opt->BurnIn)
+				{
+					#ifndef JNIRUN
+						PrintMCMCSample(Itters, Acc, Opt, CRates, stdout);
+						fflush(stdout);
+					#endif
 
-				PrintMCMCSample(Itters, Acc, Opt, CRates, Opt->LogFile);
-				fflush(Opt->LogFile);
+					PrintMCMCSample(Itters, Acc, Opt, CRates, Opt->LogFile);
+					fflush(Opt->LogFile);
 
-				if(Opt->Summary == TRUE)
-					UpDataSummary(Summary, CRates, Opt);
+					if(Opt->Summary == TRUE)
+						UpDataSummary(Summary, CRates, Opt);
 
-				if(Opt->UseSchedule == TRUE)
-					PrintShed(Opt, Shed, ShedFile);
+					if(Opt->UseSchedule == TRUE)
+						PrintShed(Opt, Shed, ShedFile);
 
-				if(Opt->UsePhyloPlasty == TRUE)
-					PrintPPOutput(Opt, Trees, CRates, Itters);
+					if(Opt->UsePhyloPlasty == TRUE)
+						PrintPPOutput(Opt, Trees, CRates, Itters);
 					
-				BlankSchedule(Shed);
-				#ifdef JNIRUN
-					fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
-					AddResults(Env, Obj, Opt);
-				#endif
+					BlankSchedule(Shed);
+					#ifdef JNIRUN
+						fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
+						AddResults(Env, Obj, Opt);
+					#endif
+				}
 
-			Acc=0;
-			#ifdef JNIRUN
-				SetProgress(Env, Obj, Itters);
-			#endif
+				Acc=0;
+				#ifdef JNIRUN
+					SetProgress(Env, Obj, Itters);
+				#endif
 			}
 		}
 
@@ -329,42 +329,32 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 		if((Opt->Itters == Itters) && (Opt->Itters != -1))
 		{
-			if((Opt->UseEqualTrees == FALSE) || (CRates->TreeNo == Trees->NoOfTrees - 1))
-			{	
-				FreePriors(CRates);
-				FreePriors(NRates);
 
-				FreeRates(CRates);
-				FreeRates(NRates);
+			FreePriors(CRates);
+			FreePriors(NRates);
 
-				free(Shed);
+			FreeRates(CRates);
+			FreeRates(NRates);
 
-				if(Opt->Summary == TRUE)
-				{
-					sprintf(&Buffer[0], "%s.%s", Opt->DataFN, SUMMARYFILEEXT);
-					SumOut = OpenWrite(Buffer);
+			free(Shed);
 
-					PrintSummaryHeadder(SumOut, Summary, Opt);
-					PrintSummary(SumOut, Summary, Opt);
-
-					fclose(SumOut);
-
-					FreeSummary(Summary);
-				}
-
-				if(Opt->UseSchedule == TRUE)
-					fclose(ShedFile);
-				return;
-			}
-
-			if(GBurntIn == TRUE)
+			if(Opt->Summary == TRUE)
 			{
-				CRates->TreeNo++;
-				CRates->Lh = Likelihood(CRates, Trees, Opt);
-				Itters = 0;
-				BurntIn = FALSE;
+				sprintf(&Buffer[0], "%s.%s", Opt->DataFN, SUMMARYFILEEXT);
+				SumOut = OpenWrite(Buffer);
+
+				PrintSummaryHeadder(SumOut, Summary, Opt);
+				PrintSummary(SumOut, Summary, Opt);
+
+				fclose(SumOut);
+
+				FreeSummary(Summary);
 			}
 
+			if(Opt->UseSchedule == TRUE)
+				fclose(ShedFile);
+
+			return;
 		}
 
 		#ifdef JNIRUN
@@ -385,28 +375,6 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				}
 			}
 		#endif
-
-
-		if(Itters == Opt->BurnIn)
-		{
-			if(Opt->UseEqualTrees == TRUE)
-			{
-				if(GBurntIn == FALSE)
-				{
-					GBurntIn = TRUE;
-					Itters = 0;
-				}
-			}
-			else
-				BurntIn = TRUE;
-		}
-
-		if(Opt->UseEqualTrees == TRUE)
-		{
-			if((Itters == Opt->ETreeBI) && (GBurntIn == TRUE))
-				BurntIn = TRUE;
-		}
-
 	}
 }
 

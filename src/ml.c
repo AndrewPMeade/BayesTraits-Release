@@ -122,20 +122,19 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	double d;
 	int		i;
 
-	InitContinusTree(Opt, Trees, 0);
 
+	Rates->Rates[0] = 0;
 
-	Rates->Lambda = 0;
 	printf("\n");
 	d = 0.000001;
 	for(i=0;i<1001;i++)
 	{		
-		Rates->Lambda = d;
-		printf("%d\t%f\t", i, Rates->Lambda);
+		Rates->Rates[0] = d;
+		printf("%d\t%f\t", i, Rates->Rates[0]);
 		Rates->Lh = Likelihood(Rates, Trees, Opt);
 		printf("%f\n", Rates->Lh);
 		fflush(stdout);
-		d += 0.001;
+		d += 0.01;
 	}
 
 	exit(0);
@@ -170,7 +169,8 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 /*	
 	Test(Opt, Trees, Rates);
 	FreeRates(Rates);
-	return; */
+	return;
+*/
 /*	End of some test code */
 
 	BRates = (double*)malloc(sizeof(double)*Rates->NoOfRates);

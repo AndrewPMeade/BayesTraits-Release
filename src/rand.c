@@ -7,13 +7,6 @@
 #include "rand.h"
 #include "typedef.h"
 
-#ifdef _WIN32
-	#include <windows.h>
-#else
-	#include <unistd.h>
-#endif
-
-
 #define		N		25
 #define		MAGIC	7
 #define		MAXRAND	0x7FFF
@@ -49,7 +42,7 @@ float			box_muller(float m, float s);
 
 /* initial 25 seeds, change as you wish */
 static unsigned long x[N] =
-{
+{ 
 	0x95f24dab, 0x0b685215, 0xe76ccae7, 0xaf3ec239, 0x715fad23,
 	0x24a590ad, 0x69e4b5ef, 0xbf456141, 0x96bc1b7b, 0xa7bdf825,
 	0xc1de75b7, 0x8858a9c9, 0x2da87693, 0xb657f9dd, 0xffdc8a9f,
@@ -59,35 +52,9 @@ static unsigned long x[N] =
 
 /* this is magic vector `a', don't change */
 static unsigned long mag01[2]=
-{
-	0x0, 0x8ebfd028
+{ 
+	0x0, 0x8ebfd028 
 };
-
-
-unsigned long	GetProcID(void)
-{
-	#ifdef _WIN32
-		return GetCurrentProcessId();
-	#else
-		return getpid();
-	#endif
-}
-
-unsigned long ReverseUSLong(unsigned long x)
-{
-	unsigned long h;
-	int i;
-
-	h = 0;
-
-	for(i = 0; i < 32; i++)
-	{
-		h = (h << 1) + (x & 1);
-		x >>= 1;
-	}
-
-	return h;
-}
 
 
 /* Set both the random seends and print it out for futer use */
@@ -95,20 +62,13 @@ int SetSeed(void)
 {
 	int	S;
 	int	i;
-	unsigned long Pid;
-
+	
 	S =  (unsigned)time(NULL);
-
-	Pid = GetProcID();
-	Pid = ReverseUSLong(Pid);
-
-	S = S ^ Pid;
-
 
 	#ifndef JNIRUN
 		printf("Rand Seed\t%d\n", S);
 	#endif
-
+	
 	srand(S);
 	KeepSeed = Seed = S;
 
@@ -176,7 +136,7 @@ double NegExp( double ExpectedValue )
 float	Other(void)
 {
          float x1, x2, w, y1, y2;
-
+ 
          do {
                  x1 = (float)2.0 * (float)RandomReal() - (float)1.0;
                  x2 = (float)2.0 * (float)RandomReal() - (float)1.0;
@@ -237,12 +197,12 @@ double GenRand(void)
 
 //	return (double)(rand() % 10000) / 10000;
 	/* generate N words at one time */
-	if (k==N)
-	{
-		for (kk=0;kk<N-MAGIC;kk++)
+	if (k==N) 
+	{ 
+		for (kk=0;kk<N-MAGIC;kk++) 
 			x[kk] = x[kk+MAGIC] ^ (x[kk] >> 1) ^ mag01[x[kk] % 2];
 
-		for (; kk<N;kk++)
+		for (; kk<N;kk++) 
 			x[kk] = x[kk+(MAGIC-N)] ^ (x[kk] >> 1) ^ mag01[x[kk] % 2];
 
 		k=0;
@@ -258,23 +218,90 @@ double GenRand(void)
 	return( (double) y / (unsigned long) 0xffffffff);
 }
 #endif
-
-double RndGamma1(double  s)
+/*
+int		OneInTen(void)
 {
-	double	r;
-	double	x;
-	double	smallVal;
-	double	w;
-	static double a, p, uf, ss=10.0, d;
+	unsigned int	r;
+
+	r = (int)(GenRand() * 10000) % 10000;
+
+	if(r>=9000)	return 9;
+	if(r>=8000)	return 8;
+	if(r>=7000)	return 7;
+	if(r>=6000)	return 6;
+	if(r>=5000)	return 5;
+	if(r>=4000)	return 4;
+	if(r>=3000)	return 3;
+	if(r>=2000)	return 2;
+	if(r>=1000)	return 1;
+	return 0;
+}
+*/
+/*
+int		SmallRand(unsigned int Mag)
+{
+	while(Mag > 0)
+	{
+		Mag--;
+		if(OneInTen()!=0)
+			return FALSE;
+		if(Mag == 1)
+			if(OneInTen() == 0) return TRUE;
+			else return FALSE;
+	}
+
+	printf("Eror\n");
+	exit(1);
+	return -1;
+}
+*/
+
+/*
+int	IntRand()
+{
+	double Ret;
+
+	Ret = GenRand() * MAXRAND;
 	
-	x = 0.0;
-	smallVal = 1e-37;
+	return (int)Ret;
+}
+*/
+
+/*
+double	LnRGamma (double alpha)
+{
+
+	double x = alpha, f = 0.0, z;
+
+	if (x < 7)
+		{
+		f = 1.0;
+		z = x-1.0;
+		while (++z < 7.0)
+			f *= z;
+		x = z;
+		f = -log(f);
+		}
+	z = 1.0/(x*x);
+	return  f + (x-0.5)*log(x) - x + 0.918938533204673 +
+		(((-0.000595238095238*z+0.000793650793651)*z-0.002777777777778)*z +
+		0.083333333333333)/x;
+
+}
+*/
+
+
+double RndGamma1 (double  s)
+{
+
+	double	r, x=0.0, small=1e-37, w;
+	static double a, p, uf, ss=10.0, d;
 
 	if (s != ss)
 		{
 		a  = 1.0 - s;
 		p  = a / (a+s*exp(-a));
-		uf = p * pow(smallVal/a, s);
+		uf = p * pow(small/a,s);
 		d  = a * log(a);
 		ss = s;
 		}
@@ -357,8 +384,8 @@ void DirichletRandomVariable (double *alp, double *z, int n)
 	for(i=0; i<n; i++)
 		z[i] /= sum;
 
-}
-
+}			 
+							 
 RANDSTATES*	CreateRandStates(void)
 {
 	RANDSTATES*		Ret;
@@ -393,14 +420,14 @@ double GenRandState(RANDSTATES*	RandS)
 	unsigned long y;
 	int kk;
 
-
+	
 	/* generate N words at one time */
-	if (RandS->K == N)
-	{
-		for (kk=0;kk<N-MAGIC;kk++)
+	if (RandS->K == N) 
+	{ 
+		for (kk=0;kk<N-MAGIC;kk++) 
 			RandS->States[kk] = RandS->States[kk+MAGIC] ^ (RandS->States[kk] >> 1) ^ mag01[RandS->States[kk] % 2];
 
-		for (; kk<N;kk++)
+		for (; kk<N;kk++) 
 			RandS->States[kk] = RandS->States[kk+(MAGIC-N)] ^ (RandS->States[kk] >> 1) ^ mag01[RandS->States[kk] % 2];
 
 		RandS->K = 0;
@@ -424,12 +451,12 @@ void			FreeRandStates(RANDSTATES* RandS)
 
 double nrand(RANDSTATES* RandS)
 {
- /* gives a distribution with mean 0 and std 1.
+ /* gives a distribution with mean 0 and std 1. 
 
   To change the mean to M, simply add M to whatever
   is returned
 
-  To change the std to S, simply multiply whatever is returned
+  To change the std to S, simply multiply whatever is returned 
   by S. Do the mult first.
 
   Eg: this returns Z (the thing in the return line)
@@ -438,7 +465,7 @@ double nrand(RANDSTATES* RandS)
 */
   double a, b;
   double pi = 3.14159265358979323846;
-
+ 
   a = GenRandState(RandS);
   b = GenRandState(RandS);
 
