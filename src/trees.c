@@ -340,6 +340,7 @@ void	MakeNewTree(TREE *Tree, NTREE *PTree)
 
 		Node->Length	= NNode->Length;
 		Node->Tip		= NNode->Tip;
+		Node->Contrast	= NULL;
 
 		Node->Part = NULL;
 		Node->PSize= 0;

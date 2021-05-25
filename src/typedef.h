@@ -4,9 +4,9 @@
 #pragma warning(disable : 4996)
 #include <stdio.h>
 #include "matrix.h"
-
-// #define	JNIRUN
-
+/*
+#define	JNIRUN
+*/
 #ifdef	 JNIRUN
 	#include "jni.h"
 /*	Build 
@@ -185,7 +185,7 @@ static char    *COMMANDSTRINGS[] =
 	"solotreemove",	"stree",
 	"setseed",		"ss",
 	"makeum",		"mum",
-	"phyloplasty",	"fp", 
+	"phyloplasty",	"pp", 
 	""
 };
 
@@ -321,6 +321,14 @@ typedef struct
 	char	*RealData;
 } TAXA;
 
+typedef struct
+{
+	double	Data;
+	double	Cont;
+	double	Var;
+	double	Err;
+}CONTRAST;
+
 struct INODE
 {
 	int		Tip;
@@ -345,6 +353,8 @@ struct INODE
 	int			PSize;
 
 	int			FossilState;
+
+	CONTRAST*	Contrast;
 };
 
 typedef enum

@@ -16,6 +16,8 @@
 #include "rates.h"
 #include "ckappa.h"
 #include "phyloplasty.h"
+#include "contrasts.h"
+
 
 void	InitEstData(OPTIONS *Opt, TREES *Trees)
 {
@@ -1566,6 +1568,13 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 {
 	int		TIndex;
 	RATES*	Rates=NULL;
+
+	if(Opt->UsePhyloPlasty == TRUE)
+	{
+		InitContrast(Opt, Trees);
+		CalcContrast(Trees, NULL);
+		return;
+	}
 
 	CheckZeroTaxaBL(Trees);
 

@@ -82,13 +82,14 @@ int main(int argc, char** argv)
 
 // Full optermisation
 //	cl /Ox /Oi /Ob2 /Ot /Oy /GL /w *.c ./MathLib/*.c
+  
+// ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
+// ./Seq/Mammal-ArtPrim.trees ./Seq/Mammal-ArtPrim.txt < in.txt > sout.txt 
 
 int main(int argc, char** argv)
 {
 	TREES*		Trees=NULL;
 	OPTIONS*	Opt=NULL; 
-	int			Index;
-	char		B[1024];
 
 	SetSeed();
 
