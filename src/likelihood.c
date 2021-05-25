@@ -1022,7 +1022,6 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		GammaCat;
 	double	RateMult;
 
-	
  	if(Rates->ModelFile == NULL)
 		MapRates(Rates, Opt);
 	else
@@ -1033,7 +1032,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	if(Opt->NoLh == TRUE)
 		return -1.0;
 
-	if(Rates->AutoAccept == TRUE)
+	if(Rates->AutoAccept == TRUE || Rates->CalcLh == FALSE)
 		return Rates->Lh;
 	
 	if(Opt->UseDistData == TRUE && Opt->ModelType != MT_FATTAIL)

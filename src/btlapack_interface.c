@@ -1,10 +1,11 @@
+#include "typedef.h"
+
 #ifdef BTLAPACK
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
-#include "typedef.h"
 #include "trees.h"
 #include "continuous.h"
 

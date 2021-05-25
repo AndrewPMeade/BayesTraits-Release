@@ -54,6 +54,21 @@ void	ValidGeoData(TREES *Trees)
 	}
 }
 
+void	SetGeoMissingData(TAXA *Taxa)
+{
+	char *New;
+
+	New = (char*)SMalloc(sizeof(char) * 3);
+
+	if(Taxa->EstDataP[0] == TRUE || Taxa->EstDataP[1] == TRUE)
+		New[0] = New[1] = New[2] = TRUE;
+	else
+		New[0] = New[1] = New[2] = FALSE;
+
+	free(Taxa->EstDataP);
+	Taxa->EstDataP = New;
+}
+
 void	PreProcessGeoData(TREES *Trees)
 {
 	int TIndex;
@@ -79,6 +94,7 @@ void	PreProcessGeoData(TREES *Trees)
 			Taxa->ConData[1] = Y;
 			Taxa->ConData[2] = Z;
 
+			SetGeoMissingData(Taxa);
 		}
 	}
 	Trees->NoOfSites = 3;
@@ -342,6 +358,7 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	Rates->AutoAccept = TRUE;
 }
 
+/*
 void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int NIndex;
@@ -367,14 +384,38 @@ void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	} while(N->Tip == TRUE);
 
 	GeoUpDateNode(N, Rates, Rates->RS);
+	
+	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
+}
+*/
 
+void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int NIndex;
+	TREE *Tree;
+	FATTAILRATES *FTR;
+	NODE N;
 
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	FTR = Rates->FatTailRates;
+
+	MapRatesToFatTailRate(Rates, FTR);
+
+	FatTailSetAnsSates(Tree, Trees->NoOfSites, FTR);
+
+	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
+
+	do
+	{
+		NIndex = RandUSInt(Rates->RS) % Tree->NoNodes;
+		N = Tree->NodeList[NIndex];
+	} while(N->Tip == TRUE);
+
+	GeoUpDateNode(N, Rates, Rates->RS);
 
 	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
-	
-
-
-//	Rates->AutoAccept = TRUE;
+	Rates->CalcLh = FALSE;
 }
 
 /*
@@ -544,9 +585,7 @@ void	LoadGeoData(char *Str, OPTIONS *Opt, TREES *Trees, RATES *CRates)
 
 	FTR = CRates->FatTailRates;
 
-	Passed = (char**)malloc(sizeof(char*) * (strlen(S) + 1));
-	if(Passed == NULL)
-		MallocErr();
+	Passed = (char**)SMalloc(sizeof(char*) * (strlen(S) + 1));
 
 	Tokes = MakeArgv(S, Passed, (int)(strlen(S) + 1));
 

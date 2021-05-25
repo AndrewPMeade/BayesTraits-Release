@@ -754,6 +754,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->NoPriors		=	0;
 	Ret->Priors			=	NULL;
 	Ret->AutoAccept		=	FALSE;
+	Ret->CalcLh			=	TRUE;
 	
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
@@ -2617,6 +2618,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 
 	Shed->CurrentAT = NULL;
 	Rates->AutoAccept = FALSE;
+	Rates->CalcLh = TRUE;
 	
 	switch(Shed->Op)
 	{

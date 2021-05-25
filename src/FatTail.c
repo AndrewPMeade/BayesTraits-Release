@@ -180,7 +180,8 @@ void	FreeFatTailRates(FATTAILRATES* FTR, int NoSites)
 	free(FTR->SiteMax);
 	free(FTR->SiteSD);
 
-//	FreeSliceSampler(FTR->SliceSampler);
+	if(FTR->SliceSampler != NULL)
+		FreeSliceSampler(FTR->SliceSampler);
 
 	for(Index=0;Index<FTR->NoSD;Index++)
 		FreeStableDist(FTR->SDList[Index]);

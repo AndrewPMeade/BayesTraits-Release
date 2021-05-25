@@ -187,7 +187,7 @@ void	PrintEstData(FILE *Str, OPTIONS *Opt)
 	TAXA	*Taxa;
 
 	Trees = Opt->Trees;
-
+		
 	if(EstData(Trees) == FALSE)
 		return;
 

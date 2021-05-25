@@ -582,8 +582,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		if(Opt->NodeData == TRUE)
 			SetTreeAsData(Opt, Trees, NRates->TreeNo);
 
-		if(!(Shed->Op == SFATTAILANS && Opt->Model == M_GEO))
-			NRates->Lh = Likelihood(NRates, Trees, Opt);
+		NRates->Lh = Likelihood(NRates, Trees, Opt);
 	
 		if(NRates->Lh == ERRLH)
 			Itters--;

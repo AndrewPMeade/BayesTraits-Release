@@ -1,7 +1,6 @@
 #ifndef TYPEDEFS_H
 #define TYPEDEFS_H
 
-//#define BTLAPACK
 
 #pragma warning(disable : 4996)
 #include <stdio.h>
@@ -18,7 +17,7 @@
 //#define BIG_LH
 
 // #define BTOCL
-// #define BTLAPACK
+#define BTLAPACK
 
 #ifdef BTOCL
 	#include "btocl_runtime.h"
@@ -1329,6 +1328,7 @@ typedef struct
 	DIST_DATE_RATES	*DistDataRates;
 
 	int				AutoAccept;
+	int				CalcLh;
 } RATES;
 
 typedef struct

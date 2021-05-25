@@ -147,9 +147,7 @@ void	AllocEstDataInfo(TAXA *Taxa, int NoSites)
 		return;
 
 	Taxa->EstData = FALSE;
-	Taxa->EstDataP = (char*)malloc(sizeof(char) * NoSites);
-	if(Taxa->EstDataP == NULL)
-		MallocErr();
+	Taxa->EstDataP = (char*)SMalloc(sizeof(char) * NoSites);
 
 	for(Index=0;Index<NoSites;Index++)
 		Taxa->EstDataP[Index] = FALSE;
@@ -175,11 +173,7 @@ void	AddDesTaxaData(int Tokes, char** Passed, TREES* Trees)
 	int		Index;
 
 	Taxa = FindTaxaFromName(Passed[0], Trees);
-	if(Taxa == NULL)
-	{
-		printf("Could not find a matching taxa name for data point %s\n", Passed[0]);
-		return;
-	}
+
 
 	if(Taxa->DesDataChar != NULL)
 	{
@@ -187,22 +181,17 @@ void	AddDesTaxaData(int Tokes, char** Passed, TREES* Trees)
 		free(Taxa->DesDataChar);
 	}
 
-	Taxa->DesDataChar = (char**)malloc(sizeof(char*)*Trees->NoOfSites);
+	Taxa->DesDataChar = (char**)SMalloc(sizeof(char*)*Trees->NoOfSites);
 	
-	AllocEstDataInfo(Taxa, Trees->NoOfSites);
+	
 
 	for(Index=1;Index<Trees->NoOfSites+1;Index++)
 	{
 		if(HadEstData(Passed[Index]) == FALSE)
-		{
-			Taxa->DesDataChar[Index-1] = (char*)malloc(sizeof(char)*strlen(Passed[Index])+1);
-			if(Taxa->DesDataChar[Index-1] == NULL)
-				MallocErr();
-			strcpy(Taxa->DesDataChar[Index-1], Passed[Index]);
-		}
+			Taxa->DesDataChar[Index-1] = StrMake(Passed[Index]);
 		else
 		{
-			Taxa->DesDataChar[Index-1] = (char*)malloc(sizeof(char)*2);
+			Taxa->DesDataChar[Index-1] = (char*)SMalloc(sizeof(char)*2);
 			Taxa->DesDataChar[Index-1][0] = '-';
 			Taxa->DesDataChar[Index-1][1] = '\0';
 
@@ -241,11 +230,6 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 	int		Index;
 
 	Taxa = FindTaxaFromName(Passed[0], Trees);
-	if(Taxa == NULL)
-	{
-		printf("Could not find a matching taxa name for data point %s\n", Passed[0]);
-		return;
-	}
 
 	if(Taxa->ConData != NULL)
 	{
@@ -253,11 +237,7 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 		free(Taxa->ConData);
 	}
 
-	Taxa->ConData		= (double*)malloc(sizeof(double)*Trees->NoOfSites);
-	if(Taxa->ConData == NULL)
-		MallocErr();
-
-	AllocEstDataInfo(Taxa, Trees->NoOfSites);
+	Taxa->ConData		= (double*)SMalloc(sizeof(double)*Trees->NoOfSites);
 
 	for(Index=1;Index<Trees->NoOfSites+1;Index++)
 	{
@@ -288,19 +268,22 @@ void	LoadTaxaData(char* FileName, TREES* Trees)
 	int			Tokes;
 	int			Line;
 	TEXTFILE	*DataFile;
+	size_t		MSize;
+	TAXA		*Taxa;
 
-	Buffer = (char*)malloc(sizeof(char)*BUFFERSIZE);
-	Passed = (char**)malloc(sizeof(char**)*BUFFERSIZE);
-	if((Buffer == NULL) || (Passed == NULL))
-		MallocErr();
-
+	
 	Trees->NoOfSites = -1;
 	DataFile = LoadTextFile(FileName, TRUE);
+
+	MSize = DataFile->MaxLine + 1;
+	
+	Buffer = (char*)SMalloc(sizeof(char) * MSize);
+	Passed = (char**)SMalloc(sizeof(char**) * MSize);
 
 	for(Line=0;Line<DataFile->NoOfLines;Line++)
 	{
 		strcpy(&Buffer[0], DataFile->Data[Line]);
-		Tokes = MakeArgv(&Buffer[0], Passed, BUFFERSIZE);
+		Tokes = MakeArgv(&Buffer[0], Passed, (int)MSize);
 
 		if(Tokes > 1)
 		{
@@ -313,8 +296,16 @@ void	LoadTaxaData(char* FileName, TREES* Trees)
 				exit(0);
 			}
 
-			AddDesTaxaData(Tokes, Passed, Trees);
-			AddContinuousTaxaData(Tokes, Passed, Trees);
+			
+			Taxa = FindTaxaFromName(Passed[0], Trees);
+			if(Taxa != NULL)
+			{
+				AllocEstDataInfo(Taxa, Trees->NoOfSites);
+				AddDesTaxaData(Tokes, Passed, Trees);
+				AddContinuousTaxaData(Tokes, Passed, Trees);
+			}
+			else
+				printf("Could not find a matching taxa name for data point %s\n", Passed[0]);
 		}
 	}
 

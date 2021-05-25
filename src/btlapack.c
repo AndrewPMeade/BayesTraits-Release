@@ -1,4 +1,5 @@
 #include "btlapack.h"
+#include "typedef.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>

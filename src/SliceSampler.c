@@ -10,25 +10,18 @@ SLICESAMPLER*	CrateSliceSampler(int NoSteps)
 {
 	SLICESAMPLER* Ret;
 
-	Ret = (SLICESAMPLER*)malloc(sizeof(SLICESAMPLER));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (SLICESAMPLER*)SMalloc(sizeof(SLICESAMPLER));
 	
 	Ret->NoSlices = 0;
 	Ret->NoSteps = NoSteps;
 
 
-	Ret->SliceX = (double*)malloc(sizeof(double) * NoSteps);
-	Ret->SliceY = (double*)malloc(sizeof(double) * NoSteps);
-
-	if(Ret->SliceX == NULL || Ret->SliceY == NULL)
-		MallocErr();
-
-	Ret->SliceMin = (double*)malloc(sizeof(double) * NoSteps);
-	Ret->SliceMax = (double*)malloc(sizeof(double) * NoSteps);
-	if(Ret->SliceMin == NULL || Ret->SliceMax == NULL)
-		MallocErr();
-
+	Ret->SliceX = (double*)SMalloc(sizeof(double) * NoSteps);
+	Ret->SliceY = (double*)SMalloc(sizeof(double) * NoSteps);
+	
+	Ret->SliceMin = (double*)SMalloc(sizeof(double) * NoSteps);
+	Ret->SliceMax = (double*)SMalloc(sizeof(double) * NoSteps);
+	
 	return Ret;
 }
 
