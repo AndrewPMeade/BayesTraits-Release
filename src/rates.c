@@ -16,6 +16,7 @@
 #include "matrix.h"
 #include "randdists.h"
 #include "phyloplasty.h"
+#include "contrasts.h"
 
 double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -23,7 +24,9 @@ void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
 int		FindNoOfRates(OPTIONS *Opt)
 {
 	int	Index;
-	int	Ret=0;
+	int	Ret;
+
+	Ret = 0;
 
 	if(Opt->UseRModel == TRUE)
 	{
@@ -303,11 +306,25 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	{
 		Rates->NoOfRates = Opt->Trees->NoOfSites;
 		
-		if(Opt->Model == CONTINUOUSDIR)
-			Rates->NoOfRates = Rates->NoOfRates  * 2;
+		switch(Opt->Model)
+		{
+			case CONTINUOUSRR:
+				Rates->NoOfRates = Opt->Trees->NoOfSites;
+			break;
+			
+			case CONTINUOUSDIR:
+				Rates->NoOfRates = Opt->Trees->NoOfSites  * 2;
+			break;
 
-		if(Opt->Model == CONTINUOUSREG)
-			Rates->NoOfRates = Opt->Trees->NoOfSites + 1;
+			case CONTINUOUSREG:
+				Rates->NoOfRates = Opt->Trees->NoOfSites + 1; 
+			break;
+
+			case CONTRASTM:
+				Rates->NoOfRates = Opt->Trees->NoOfSites * 2; 
+			break;
+
+		}
 
 		Rates->NoOfFullRates = Rates->NoOfRates;
 
@@ -343,6 +360,9 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	{
 		Rates->NoOfRates = 0;
 		Rates->Means = NULL;
+
+		if(Opt->Model == CONTRASTM)
+			Rates->NoOfRates++;
 
 		if(Opt->EstDelta == TRUE)
 			Rates->NoOfRates++;
@@ -398,6 +418,9 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 
 	if(Opt->UsePhyloPlasty == TRUE)
 		Rates->PhyloPlasty = CreatPhyloPlasty(Opt, Rates);
+
+	if(Opt->Model == CONTRASTM)
+		Rates->Contrast = AllocContrastRates(Opt, Rates);
 }
 
 int		FindNoEstData(TREES *Trees, OPTIONS *Opt)
@@ -1081,6 +1104,9 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	TAXA	*Taxa;
 	double	HMean;
 	
+	if(Opt->Model == CONTRASTM)
+		return;
+
 	ConVar = Opt->Trees->Tree[Rates->TreeNo].ConVars;
 
 	fprintf(Str, "%d\t", Rates->TreeNo+1);

@@ -196,7 +196,8 @@ static char		*MODELNAMES[] =
 	"Discete Dependent",
 	"Continuous Random Walk",
 	"Continuous Directional",
-	"Continuous Regression"
+	"Continuous Regression",
+	"Independent Contrasts"
 };
 
 static char    *DEPPRAMS[] =
@@ -276,7 +277,8 @@ typedef enum
 	DESCDEP,
 	CONTINUOUSRR,
 	CONTINUOUSDIR,
-	CONTINUOUSREG
+	CONTINUOUSREG,
+	CONTRASTM
 } MODEL;
 
 typedef enum
@@ -327,7 +329,7 @@ typedef struct
 	double	Cont;
 	double	Var;
 	double	Err;
-}CONTRAST;
+} CONTRAST;
 
 struct INODE
 {
@@ -460,7 +462,6 @@ typedef	struct
 	CONVAR*		ConVars;
 } TREE;
 
-
 typedef struct
 {
 	PRIORDIST	Dist;
@@ -577,10 +578,9 @@ typedef struct
 
 typedef struct
 {
-	double	*Rates;
-	int		NoRates;
-
-} CONTRAST;
+	double*	Alpha;
+	double* Sigma;
+} CONTRASTR;
 
 typedef struct
 {
@@ -767,7 +767,7 @@ typedef struct
 	RANDSTATES		*RandStates;
 	PHYLOPLASTY		*PhyloPlasty;
 
-	CONTRASTRATES	*Contrast;
+	CONTRASTR		*Contrast;
 } RATES;
 
 typedef struct

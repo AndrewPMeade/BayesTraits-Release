@@ -610,6 +610,34 @@ char**	RetModelRateName(OPTIONS* Opt)
 	return Ret;
 }
 
+char**	ContrastRateNames(OPTIONS *Opt)
+{
+	char	**Ret;
+	char	*Buffer;
+	int		Index;
+	int		i;
+	
+	Opt->NoOfRates = Opt->Trees->NoOfSites * 2;
+
+	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
+	if((Ret == NULL) || (Buffer == NULL))
+		MallocErr();
+	
+	i = 0;
+	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	{
+		sprintf(Buffer, "Alpha-%d", Index+1);
+		Ret[i++] = StrMake(Buffer);
+
+		sprintf(Buffer, "Sigma-%d", Index+1);
+		Ret[i++] = StrMake(Buffer);
+	}
+
+	free(Buffer);
+	return Ret;
+}
+
 char**	CreatContinusRateName(OPTIONS* Opt)
 {
 	switch(Opt->Model)
@@ -620,6 +648,8 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 			return ModelBRateName(Opt);
 		case CONTINUOUSREG:
 			return RetModelRateName(Opt);
+		case CONTRASTM:
+			return ContrastRateNames(Opt);
 	}
 
 	return NULL;
@@ -797,8 +827,10 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		(Ret->Model == DESCDEP))
 		Ret->DataType = DISCRETE;
 
-
-	if((Ret->Model == CONTINUOUSRR) || (Ret->Model == CONTINUOUSDIR) || (Ret->Model == CONTINUOUSREG))
+	if( (Ret->Model == CONTINUOUSRR) || 
+		(Ret->Model == CONTINUOUSDIR) || 
+		(Ret->Model == CONTINUOUSREG) ||
+		(Ret->Model == CONTRASTM))
 	{
 		Ret->TestCorrel = TRUE;
 		Ret->DataType	= CONTINUOUS;
@@ -944,6 +976,8 @@ MODEL	GetModel(TREES *Trees)
 
 				if(Trees->NoOfSites > 1)
 					printf("6)	Continuous: Regression\n");
+
+				printf("7)	Independent contrast\n");
 			}
 		}
 
@@ -997,6 +1031,12 @@ MODEL	GetModel(TREES *Trees)
 							else
 								printf("Continuous: Regression model requires more than one site\n");
 						}
+					break;
+
+
+					case 7:
+						if(Trees->ValidCData == TRUE)
+							return CONTRASTM;
 					break;
 
 

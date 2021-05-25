@@ -156,6 +156,9 @@ typedef struct
 	RATES	*Rates;
 	TREES	*Trees;
 	OPTIONS	*Opt;
+
+	/* Free pointer to carry other data strcts */
+	void	*Pt;
 } PRAXSTATE;
 
 double		rndom(void);

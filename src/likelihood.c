@@ -16,6 +16,8 @@
 #include "praxis.h"
 
 #include "rand.h"
+#include "contrasts.h"
+
 
 int	DB = FALSE;
 
@@ -1166,7 +1168,10 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		NOS;
 
 
-	MapRates(Rates,Opt);
+	MapRates(Rates, Opt);
+
+	if(Opt->Model == CONTRASTM)
+		return CalcContrastLh(Opt, Trees, Rates);
 
 	if(Opt->DataType == CONTINUOUS)
 		return LHRandWalk(Opt, Trees, Rates);

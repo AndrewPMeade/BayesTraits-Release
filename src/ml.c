@@ -12,6 +12,7 @@
 #include "1dopt.h"
 #include "data.h"
 #include "continuous.h"
+#include "contrasts.h"
 
 double	Min1D(RATES* Rates, TREES *Trees, OPTIONS *Opt, double From, double To, int Steps);
 
@@ -210,44 +211,49 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		
 		BLh = ERRLH;
 
-		if(Rates->NoOfRates > 1)
-		{		
-			for(OIndex=0;OIndex<Opt->MLTries;OIndex++)
-			{
-				CLh = PraxisGo(Opt, Rates, Trees);
-			
-				if((CLh < BLh) || (BLh == ERRLH))
-				{
-					BLh = CLh;
-					for(ti=0;ti<Rates->NoOfRates;ti++)
-						BRates[ti] = Rates->Rates[ti];
-
-					if(Opt->DataType == CONTINUOUS)
-						LHRandWalk(Opt, Trees, Rates);
-				}
-
-				#ifdef JNIRUN
-					CheckStop(Env, Obj, Trees);
-					if(Trees->JStop == TRUE)
-					{
-						FreeRates(Rates);
-						free(BRates);
-						return;
-					}
-				#endif
-			}
-
-			for(ti=0;ti<Rates->NoOfRates;ti++)
-				Rates->Rates[ti] = BRates[ti];
-
-			if(Opt->DataType == CONTINUOUS)
-			//	LhPraxisCon(BRates);
-				LHRandWalk(Opt, Trees, Rates);
-		}
+		if(Opt->Model == CONTRASTM)
+			MLContrast(Opt, Trees, Rates);
 		else
 		{
-			if(Rates->NoOfRates == 1)
-				Opt1D(Opt, Rates, Trees);
+			if(Rates->NoOfRates > 1)
+			{		
+				for(OIndex=0;OIndex<Opt->MLTries;OIndex++)
+				{
+					CLh = PraxisGo(Opt, Rates, Trees);
+				
+					if((CLh < BLh) || (BLh == ERRLH))
+					{
+						BLh = CLh;
+						for(ti=0;ti<Rates->NoOfRates;ti++)
+							BRates[ti] = Rates->Rates[ti];
+
+						if(Opt->DataType == CONTINUOUS)
+							LHRandWalk(Opt, Trees, Rates);
+					}
+
+					#ifdef JNIRUN
+						CheckStop(Env, Obj, Trees);
+						if(Trees->JStop == TRUE)
+						{
+							FreeRates(Rates);
+							free(BRates);
+							return;
+						}
+					#endif
+				}
+
+				for(ti=0;ti<Rates->NoOfRates;ti++)
+					Rates->Rates[ti] = BRates[ti];
+
+				if(Opt->DataType == CONTINUOUS)
+				//	LhPraxisCon(BRates);
+					LHRandWalk(Opt, Trees, Rates);
+			}
+			else
+			{
+				if(Rates->NoOfRates == 1)
+					Opt1D(Opt, Rates, Trees);
+			}
 		}
 
 		Rates->Lh = Likelihood(Rates, Trees, Opt);
@@ -272,8 +278,15 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 		if(Opt->DataType == CONTINUOUS)
 		{
-			FreeConVar(Trees->Tree[TIndex].ConVars, Trees->NoOfTaxa);
-			Trees->Tree[TIndex].ConVars = NULL;
+			if(Opt->Model == CONTRASTM)
+			{
+				
+			}
+			else
+			{
+				FreeConVar(Trees->Tree[TIndex].ConVars, Trees->NoOfTaxa);
+				Trees->Tree[TIndex].ConVars = NULL;
+			}
 		}
 	}
 

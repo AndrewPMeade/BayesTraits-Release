@@ -1434,6 +1434,13 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 {
 	int		Index;
 	CONVAR	*CV;
+
+	if(Opt->Model == CONTRASTM)
+	{
+		InitContrastTree(Opt, Trees, TreeNo);
+		return;
+	}
+
 	
 	Trees->Tree[TreeNo].ConVars = AllocConVar(Opt, Trees);	
 	CV = Trees->Tree[TreeNo].ConVars;
@@ -1567,12 +1574,11 @@ TEMPCONVAR* AllocTempConVars(OPTIONS *Opt, TREES* Trees)
 void	InitContinus(OPTIONS *Opt, TREES* Trees)
 {
 	int		TIndex;
-	RATES*	Rates=NULL;
 
-	if(Opt->UsePhyloPlasty == TRUE)
+	if(Opt->Model == CONTRASTM)
 	{
-		InitContrast(Opt, Trees);
-		CalcContrast(Trees, NULL);
+		if(Opt->Analsis == ANALMCMC)
+			InitContrastAll(Opt, Trees);
 		return;
 	}
 
