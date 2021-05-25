@@ -749,6 +749,8 @@ void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed
 	} while(NewR < 0.0);
 	
 	Rates->Rates[Pos] = NewR;
+
+	MapRatesToFatTailRate(Rates, Rates->FatTailRates);
 }
 
 
@@ -874,16 +876,38 @@ double	FatTailLhPraxis(void* P, double *List)
 	return Ret;
 }
 
+void	TestLhNorm2(RATES *Rates)
+{
+	double p, x, a, c;
+	STABLEDIST *SDist;
+	
+	x = 0.1;
+	a = 0.2;
+	c = 1.0;
+
+	SDist = Rates->FatTailRates->SDList[0];
+
+	SetStableDist(SDist, a, c);
+	p = StableDistPDF(SDist, x);
+//	p = exp(p);
+
+	printf("p:\t%f\n", p);
+	exit(0);
+}
+
 void	TestLhNorm(RATES *Rates)
 {
 	double X, P, SD;
 	STABLEDIST *SDist;
+
+//	TestLhNorm2(Rates);
 	
 	SDist = Rates->FatTailRates->SDList[0];
+	
+	SD = 5.0;
+	SD = sqrt(SD);
 
-	SD = 0.2;
-
-	SetStableDist(SDist, FAT_TAIL_NORMAL_VAL, SD);
+	SetStableDist(SDist, FAT_TAIL_NORMAL_VAL, SD/sqrt(2.0));
 	
 	for(X = -5;X < 5; X+=0.001)
 	{
@@ -899,7 +923,7 @@ void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 	int Pos;
 	PRIORS *P;
 
-	TestLhNorm(Rates);
+//	TestLhNorm(Rates);
 
 	Pos = SiteNo * 2;
 		
@@ -911,7 +935,8 @@ void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 	Pos++;
 
 	P = Rates->Prios[Pos];
-	Rates->Rates[Pos] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
+//	Rates->Rates[Pos] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
+	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 10);
 	Pos++;
 
 }
@@ -940,7 +965,6 @@ void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		MallocErr();
 	memcpy(TempVect, Rates->Rates, sizeof(double) * Rates->NoOfRates);
 	
-
 	PS = IntiPraxis(FatTailLhPraxis, TempVect, Rates->NoOfRates, 0, 0, 4, 10000);
 	
 	PS->Opt		= Opt;

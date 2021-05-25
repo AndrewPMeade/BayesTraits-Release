@@ -95,8 +95,7 @@ double**	MakeTrueBL(TREES *Trees)
 int		IsValidVarRatesNode(NODE N, RJ_VARRATE_TYPE	Type)
 {
 	PART *Part;
-
-
+	
 	if(N == NULL)
 		return FALSE;
 
@@ -525,7 +524,7 @@ int		ValidMoveNode(PLASTY *Plasty, NODE N, RJ_VARRATE_TYPE Type)
 
 void	MakeTNodeList(OPTIONS *Opt, PLASTY *Plasty, RJ_VARRATE_TYPE Type, NODE N, NODE* List, int *Size)
 {
-	int Index;
+//	int Index;
 
 	if(ValidMoveNode(Plasty, N, Type) == TRUE)
 	{
@@ -694,7 +693,7 @@ void	ScaleNode(NODE N,  PLASTYNODE *P)
 
 void	VarRatesNode(TREE *Tree, NODE N, PLASTYNODE *P)
 {
-	int Index;
+//	int Index;
 	int Norm;
 
 //	Norm = FALSE;
@@ -725,6 +724,33 @@ void	VarRatesNode(TREE *Tree, NODE N, PLASTYNODE *P)
 	}
 }
 
+void	CheckVarRatesData(OPTIONS *Opt, TREES *Trees, RATES *Rates)	
+{
+	PLASTY *P;
+	NODE N;
+	int Index;
+
+	P = Rates->Plasty;
+
+	for(Index=0;Index<P->NoNodes;Index++)
+	{
+		N = P->NodeList[Index]->Node;
+
+		if(N->Part->NoTaxa < MIN_TAXA_VR_TRANS)
+		{
+			printf("err.\n");
+			exit(1);
+		}
+
+		if(IsValidVarRatesNode(P->NodeList[Index]->Node, P->NodeList[Index]->Type) == FALSE)
+		{
+			printf("err2.\n");
+			exit(1);
+		}
+	
+	}
+}
+
 void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 {
 	int Index;
@@ -732,6 +758,8 @@ void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 	TREE *Tree;
 	PLASTY *P;
 	double SumBL, Scale;
+
+//	CheckVarRatesData(Opt, Trees, Rates);
 
 	P = Rates->Plasty;
 	TNo = Rates->TreeNo;
@@ -957,7 +985,7 @@ void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 	ReSetBranchLength(Tree);
 	VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
-	fprintf(Opt->PPTree, "\tTree T_%010ll_%d = (", It, P->NoNodes);
+	fprintf(Opt->PPTree, "\tTree VarRates_%llu_%d = (", It, P->NoNodes);
 
 	for(Index=0;Index<Tree->Root->NoNodes-1;Index++)
 	{
@@ -1034,7 +1062,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 
 		fprintf(Out, "%d\t", N->ID);
 		fprintf(Out, "%f\t", PNode->Scale);
-		fprintf(Out, "%d\t", PNode->NodeID);
+		fprintf(Out, "%llu\t", PNode->NodeID);
 
 		OutputVarRatesType(Out, PNode->Type);
 //		fprintf(Out, "\n");

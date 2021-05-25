@@ -26,6 +26,7 @@
 #include "ContrastRegOutput.h"
 #include "FatTail.h"
 #include "Geo.h"
+#include "threaded.h"
 
 //double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 //void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -68,7 +69,6 @@ int		FindNoConRates(OPTIONS *Opt)
 		break;
 
 		case M_FATTAIL:
-
 			if(Opt->UseGeoData == FALSE)
 				return Opt->Trees->NoOfSites * 2;
 			else
@@ -721,6 +721,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->FatTailRates	=	NULL;
 	
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
+	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
 	
 	if(Opt->UseGamma == TRUE)
 	{
@@ -915,7 +916,7 @@ void	PrintConRecNodesHeadder(FILE *Str, OPTIONS *Opt)
 char**	GetAutoParamNames(OPTIONS *Opt)
 {
 	char	**Ret, *Buffer;
-	int		NoP, PIndex, Index;
+	int		NoP, PIndex, Index, NoS;
 
 	if(Opt->DataType == DISCRETE)
 		return NULL;
@@ -930,7 +931,10 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_FATTAIL)
 	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		NoS = Opt->Trees->NoOfSites;
+		if(Opt->UseGeoData == TRUE)
+			NoS = 1;
+		for(Index=0;Index<NoS;Index++)
 		{
 			sprintf(Buffer, "Alpha %d", Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -2806,6 +2810,8 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 
 void	FreeRates(RATES *Rates, TREES *Trees)
 {
+	int MaxT, Index;
+
 	FreePriors(Rates);
 
 	if(Rates->FatTailRates != NULL)
@@ -2849,6 +2855,12 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 #endif
 
 	FreeRandStates(Rates->RS);
+
+	MaxT = GetMaxThreads();
+	for(Index=0;Index<MaxT;Index++)
+		FreeRandStates(Rates->RSList[Index]);
+	free(Rates->RSList);
+
 
 	if(Rates->Hetero != NULL)
 		FreeHetero(Rates->Hetero);

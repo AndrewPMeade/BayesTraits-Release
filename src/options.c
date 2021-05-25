@@ -885,7 +885,8 @@ void	SetFatTailPrior(OPTIONS *Opt)
 	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 	{
 		Opt->Priors[Pos++] = CreateUniformPrior(0.2, 2.0);
-		Opt->Priors[Pos++] = CreateUniformPrior(0.0, 1.0);
+		Opt->Priors[Pos++] = CreateInvGammaPrior(2.0, 0.130435);
+//		Opt->Priors[Pos++] = CreateUniformPrior(0.0, 1000.0);
 	}
 }
 
@@ -1244,7 +1245,8 @@ void	PrintModelChoic(TREES *Trees)
 	{
 		printf("10)	Discrete: Covarion\n");
 	#ifndef PUBLIC_BUILD
-		printf("9)	Discrete: Heterogeneous \n");
+		if(Trees->NoOfTrees == 1)
+			printf("11)	Discrete: Heterogeneous \n");
 	#endif
 	}
 
@@ -1294,6 +1296,13 @@ int		ValidModelChoice(TREES *Trees, MODEL Model)
 			printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
 			return FALSE;
 		}
+
+		if(Model == M_DESCHET && Trees->NoOfTrees != 1)
+		{
+			printf("Discrete: Heterogeneous requires a single tree.\n");
+			return FALSE;
+		}
+
 		return TRUE;
 	}
 
@@ -2523,11 +2532,16 @@ void	PrintTaxaInfo(OPTIONS *Opt)
 
 void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
 {
+	PRIORS		*P;
 	int			Index;
 	PRIORDIST	Dist;
 
 	if(Opt->UseRJMCMC == TRUE)
 	{
+		if(Opt->RJPrior != NULL)
+			FreePrior(Opt->RJPrior);
+		Opt->RJPrior = NULL;
+
 		Opt->UseRJMCMC = FALSE;
 		return;
 	}
@@ -2535,43 +2549,24 @@ void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
 	if(Tokes < 1)
 	{
 		printf("To turn RJ MCMC on prior distrusions has to be spesified\n");
-		return;
+		exit(0);
 	}
 
-	Dist = StrToPriorDist(Passed[0]);
+	P = CreatePrior(Tokes, Passed);
 
-	if(Dist == -1)
+	if(P == NULL)
+		exit(0);
+
+	if(P->Dist == INVGAMMA)
 	{
-		printf("Could not convter %s to a valid distrubtion\n", Passed[0]);
-		return;
+		printf("Inverse gamma cannot be used as rj prior.\n");
+		exit(0);
 	}
 
-
-	if(Tokes - 1 != DISTPRAMS[Dist])
-	{
-		printf("Prior %s take %d parmeters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
-		return;
-	}
-
-	for(Index=0;Index<DISTPRAMS[Dist];Index++)
-	{
-		if(IsValidDouble(Passed[Index + 1]) == FALSE)
-		{
-			printf("Could not conver %s to a valid prior paramiter\n", Passed[Index + 1]);
-			return;
-		}
-	}
-
-	free(Opt->RJPrior->DistVals);
-	Opt->RJPrior->DistVals = (double*)malloc(sizeof(double) * DISTPRAMS[Dist]);
-	if(Opt->RJPrior->DistVals == NULL)
-		MallocErr();
-	
-	for(Index=0;Index<DISTPRAMS[Dist];Index++)
-		Opt->RJPrior->DistVals[Index] = atof(Passed[Index+1]);
-
-	Opt->RJPrior->Dist = Dist;
+	Opt->RJPrior = P;
 	Opt->UseRJMCMC = TRUE;
+
+
 }
 
 PRIORS*	NameToPrior(OPTIONS *Opt, char* Name)
@@ -3494,6 +3489,12 @@ void	SetRJLocalScalar(OPTIONS *Opt, char **Passed, int Tokes)
 	if(P == NULL)
 		return;
 
+	if(P->Dist == INVGAMMA)
+	{
+		printf("Inverse gamma cannot be used as rj prior.\n");
+		exit(0);
+	}
+
 	Type = NameToRJLocalType(Passed[1]);
 
 	if(Opt->RJLocalScalarPriors[Type] != NULL)
@@ -4273,7 +4274,7 @@ void	CheckOptions(OPTIONS *Opt)
 
 	NoFreeP = FindNoOfRates(Opt);
 
-	if((Opt->UseRJMCMC == FALSE) && (Opt->DataType == DISCRETE))
+	if(Opt->UseRJMCMC == FALSE && Opt->DataType == DISCRETE)
 	{
 		if(FindNoOfRates(Opt) > 25)
 		{
@@ -4281,5 +4282,11 @@ void	CheckOptions(OPTIONS *Opt)
 			printf("If you believe you data can support this number of free parameter please contact the developers to have this limitation removed.\n");
 			exit(0);
 		}	
+	}
+
+	if(Opt->Stones != NULL && Opt->Itters == -1)
+	{
+		printf("Stepping stone sampler is not valid with an infinite number of iterations.\n");
+		exit(0);
 	}
 } 

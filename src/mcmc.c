@@ -24,6 +24,7 @@
 #include "RJDummy.h"
 #include "contrasts.h"
 #include "FatTail.h"
+#include "Geo.h"
 
 
 #ifdef	 JNIRUN
@@ -399,8 +400,8 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 {
 	double Heat;
 
-	if(Shed->Op == SFATTAILANS)
-		return TRUE;
+//	if(Shed->Op == SFATTAILANS)
+//		return TRUE;
 	
 	Heat = NRates->Lh - CRates->Lh;
 						
@@ -500,7 +501,10 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 //		TestModelFile(Opt, Trees, CRates);
 
 	InitMCMC(Opt, Trees, CRates);
-			
+		
+
+	LoadGeoData(Opt, Trees, CRates, NRates);
+
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
 
@@ -544,7 +548,8 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 		if(Opt->NodeData == TRUE)
 			SetTreeAsData(Opt, Trees, NRates->TreeNo);
 
-		NRates->Lh = Likelihood(NRates, Trees, Opt);
+		if(Shed->Op != SFATTAILANS)
+			NRates->Lh = Likelihood(NRates, Trees, Opt);
 	
 		if(NRates->Lh == ERRLH)
 			Itters--;

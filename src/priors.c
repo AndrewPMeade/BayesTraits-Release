@@ -12,11 +12,17 @@
 #include "VarRates.h"
 #include "randdists.h"
 #include "RandLib.h"
+#include "Prob.h"
 
+/*
 extern double beta(double a, double b);
 extern double incbet(double aa, double bb, double xx );
 extern double chdtr(double df, double x);
 extern double igam(double a, double x);
+extern double igamc ( double, double );
+extern double igami ( double, double );
+extern double gamma(double a);
+*/
 
 void	FreePrior(PRIORS* P)
 {
@@ -165,7 +171,7 @@ PRIORS*		CreateChiPrior(double Mean, double Var)
 
 	Ret = AllocBlankPrior(2);
 	
-//	Ret->Dist			= CHI;
+	Ret->Dist			= CHI;
 	Ret->DistVals[0]	= Mean;
 	Ret->DistVals[1]	= Var;
 	
@@ -176,11 +182,24 @@ PRIORS*		CreateExpPrior(double Mean)
 {
 	PRIORS* Ret;
 
-	Ret = AllocBlankPrior(2);
+	Ret = AllocBlankPrior(1);
 	
 	Ret->Dist			= EXP;
 	Ret->DistVals[0]	= Mean;
 		
+	return Ret;
+}
+
+PRIORS*		CreateInvGammaPrior(double Alpha, double Beta)
+{
+	PRIORS* Ret;
+
+	Ret = AllocBlankPrior(2);
+	
+	Ret->Dist			= INVGAMMA;
+	Ret->DistVals[0]	= Alpha;
+	Ret->DistVals[1]	= Beta;
+			
 	return Ret;
 }
 
@@ -311,23 +330,8 @@ int		FindCat(double x, double CatWidth, int NoOfCats)
 	return (int)Ret;
 }
 
-double	BetaProb(int Cat, double Alpha, double Beta, double CatWidth)
-{
-	double X;
-	double Ret;
-	double t;
 
-	X = Cat * CatWidth;
-	t = incbet(Alpha, Beta, X);
-	Ret = incbet(Alpha, Beta, X);
-
-	X = (Cat+1) * CatWidth;
-	
-	Ret = incbet(Alpha, Beta, X) - Ret;
-
-	return Ret;
-}
-
+/*
 double	FindBetaBeta(double Mean, double Var, double Scale)
 {
 	double	Ret=0;
@@ -352,6 +356,30 @@ double FindBetaAlpha(double Mean, double Scale, double Beta)
 	return Ret;
 }
 
+*/
+
+double	PBetaWidth(double X, double Alpha, double Beta, double Width)
+{
+	double	P1, P2;
+	double	X1, X2;
+	double	Scale;
+	int		Cat;
+
+	Scale = 100;
+	
+	X1 = (X+Width) / Scale;
+	X2 = X / Scale;
+		
+	if(X1 > 1.0 || X2 > 1.0)
+		return 0.0;
+
+	P1 = CDFBeta(X1, Alpha, Beta);
+	P2 = CDFBeta(X2, Alpha, Beta);
+
+	return P1 - P2;
+}
+
+/*
 double	RateToBetaLh(double Rate, int NoOfCats, double* Prams)
 {
 	double	Alpha;
@@ -383,8 +411,10 @@ double	RateToBetaLh(double Rate, int NoOfCats, double* Prams)
 	Cat = FindCat(Rate, CatWidth, NoOfCats);
 
 	Ret = BetaProb(Cat, Alpha, Beta, CatWidth);
+
 	return Ret;
 }
+*/
 
 
 /*
@@ -466,23 +496,21 @@ double	FindChiP(double Z, double DF, double Width)
 {
 	double	P1, P2;
 
+	P1 = chdtr(DF, Z+Width);
 	P2 = chdtr(DF, Z);
-	if(Z-Width < 0)
-		return P2;
+	
 
-	P1 = chdtr(DF, Z-Width);
-
-	return P2 - P1;
+	return P1 - P2;
 }
 
-double	LhChiP(double Rate, double Mean, double Sig, double Width)
+double	PChiWidth(double Rate, double Mean, double Sig, double Width)
 {
 	double Z, Ret;
 
 	Z = ChiToZ(Rate, Mean, Sig);
 	Ret = FindChiP(Z, 1, Width);
 
-	return log(Ret);
+	return Ret;
 }
 
 /*
@@ -529,73 +557,114 @@ double	CalcChiPriors(RATES* NRates, RATES* CRates, OPTIONS* Opt)
 }
 */
 
-double	LnExpP(double x, double Mean, double CatSize)
+double PUni(double X, double Min, double Max)
 {
-	double	Ret;
-		
-	Ret = igam(1.0, (x+CatSize)/Mean) - igam(1.0, x/Mean);
+	double Ret;
 
-//	Mean = 1.0 / Mean;
-//	Ret = Mean * exp(-(Mean * x));
+	if(X < Min || X > Max)
+		return 0.0;
+	
+	Ret = 1.0 / (Max - Min);
 
-	return log(Ret);
+	return Ret;	
 }
 
-double	LnGamaP(double Rate, double Mean, double Var, double CatSize)
+double	PExpWidth(double X, double Alpha, double Width)
 {
-	double	Ret=0;
+	double P1, P2;
+
+	P1 = CDFExp(X+Width, Alpha);
+	P2 = CDFExp(X, Alpha);
+
+	return P1 - P2;
+}
+
+double	PGamaWidth(double X, double Alpha, double Beta, double Width)
+{
 	double	P1,P2;
+	
+	P1 = CDFGamma(X+Width, Alpha, Beta);
+	P2 = CDFGamma(X, Alpha, Beta);
 
-	P1 = igam(Var, (Rate+CatSize)/Mean);
-	P2 = igam(Var, Rate/Mean);
+	return P1 - P2;
+}
 
-	if((P1 == 0) || (P2 == 0))
-		return ERRLH;
+double PInvGammaWidth(double X, double Alpha, double Beta, double Width)
+{
+	double P1, P2;
 
-	if((IsNum(P1) == FALSE) || (IsNum(P2) == FALSE))
-		return ERRLH;
+	P1 = CDFInvGamma(X+Width, Alpha, Beta);
+	P2 = CDFInvGamma(X, Alpha, Beta);
 
-	if((P1 > 1) || (P1 < 0))
-		return ERRLH;
+	return P1 - P2;
+}
 
-	if((P2 > 1) || (P2 < 0))
-		return ERRLH;
+void InverseGammaTest(void)
+{
+	double X, P;
+	double Alpha, Beta;
 
-/*
-	Ret = igam(Var, (Rate+CatSize)/Mean) - igam(Var, Rate/Mean);
-*/
-	return log(P1 - P2);
-}	
+	Alpha = 5;
+	Beta = 1;
+	
+//	P = InvGammaCDF(0.5, 3.88, 8.5);
+	
+	for(X=0.001;X<100;X+=0.1)
+	{
+//		P = PInvGamma(X, 2, 0.130435);
+	//	P = PGamaWidth(X, 1.0, 2.0, 0.01);
+	//	P = PExpWidth(X, 1.0, 0.01);
+
+
+
+		P = PBetaWidth(X, Alpha, Beta, 1.0 / 100);
+
+		P = log(P);
+		printf("%f\t%f\n", X, P);
+	}
+
+	exit(0);
+}
+
 
 double	CaclPriorCost(double Val, PRIORS *Prior, int NoCats)
 {
-	double Ret;
+	double Ret, Width;
+
+	Width = 1.0 / NoCats;
+
+//	InverseGammaTest();
 
 	switch(Prior->Dist)
 	{
 		case BETA:
-			Ret = log(RateToBetaLh(Val, NoCats, Prior->DistVals));
+			Ret = PBetaWidth(Val, Prior->DistVals[0], Prior->DistVals[1], Width);
 		break;
 
 		case GAMMA:
-			Ret = LnGamaP(Val, Prior->DistVals[0], Prior->DistVals[1], (double)1/(double)NoCats);
+			Ret = PGamaWidth(Val, Prior->DistVals[0], Prior->DistVals[1], Width);
 		break;
 
 		case UNIFORM:
-			if((Val < Prior->DistVals[0]) || (Val > Prior->DistVals[1]))
-				Ret = ERRLH;
-			else
-				Ret = log((double)1/(Prior->DistVals[1] - Prior->DistVals[0]));
+			Ret = PUni(Val, Prior->DistVals[0], Prior->DistVals[1]);
 		break;
 
 		case EXP:
-			Ret = LnExpP(Val, Prior->DistVals[0], (double)1/(double)NoCats);
+			Ret = PExpWidth(Val, Prior->DistVals[0], Width);
 		break;
 
 		case CHI:
-			Ret = LhChiP(Val, Prior->DistVals[0], Prior->DistVals[1], (double)1.0 / NoCats);
+			printf("Chi is not currenlty implmented. \n");
+			exit(0);
+			Ret = PChiWidth(Val, Prior->DistVals[0], Prior->DistVals[1], Width);
+		break;
+
+		case INVGAMMA:
+			Ret = PInvGammaWidth(Val, Prior->DistVals[0], Prior->DistVals[1], Width);
 		break;
 	}
+
+	Ret = log(Ret);
 
 	return Ret;
 }
@@ -625,38 +694,7 @@ double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
 	return Ret;
 }
 
-double	NormPDF(double x, double Mean, double Var)
-{
-	double Ret, T1, T2;
 
-	Ret = sqrt(Var) * sqrt(6.283185307);
-	Ret = 1.0 / Ret;
-
-	T1 = (x - Mean) * (x - Mean);
-	T2 = 2 * Var;
-
-	T1 = T1 / T2;
-	T2 = exp(-T1);
-
-	Ret = Ret * T2;
-	return Ret;
-}
-
-void	Testxx2(void)
-{
-	double x,  p;
-
-	x = -5;
-
-	for(;x<5;x = x + 0.0001)
-	{
-		p = NormPDF(x, 0, 1);
-		p = log(p);
-		printf("%f\t%f\n", x, p);
-	}
-
-	exit(0);
-}
 
 double CalcRJDummyPriors(OPTIONS *Opt, RATES* Rates)
 {
@@ -673,10 +711,10 @@ double CalcRJDummyPriors(OPTIONS *Opt, RATES* Rates)
 	{
 		DC = RJDummy->DummyList[Index];
 		
-		P = NormPDF(DC->Beta[0],  0.0, 1.0);
+		P = PDFNorm(DC->Beta[0],  0.0, 1.0);
 
 		if(DC->Type == RJDUMMY_INTER_SLOPE)
-			P *= NormPDF(DC->Beta[1],  0.0, 1.0);
+			P *= PDFNorm(DC->Beta[1],  0.0, 1.0);
 				
 		Ret += log(P);
 	}
@@ -695,9 +733,10 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 
 	CalcP = 0;
 	
+//	ProbTest();
+
 	if(Opt->LoadModels == TRUE)
 		return;
-
 
 	if(Opt->UseRJMCMC == TRUE)
 		NoPRates = Rates->NoOfRJRates;
@@ -719,7 +758,7 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 
 		TLh = CaclPriorCost(Rate, Prior, Opt->PriorCats);
 
-		if((TLh == ERRLH) || (IsNum(TLh) == FALSE))
+		if(TLh == ERRLH || IsNum(TLh) == FALSE)
 		{
 			Rates->LhPrior = ERRLH;
 			return;
@@ -910,17 +949,16 @@ PRIORS*		CreatePrior(int Tokes, char **Passed)
 	PRIORDIST	PD;
 	double		*PVal;
 	PRIORS		*Ret;
-
-
+	
 	if(Tokes != 2 && Tokes != 3)
 	{
-		printf("Prior requires a distribution name, (beta, gamma, uniform, chi, exp) and distribution  parameters.\n");
+		printf("Prior requires a distribution name, (beta, gamma, uniform, chi, exp, invgamma) and distribution parameters.\n");
 		return NULL;
 	}
 
 	if(StrToPriorDist(Passed[0]) == -1)
 	{
-		printf("Invalid prior distribution name,. valid names are beta, gamma, uniform, chi, exp.\n");
+		printf("Invalid prior distribution name,. valid names are beta, gamma, uniform, chi, exp, invgamma.\n");
 		return NULL;
 	}
 
@@ -928,7 +966,7 @@ PRIORS*		CreatePrior(int Tokes, char **Passed)
 
 	if(Tokes -1 != DISTPRAMS[PD])
 	{
-		printf("Prior %s requires %d parameters.\n", DISTNAMES[PD]);
+		printf("Prior %s requires %d parameters.\n", DISTNAMES[PD], DISTPRAMS[PD]);
 		return NULL;
 	}
 
@@ -951,6 +989,9 @@ PRIORS*		CreatePrior(int Tokes, char **Passed)
 
 	if(PD == EXP)
 		Ret = CreateExpPrior(PVal[0]);
+
+	if(PD == INVGAMMA)
+		Ret = CreateInvGammaPrior(PVal[0], PVal[1]);
 
 	free(PVal);
 

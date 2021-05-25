@@ -214,11 +214,16 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
 
-// ./Seq/Lloydcroptyrannonotmt.trees ./Seq/LloydcroptyrannonotmtXYZ.txt < in.txt > sout.txt
 
 // ./Seq/temp/tree.trees ./Seq/temp/Data-00001.txt < ./Seq/temp/in.txt > sout.txt
 
 // ./Seq/Earcanals.trees ./Seq/Earcanals.txt < in.txt > sout.txt
+
+// ./Seq/Lloydcroptyrannonotmt.trees ./Seq/LloydcroptyrannonotmtXYZ.txt < in.txt > sout.txt
+// ./Seq/BensonDino.trees ./Seq/BensonDinoDataXYZ.txt < in.txt > sout.txt
+// ./Seq/Ceratopsids.trees ./Seq/CeratopsidsXYZ.txt < in.txt > sout.txt
+
+// ./Seq/funnydelta.trees ./Seq/funnydelta.txt < in.txt > sout.txt
 
 int main(int argc, char** argv)
 {

@@ -196,7 +196,7 @@ void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Set1RandRate(Opt, Trees, Rates) == TRUE)
 		return;
 
-	printf("Cannot find a valid set of starting parameters. Please see manual for solutions.\n", __FILE__, __LINE__);
+	printf("Cannot find a valid set of starting parameters. Please see manual for solutions.\n");
 	exit(0);
 }
 

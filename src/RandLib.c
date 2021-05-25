@@ -81,6 +81,21 @@ RANDSTATES*	CreateSeededRandStates(long Seed)
 	return Ret;
 }
 
+RANDSTATES**	CreateRandStatesList(RANDSTATES* RS, int No)
+{
+	RANDSTATES** Ret;
+	int Index;
+
+	Ret = (RANDSTATES**)malloc(sizeof(RANDSTATES*) * No);
+	if(Ret == NULL)
+		RSMallocErr();
+	
+	for(Index=0;Index<No;Index++)
+		Ret[Index] = CreateSeededRandStates(RandomLong(RS));
+	
+	return Ret;
+}
+
 unsigned long	GetProcID(void)
 {
 	#ifdef _WIN32

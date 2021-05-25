@@ -2896,13 +2896,25 @@ return (p/q);
 double erf(x)
 double x;
 {
-double y, z;
+	double t, y;
+	double a1 =  0.254829592;
+	double a2 = -0.284496736;
+	double a3 =  1.421413741;
+	double a4 = -1.453152027;
+	double a5 =  1.061405429;
+	double p  =  0.3275911;
 
-if( fabs(x) > 1.0 )
-	return( 1.0 - erfc(x) );
-z = x * x;
-y = x * polevl( z, T, 4 ) / p1evl( z, U, 5 );
-return( y );
+    // Save the sign of x
+    int sign = 1;
+    if (x < 0)
+        sign = -1;
+    x = fabs(x);
+
+    // A&S formula 7.1.26
+    t = 1.0/(1.0 + p*x);
+    y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*exp(-x*x);
+
+    return sign*y;
 
 }
 /*							ndtri.c
@@ -3417,3 +3429,129 @@ while( --i );
 
 return( ans );
 }
+
+
+/* start */
+double beta( a, b )
+double a, b;
+{
+double y;
+int sign;
+
+sign = 1;
+
+if( a <= 0.0 )
+	{
+	if( a == floor(a) )
+		goto over;
+	}
+if( b <= 0.0 )
+	{
+	if( b == floor(b) )
+		goto over;
+	}
+
+
+y = a + b;
+if( fabs(y) > MAXGAM )
+	{
+	y = lgam(y);
+	sign *= sgngam; /* keep track of the sign */
+	y = lgam(b) - y;
+	sign *= sgngam;
+	y = lgam(a) + y;
+	sign *= sgngam;
+	if( y > MAXLOG )
+		{
+over:
+		mtherr( "beta", OVERFLOW );
+		return( sign * MAXNUM );
+		}
+	return( sign * exp(y) );
+	}
+
+y = gamma(y);
+if( y == 0.0 )
+	goto over;
+
+if( a > b )
+	{
+	y = gamma(a)/y;
+	y *= gamma(b);
+	}
+else
+	{
+	y = gamma(b)/y;
+	y *= gamma(a);
+	}
+
+return(y);
+}
+
+
+
+/* Natural log of |beta|.  Return the sign of beta in sgngam.  */
+
+double lbeta( a, b )
+double a, b;
+{
+double y;
+int sign;
+
+sign = 1;
+
+if( a <= 0.0 )
+	{
+	if( a == floor(a) )
+		goto over;
+	}
+if( b <= 0.0 )
+	{
+	if( b == floor(b) )
+		goto over;
+	}
+
+
+y = a + b;
+if( fabs(y) > MAXGAM )
+	{
+	y = lgam(y);
+	sign *= sgngam; /* keep track of the sign */
+	y = lgam(b) - y;
+	sign *= sgngam;
+	y = lgam(a) + y;
+	sign *= sgngam;
+	sgngam = sign;
+	return( y );
+	}
+
+y = gamma(y);
+if( y == 0.0 )
+	{
+over:
+	mtherr( "lbeta", OVERFLOW );
+	return( sign * MAXNUM );
+	}
+
+if( a > b )
+	{
+	y = gamma(a)/y;
+	y *= gamma(b);
+	}
+else
+	{
+	y = gamma(b)/y;
+	y *= gamma(a);
+	}
+
+if( y < 0 )
+  {
+    sgngam = -1;
+    y = -y;
+  }
+else
+  sgngam = 1;
+
+return( log(y) );
+}
+

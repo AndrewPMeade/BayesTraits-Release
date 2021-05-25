@@ -592,7 +592,7 @@ void	PrintRJDummy(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			fprintf(Opt->RJDummyLog, "%f\t", DC->Beta[1]);
 		}
 		
-		fprintf(Opt->RJDummyLog, "%d\t", DC->Iteration);
+		fprintf(Opt->RJDummyLog, "%llu\t", DC->Iteration);
 		
 		fprintf(Opt->RJDummyLog, "%d\t", DC->Node->Part->NoTaxa);
 		PrintRJDummyTaxaList(Opt->RJDummyLog, Trees, DC);

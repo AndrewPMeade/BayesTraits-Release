@@ -16,7 +16,7 @@ void	PrintStones(FILE *Str, STONES *Stones)
 {
 	fprintf(Str, "Steppingstone sampler:\n");
 	fprintf(Str, "        No Stones:                  %d\n", Stones->NoStones);
-	fprintf(Str, "        Start It:                   %d\n", Stones->ItStart);
+	fprintf(Str, "        Start It:                   %llu\n", Stones->ItStart);
 	fprintf(Str, "        It Per Stone:               %d\n", Stones->ItPerStone);
 	fprintf(Str, "        Sample Freq:                %d\n", Stones->SampleFreq);
 	fprintf(Str, "        Dist:                       Beta(%f,%f)\n", Stones->Alpha, Stones->Beta);
