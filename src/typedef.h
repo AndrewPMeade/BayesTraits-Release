@@ -143,7 +143,7 @@
 
 // def min and max rates, min rate is enforced with user overrides 
 #define RATE_MIN 1.0e-8
-#define RATE_MAX 1000
+#define RATE_MAX 100
 
 /*	#define MAXRATE	100 */
 // Minium barnch legnth
@@ -448,14 +448,8 @@ static char    *DEPCVPRAMS[] =
 	"q34",
 	"q42",
 	"q43",
-	"qDI00",
-	"qDI01",
-	"qDI10",
-	"qDI11",
-	"qID00",
-	"qID01",
-	"qID10",
-	"qID11",
+	"qDI",
+	"qID"
 	""
 };
 

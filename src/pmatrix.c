@@ -368,6 +368,7 @@ void	CreateDepCVAMatrix(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *R)
 	double q12,q13,q21,q24,q31,q34,q42,q43;
 	double 	qDI00, qDI01, qDI10, qDI11;
 	double 	qID00, qID01, qID10, qID11;
+	double	qDI, qID;
 	MATRIX *A;
 
 	A = InvInfo->A;
@@ -388,15 +389,18 @@ void	CreateDepCVAMatrix(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *R)
 	q42		= R[10];
 	q43		= R[11];
 	
-	qDI00	= R[12];
-	qDI01	= R[13];
-	qDI10	= R[14];
-	qDI11	= R[15];
+	qDI		= R[12];
+	qID		= R[13];
 
-	qID00	= R[16];
-	qID01	= R[17];
-	qID10	= R[18];
-	qID11	= R[19];
+	qDI00	= qDI;
+	qDI01	= qDI;
+	qDI10	= qDI;
+	qDI11	= qDI;
+
+	qID00	= qID;
+	qID01	= qID;
+	qID10	= qID;
+	qID11	= qID;
 	
 	A->me[0][1] = Alpha2;
 	A->me[0][2] = Alpha1;

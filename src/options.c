@@ -954,7 +954,7 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 		SetOptRateNamesFixed(Opt, 8, DEPPRAMS);
 
 	if(Opt->Model == M_DESCCV)
-		SetOptRateNamesFixed(Opt, 20, DEPCVPRAMS);
+		SetOptRateNamesFixed(Opt, 14, DEPCVPRAMS);
 	
 	if(Opt->Model == M_DESCHET)
 		SetOptRateNamesFixed(Opt, 12, DEPHETROPRAMS);
@@ -2238,12 +2238,23 @@ RECNODE*	CreateRecNode(void)
 	return Ret;
 }
 
+void	DumpLineError(int Tokes, char **argv)
+{
+	int Index;
+	
+	printf("\n\nError with line:\n");
+	for(Index=0;Index<Tokes;Index++)
+		printf("%s ", argv[Index]);
+	printf("\n");
+}
+
 void	AddRecNodeCheck(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
 {
 	if(NodeType == MRCA || NodeType == NODEREC)
 	{
 		if(Tokes != 3)
 		{
+			DumpLineError(Tokes, argv);
 			printf("Reconstructing an internal node requires a unique name and tag.\n");
 			exit(1);
 		}
@@ -2253,6 +2264,7 @@ void	AddRecNodeCheck(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
 	{
 		if(Tokes < 4)
 		{
+			DumpLineError(Tokes, argv);
 			printf("The fossil command requires a unique name, a tag and the states to fossilise.\n");
 			exit(1);
 		}
