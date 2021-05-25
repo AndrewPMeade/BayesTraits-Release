@@ -523,6 +523,23 @@ void	MakeTNodeList(OPTIONS *Opt, VARRATES *Plasty, TRANSFORM_TYPE Type, NODE N, 
 //		MakeTNodeList(Opt, Plasty,Type, N->NodeList[Index], List, Size);
 }
 
+int		CompVarRatesNode(const void *Vr1, const void *Vr2)
+{
+	VAR_RATES_NODE **VR1, **VR2;
+
+	VR1 = (VAR_RATES_NODE**)Vr1;
+	VR2 = (VAR_RATES_NODE**)Vr2;
+
+
+	if((*VR1)->Node->Part->NoTaxa >= (*VR2)->Node->Part->NoTaxa)
+		return -1;
+
+	if((*VR1)->Node->Part->NoTaxa < (*VR2)->Node->Part->NoTaxa)
+		return 1;
+
+	return 0;
+}
+
 void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
 	VARRATES	*VarRates;
@@ -554,6 +571,8 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	No = RandUSLong(Rates->RS) % VarRates->NoTempList;
 	PNode->Node = VarRates->TempList[No];
 
+	qsort(VarRates->NodeList, VarRates->NoNodes, sizeof(VAR_RATES_NODE*), CompVarRatesNode);
+
 	return;
 }
 
@@ -577,22 +596,7 @@ NODE	GetVarRatesNode(RATES *Rates, TREES *Trees, TRANSFORM_TYPE	Type)
 	return N;
 }
 
-int		CompVarRatesNode(const void *Vr1, const void *Vr2)
-{
-	VAR_RATES_NODE **VR1, **VR2;
 
-	VR1 = (VAR_RATES_NODE**)Vr1;
-	VR2 = (VAR_RATES_NODE**)Vr2;
-
-
-	if((*VR1)->Node->Part->NoTaxa >= (*VR2)->Node->Part->NoTaxa)
-		return -1;
-
-	if((*VR1)->Node->Part->NoTaxa < (*VR2)->Node->Part->NoTaxa)
-		return 1;
-
-	return 0;
-}
 
 void	DumpVRNodes(VARRATES	*VarRates)
 {

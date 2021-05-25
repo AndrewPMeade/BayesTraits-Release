@@ -2727,7 +2727,10 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 {
 	int MaxT, Index;
 
-	FreePriors(Rates);
+	if(Rates->Priors != NULL)
+		FreePriors(Rates);
+
+
 
 	if(Rates->DistDataRates != NULL)
 		FreeDistDataRates(Rates->DistDataRates);

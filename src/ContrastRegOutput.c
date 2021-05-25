@@ -308,11 +308,10 @@ void	CalcSSResiduals(REG_CON_POST* RegConPost, int TestCorrel)
 		RegConPost->SSTotal[SIndex-1] = CaclSSSiteTotal(M);
 		
 		free(Beta);
+		FreeMatrix(M);
 	}
 
-//	CalcGlobalR2(RegConPost);
 
-//	exit(0);
 }
 
 void	CalcMSE(REG_CON_POST*	RegConPost)

@@ -63,7 +63,9 @@ void	FreePriors(RATES *Rates)
 	int	Index;
 
 	for(Index=0;Index<Rates->NoPriors;Index++)
-		FreePrior(Rates->Priors[Index]);	
+		FreePrior(Rates->Priors[Index]);
+
+	free(Rates->Priors);
 }
 
 PRIOR*	AllocBlankPrior(int NoP)
@@ -107,7 +109,7 @@ PRIOR*		CreateGammaPrior(char *Name, double Shape, double Scale)
 
 	Ret = AllocBlankPrior(2);
 	
-	Ret->Dist			= GAMMA;
+	Ret->Dist			= PDIST_GAMMA;
 	Ret->DistVals[0]	= Shape;
 	Ret->DistVals[1]	= Scale;
 
@@ -122,7 +124,7 @@ PRIOR*		CreateUniformPrior(char *Name, double Min, double Max)
 
 	Ret = AllocBlankPrior(2);
 	
-	Ret->Dist			= UNIFORM;
+	Ret->Dist			= PDIST_UNIFORM;
 	Ret->DistVals[0]	= Min;
 	Ret->DistVals[1]	= Max;
 
@@ -137,7 +139,7 @@ PRIOR*		CreateChiPrior(char *Name, double Mean)
 
 	Ret = AllocBlankPrior(1);
 	
-	Ret->Dist			= CHI;
+	Ret->Dist			= PDIST_CHI;
 	Ret->DistVals[0]	= Mean;
 	
 	Ret->Name = StrMake(Name);
@@ -151,7 +153,7 @@ PRIOR*		CreateExpPrior(char *Name, double Alpha)
 
 	Ret = AllocBlankPrior(1);
 	
-	Ret->Dist			= EXP;
+	Ret->Dist			= PDIST_EXP;
 	Ret->DistVals[0]	= Alpha;
 
 	Ret->Name = StrMake(Name);
@@ -165,10 +167,10 @@ PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta)
 	int		NoP;
 	PRIOR	*Ret;
 
-	NoP = DISTPRAMS[SGAMMA];
+	NoP = DISTPRAMS[PDIST_SGAMMA];
 	Ret = AllocBlankPrior(NoP);
 
-	Ret->Dist = SGAMMA;
+	Ret->Dist = PDIST_SGAMMA;
 	Ret->DistVals[0] = Alpha;
 	Ret->DistVals[1] = Beta;
 	
@@ -182,10 +184,10 @@ PRIOR*		CreateLogNormalPrior(char *Name, double Location, double Scale)
 	int		NoP;
 	PRIOR	*Ret;
 
-	NoP = DISTPRAMS[LOGNORMAL];
+	NoP = DISTPRAMS[PDIST_LOGNORMAL];
 	Ret = AllocBlankPrior(NoP);
 
-	Ret->Dist = LOGNORMAL;
+	Ret->Dist = PDIST_LOGNORMAL;
 	Ret->DistVals[0] = Location;
 	Ret->DistVals[1] = Scale;
 
@@ -193,6 +195,31 @@ PRIOR*		CreateLogNormalPrior(char *Name, double Location, double Scale)
 
 	return Ret;
 }
+
+PRIOR*		CreateNormalPrior(char *Name, double Mean, double SD)
+{
+	int		NoP;
+	PRIOR	*Ret;
+
+	if(SD <= 0)
+	{
+		printf("Normal distribution SD must be >0");
+		exit(0);
+	}
+
+	NoP = DISTPRAMS[PDIST_NORMAL];
+	Ret = AllocBlankPrior(NoP);
+
+	Ret->Dist = PDIST_NORMAL;
+	Ret->DistVals[0] = Mean;
+	Ret->DistVals[1] = SD;
+
+	Ret->Name = StrMake(Name);
+
+	return Ret;
+}
+
+
 
 void		SetHPDistParam(int Pos, PRIOR* Prior)
 {
@@ -433,6 +460,26 @@ double	LogLogNormalP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
+
+double	LogNormalP(double X, PRIOR *Prior)
+{
+	double Ret, A, B;
+	
+	X = X - Prior->DistVals[0];
+	
+	if(Prior->Discretised == FALSE)
+		Ret = gsl_ran_gaussian_pdf(X, Prior->DistVals[1]);
+	else
+	{
+		A = gsl_cdf_gaussian_P(X, Prior->DistVals[1]);
+		B = gsl_cdf_gaussian_P(X + Prior->Width, Prior->DistVals[1]);
+		Ret = B - A;
+	}
+
+	return log(Ret);
+}
+
+
 double	LogGammaP(double X, PRIOR *Prior)
 {
 	double Ret, A, B;
@@ -543,58 +590,69 @@ void	ChiSTest(void)
 double	CalcLhPriorP(double X, PRIOR *Prior)
 {
 	double Ret;
-
+	
 	switch(Prior->Dist)
 	{
-		case GAMMA:
+		case PDIST_GAMMA:
 			Ret = LogGammaP(X, Prior);
 		break;
 
-		case UNIFORM:
+		case PDIST_UNIFORM:
 			Ret = LogUniP(X, Prior);
 		break;
 
-		case EXP:
+		case PDIST_EXP:
 			Ret = LogExpP(X, Prior);
 		break;
 
-		case CHI:
+		case PDIST_CHI:
 			Ret = LogChiSquaredP(X, Prior);
 		break;
 
-		case SGAMMA:
+		case PDIST_SGAMMA:
 			Ret = LogSGammaP(X, Prior);
 		break;
 
-		case LOGNORMAL:
+		case PDIST_LOGNORMAL:
 			Ret = LogLogNormalP(X, Prior);
 		break;
+
+		case PDIST_NORMAL:
+			Ret = LogNormalP(X, Prior);
+		break;
+
 	}
 
 	return Ret;
 }
 
+
+
 double		RandFromPrior(gsl_rng *RNG, PRIOR *Prior)
 {
+	int i;
 	switch(Prior->Dist)
 	{
-		case GAMMA:
+		case PDIST_GAMMA:
 			return gsl_ran_gamma(RNG, Prior->DistVals[0], Prior->DistVals[1]);
 	
-		case UNIFORM:
+		case PDIST_UNIFORM:
 			return gsl_ran_flat(RNG,  Prior->DistVals[0], Prior->DistVals[1]);
 		
-		case EXP:
+		case PDIST_EXP:
 			return gsl_ran_exponential(RNG, Prior->DistVals[0]);
 
-		case CHI:
+		case PDIST_CHI:
 			return gsl_ran_chisq(RNG, Prior->DistVals[0]);
 
-		case SGAMMA:
+		case PDIST_SGAMMA:
 			return gsl_ran_gamma(RNG, Prior->DistVals[0], Prior->DistVals[1]);
 
-		case LOGNORMAL:
+		case PDIST_LOGNORMAL:
 			return gsl_ran_lognormal(RNG, Prior->DistVals[0], Prior->DistVals[1]);
+
+		case PDIST_NORMAL:
+			return gsl_ran_gaussian_ziggurat(RNG, Prior->DistVals[1]) + Prior->DistVals[0];
 	}
 
 	printf("Prior dist not found for %s.\n", Prior->Name);
@@ -863,7 +921,7 @@ PRIORDIST	StrToPriorDist(char* Str)
 	return (PRIORDIST)-1;
 }
 
-int			CheckPriorDistVals(int Tokes, char **Passed)
+int			CheckPriorDistVals(PRIORDIST PDist, int Tokes, char **Passed)
 {
 	int Index;
 	double P;
@@ -877,10 +935,14 @@ int			CheckPriorDistVals(int Tokes, char **Passed)
 		}
 
 		P = atof(Passed[Index]);
-		if(P < 0)
+		
+		if(!(PDist == PDIST_UNIFORM || PDist == PDIST_NORMAL))
 		{
-			printf("Prior parameters values must be greater than 0, value %f is invalid.\n", P);
-			exit(1);
+			if(P < 0)
+			{
+				printf("Prior parameters values must be greater than 0, value %f is invalid.\n", P);
+				exit(1);
+			}
 		}
 	}
 
@@ -910,13 +972,13 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 
 	if(Tokes != 2 && Tokes != 3)
 	{
-		printf("Prior requires a distribution name, (beta, gamma, uniform, chi, exp, invgamma) and distribution parameters.\n");
+		printf("Prior requires a distribution name, (beta, gamma, uniform, chi, exp, invgamma, normal) and distribution parameters.\n");
 		exit(1);
 	}
 
 	if(StrToPriorDist(Passed[0]) == -1)
 	{
-		printf("Invalid prior distribution name,. valid names are beta, gamma, uniform, chi, exp, invgamma.\n");
+		printf("Invalid prior distribution name. Valid names are beta, gamma, uniform, chi, exp, invgamma, normal.\n");
 		exit(1);
 	}
 
@@ -928,26 +990,28 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 		exit(0);
 	}
 
-	if(CheckPriorDistVals(Tokes-1, &Passed[1]) == FALSE)
+	if(CheckPriorDistVals(PD, Tokes-1, &Passed[1]) == FALSE)
 		exit(0);
 
 	PVal = MakePriorParam(Tokes-1, &Passed[1]);
 
-
-	if(PD == GAMMA)
+	if(PD == PDIST_GAMMA)
 		Ret = CreateGammaPrior(Name, PVal[0], PVal[1]);
 
-	if(PD == UNIFORM)
+	if(PD == PDIST_UNIFORM)
 		Ret = CreateUniformPrior(Name, PVal[0], PVal[1]);
 
-	if(PD == CHI)
+	if(PD == PDIST_CHI)
 		Ret = CreateChiPrior(Name, PVal[0]);
 
-	if(PD == EXP)
+	if(PD == PDIST_EXP)
 		Ret = CreateExpPrior(Name, PVal[0]);
 
-	if(PD == LOGNORMAL)
+	if(PD == PDIST_LOGNORMAL)
 		Ret = CreateLogNormalPrior(Name, PVal[0], PVal[1]);
+
+	if(PD == PDIST_NORMAL)
+		Ret = CreateNormalPrior(Name, PVal[0], PVal[1]);
 
 	free(PVal);
 
@@ -984,7 +1048,7 @@ PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed)
 		exit(0);
 	}
 	
-	if(CheckPriorDistVals(Tokes-1, &Passed[1]) == FALSE)
+	if(CheckPriorDistVals(PDist, Tokes-1, &Passed[1]) == FALSE)
 		return NULL;
 
 	PVal = MakePriorParam(Tokes-1, &Passed[1]);

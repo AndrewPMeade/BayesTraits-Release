@@ -49,11 +49,11 @@ void	PrintPriorHeadder(FILE* Str, OPTIONS *Opt, RATES* Rates)
 		{
 			switch(Prior->Dist)
 			{
-				case EXP:
+				case PDIST_EXP:
 					fprintf(Str, "%s - Mean\t", Prior->Name);
 				break;
 
-				case GAMMA:
+				case PDIST_GAMMA:
 					fprintf(Str, "%s - Shape\t%s - Scale\t", Prior->Name, Prior->Name);
 				break;
 	
@@ -545,7 +545,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 //	LoadGeoData("11807000	-60.858809	1.663948	0.317928	-1.808946	-1.155580	-1.755331	-1.377126	1.149021	1.370203	-1.076007	1.017187	2.139111	0.541804	0.251747	0.508075	0.182317	", Opt, Trees, CRates);
 	
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
-	CalcPriors(CRates, Opt);
+	CalcPriors(CRates, Opt); 
 
 
 	if(Opt->UseSchedule == TRUE)
@@ -562,9 +562,9 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->BurnIn == 0)
 		BurntIn = TRUE;
 
-//	MCMCTest(Opt, Trees, CRates);
-
 	fflush(stdout);
+	fflush(Opt->LogFile);
+
 	StartT = GetSeconds();	
 	for(Itters=1;;Itters++)
 	{ 
@@ -582,6 +582,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			Itters--;
 		else
 		{
+
 			CalcPriors(NRates, Opt);
 			
 			if(MCMCAccept(Itters, Opt, Trees, Shed, CRates, NRates) == TRUE)

@@ -443,7 +443,7 @@ static char    *DEPHETROPRAMS[] =
 	""
 };
 
-#define NO_PRIOR_DIST 6
+#define NO_PRIOR_DIST 7
 
 static char    *DISTNAMES[] =
 {
@@ -452,7 +452,8 @@ static char    *DISTNAMES[] =
 	"chi",
 	"exp",
 	"sgamma",
-	"lognormal"
+	"lognormal",
+	"normal"
 };
 
 static int	DISTPRAMS[] =
@@ -462,18 +463,20 @@ static int	DISTPRAMS[] =
 	1,
 	1,
 	2,
+	2,
 	2
 };
 
 
 typedef enum
 {
-	GAMMA,
-	UNIFORM,
-	CHI,
-	EXP,
-	SGAMMA,
-	LOGNORMAL
+	PDIST_GAMMA,
+	PDIST_UNIFORM,
+	PDIST_CHI,
+	PDIST_EXP,
+	PDIST_SGAMMA,
+	PDIST_LOGNORMAL,
+	PDIST_NORMAL
 } PRIORDIST;
 
 typedef enum

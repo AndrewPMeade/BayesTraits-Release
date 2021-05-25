@@ -1944,19 +1944,16 @@ void	InitMultiVarCV(OPTIONS *Opt, TREES* Trees, int TreeNo)
 	Tree = Trees->Tree[TreeNo];
 	CV = Tree->ConVars;
 
-	Mean = (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-	if(Mean == NULL)
-		MallocErr();
+	Mean = (double*)SMalloc(sizeof(double) * Trees->NoOfTaxa);
+
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 		Mean[Index] = 0.0;
 
 	FV = FlattenMatix(CV->V);
 
 	Size = (Trees->NoOfTaxa * Trees->NoOfTaxa) + (Trees->NoOfTaxa + 1);
-	CV->MultiVarNormState = (double*)malloc(sizeof(double) * Size);
-	CV->MultiVarNormTemp = (double*)malloc(sizeof(double) * Size);
-	if((CV->MultiVarNormState == NULL) || (CV->MultiVarNormTemp == NULL))
-		MallocErr();
+	CV->MultiVarNormState = (double*)SMalloc(sizeof(double) * Size);
+	CV->MultiVarNormTemp = (double*)SMalloc(sizeof(double) * Size);
 	
 	setgmn(Mean, FV, Trees->NoOfTaxa, CV->MultiVarNormState);
 
