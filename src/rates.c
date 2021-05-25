@@ -799,7 +799,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->AutoAccept		=	FALSE;
 	Ret->CalcLh			=	TRUE;
-
+		
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
 	Ret->RNG			=	gsl_rng_alloc(gsl_rng_mt19937);

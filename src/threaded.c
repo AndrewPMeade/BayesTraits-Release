@@ -38,7 +38,7 @@
 
 #include "TypeDef.h"
 #include "Threaded.h"
-
+#include "GenLib.h"
 
 
 int		GetThreadNo(void)

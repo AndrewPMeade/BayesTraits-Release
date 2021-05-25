@@ -55,7 +55,7 @@
 	#include <cilk/cilk.h>
 #endif
 
-void	RatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR);
+//void	RatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR);
 
 int			GetNoContrastSites(OPTIONS *Opt, TREES *Trees)
 {
@@ -71,23 +71,13 @@ CONTRAST*	AllocContrastMem(int NoSites)
 {
 	CONTRAST* Ret;
 
-	Ret = (CONTRAST*)malloc(sizeof(CONTRAST));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (CONTRAST*)SMalloc(sizeof(CONTRAST));
 
-	Ret->Data = (double*)malloc(sizeof(double) * NoSites);
-	Ret->Cont = (double*)malloc(sizeof(double) * NoSites);
-	Ret->Var  = (double*)malloc(sizeof(double) * NoSites);
-	Ret->Err  = (double*)malloc(sizeof(double) * NoSites);
-	Ret->v		= (double*)malloc(sizeof(double) * NoSites);
-
-
-	if( (Ret->Data == NULL) || 
-		(Ret->Cont == NULL) || 
-		(Ret->Var == NULL) || 
-		(Ret->Err == NULL) ||
-		(Ret->v == NULL))
-		MallocErr();
+	Ret->Data = (double*)SMalloc(sizeof(double) * NoSites);
+	Ret->Cont = (double*)SMalloc(sizeof(double) * NoSites);
+	Ret->Var  = (double*)SMalloc(sizeof(double) * NoSites);
+	Ret->Err  = (double*)SMalloc(sizeof(double) * NoSites);
+	Ret->v		= (double*)SMalloc(sizeof(double) * NoSites);
 
 	return Ret;
 }
@@ -497,30 +487,25 @@ void	CalcContrastP(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	int		PIndex, NIndex;
 		
 	Tree = Trees->Tree[Rates->TreeNo];
-	
-#ifdef OPENMP_THR
+/*
 	#pragma omp parallel for num_threads(Opt->Cores)
-#endif
 	for(NIndex=0;NIndex<Tree->NoPNodes;NIndex++)
 		RecCalcContrast(Tree->PNodes[NIndex], Trees->NoSites);
 
 	RecCalcContrast(Tree->Root, Trees->NoSites);
 
 	return;
-
+*/
 	for(PIndex=0;PIndex<Tree->NoFGroups;PIndex++)
 	{
-	//	if(Tree->NoPNodes[PIndex] < 30)
+		if(Tree->NoFNodes[PIndex] < 30)
 		{
-	//		for(NIndex=0;NIndex<Tree->NoPNodes[PIndex];NIndex++)
-	//			LinCalcContrast(Tree->PNodes[PIndex][NIndex], Trees->NoOfSites);
+			for(NIndex=0;NIndex<Tree->NoFNodes[PIndex];NIndex++)
+				LinCalcContrast(Tree->FNodes[PIndex][NIndex], Trees->NoSites);
 		}
-	//	else
+		else
 		{
-
-#ifdef OPENMP_THR
 			#pragma omp parallel for num_threads(Opt->Cores)
-#endif
 			for(NIndex=0;NIndex<Tree->NoFNodes[PIndex];NIndex++)
 				LinCalcContrast(Tree->FNodes[PIndex][NIndex], Trees->NoSites);
 		}

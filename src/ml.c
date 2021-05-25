@@ -287,6 +287,9 @@ void	FindValidMLStartSet(ML_MAP *MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates
 	int Index;
 	double Lh;
 
+
+
+
 	for(Index=0;Index<NO_RAND_TRIES;Index++)
 	{
 		MLMapSetRandVals(MLMap, Rates->RS);
@@ -385,6 +388,8 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 		
 	BMap = AllocMLMap();
+
+//	BLh = LikelihoodML(BMap, Opt, Trees, Rates);
 
 	BuildMLMap(BMap, Opt, Trees, Rates);
 	FindValidMLStartSet(BMap, Opt, Trees, Rates);	

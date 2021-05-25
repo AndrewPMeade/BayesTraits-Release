@@ -61,7 +61,10 @@
 	#include "btocl_discrete.h"
 #endif
 
-
+#ifdef CLIK_P
+	#include <cilk/cilk.h>
+	#include <cilk/cilk_api.h>
+#endif
 
 int		IsNum(double n)
 {
@@ -282,6 +285,25 @@ void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 
 	if(N->FossilMask != NULL)
 		FossilLh(N, Opt, Trees, SiteNo);
+}
+
+void	RecSumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
+{
+	int Index;
+	
+	if(N->Tip == TRUE)
+		return;
+
+
+	for(Index=0;Index<N->NoNodes-1;Index++)
+	{
+//		cilk_spawn RecSumLikeMultiState(N->NodeList[Index], Opt, Trees, SiteNo);
+	}
+
+	RecSumLikeMultiState(N->NodeList[Index], Opt, Trees, SiteNo);
+//	cilk_sync;
+
+	SumLikeMultiState(N, Opt, Trees, SiteNo);
 }
 
 void	SumLikeRModel(NODE N, TREES *Trees, int SiteNo, RATES *Rates)
@@ -883,6 +905,12 @@ void	SumLhLiner(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
 	NIndex = 0;
 
 	Tree = Trees->Tree[Rates->TreeNo];
+
+#ifdef CLIK_P
+	RecSumLikeMultiState(Tree->Root, Opt, Trees, SiteNo);
+	return;
+#endif
+
 	
 	for(GIndex=0;GIndex<Tree->NoFGroups;GIndex++)
 		RunNodeGroup(GIndex, Rates, Tree, Trees, Opt, SiteNo);
