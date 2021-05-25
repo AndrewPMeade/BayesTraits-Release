@@ -859,10 +859,7 @@ char**	FatTailRateNames(OPTIONS *Opt)
 	Pos = 0;
 	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 	{
-		sprintf(Buffer, "Alpha-%d", Index+1);
-		Ret[Pos++] = StrMake(Buffer);
-
-		sprintf(Buffer, "Scale-%d", Index+1);
+		sprintf(Buffer, "Sig2-%d", Index+1);
 		Ret[Pos++] = StrMake(Buffer);
 	}
 
@@ -1013,10 +1010,10 @@ void	SetFatTailPrior(OPTIONS *Opt)
 	
 	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 	{
-		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.2, 2.0);
-		AddPriorToOpt(Opt, Prior);
+//		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.2, 2.0);
+//		AddPriorToOpt(Opt, Prior);
 
-		Prior = CreateUniformPrior(Opt->RateName[Pos+1], 0.0, 100.0);
+		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.0, 100.0);
 		AddPriorToOpt(Opt, Prior);
 	}
 }

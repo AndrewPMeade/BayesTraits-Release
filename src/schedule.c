@@ -192,8 +192,16 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	if(Opt->EstGamma == TRUE)
 		Shed->OptFreq[S_GAMMA_MOVE] = 0.1;
 
-	if(Opt->ModelType == MT_FATTAIL)
-		Shed->OptFreq[S_FAT_TAILANS] = 0.5;
+	if(Opt->Model == M_GEO)
+	{
+		Shed->OptFreq[S_GEO_MOVE_ALL] = 0.9;
+	}
+
+	if(Opt->Model == M_FATTAIL)
+	{
+		Shed->OptFreq[S_FAT_TAIL_ANS_ALL] = 0.9;
+		//Shed->OptFreq[S_FAT_TAIL_ANS] = 0.9;
+	}
 
 	if(MultiTree(Opt) == TRUE)
 		Shed->OptFreq[S_TREE_MOVE] = 0.1;
@@ -257,7 +265,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 
 	if(Opt->NormQMat == TRUE)
 		Shed->OptFreq[S_GLOBAL_RATE] = 0.1;
-		
+	
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 
 	memcpy(Shed->DefShed, Shed->OptFreq, sizeof(double) * Shed->NoOfOpts);
@@ -430,10 +438,13 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 		for(Index=0;Index<NoS;Index++)
 		{
-			sprintf(Buffer,"Alpha %d",Index+1);
+/*			sprintf(Buffer,"Alpha %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
 
 			sprintf(Buffer,"Scale %d",Index+1);
+			Ret[PIndex++] = StrMake(Buffer);*/
+
+			sprintf(Buffer,"Sig2 %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
 		}
 

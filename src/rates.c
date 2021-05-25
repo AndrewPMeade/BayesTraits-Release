@@ -96,7 +96,7 @@ int		FindNoConRates(OPTIONS *Opt)
 		break;
 
 		case M_FATTAIL:
-			return Opt->Trees->NoUserSites * 2;
+			return Opt->Trees->NoUserSites;
 		break;
 
 		case M_GEO:
@@ -810,9 +810,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->GlobablRate	=	1.0;
 
 	SetRatesLocalRates(Ret, Opt);
-
-
-
+	
 	if(Opt->UseDistData == TRUE)
 		Ret->DistDataRates = CreateDistDataRates(Opt->DistData, Ret->RS);
 
@@ -1153,7 +1151,8 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		else
 		{
 			for(Index=0;Index<Opt->Trees->NoSites;Index++)
-				fprintf(Str, "Alpha %d\tScale %d\t", Index+1, Index+1);
+				fprintf(Str, "Sig2 %d\t", Index+1, Index+1);
+		//		fprintf(Str, "Alpha %d\tScale %d\t", Index+1, Index+1);
 		}
 	}
 
@@ -1696,7 +1695,8 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		else
 		{
 			for(Index=0;Index<Trees->NoSites;Index++)
-				fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[Index], Rates->FatTailRates->Scale[Index]);
+			//	fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[Index], Rates->FatTailRates->Scale[Index]);
+				fprintf(Str, "%0.12f\t", Rates->FatTailRates->Scale[Index]);
 		}
 	}
 
@@ -2779,15 +2779,17 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 			RJDummyChange(Opt, Opt->Trees, Rates);
 		break;
 
-		case S_FAT_TAILANS:
-			if(Opt->Model == M_FATTAIL)
-			{
-			//	SliceSampleFatTail(Opt, Opt->Trees, Rates);
-				AllSliceSampleFatTail(Opt, Opt->Trees, Rates);
-			}
-			else
-				GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
-			//	GeoUpDateAnsStates(Opt, Opt->Trees, Rates);
+		case S_FAT_TAIL_ANS_ALL:
+			SSAllAnsStatesFatTail(Opt, Opt->Trees, Rates);
+		break;
+
+		case S_FAT_TAIL_ANS:
+			SSAnsStatesFatTail(Opt, Opt->Trees, Rates);
+		break;
+
+		case S_GEO_MOVE_ALL:
+			GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
+			//	GeoUpDateAnsStates(Opt, Opt->Trees, Rates)
 		break;
 
 		case S_LOCAL_RATES:
@@ -2823,7 +2825,7 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 		FreeDistDataRates(Rates->DistDataRates);
 
 	if(Rates->FatTailRates != NULL)
-		FreeFatTailRates(Rates->FatTailRates, Trees->NoSites);
+		FreeFatTailRates(Rates->FatTailRates, Trees->NoSites, GetMaxThreads());
 
 	if(Rates->Contrast != NULL)
 		FreeContrastRates(Rates);

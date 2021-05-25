@@ -1301,7 +1301,7 @@ typedef struct
 	double		*SiteMax;
 	double		*SiteSD;
 
-	SLICESAMPLER*	SliceSampler;
+	SLICESAMPLER	**SliceSamplers;
 	
 	int				NoSD;
 	STABLEDIST**	SDList;
@@ -1424,7 +1424,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NO_SCHEDULE_OPT	26
+#define NO_SCHEDULE_OPT	28
 
 static char    *SHEDOP[] =
 {
@@ -1448,7 +1448,9 @@ static char    *SHEDOP[] =
 	"RJ Dummy Add / Remove",
 	"RJ Dummy Move Node",
 	"RJ Dummy Change Beta",
+	"Fat Tail Ans All",
 	"Fat Tail Ans",
+	"Geo Move All",
 	"Local Rates",
 	"Data Dist",
 	"Time Slice - Time",
@@ -1478,7 +1480,9 @@ typedef enum
 	S_RJ_DUMMY, 
 	S_RJ_DUMMY_MOVE,
 	S_RJ_DUMMY_CHANG_EBETA,
-	S_FAT_TAILANS,
+	S_FAT_TAIL_ANS_ALL,
+	S_FAT_TAIL_ANS,
+	S_GEO_MOVE_ALL,
 	S_LOCAL_RATES,
 	S_DATA_DIST,
 	S_TIME_SLICE_TIME,

@@ -65,8 +65,6 @@ void FreeSliceSampler(SLICESAMPLER* SS)
 	free(SS);
 }
 
-
-
 void	SSSetXPosVect(SLICESAMPLER* SS, double Min, double Max)
 {
 	double StepSize;
