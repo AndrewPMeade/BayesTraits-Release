@@ -32,16 +32,10 @@ AUTOTUNE*	CreatAutoTune(char *Name, double InitDev, double Min, double Max)
 	AUTOTUNE *Ret;
 	int		Index;
 
-	Ret = (AUTOTUNE*)malloc(sizeof(AUTOTUNE));
-	if(Ret == NULL)
-		return Ret;
-
-	Ret->RateAcc = (double*)malloc(sizeof(double) * AT_HSIZE);
-	Ret->RateDev = (double*)malloc(sizeof(double) * AT_HSIZE);
+	Ret = (AUTOTUNE*)SMalloc(sizeof(AUTOTUNE));
+	Ret->RateAcc = (double*)SMalloc(sizeof(double) * AT_HSIZE);
+	Ret->RateDev = (double*)SMalloc(sizeof(double) * AT_HSIZE);
 	
-	if(Ret->RateAcc == NULL || Ret->RateDev == NULL)
-		MallocErr();
-
 	for(Index=0;Index<AT_HSIZE;Index++)
 	{
 		Ret->RateAcc[Index] = 0;

@@ -20,4 +20,10 @@ void		SetCustomShed(SCHEDULE* Shed);
 
 void		SetShedOpFreq(SCHEDULE*	Shed, int No, double Val);
 
+CUSTOM_SCHEDULE*	AllocCustomSchedule(void);
+void				FreeCustomSchedule(CUSTOM_SCHEDULE*	CShed);
+void				PrintCustomSchedule(FILE *Str, int NoCShed, CUSTOM_SCHEDULE **ShedList);
+
+void				SetCustomSchedule(long long It, SCHEDULE* Sched);
+
 #endif

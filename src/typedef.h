@@ -292,6 +292,7 @@ typedef enum
 	CDISTDATA,
 	CNOLH,
 	CSAVETREES,
+	CCSCHED, 
 	CUNKNOWN,
 } COMMANDS;
 
@@ -370,6 +371,7 @@ static char    *COMMANDSTRINGS[] =
 	"distdata",			"dd",
 	"nolh",			"nl",
 	"savetrees",	"st",
+	"customschedule", "csched", 
 	""
 };
 
@@ -1022,6 +1024,13 @@ typedef struct
 
 typedef struct
 {
+	long long	Iteration;
+	double		*Frequencies;
+	int			Default;
+} CUSTOM_SCHEDULE;
+
+typedef struct
+{
 	MODEL		Model;
 	ANALSIS		Analsis;
 	MODEL_TYPE	ModelType;
@@ -1170,7 +1179,11 @@ typedef struct
 	int			NoLh;
 
 	int			SaveTrees;
-	
+
+
+	int				NoCShed;
+	CUSTOM_SCHEDULE	**CShedList;
+
 } OPTIONS;
 
 typedef struct
@@ -1353,7 +1366,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NOOFOPERATORS	23
+#define NO_SCHEDULE_OPT	23
 
 static char    *SHEDOP[] =
 {
@@ -1362,7 +1375,7 @@ static char    *SHEDOP[] =
 	"Kappa",
 	"Delta",
 	"Labda",
-	"Jump",
+	"Rev Jump",
 	"Prior Change",
 	"Est Data",
 	"Solo Tree Move",
@@ -1451,6 +1464,10 @@ typedef struct
 	AUTOTUNE	*LocalRatesAT;
 
 	AUTOTUNE	*CurrentAT;
+
+	int				NoCShed;
+	CUSTOM_SCHEDULE	**CShedList;
+	double			*DefShed;
 
 } SCHEDULE;
 

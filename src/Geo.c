@@ -622,6 +622,8 @@ void	LoadGeoData(OPTIONS *Opt, TREES *Trees, RATES *CRates, char *Str)
 	CRates->Lh = Likelihood(CRates, Trees, Opt);
 
 	printf("checkpoint lh:\t%f\n", CRates->Lh);
+	
 
-//	exit(0);
+	free(Passed);
+	free(S);
 }

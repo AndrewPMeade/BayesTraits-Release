@@ -221,6 +221,8 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Shed->OptFreq[S_DATA_DIST] = 0.2;
 	
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
+
+	memcpy(Shed->DefShed, Shed->OptFreq, sizeof(double) * Shed->NoOfOpts);
 }
 
 void	PrintATHeader(FILE *Str,AUTOTUNE *AT)
@@ -302,12 +304,15 @@ SCHEDULE*	AllocSchedule()
 	
 	Ret = (SCHEDULE*)SMalloc(sizeof(SCHEDULE));
 	
-	Ret->NoOfOpts = NOOFOPERATORS;
+	Ret->NoOfOpts = NO_SCHEDULE_OPT;
 
 	Ret->OptFreq	=	(double*)SMalloc(sizeof(double) * Ret->NoOfOpts);
 	Ret->Tryed		=	(int*)SMalloc(sizeof(int) * Ret->NoOfOpts);
 	Ret->Accepted	=	(int*)SMalloc(sizeof(int) * Ret->NoOfOpts);
-
+	Ret->DefShed	=	(double*)SMalloc(sizeof(double) * Ret->NoOfOpts);
+	
+	Ret->CShedList	=	NULL;
+	Ret->NoCShed	=	0;
 
 	Ret->RateDevATList	= NULL;
 	Ret->DataDevAT		= NULL;
@@ -491,6 +496,35 @@ void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, RANDSTATES *RS)
 	free(PNames);
 }
 
+CUSTOM_SCHEDULE* CloneCustomSchedule(CUSTOM_SCHEDULE* CShed)
+{
+	CUSTOM_SCHEDULE* Ret;
+
+	Ret = AllocCustomSchedule();
+
+	Ret->Default = CShed->Default;
+	Ret->Iteration = CShed->Iteration;
+
+	memcpy(Ret->Frequencies, CShed->Frequencies, sizeof(double) * NO_SCHEDULE_OPT);
+	return Ret;
+
+}
+CUSTOM_SCHEDULE**		CloneCustomScheduleList(int NoCShed, CUSTOM_SCHEDULE **CShedList)
+{
+	int Index;
+	CUSTOM_SCHEDULE**	Ret;
+
+	if(NoCShed == 0)
+		return NULL;
+
+	Ret = (CUSTOM_SCHEDULE**)SMalloc(sizeof(CUSTOM_SCHEDULE*) * NoCShed);
+
+	for(Index=0;Index<NoCShed;Index++)
+		Ret[Index] = CloneCustomSchedule(CShedList[Index]);
+
+	return Ret;
+}
+
 SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 {
 	SCHEDULE*	Ret;
@@ -505,6 +539,9 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 	Ret->SNoAcc = Ret->SNoTried = 0;
 
 	SetRateDevPerParm(Ret, Opt, RS);
+
+	Ret->NoCShed = Opt->NoCShed;
+	Ret->CShedList = CloneCustomScheduleList(Opt->NoCShed, Opt->CShedList);
 
 	// Set Auto tune Data Dev
 	if(Opt->EstData == TRUE)
@@ -569,6 +606,8 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 		AddToFullATList(Ret, Ret->LocalRatesAT);
 	}
 
+
+
 	return Ret;
 }
 
@@ -626,6 +665,16 @@ void		FreeeSchedule(SCHEDULE* Sched)
 	if(Sched->FullATList != NULL)
 		free(Sched->FullATList);
 
+	if(Sched->NoCShed > 0)
+	{
+		for(Index=0;Index<Sched->NoCShed;Index++)
+			FreeCustomSchedule(Sched->CShedList[Index]);
+
+		free(Sched->CShedList);
+	}
+
+	free(Sched->DefShed);
+
 	free(Sched);
 }
 
@@ -681,4 +730,74 @@ void	SetShedOpFreq(SCHEDULE*	Shed, int No, double Val)
 {
 	Shed->OptFreq[No] = Val;
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
+}
+
+CUSTOM_SCHEDULE*	AllocCustomSchedule(void)
+{
+	CUSTOM_SCHEDULE* Ret;
+	int Index;
+	
+	Ret = (CUSTOM_SCHEDULE*)SMalloc(sizeof(CUSTOM_SCHEDULE));
+
+	Ret->Default = FALSE;
+	Ret->Iteration = -1;
+
+	Ret->Frequencies = (double*)SMalloc(sizeof(double) * NO_SCHEDULE_OPT);
+
+	for(Index=0;Index<NO_SCHEDULE_OPT;Index++)
+		Ret->Frequencies[Index] = 0.0;
+
+	return Ret;
+}
+
+
+void	FreeCustomSchedule(CUSTOM_SCHEDULE*	CShed)
+{
+	free(CShed->Frequencies);
+	free(CShed);
+}
+
+void PrintCustomSchedule(FILE *Str, int NoCShed, CUSTOM_SCHEDULE **ShedList)
+{
+	int Index, FIndex;
+	CUSTOM_SCHEDULE *Shed;
+
+	for(Index=0;Index<NoCShed;Index++)
+	{
+		Shed = ShedList[Index];
+
+		fprintf(Str, "\t%lld\t", Shed->Iteration);
+
+		if(Shed->Default == TRUE)
+			fprintf(Str, "Default\n");
+		else
+		{
+			for(FIndex=0;FIndex<NO_SCHEDULE_OPT;FIndex++)
+				fprintf(Str, "%f\t", Shed->Frequencies[FIndex]);
+			fprintf(Str, "\n");
+		}
+	}
+}
+
+void SetCustomSchedule(long long It, SCHEDULE* Sched)
+{
+	int Index;
+	CUSTOM_SCHEDULE *Shed;
+
+	if(Sched->NoCShed == 0)
+		return;
+
+	for(Index=0;Index<Sched->NoCShed;Index++)
+	{
+		Shed = Sched->CShedList[Index];
+		if(It == Shed->Iteration)
+		{
+			if(Shed->Default == TRUE)
+				memcpy(Sched->OptFreq, Sched->DefShed, sizeof(double) * NO_SCHEDULE_OPT);
+			else
+				memcpy(Sched->OptFreq, Shed->Frequencies, sizeof(double) * NO_SCHEDULE_OPT);
+
+			return;
+		}
+	}
 }

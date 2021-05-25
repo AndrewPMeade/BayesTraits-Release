@@ -187,13 +187,14 @@ void		FreeVarRatesNode(VAR_RATES_NODE* VarRatesNode)
 	free(VarRatesNode);
 }
 
-//RJ_VARRATE_TYPE	Get
-
 TRANSFORM_TYPE	GetVarRatesType(RANDSTATES *RS, SCHEDULE *Shed)
 {
 	int Pos;
 
 	Pos = RandInProportion(RS, Shed->FreqVarRatesOp, Shed->NoVarRatesOp);
+
+//	if(Shed->VarRatesOp[Pos] == VR_BL)
+//		return VR_NODE;
 
 	return Shed->VarRatesOp[Pos];
 }
@@ -1451,6 +1452,7 @@ void	SetVarRatesFromStr(RATES *Rates, OPTIONS *Opt, char *Str)
 //	DumpVarRates(Rates);
 
 //	TestVarRates(Opt, Rates);
-	
+
+	free(S);
 	free(Passed);
 }

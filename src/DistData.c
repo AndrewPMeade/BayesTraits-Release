@@ -52,6 +52,8 @@ double*	PassDataDist(char *Taxa, char *Str, int *NoPoint)
 		Ret[Index] = atof(Passed[Index]);
 	}
 
+	free(Passed);
+
 	return Ret;
 }
 
@@ -202,7 +204,9 @@ DIST_DATA*	LoadDistData(OPTIONS *Opt, TREES *Trees, char *FName)
 	Ret->DistDataTaxa = (DIST_DATA_TAXA**)SMalloc(sizeof(DIST_DATA_TAXA*) * TF->NoOfLines);
 
 	ProcDistDataFile(Opt, Trees, Ret, TF);
-	
+
+	FreeTextFile(TF);
+
 	return Ret;
 }
 
@@ -229,6 +233,7 @@ void		FreeDistData(DIST_DATA *DistData)
 	
 	free(DistData->DistDataTaxa);
 	free(DistData->FName);
+	free(DistData);
 }
 
 void		PrintDistDataTaxa(FILE *Out, DIST_DATA_TAXA *TData, int NoSites)
@@ -306,6 +311,7 @@ void	FreeDistDataRates(DIST_DATE_RATES* DistRates)
 
 	for(Index=0;Index<DistRates->NoTaxa;Index++)
 		free(DistRates->SiteMap[Index]);
+	free(DistRates->SiteMap);
 
 	free(DistRates);
 }

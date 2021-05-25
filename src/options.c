@@ -18,6 +18,7 @@
 #include "VarRates.h"
 #include "LocalTransform.h"
 #include "DistData.h"
+#include "schedule.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHT_INDENT	4
@@ -504,6 +505,13 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->DistData != NULL)
 		PrintDistData(Str, Opt->DistData);
 
+
+	if(Opt->NoCShed > 0)
+	{
+		fprintf(Str, "Custom Schedule:\n");
+		PrintCustomSchedule(Str, Opt->NoCShed, Opt->CShedList);
+	}
+
 	PrintTreesInfo(Str, Opt->Trees, Opt->DataType);
 	fflush(Str);
 }
@@ -574,6 +582,14 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->DistData != NULL)
 		FreeDistData(Opt->DistData);
+
+	if(Opt->NoCShed > 0)
+	{
+		for(Index=0;Index<Opt->NoCShed;Index++)
+			FreeCustomSchedule(Opt->CShedList[Index]);
+
+		free(Opt->CShedList);
+	}
 
 	free(Opt);
 }
@@ -708,10 +724,8 @@ char**	ContrastFullRateNames(OPTIONS *Opt)
 	
 	NOS = Opt->Trees->NoOfSites;
 	 
-	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
-	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
-	if((Ret == NULL) || (Buffer == NULL))
-		MallocErr();
+	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
 	
 	i = 0;
 	for(Index=0;Index<NOS;Index++)
@@ -780,7 +794,6 @@ char**	GeoRateNames(OPTIONS *Opt)
 
 	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
-
 
 	sprintf(Buffer, "Alpha");
 	Ret[0] = StrMake(Buffer);
@@ -1181,6 +1194,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->DistData = NULL;
 
 	Ret->NoLh = FALSE;
+
+	Ret->NoCShed = 0;
+	Ret->CShedList = NULL;
 	
 	free(Buffer);
 
@@ -2235,23 +2251,25 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 	if(Opt->Analsis == ANALML)
 	{
 		if(
-			(Command ==	CITTERS)		||
-			(Command ==	CBURNIN)		||
-			(Command ==	CSAMPLE)		||
-			(Command ==	CHYPERPRIOR)	||
-			(Command ==	CHPRJ)			||
-			(Command == CPRIOR)			||
-			(Command ==	CHPALL)			||
-			(Command ==	CREVJUMP)		||
-			(Command == CMCMCMLSTART)	||
-			(Command == CCAPRJRATES)	||
-			(Command == CVARRATES)		||
-			(Command == CSAVEMODELS)	||
-			(Command == CLOADMODELS)	||
-			(Command == CSHEDULE)		||
-			(Command == CRJDUMMY)		||
-			(Command == CVARRATES)		||
-			(Command == CDISTDATA)
+			Command ==	CITTERS		||
+			Command ==	CBURNIN		||
+			Command ==	CSAMPLE		||
+			Command ==	CHYPERPRIOR	||
+			Command ==	CHPRJ		||
+			Command == CPRIOR		||
+			Command ==	CHPALL		||
+			Command ==	CREVJUMP	||
+			Command == CMCMCMLSTART	||
+			Command == CCAPRJRATES	||
+			Command == CVARRATES	||
+			Command == CSAVEMODELS	||
+			Command == CLOADMODELS	||
+			Command == CSHEDULE		||
+			Command == CRJDUMMY		||
+			Command == CVARRATES	||
+			Command == CDISTDATA	||
+			Command == CNOLH		||
+			Command == CCSCHED	
 			)
 		{
 			printf("Command %s (%s) is not valid with the ML model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2560,7 +2578,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 
 	GammaCats = atoi(Passed[1]);
 
-	if((GammaCats < 2) || (GammaCats > 8))
+	if(GammaCats < 2 || GammaCats > 8)
 	{
 		printf("The number of gamma catergoires must be grater than 1 and less than 8\n");
 		exit(0);
@@ -3216,7 +3234,7 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	if(Type == VR_OU)
 	{
 		RemovePriorFormOpt("OU", Opt);
-		Prior = CreateUniformPrior("OU", MIN_OU, MAX_OU);
+		Prior = CreateExpPrior("OU", 1.0);
 		AddPriorToOpt(Opt, Prior);
 	}
 
@@ -3372,6 +3390,72 @@ void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)
 
 	Opt->DistData = LoadDistData(Opt, Opt->Trees, Passed[1]);
 	Opt->UseDistData = TRUE;
+}
+
+int		CompCShed(const void *CS1, const void *CS2)
+{
+	CUSTOM_SCHEDULE **S1, **S2;
+
+	S1 = (CUSTOM_SCHEDULE**)CS1;
+	S2 = (CUSTOM_SCHEDULE**)CS2;
+
+	return (*S1)->Iteration - (*S2)->Iteration;
+}
+
+
+void SetOptCustomSchedule(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	int Index;
+	CUSTOM_SCHEDULE *CShed;
+	double Freq;
+
+	if(!(Tokes == 2 || Tokes == NO_SCHEDULE_OPT + 2))
+	{
+		printf("Custom Schedule requires in iteration number and a vector of %d frequencies to schedule each operation, or just an iteration number to set the default schedule.\n", NO_SCHEDULE_OPT);
+		printf("Operators are :\n");
+		for(Index=0;Index<NO_SCHEDULE_OPT;Index++)
+			printf("\t%d\t%s\n", Index, SHEDOP[Index]);
+		
+		exit(0);
+	}
+
+	CShed = AllocCustomSchedule();
+
+	sscanf(Passed[1], "%lld", &CShed->Iteration);
+	if(CShed->Iteration < 0)
+	{
+		printf("Iteration number must be >0.\n");
+		exit(1);
+	}
+
+	if(Tokes == 2)
+		CShed->Default = TRUE;
+	else
+	{
+		for(Index=0;Index<NO_SCHEDULE_OPT;Index++)
+		{
+			if(IsValidDouble(Passed[Index+2]) == FALSE)
+			{
+				printf("Cannot covert %s to a valid frequncy.\n", Passed[Index+2]);
+				exit(0);
+			}
+
+			Freq = atof(Passed[Index+2]);
+
+			if(Freq < 0)
+			{
+				printf("Frequncyies my be > 0.\n", Passed[Index+2]);
+				exit(0);
+			}
+
+			CShed->Frequencies[Index] = Freq;
+		}
+
+		NormaliseVector(CShed->Frequencies, NO_SCHEDULE_OPT);
+	}
+
+	Opt->CShedList =(CUSTOM_SCHEDULE**) AddToList(&Opt->NoCShed, (void**)Opt->CShedList, (void*)CShed);
+	qsort(Opt->CShedList, Opt->NoCShed, sizeof(CUSTOM_SCHEDULE*), CompCShed);
 }
 
 void	SetNoLh(OPTIONS *Opt)
@@ -3569,11 +3653,8 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetHyperPriorAllCmd(Opt, Tokes, Passed);
 	
 	if(Command == CITTERS)
-	{
 		SetItters(Opt, Tokes, Passed);
-	}
-	
-	
+		
 	if(Command == CSAMPLE)
 	{
 		if(Tokes == 2)
@@ -3959,6 +4040,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CSAVETREES)
 		SetSaveTrees(Opt);
+
+	if(Command == CCSCHED)
+		SetOptCustomSchedule(Opt, Tokes, Passed);
 
 	return FALSE;
 }
