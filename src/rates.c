@@ -1131,6 +1131,10 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 	PrintLocalTransformHeadder(Str, Opt);
 
+
+	if(Opt->UseDistData == TRUE)
+		OutputDataDistHeadder(Str, Opt);
+
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
 }
@@ -1273,6 +1277,8 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 				PrintRecNodeHeadder(Str, Opt, RNode->Name, SiteIndex);
 		}
 	}	
+
+
 
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
@@ -1689,6 +1695,9 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 
 	PrintLocalTransformNo(Str, Rates, Opt);
+
+	if(Opt->UseDistData == TRUE)
+		OutputDataDist(Str, Rates, Opt);
 }
 
 double	GetPartailPi(RATES *Rates, NODE N, int StateNo, int SiteNo)
@@ -1993,6 +2002,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 #else
 	mpfr_set(A->HMeanSum, B->HMeanSum, DEF_ROUND);
 #endif
+
+	if(Opt->UseDistData == TRUE)
+		CopyDistDataRates(A->DistDataRates, B->DistDataRates);
 
 	A->ModelNo		= B->ModelNo;
 
@@ -2704,6 +2716,10 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		case SLOCALRATES:
 			ChangeLocalTransform(Opt, Opt->Trees, Rates, Shed);
 		break;
+
+		case SDATADIST:
+			ChangeTreeDistData(Opt, Rates);
+		break;
 	}
 }
 
@@ -2712,6 +2728,9 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 	int MaxT, Index;
 
 	FreePriors(Rates);
+
+	if(Rates->DistDataRates != NULL)
+		FreeDistDataRates(Rates->DistDataRates);
 
 	if(Rates->FatTailRates != NULL)
 		FreeFatTailRates(Rates->FatTailRates, Trees->NoOfSites);

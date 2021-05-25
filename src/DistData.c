@@ -7,7 +7,7 @@
 #include "genlib.h"
 #include "DistData.h"
 #include "trees.h"
-
+#include "Geo.h"
 
 int	GetLinked(char *Taxa, char *Str)
 {
@@ -55,15 +55,46 @@ double*	PassDataDist(char *Taxa, char *Str, int *NoPoint)
 	return Ret;
 }
 
-DIST_DATA_TAXA*	MakeDistDataTaxa(TREES *Trees, char **Passed, size_t MaxSize)
+void ProcGeoDistDataTaxa(DIST_DATA_TAXA* DDTaxa, TREES *Trees, char **Passed)
+{
+	double *Lat, *Long, X, Y, Z;
+	int Index, NoLat, NoLong, NoData;
+			
+	Long = PassDataDist(DDTaxa->Taxa->Name, Passed[2], &NoLong);
+	Lat = PassDataDist(DDTaxa->Taxa->Name, Passed[3], &NoLat);
+
+	if(NoLong != NoLat)
+	{
+		printf("Data distribution , number of long and lat must be the same for taxa %s.\n", DDTaxa->Taxa->Name);
+		exit(1);
+	}
+
+	NoData = NoLong;
+
+	for(Index=0;Index<Trees->NoOfSites;Index++)
+		DDTaxa->NoSites[Index] = NoData;
+	
+	for(Index=0;Index<Trees->NoOfSites;Index++)
+		DDTaxa->Data[Index] = (double*)SMalloc(sizeof(double) * NoData);
+
+	for(Index=0;Index<NoData;Index++)
+	{
+		LongLatToXYZ(Long[Index], Lat[Index], &X, &Y, &Z);
+		DDTaxa->Data[0][Index] = X;
+		DDTaxa->Data[1][Index] = Y;
+		DDTaxa->Data[2][Index] = Z;
+	}
+
+	free(Long);
+	free(Lat);
+}
+
+DIST_DATA_TAXA*	MakeDistDataTaxa(OPTIONS *Opt, TREES *Trees, char **Passed, size_t MaxSize)
 {
 	DIST_DATA_TAXA* Ret;
 	int	Index;
 
-	Ret = (DIST_DATA_TAXA*)malloc(sizeof(DIST_DATA_TAXA));
-	if(Ret == NULL)
-		MallocErr();
-
+	Ret = (DIST_DATA_TAXA*)SMalloc(sizeof(DIST_DATA_TAXA));
 	
 	Ret->Taxa = GetTaxaFromName(Passed[0], Trees->Taxa, Trees->NoOfTaxa);
 
@@ -75,11 +106,24 @@ DIST_DATA_TAXA*	MakeDistDataTaxa(TREES *Trees, char **Passed, size_t MaxSize)
 
 	Ret->Linked = GetLinked(Passed[0], Passed[1]);
 
-	Ret->NoSites = (int*)malloc(sizeof(int) * Trees->NoOfSites);
-	Ret->Data = (double**)malloc(sizeof(double*) * Trees->NoOfSites);
+	if(Ret->Linked == FALSE && Opt->Model == M_GEO)
+	{
+		printf("Distribution data for geo models must be linked.");
+		exit(1);	
+	}
 
-	for(Index=0;Index<Trees->NoOfSites;Index++)
-		Ret->Data[Index] = PassDataDist(Passed[0], Passed[Index+2], &Ret->NoSites[Index]);
+	Ret->NoSites = (int*)SMalloc(sizeof(int) * Trees->NoOfSites);
+	Ret->Data = (double**)SMalloc(sizeof(double*) * Trees->NoOfSites);
+
+	if(Opt->Model == M_GEO)
+	{
+		ProcGeoDistDataTaxa(Ret, Trees, Passed);
+	}
+	else
+	{
+		for(Index=0;Index<Trees->NoOfSites;Index++)
+			Ret->Data[Index] = PassDataDist(Passed[0], Passed[Index+2], &Ret->NoSites[Index]);
+	}
 
 	if(Ret->Linked == TRUE)
 	{
@@ -87,30 +131,44 @@ DIST_DATA_TAXA*	MakeDistDataTaxa(TREES *Trees, char **Passed, size_t MaxSize)
 			if(Ret->NoSites[0] != Ret->NoSites[Index])
 			{
 				printf("Dist Data taxa (%s) linked site %d has %d point expecting %d", Passed[0], Index+1, Ret->NoSites[Index], Ret->NoSites[0]);
-				exit(0);
+				exit(1);
 			}
 	}
 
 	return Ret;
 }
 
-void		ProcDistDataFile(TREES *Trees, DIST_DATA *DistData, TEXTFILE *TF)
+int			ValidDistDataLine(OPTIONS *Opt, TREES *Trees, int Tokes)
+{
+	if(Tokes == 0)
+		return TRUE;
+
+	if(Opt->Model == M_GEO)
+		if(Tokes != Trees->NoOfSites + 1)
+			return FALSE;
+		else
+			return TRUE;
+
+	if(Tokes != Trees->NoOfSites + 2)
+		return FALSE;
+
+	return TRUE;
+}
+
+void		ProcDistDataFile(OPTIONS *Opt, TREES *Trees, DIST_DATA *DistData, TEXTFILE *TF)
 {
 	char *Buffer, **Passed;
 	int Index, Tokes;
 	DIST_DATA_TAXA	*DTaxa;
 
-	Buffer = (char*)malloc(sizeof(char) * (TF->MaxLine + 1));
-	Passed = (char**)malloc(sizeof(char*) * (TF->MaxLine + 1));
-
-	if((Buffer == NULL) || (Passed == NULL))
-		MallocErr();
-
+	Buffer = (char*)SMalloc(sizeof(char) * (TF->MaxLine + 1));
+	Passed = (char**)SMalloc(sizeof(char*) * (TF->MaxLine + 1));
+	
 	for(Index=0;Index<TF->NoOfLines;Index++)
 	{
 		strcpy(Buffer, TF->Data[Index]);
 		Tokes = MakeArgv(Buffer, Passed, TF->MaxLine + 1);
-		if(Tokes != Trees->NoOfSites + 2 && Tokes > 0)
+		if(ValidDistDataLine(Opt, Trees, Tokes) == FALSE)
 		{
 			printf("Dist Data file (%s) Line %d, expecting %d tokens found %d.\n", DistData->FName, Index, Trees->NoOfSites+2, Tokes);
 			exit(0);
@@ -118,7 +176,7 @@ void		ProcDistDataFile(TREES *Trees, DIST_DATA *DistData, TEXTFILE *TF)
 
 		if(Tokes > 0)
 		{
-			DTaxa = MakeDistDataTaxa(Trees, Passed, TF->MaxLine);
+			DTaxa = MakeDistDataTaxa(Opt, Trees, Passed, TF->MaxLine);
 			DistData->DistDataTaxa[DistData->NoTaxa++] = DTaxa;
 		}
 	}
@@ -127,14 +185,12 @@ void		ProcDistDataFile(TREES *Trees, DIST_DATA *DistData, TEXTFILE *TF)
 	free(Passed);
 }
 
-DIST_DATA*	LoadDistData(TREES *Trees, char *FName)
+DIST_DATA*	LoadDistData(OPTIONS *Opt, TREES *Trees, char *FName)
 {
 	DIST_DATA* Ret;
 	TEXTFILE *TF;
 
-	Ret = (DIST_DATA*)malloc(sizeof(DIST_DATA));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (DIST_DATA*)SMalloc(sizeof(DIST_DATA));
 
 	Ret->NoSites = Trees->NoOfSites;
 
@@ -145,9 +201,7 @@ DIST_DATA*	LoadDistData(TREES *Trees, char *FName)
 	Ret->NoTaxa = 0;
 	Ret->DistDataTaxa = (DIST_DATA_TAXA**)SMalloc(sizeof(DIST_DATA_TAXA*) * TF->NoOfLines);
 
-	ProcDistDataFile(Trees, Ret, TF);
-
-//	exit(0);
+	ProcDistDataFile(Opt, Trees, Ret, TF);
 	
 	return Ret;
 }
@@ -254,4 +308,160 @@ void	FreeDistDataRates(DIST_DATE_RATES* DistRates)
 		free(DistRates->SiteMap[Index]);
 
 	free(DistRates);
+}
+
+void	CopyDistDataRates(DIST_DATE_RATES* A, DIST_DATE_RATES* B)
+{
+	int TIndex;
+
+	for(TIndex=0;TIndex<A->NoTaxa;TIndex++)
+		memcpy(A->SiteMap[TIndex], B->SiteMap[TIndex], sizeof(int) * B->NoSites);
+}
+
+void	SetDistDataTaxaCon(NODE N, DIST_DATA_TAXA *DTaxa, int NoSites, int *PosList)
+{
+	int SIndex;
+
+	CONTRAST *Con;
+
+	Con = N->ConData->Contrast[0];
+
+	for(SIndex=0;SIndex<NoSites;SIndex++)
+		Con->Data[SIndex] = DTaxa->Data[SIndex][PosList[SIndex]];
+}
+
+void	SetDistDataTaxaGeo(NODE N, DIST_DATA_TAXA *DTaxa, int NoSites, int *PosList)
+{
+	int SIndex;
+	FATTAILNODE *FTN;
+
+	FTN = N->FatTailNode;
+	
+	for(SIndex=0;SIndex<NoSites;SIndex++)
+		FTN->Ans[SIndex] = DTaxa->Data[SIndex][PosList[SIndex]];
+
+
+}
+
+void	SetDistDataTaxa(DIST_DATA *DD, DIST_DATA_TAXA *DTaxa, TREE *Tree, OPTIONS *Opt, int *PosList)
+{
+	NODE N;
+
+	N = GetTreeTaxaNode(Tree, DTaxa->Taxa->No);
+
+	if(Opt->ModelType == MT_CONTRAST)
+		SetDistDataTaxaCon(N, DTaxa, DD->NoSites, PosList);
+
+	if(Opt->ModelType == MT_FATTAIL)	
+		SetDistDataTaxaGeo(N, DTaxa, DD->NoSites, PosList);
+}
+
+
+void	SetTreeDistData(RATES *Rates, OPTIONS *Opt, TREES *Trees)
+{
+	int TIndex;
+	DIST_DATE_RATES	*DDRates;
+	DIST_DATA		*DD;
+	TREE			*Tree;
+	DIST_DATA_TAXA	*DDTaxa;
+
+	DD = Opt->DistData;
+	DDRates = Rates->DistDataRates;
+	
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	for(TIndex=0;TIndex<DD->NoTaxa;TIndex++)
+	{
+		DDTaxa = DD->DistDataTaxa[TIndex];
+		SetDistDataTaxa(DD, DDTaxa, Tree, Opt, DDRates->SiteMap[TIndex]);
+	}
+}
+
+void	ChangeTreeDistData(OPTIONS *Opt, RATES *Rates)
+{
+	int Index, TaxaNo, SiteNo, NPos;
+	DIST_DATA		*DD;
+	DIST_DATE_RATES	*DDRates;
+	DIST_DATA_TAXA	*DDTaxa;
+
+	DD = Opt->DistData;
+	DDRates = Rates->DistDataRates;
+
+	TaxaNo = RandUSInt(Rates->RS) % DDRates->NoTaxa;
+
+	DDTaxa = DD->DistDataTaxa[TaxaNo];
+	
+	if(DDTaxa->Linked == TRUE)
+	{
+		NPos = RandUSInt(Rates->RS) % DDTaxa->NoSites[0];
+		for(Index=0;Index<DD->NoSites;Index++)
+			DDRates->SiteMap[TaxaNo][Index] = NPos;
+	}
+	else
+	{
+		Index = RandUSInt(Rates->RS) % DD->NoSites;
+		DDRates->SiteMap[TaxaNo][Index] = RandUSInt(Rates->RS) % DDTaxa->NoSites[Index];
+	}
+}
+
+void OutputDataDistHeadder(FILE *Str, OPTIONS *Opt)
+{
+	int				TIndex, SIndex;
+	DIST_DATA		*DData;
+	DIST_DATA_TAXA	*DDTaxa;
+
+	DData = Opt->DistData;
+
+	for(TIndex=0;TIndex<DData->NoTaxa;TIndex++)
+	{
+		DDTaxa = DData->DistDataTaxa[TIndex];
+		if(Opt->Model == M_GEO)
+			fprintf(Str, "%s Long\t%s Lat\t", DDTaxa->Taxa->Name, DDTaxa->Taxa->Name);
+		else
+			for(SIndex=0;SIndex<DData->NoSites;SIndex++)	
+				fprintf(Str, "%s-%d\t", DDTaxa->Taxa->Name, SIndex+1);
+	}
+}
+
+void OutputDataDistGeo(FILE *Str, RATES *Rates, OPTIONS *Opt, int *Map, DIST_DATA_TAXA *DDTaxa)	
+{
+	double Long, Lat, X, Y, Z;
+		
+	X = DDTaxa->Data[0][Map[0]];
+	Y = DDTaxa->Data[1][Map[1]];
+	Z = DDTaxa->Data[2][Map[2]];
+
+	XYZToLongLat(X, Y, Z, &Long, &Lat);
+
+	fprintf(Str, "%f\t%f\t", Long, Lat);
+}
+
+void OutputDataDist(FILE *Str, RATES *Rates, OPTIONS *Opt)
+{
+	int				Pos, TIndex, SIndex;
+	double			Val;
+	DIST_DATA		*DData;
+	DIST_DATE_RATES	*DDRates;
+	DIST_DATA_TAXA	*DDTaxa;
+
+	DData = Opt->DistData;
+	DDRates = Rates->DistDataRates;
+
+	for(TIndex=0;TIndex<DData->NoTaxa;TIndex++)
+	{
+		DDTaxa = DData->DistDataTaxa[TIndex];
+		if(Opt->Model == M_GEO)
+			OutputDataDistGeo(Str, Rates, Opt, DDRates->SiteMap[TIndex], DDTaxa);
+		else
+		{
+			for(SIndex=0;SIndex<DData->NoSites;SIndex++)	
+			{
+			
+				Pos = DDRates->SiteMap[TIndex][SIndex];
+				Val = DData->DistDataTaxa[TIndex]->Data[SIndex][Pos];
+
+				fprintf(Str, "%f\t", Val);
+			}
+		}
+	}
 }

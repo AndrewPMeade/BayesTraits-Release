@@ -78,9 +78,9 @@ void	PreProcessGeoData(TREES *Trees)
 			Taxa->ConData[0] = X;
 			Taxa->ConData[1] = Y;
 			Taxa->ConData[2] = Z;
+
 		}
 	}
-
 	Trees->NoOfSites = 3;
 }
 

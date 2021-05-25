@@ -1018,7 +1018,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, VarRates->Alpha);
 	}
 
-	if(Opt->Model == M_CONTRAST)
+	if(Opt->Model == M_CONTRAST) 
 	{
 		Sigma = Rates->Contrast->Sigma[0];
 		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, VarRates->Alpha);

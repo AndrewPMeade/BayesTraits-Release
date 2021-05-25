@@ -1342,7 +1342,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NOOFOPERATORS	22
+#define NOOFOPERATORS	23
 
 static char    *SHEDOP[] =
 {
@@ -1367,7 +1367,8 @@ static char    *SHEDOP[] =
 	"RJ Dummy Move Node",
 	"RJ Dummy Change Beta",
 	"Fat Tail Ans",
-	"Local Rates"
+	"Local Rates",
+	"Data Dist"
 };
 
 typedef enum
@@ -1393,7 +1394,8 @@ typedef enum
 	SRJDUMMYMOVE,
 	SRJDUMMYCHANGEBETA,
 	SFATTAILANS,
-	SLOCALRATES
+	SLOCALRATES,
+	SDATADIST
 } OPERATORS;
 
 

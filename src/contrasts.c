@@ -1403,6 +1403,14 @@ void	DummCodePreLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	memcpy(&CRates->RegBeta[NoRSize], Rates->RJDummy->DummyBeta, sizeof(double) * Rates->RJDummy->NoDummyCode);
 }
 
+int		ValidConLh(double LH)
+{
+	if(LH == LH+1 || LH != LH || LH == ERRLH)
+		return FALSE;
+
+	return TRUE;
+}
+
 double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 //	TransformTreeDelta(Trees->Tree[Rates->TreeNo]->Root, 60, TRUE);
@@ -1431,7 +1439,7 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	if(Opt->Model == M_CONTRAST_REG)
 		Rates->Lh = CaclRegContrastLh(Opt, Trees, Rates);
 		
-	if(ValidLh(Rates->Lh) == FALSE)
+	if(ValidConLh(Rates->Lh) == FALSE)
 		Rates->Lh = ERRLH;
 	
 	return Rates->Lh;

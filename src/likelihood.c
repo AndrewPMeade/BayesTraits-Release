@@ -25,6 +25,7 @@
 #include "TransformTree.h"
 #include "VarRates.h"
 #include "LocalTransform.h"
+#include "DistData.h"
 
 #ifdef BTOCL
 	#include "btocl_discrete.h"
@@ -965,7 +966,9 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	if(Opt->NoLh == TRUE)
 		return -1.0;
 
-
+	if(Opt->UseDistData == TRUE && Opt->ModelType != MT_FATTAIL)
+		SetTreeDistData(Rates, Opt, Trees);
+	
 	if(Opt->ModelType == MT_FATTAIL)
 		return CalcTreeStableLh(Opt, Trees, Rates);
 

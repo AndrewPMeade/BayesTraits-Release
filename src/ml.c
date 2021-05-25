@@ -297,14 +297,14 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 void	MLTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	double OU, Lh;
+	double Rate, Lh;
 
-	for(OU=0.0001;OU<10.0;OU+=0.01)
+	for(Rate=0;Rate<100;Rate+=0.01)
 	{
-		Rates->OU = OU;
+		Rates->Rates[0] = Rate;
 		Lh = Likelihood(Rates, Trees, Opt);
 
-		printf("%f\t%f\n", OU, Lh);
+		printf("%f\t%f\n", Rate, Lh);
 	}
 
 	exit(0);

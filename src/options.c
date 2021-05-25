@@ -2156,6 +2156,12 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 
 			return FALSE;
 		}
+
+		if(Command == CDISTDATA)
+		{
+			if(Command == MT_CONTINUOUS)
+				return FALSE;
+		}
 		
 		if((Opt->Model != M_CONTRAST_REG) && (Command == CRJDUMMY))
 			return FALSE;
@@ -3352,7 +3358,7 @@ void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)
 	if(Opt->DistData != NULL)
 		FreeDistData(Opt->DistData);
 
-	Opt->DistData = LoadDistData(Opt->Trees, Passed[1]);
+	Opt->DistData = LoadDistData(Opt, Opt->Trees, Passed[1]);
 	Opt->UseDistData = TRUE;
 }
 
@@ -3473,7 +3479,11 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		printf("Unknown command: %s\n",Passed[0]);
 
 	if(CmdVailWithDataType(Opt,Command) == FALSE)
+	{
+		printf("Command is not valid with data / model.\n");
+		exit(0);
 		return FALSE;
+	}
 
 	if(Command == CRUN)
 		return TRUE;

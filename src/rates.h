@@ -1,4 +1,4 @@
-#if !defined (RATESHEADDER)
+#ifndef RATESHEADDER
 #define RATESHEADDER
 
 RATES*		CreatRates(OPTIONS *Opt);
@@ -9,9 +9,12 @@ void		MapRates(RATES* Rates, OPTIONS *Opt);
 
 void		InitHMean(RATES* Rates, OPTIONS *Opt);
 double		GetHMean(OPTIONS *Opt, RATES *Rates);
+
+void		CopyRates(RATES *A, RATES *B, OPTIONS *Opt);
+
 void		PrintRatesHeadder(FILE* Str, OPTIONS *Opt);
 void		PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed);
-void		CopyRates(RATES *A, RATES *B, OPTIONS *Opt);
+
 
 int			FindNoOfRates(OPTIONS *Opt);
 int			FindRatePos(int Rate, OPTIONS *Opt);

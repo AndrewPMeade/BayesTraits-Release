@@ -55,6 +55,7 @@ void	PrintPriorHeadder(FILE* Str, OPTIONS *Opt, RATES* Rates)
 
 				case GAMMA:
 					fprintf(Str, "%s - Shape\t%s - Scale\t", Prior->Name, Prior->Name);
+				break;
 	
 				default:
 					printf("%s::%d Hyper Prior not supported.", __FILE__, __LINE__);

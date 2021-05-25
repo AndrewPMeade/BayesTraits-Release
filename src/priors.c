@@ -729,12 +729,10 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	Rates->LhPrior = ERRLH;
 
 	if(Opt->LoadModels == TRUE)
-	{
-		Rates->LhPrior = 0;
-		return;
-	}	
+		PLh  = 0;
+	else
+		PLh = CalcRatePrior(Rates, Opt);
 
-	PLh = CalcRatePrior(Rates, Opt);
 	if(PLh == ERRLH)
 		return;
 
@@ -806,11 +804,15 @@ void	MutatePriorsNormal(RATES *Rates, PRIOR **PriosList, int NoOfPriors, double 
 	for(PIndex=0;PIndex<NoOfPriors;PIndex++)
 	{
 		Prior = PriosList[PIndex];
-		for(RIndex=0;RIndex<DISTPRAMS[Prior->Dist];RIndex++)
+
+		if(Prior->UseHP == TRUE)
 		{
-			Min = Prior->HP[RIndex*2];
-			Max = Prior->HP[(RIndex*2)+1];
-			Prior->DistVals[RIndex] = ChangePriorNorm(Rates, Prior->DistVals[RIndex], Dev, Min, Max);
+			for(RIndex=0;RIndex<DISTPRAMS[Prior->Dist];RIndex++)
+			{
+				Min = Prior->HP[RIndex*2];
+				Max = Prior->HP[(RIndex*2)+1];
+				Prior->DistVals[RIndex] = ChangePriorNorm(Rates, Prior->DistVals[RIndex], Dev, Min, Max);
+			}
 		}
 	}
 }

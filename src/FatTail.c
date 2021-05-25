@@ -16,6 +16,7 @@
 #include "Geo.h"
 #include "SliceSampler.h"
 #include "mcmc.h"
+#include "DistData.h"
 
 #define NO_SLICE_STEPS 100
 #define	MAX_STEP_DIFF	5.0
@@ -77,38 +78,24 @@ FATTAILRATES*	AllocFatTailRates(OPTIONS *Opt, TREES *Trees)
 	if(Ret == NULL)
 		MallocErr();
 
-	Ret->Alpha = (double*)malloc(sizeof(double) * NoSites);
-	Ret->Scale = (double*)malloc(sizeof(double) * NoSites);
-	Ret->SiteLh = (double*)malloc(sizeof(double) * NoSites);
+	Ret->Alpha = (double*)SMalloc(sizeof(double) * NoSites);
+	Ret->Scale = (double*)SMalloc(sizeof(double) * NoSites);
+	Ret->SiteLh = (double*)SMalloc(sizeof(double) * NoSites);
 
-	if( (Ret->Alpha == NULL) ||
-		(Ret->Scale == NULL) ||
-		(Ret->SiteLh == NULL))
-		MallocErr();
-
-	Ret->SiteMin = (double*)malloc(sizeof(double) * NoSites);
-	Ret->SiteMax = (double*)malloc(sizeof(double) * NoSites);
-	Ret->SiteSD  = (double*)malloc(sizeof(double) * NoSites);
-
-	if( (Ret->SiteMin == NULL) ||
-		(Ret->SiteMax == NULL) ||
-		(Ret->SiteSD  == NULL))
-		MallocErr();
+	Ret->SiteMin = (double*)SMalloc(sizeof(double) * NoSites);
+	Ret->SiteMax = (double*)SMalloc(sizeof(double) * NoSites);
+	Ret->SiteSD  = (double*)SMalloc(sizeof(double) * NoSites);
 
 	Ret->SliceSampler = CrateSliceSampler(NO_SLICE_STEPS);
 	
-	Ret->AnsVect = (double*)malloc(sizeof(double) * NoSites * Trees->MaxNodes);
-	if(Ret->AnsVect == NULL)
-		MallocErr();	
+	Ret->AnsVect = (double*)SMalloc(sizeof(double) * NoSites * Trees->MaxNodes);
 
 	Ret->NoSD = NoSites;
 
 	if(Opt->Model == M_GEO)
 		Ret->NoSD = 1;
 
-	Ret->SDList = (STABLEDIST**)malloc(sizeof(double) * Ret->NoSD);
-	if(Ret->SDList == NULL)
-		MallocErr();
+	Ret->SDList = (STABLEDIST**)SMalloc(sizeof(double) * Ret->NoSD);
 	for(Index=0;Index<Ret->NoSD;Index++)
 		Ret->SDList[Index] = CreatStableDist();
 	
@@ -214,12 +201,10 @@ void			CopyFatTailRates(TREES *Trees, FATTAILRATES *A, FATTAILRATES *B)
 FATTAILNODE*	InitFatTailNode(int NoSites, NODE N, double *AnsVect)
 {
 	FATTAILNODE*	Ret;
-	int			Index;
-	size_t		Pos;
+	int				Index;
+	size_t			Pos;
 
-	Ret = (FATTAILNODE*)malloc(sizeof(FATTAILNODE));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (FATTAILNODE*)SMalloc(sizeof(FATTAILNODE));
 	
 	Pos = N->ID * NoSites;
 	Ret->Ans = &AnsVect[Pos];
@@ -250,13 +235,9 @@ FATTAILTREE*	AllocFatTailTree(TREE *Tree, int NoOfSites)
 {
 	FATTAILTREE* Ret;
 
-	Ret = (FATTAILTREE*)malloc(sizeof(FATTAILTREE));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (FATTAILTREE*)SMalloc(sizeof(FATTAILTREE));
 
-	Ret->AnsVect = (double*)malloc(sizeof(double) * Tree->NoNodes * NoOfSites);
-	if(Ret->AnsVect == NULL)
-		MallocErr();
+	Ret->AnsVect = (double*)SMalloc(sizeof(double) * Tree->NoNodes * NoOfSites);
 
 	return Ret;
 }
@@ -422,6 +403,9 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		UseGeoModel = TRUE;
 
 	FatTailSetAnsSates(Tree, NoSites, FTR);
+
+	if(Opt->UseDistData == TRUE)
+		SetTreeDistData(Rates, Opt, Trees);
 
 	for(Index=0;Index<FTR->NoSD;Index++)
 		SetStableDist(FTR->SDList[Index], FTR->Alpha[Index], FTR->Scale[Index]);

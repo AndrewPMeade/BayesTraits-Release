@@ -2103,3 +2103,15 @@ void	ScaleUserTrees(TREES *Trees, double Scale)
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 		RecScaleUserSubTree(Trees->Tree[Index]->Root, Scale);
 }	
+
+NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo)
+{
+	int Index;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+		if(Tree->NodeList[Index]->Tip == TRUE)
+			if(Tree->NodeList[Index]->Taxa->No == TaxaNo)
+				return Tree->NodeList[Index];
+
+	return NULL;
+}

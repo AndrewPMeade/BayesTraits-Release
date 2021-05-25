@@ -238,8 +238,6 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Shed->OptFreq[SRATES] = 0;
 	else
 		Shed->OptFreq[SRATES] = 0.5;
-
-//	Shed->OptFreq[SRATES] = 0.0;
 	
 #ifdef CONTRAST_ML_PARAM
 	if(Opt->ModelType == MT_CONTRAST)
@@ -256,6 +254,9 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Shed->OptFreq[SRJDUMMYMOVE] = 0.2;
 		Shed->OptFreq[SRJDUMMYCHANGEBETA] = 0.2;
 	}
+
+	if(Opt->UseDistData == TRUE)
+		Shed->OptFreq[SDATADIST] = 0.2;
 
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 }
@@ -337,17 +338,14 @@ SCHEDULE*	AllocSchedule()
 {
 	SCHEDULE*	Ret;
 	
-	Ret = (SCHEDULE*)malloc(sizeof(SCHEDULE));
-	if(Ret==NULL)
-		MallocErr();
+	Ret = (SCHEDULE*)SMalloc(sizeof(SCHEDULE));
 	
 	Ret->NoOfOpts = NOOFOPERATORS;
 
-	Ret->OptFreq	=	(double*)malloc(sizeof(double) * Ret->NoOfOpts);
-	Ret->Tryed		=	(int*)malloc(sizeof(int) * Ret->NoOfOpts);
-	Ret->Accepted	=	(int*)malloc(sizeof(int) * Ret->NoOfOpts);
-	if((Ret->OptFreq == NULL) || (Ret->Tryed == NULL) || (Ret->Accepted == NULL))
-		MallocErr();
+	Ret->OptFreq	=	(double*)SMalloc(sizeof(double) * Ret->NoOfOpts);
+	Ret->Tryed		=	(int*)SMalloc(sizeof(int) * Ret->NoOfOpts);
+	Ret->Accepted	=	(int*)SMalloc(sizeof(int) * Ret->NoOfOpts);
+
 
 	Ret->RateDevATList	= NULL;
 	Ret->DataDevAT		= NULL;
@@ -394,10 +392,8 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 	PIndex = 0;
 
 	NoP = FindNoOfAutoCalibRates(Opt);
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	Ret = (char**)malloc(sizeof(char*) * NoP);
-	if(Buffer == NULL || Ret == NULL)
-		MallocErr();
+	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
+	Ret = (char**)SMalloc(sizeof(char*) * NoP);
 
 	if(Opt->DataType == DISCRETE)
 	{
