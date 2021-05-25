@@ -725,7 +725,6 @@ void	SetRatesLocalRates(RATES *Rates, OPTIONS *Opt)
 	}
 }
 
-void	Add
 
 void	SetDiscretisedPrior(PRIOR *Prior, OPTIONS *Opt)
 {
@@ -823,6 +822,11 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->Landscape		=	NULL;
 	Ret->LandscapeRateGroups	= NULL;
+	Ret->UseMLLandscape	=	FALSE;
+	
+	if(Opt->UseMLLandscape == TRUE)
+		Ret->Landscape = CreateLandScape(Opt->Trees);
+
 		
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
@@ -2983,6 +2987,9 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 
 	if(Rates->LandscapeRateGroups != NULL)
 		FreeLandRateGroups(Rates->LandscapeRateGroups);
+
+	if(Rates->Landscape != NULL)
+		FreeLandScape(Rates->Landscape);
 
 	free(Rates);
 }

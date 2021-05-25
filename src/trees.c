@@ -2166,3 +2166,16 @@ void	TimeTestMRCA(OPTIONS *Opt, TREES *Trees)
 	exit(0);
 }
 */
+
+int		GetNoInternalNodes(TREE *Tree)
+{
+	int Ret, Index;
+
+	Ret = 0;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+		if(Tree->NodeList[Index]->Tip == FALSE)
+			Ret++;
+
+	return Ret;
+}

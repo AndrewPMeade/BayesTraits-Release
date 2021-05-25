@@ -120,7 +120,7 @@ void	SetDiscretisedDist(LAND_RATE_GROUPS* LandRGroup)
 void	FixedBetaDiscretised(RATES *Rates, LAND_RATE_GROUPS* LandRGroup, RANDSTATES *RS, int NoGroup)
 {
 	int Index, GNo;
-	double P, Sig;
+	double Sig;
 	RATE_GROUP*	RateG;
 	PRIOR *Prior;
 
@@ -373,7 +373,7 @@ void	OutputLandRateGroupsOutput(long long Itter, OPTIONS *Opt, TREES *Trees, RAT
 	LAND_RATE_GROUPS *LandRateG;
 	FILE *Out;
 	RATE_GROUP	*RateG;
-	int GIndex, Index;
+	int GIndex;
 
 	Out = Opt->LogLandscapeGroups;
 	

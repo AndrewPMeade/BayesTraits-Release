@@ -48,6 +48,7 @@
 #include "NLOptBT.h"
 #include "Landscape.h"
 #include "Part.h"
+
 #include <gsl/gsl_matrix.h>
 
 #define MAX_ML_FREE_P 1048576
@@ -180,6 +181,13 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				AddTypePToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE, ML_P_TYPE_RATE_S);
 		}
 	}
+
+	if(Opt->UseMLLandscape == TRUE)
+	{
+		for(Index=0;Index<Rates->Landscape->NoNodes;Index++)
+			if(Rates->Landscape->NodeList[Index]->MLEst == TRUE)
+				AddPToMLMap(MLMap, 0, -10, 10);
+	}
 }
 
 void	CheckMLMapVals(ML_MAP* MLMap)
@@ -210,7 +218,22 @@ void	MLMapToRatesTimeSlices(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates, int *Pos)
 		if(TS->FixedScale == FALSE)
 			TS->Scale = MLMap->PVal[(*Pos)++];
 	}
-	
+}
+
+void	MLMapToLandscape(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates, int *Pos)
+{
+	LANDSCAPE *Landscape;
+	int Index;
+	LANDSCAPE_NODE *LandNode;
+
+	Landscape = Rates->Landscape;
+
+	for(Index=0;Index<Landscape->NoNodes;Index++)
+	{
+		LandNode = Landscape->NodeList[Index];
+		if(LandNode->MLEst == TRUE)
+			LandNode->Beta = MLMap->PVal[(*Pos)++];
+	}	
 }
 
 void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
@@ -244,6 +267,9 @@ void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
 			Rates->LocalTransforms[Index]->Scale = MLMap->PVal[Pos++];
 
 	MLMapToRatesTimeSlices(MLMap, Opt, Rates, &Pos);
+
+	if(Opt->UseMLLandscape == TRUE)
+		MLMapToLandscape(MLMap, Opt, Rates, &Pos);
 }
 
 double	LikelihoodML(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -549,8 +575,7 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 //	CalcAllNodeTransfroms(Opt, Trees, Rates); return;
 //	MLTestF(Opt, Trees, Rates);
-
-
+	
 	for(Index=0;Index<Trees->NoTrees;Index++)
 	{
 		Rates->TreeNo = Index;
@@ -560,6 +585,8 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 		if(Opt->NodeData == TRUE || Opt->NodeBLData == TRUE)
 			SetTreeAsData(Opt, Trees, Rates->TreeNo);
+
+		MLLandscape(Opt, Trees, Rates);
 
 		MLTree(Opt, Trees, Rates);
 

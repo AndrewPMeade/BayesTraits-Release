@@ -74,6 +74,6 @@ void	PrintTreeBL(TREE *Tree);
 
 void	CheckSingleDescendent(TREES *Trees);
 
-
+int		GetNoInternalNodes(TREE *Tree);
 
 #endif

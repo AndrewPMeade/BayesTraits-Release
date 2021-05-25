@@ -332,6 +332,7 @@ typedef enum
 	CLANDSCAPE,
 	CRATESCALARS, 
 	CRJLANDSCAPERATEGROUP,
+	CMLLANDSCAPE,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -421,6 +422,7 @@ static char    *COMMANDSTRINGS[] =
 	"Landscape",		"LS",
 	"RateScalars",		"rs", 
 	"RJLandscapeRateGroup", "rlrg",
+	"MLLandscape",			"lls",
 	""
 };
 
@@ -1126,6 +1128,7 @@ typedef struct
 	PART		*Part;
 	NODE		*NodeList;
 	long long	NodeID;
+	int			MLEst;
 } LANDSCAPE_NODE;
 
 typedef struct
@@ -1317,6 +1320,7 @@ typedef struct
 
 	int			UseRJLandscapeRateGroup;
 	int			NoLandscapeRateGroup;
+	int			UseMLLandscape;
 
 } OPTIONS;
 
@@ -1494,6 +1498,10 @@ typedef struct
 
 	LANDSCAPE		*Landscape;
 	LAND_RATE_GROUPS	*LandscapeRateGroups;
+
+	int			UseMLLandscape;
+
+
 } RATES;
 
 typedef struct

@@ -1406,6 +1406,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->UseRJLandscapeRateGroup	 = FALSE;
 	Ret->NoLandscapeRateGroup = -1;
 
+	Ret->UseMLLandscape		= FALSE;
+
 	free(Buffer);
 
 	return Ret; 
@@ -2573,7 +2575,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			Command == CMLTRIES ||
 			Command == CMLEVAL ||
 			Command == CMLALG ||
-			Command == CSETMINMAXRATE
+			Command == CSETMINMAXRATE ||
+			Command == CMLLANDSCAPE
 			)
 		{
 			printf("Command %s (%s) is not valid with the MCMC model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -4102,6 +4105,20 @@ void	SetRJLandscapeRateGroup(OPTIONS *Opt, int Tokes, char **Passed)
 		Opt->UseRJLandscapeRateGroup = FALSE;
 }
 
+void	SetMLLandScape(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("MLLandscape does not take any paramters.\n");
+		exit(1);
+	}
+
+	if(Opt->UseMLLandscape == FALSE)
+		Opt->UseMLLandscape = TRUE;
+	else
+		Opt->UseMLLandscape = FALSE;
+}
+
 void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	if(Opt->SaveInitialTrees != NULL)
@@ -4801,6 +4818,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CRJLANDSCAPERATEGROUP)
 		SetRJLandscapeRateGroup(Opt, Tokes, Passed);
+
+	if(Command == CMLLANDSCAPE)
+		SetMLLandScape(Opt, Tokes, Passed);
 
 	return FALSE;
 }
