@@ -292,41 +292,6 @@ int	CreateInDEPAMatrix(INVINFO* InvInfo, double *R, RATES* Rates, TREES* Trees)
 	return PreCalc(InvInfo, Trees, Rates);
 }
 
-/* Include Pis into the calcl*/
-/*
-int	CreateDEPAMatrix(INVINFO* InvInfo, double *R, RATES* Rates, TREES* Trees)
-{
-	double **Mat;
-	double *Pi;
-
-	Pi = Rates->Pis;
-	Mat = InvInfo->A->me;
-	
-	Mat[0][1] = R[0] * Pi[1];
-	Mat[0][2] = R[1] * Pi[2];
-	Mat[0][3] = 0;
-	
-	Mat[1][0] = R[2] * Pi[0];
-	Mat[1][2] = 0;
-	Mat[1][3] = R[3] * Pi[3];
-
-	Mat[2][0] = R[4] * Pi[0];
-	Mat[2][1] = 0;
-	Mat[2][3] = R[5] * Pi[3];
-
-	Mat[3][0] = 0;
-	Mat[3][1] = R[6] * Pi[1];
-	Mat[3][2] = R[7] * Pi[2];
-
-	Mat[0][0] = -(Mat[0][1] + Mat[0][2]);
-	Mat[1][1] = -(Mat[1][0] + Mat[1][3]);
-	Mat[2][2] = -(Mat[2][0] + Mat[2][3]);
-	Mat[3][3] = -(Mat[3][1] + Mat[3][2]);
-
-	return PreCalc(InvInfo, Trees, Rates);
-}
-*/
-
 
 int	CreateDEPAMatrix(INVINFO* InvInfo, double *R, RATES* Rates, TREES* Trees)
 {
@@ -354,9 +319,9 @@ int	CreateDEPAMatrix(INVINFO* InvInfo, double *R, RATES* Rates, TREES* Trees)
 	A->me[3][2] = R[7];
 	A->me[3][3] = -(R[6] + R[7]);
 
+
 	return PreCalc(InvInfo, Trees, Rates);
 }
-
 
 void	SetADiag(MATRIX *A)
 {

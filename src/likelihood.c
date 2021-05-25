@@ -948,7 +948,6 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		for(Index=0;Index<NOS;Index++)
 			Sum += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
 
-
 		SiteLh = 0;
 		for(Index=0;Index<NOS;Index++)
 		{
