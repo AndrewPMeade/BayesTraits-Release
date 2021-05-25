@@ -393,18 +393,9 @@ void	MLTest2(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	double R, Lh;
 
-
-	InitContinusTree(Opt, Trees, Rates->TreeNo);
-	Rates->Kappa = .10;
-	Rates->OU = 54;
-	Lh = Likelihood(Rates, Trees, Opt);
-	printf("%f\n", Lh);
-
-	exit(0);
-
-	for(R=0.000;R<100;R++)
+	for(R=0.0001;R<4;R+=0.01)
 	{
-		Rates->OU = R;
+		Rates->Rates[0] = R;
 		Lh = Likelihood(Rates, Trees, Opt);
 		printf("%f\t%f\n", R, Lh);
 
@@ -433,8 +424,6 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 	fflush(stdout);
 	fflush(Opt->LogFile);
 
-//	MLTest2(Opt, Trees, Rates);
-
 	TStart = GetSeconds();
 
 	for(Index=0;Index<Trees->NoTrees;Index++)
@@ -443,6 +432,8 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 		if(Opt->ModelType == MT_CONTINUOUS)
 			InitContinusTree(Opt, Trees, Rates->TreeNo);
+
+//		MLTest2(Opt, Trees, Rates);
 
 		if(Opt->NodeData == TRUE || Opt->NodeBLData == TRUE)
 			SetTreeAsData(Opt, Trees, Rates->TreeNo);

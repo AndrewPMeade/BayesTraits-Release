@@ -2302,7 +2302,8 @@ void	GetBasePis(OPTIONS *Opt, char* Type)
 		return;
 	}
 
-	printf("The option %s, is unknown. Valid options are est, emp, uni and none\n", Type);
+	printf("The option %s, is unknown. Valid options are est, uni and none\n", Type);
+	exit(0);
 }
 
 int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)

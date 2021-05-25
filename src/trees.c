@@ -122,6 +122,12 @@ void	LinkTipsToTaxa(NODE N, TAXA **Taxa, int NoTaxa)
 	if(N->Tip == TRUE)
 	{
 		N->Taxa = GetTaxaFromID(N->TipID, Taxa, NoTaxa);
+
+		if(N->Taxa == NULL)
+		{
+			printf("Taxa ID %d found in tree definition cannot be linked to a taxa.\n", N->TipID);
+			exit(1);
+		}
 	}
 	else
 	{
@@ -633,7 +639,7 @@ void	InitialTrees(TREES *Trees, NTREES *PTrees)
 	Trees->NoTrees	= PTrees->NoTrees;
 	Trees->NOSPerSite	= FALSE;
 	
-	Trees->Taxa = (TAXA**) SMalloc(sizeof(TAXA*) * Trees->NoTaxa);
+	Trees->Taxa = (TAXA**)SMalloc(sizeof(TAXA*) * Trees->NoTaxa);
 	
 	for(Index=0;Index<Trees->NoTaxa;Index++)
 		Trees->Taxa[Index] = InitTaxa(PTrees->Taxa[Index].No, PTrees->Taxa[Index].Name);

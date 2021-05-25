@@ -2484,7 +2484,6 @@ int		TryRJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 	return RJMerge(Rates, Opt);
 }
 
-
 void	RJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 {
 	int Success;

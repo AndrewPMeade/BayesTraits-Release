@@ -1185,7 +1185,7 @@ PRIOR*		GetPriorFromName(char *Name, PRIOR** PList, int NoPrior)
 	int Index;
 
 	for(Index=0;Index<NoPrior;Index++)
-		if(StrICmp(Name, PList[Index]->Name) == 0)
+		if(strcmp(Name, PList[Index]->Name) == 0)
 			return PList[Index];
 
 	return NULL;
