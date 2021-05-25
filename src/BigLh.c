@@ -104,7 +104,7 @@ void	SetTipDataBigLh(OPTIONS *Opt, TREES *Trees)
 }
 
 void	InitTreeBigLh(OPTIONS *Opt, TREES *Trees)
-{ 
+{
 	AllocMemory(Opt, Trees);
 
 	SetTipDataBigLh(Opt, Trees);
@@ -151,7 +151,7 @@ void SetBigLHZero(mpfr_t State)
 void	FossilLhBig(NODE N, TREES *Trees, int SiteNo)
 {
 	int Index;
-	
+
 	for(Index=0;Index<Trees->NoOfStates;Index++)
 	{
 		if(Index != N->FossilState)
@@ -177,7 +177,7 @@ void	FossilDepLhBig(NODE N, int SiteNo, int s00, int s01, int s10, int s11)
 
 
 void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo)
-{ 
+{
 	int Inner, Outter, NIndex;
 	double Lh;
 	double **Mat;
@@ -265,3 +265,4 @@ void	SetBigLhNodeRec(NODE N, int NOS, int NoOfSites, RATES *Rates, OPTIONS *Opt)
 	}
 }
 #endif
+
