@@ -10,6 +10,8 @@ void		ReplacePrior(OPTIONS *Opt, PRIOR *Prior);
 PRIOR*		GetPriorFromName(char *Name, PRIOR** PList, int NoPrior);
 PRIOR*		ClonePrior(PRIOR *Prior);
 PRIOR**		ClonePriors(PRIOR **PList, int NoPriors);
+PRIOR*		GetAnsStatePrior(int SiteNo, PRIOR** PList, int NoPrior);
+
 
 double		RandFromPrior(gsl_rng *RNG, PRIOR *Prior);
 

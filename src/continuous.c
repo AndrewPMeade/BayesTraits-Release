@@ -1686,7 +1686,6 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates, int AlphaZero)
 	return Ret;
 }
 
-
 void	SetEstData(TREES *Trees, RATES* Rates)
 {
 	int		TIndex;

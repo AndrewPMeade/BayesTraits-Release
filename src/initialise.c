@@ -144,7 +144,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 #endif
 	}
 
-	if(FindNoEstDataPoint(Opt, Trees) > 0)
+	if(FindNoEstDataPoint(Trees) > 0)
 		Opt->EstData = TRUE;
 	else
 		Opt->EstData = FALSE;

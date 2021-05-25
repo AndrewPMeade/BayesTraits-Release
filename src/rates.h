@@ -38,10 +38,12 @@ char		RJModelType(int *ModelStr);
 
 void		FindRSquared(RATES* Rates, OPTIONS *Opt, double *R2, double *SSE, double *SST);
 
-int			FindNoEstDataPoint(OPTIONS *Opt, TREES *Trees);
+int			FindNoEstDataPoint(TREES *Trees);
 
 void		PrintAutoTune(FILE* Str, OPTIONS *Opt, SCHEDULE* Shed);
 //void		PrintAutoTuneHeader(FILE* Str, OPTIONS *Opt);
 
 int			FindNoConRates(OPTIONS *Opt);
+
+void		SetEstDataFromPrior(RATES *Rates);
 #endif

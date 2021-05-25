@@ -232,6 +232,11 @@ void	SetDefMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates, 	gsl_rng *RN
 		if(LR->Est == TRUE)
 			LR->Scale = GetRandValFromType(LR->Type, Rates, RNG);
 	}
+
+	if(Rates->NoEstData > 0)
+		SetEstDataFromPrior(Rates);
+	
+
 }
 
 double		ValidMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates)

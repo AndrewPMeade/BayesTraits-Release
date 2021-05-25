@@ -2140,6 +2140,25 @@ void	AddRecNodeCheck(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
 	}
 }
 
+void	SetConAnsStatesPriors(OPTIONS *Opt, TREES *Trees)
+{
+	char *Buffer;
+	int Index;
+	PRIOR *Prior;
+
+	Buffer = (char*)SMalloc(sizeof(char) * 128);
+
+	for(Index=0;Index<Trees->NoSites;Index++)
+	{
+		sprintf(Buffer, "AncState-%d", Index+1);
+		RemovePriorFormOpt(Buffer, Opt);
+		Prior = CreateUniformPrior(Buffer, -100, 100);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+	free(Buffer);
+}
+
 void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
 {
 	RECNODE	*RNode;
@@ -2155,8 +2174,11 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
 	if(NodeType == FOSSIL && Opt->DataType == DISCRETE)
 		RNode->FossilStates = FossilState(argv[3], Opt, &RNode->NoFossilStates);
 
-	if(Opt->DataType == CONTINUOUS)		
+	if(Opt->DataType == CONTINUOUS)	
+	{
 		RNode->ConData = SetConFState(Opt, NodeType, &argv[3]);
+		SetConAnsStatesPriors(Opt, Opt->Trees);
+	}
 		
 	Opt->RecNodeList = (RECNODE**)AddToList(&Opt->NoOfRecNodes, (void**)Opt->RecNodeList, RNode);
 }

@@ -842,6 +842,29 @@ double	CalcTimeSlicePriors(RATES *Rates)
 	return Ret;
 }
 
+double	CaclAnsStatePriors(RATES *Rates, OPTIONS *Opt)
+{
+	int Index, SiteNo;
+	PRIOR *Prior;
+	double Ret, PLh;
+
+	Ret = 0;
+	for(Index=0;Index<Rates->NoEstData;Index++)
+	{
+		SiteNo = Rates->EstDataSiteNo[Index];
+		Prior = GetAnsStatePrior(SiteNo, Rates->Priors, Rates->NoPriors);
+		
+		PLh = CalcLhPriorP(Rates->EstData[Index], Prior);
+		
+		if(PLh == ERRLH)
+			return ERRLH;		
+
+		Ret += PLh;
+	}
+
+	return Ret;
+}
+
 void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 {
 	double	PLh, Ret;
@@ -864,7 +887,11 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 		return;
 	Ret += PLh;
 
-
+	PLh = CaclAnsStatePriors(Rates, Opt);
+	if(PLh == ERRLH)
+		return;
+	Ret += PLh;
+	
 	if(Opt->Model == M_CONTRAST_REG && Opt->NoLh == FALSE)
 	{
 		PLh = CalcRegVarPrior(Rates);
@@ -1163,6 +1190,24 @@ PRIOR*		GetPriorFromName(char *Name, PRIOR** PList, int NoPrior)
 	return NULL;
 }
 
+PRIOR*		GetAnsStatePrior(int SiteNo, PRIOR** PList, int NoPrior)
+{
+	char *Buffer;
+	PRIOR *Ret;
+
+	Buffer = (char*)SMalloc(sizeof(char) * 128);
+	if(SiteNo == -1)
+		sprintf(Buffer, "AncState-Dep");
+	else
+		sprintf(Buffer, "AncState-%d", SiteNo+1);
+
+	Ret = GetPriorFromName(Buffer, PList, NoPrior);
+
+	free(Buffer);
+
+	return Ret;
+}
+
 int		GetPriorPosFromName(char *Name, PRIOR** PList, int NoPrior)
 {
 	int Index;
@@ -1243,3 +1288,5 @@ double	CalcNormalHasting(double x, double SD)
 
 	return log(Ret);
 }
+
+

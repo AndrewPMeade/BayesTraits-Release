@@ -407,7 +407,7 @@ double	GetHMean(OPTIONS *Opt, RATES *Rates)
 #endif
 }
 
-int		FindNoEstDataPoint(OPTIONS *Opt, TREES *Trees)
+int		FindNoEstDataPoint(TREES *Trees)
 {
 	int Index, SIndex, Ret;
 	TAXA *Taxa;
@@ -423,6 +423,28 @@ int		FindNoEstDataPoint(OPTIONS *Opt, TREES *Trees)
 		
 		if(Taxa->EstDepData == TRUE)
 			Ret++;
+	}
+
+	return Ret;
+}
+
+int*	SetEstDataSiteNo(TREES *Trees)
+{
+	int	*Ret, Pos, Index, SIndex;
+	TAXA *Taxa;
+
+
+	Ret = (int*)SMalloc(sizeof(int) * FindNoEstDataPoint(Trees));
+	Pos = 0;
+	for(Index=0;Index<Trees->NoTaxa;Index++)
+	{
+		Taxa = Trees->Taxa[Index];
+		for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
+			if(Taxa->EstDataP[SIndex] == TRUE)
+				Ret[Pos++] = SIndex;
+
+		if(Taxa->EstDepData == TRUE)
+			Ret[Pos++] = -1;
 	}
 
 	return Ret;
@@ -470,19 +492,12 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 		else
 		{
 			if(Opt->Model == M_CONTINUOUS_REG)
-				Rates->Means = (double*)malloc(sizeof(double));
+				Rates->Means = (double*)SMalloc(sizeof(double));
 			else
-				Rates->Means = (double*)malloc(sizeof(double) * Opt->Trees->NoSites);
-			
-			if(Rates->Means == NULL)
-				MallocErr();
+				Rates->Means = (double*)SMalloc(sizeof(double) * Opt->Trees->NoSites);
 
 			if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_REG))
-			{
-				Rates->Beta = (double*)malloc(sizeof(double) * Opt->Trees->NoSites);
-				if(Rates->Beta== NULL)
-					MallocErr();
-			}
+				Rates->Beta = (double*)SMalloc(sizeof(double) * Opt->Trees->NoSites);
 			else
 				Rates->Beta = NULL;
 		}
@@ -493,16 +508,16 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	Rates->UseEstData	=	FALSE;
 	Rates->EstData		=	NULL;
 
-	Rates->NoEstData	=	FindNoEstDataPoint(Opt, Trees);
+	Rates->NoEstData	=	FindNoEstDataPoint(Trees);
 
 	if(Rates->NoEstData > 0)
 	{
 		Rates->UseEstData = TRUE;
-		Rates->EstData = (double*)malloc(sizeof(double) * Rates->NoEstData);
-		if(Rates->EstData == NULL)
-			MallocErr();
+		Rates->EstData = (double*)SMalloc(sizeof(double) * Rates->NoEstData);
 		for(Index=0;Index<Rates->NoEstData;Index++)
 			Rates->EstData[Index] = 0;
+
+		Rates->EstDataSiteNo = SetEstDataSiteNo(Trees);
 	}
 	
 	if(Opt->ModelType == MT_CONTRAST)
@@ -724,6 +739,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->NoEstData		=	0;
 	Ret->EstData		=	NULL;
+	Ret->EstDataSiteNo	=	NULL;
 	Ret->ModelFile		=	NULL;
 	Ret->ModelNo		=	-1;
 
@@ -2780,6 +2796,9 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 	if(Rates->EstData != NULL)
 		free(Rates->EstData);
 
+	if(Rates->EstDataSiteNo != NULL)
+		free(Rates->EstDataSiteNo);
+
 	if(Rates->EstDescData != NULL)
 		free(Rates->EstDescData);
 
@@ -2937,23 +2956,16 @@ void	PrintSummary(FILE* Str, SUMMARY	*Summary, OPTIONS *Opt)
 
 	fprintf(Str, "\n");
 }
-/*
-int		GetNoExpRatesModelFile(RATES *Rates, OPTIONS *Opt)
+
+void	SetEstDataFromPrior(RATES *Rates)
 {
-	int		Ret;
+	int Index, SiteNo;
+	PRIOR *Prior;
 
-	Ret = Rates->NoOfRates;
-
-	if(Opt->EstKappa == TRUE)
-		Ret++;
-
-	if(Opt->EstDelta == TRUE)
-		Ret++;
-
-	if(Opt->EstLambda == TRUE)
-		Ret++;
-
-	return Ret;	
+	for(Index=0;Index<Rates->NoEstData;Index++)
+	{
+		SiteNo = Rates->EstDataSiteNo[Index];
+		Prior = GetAnsStatePrior(SiteNo, Rates->Priors, Rates->NoPriors);
+		Rates->EstData[Index] = RandFromPrior(Rates->RNG, Prior);
+	}
 }
-
-*/

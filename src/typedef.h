@@ -1352,6 +1352,7 @@ typedef struct
 	int		UseEstData;
 	int		*EstDescData;
 	double	*EstData;
+	int		*EstDataSiteNo;
 	int		NoEstData;
 
 	MODELFILE		*ModelFile;
