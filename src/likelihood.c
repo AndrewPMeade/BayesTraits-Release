@@ -1396,7 +1396,7 @@ int		SetRPMatrix(TREES *Trees, NODE N, MATRIX *P, double Gamma, double Kappa)
 
 int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, double Kappa)
 {
-	int NIndex, Err, NoErr;
+	int NIndex, Err, NoErr, PMatNo;
 	TREE *Tree;
 	NODE N;
 	
@@ -1426,10 +1426,8 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 						Err = SetStdPMatrix(Trees->InvInfo, Trees, N, Trees->PList[N->ID], Gamma, Kappa);
 					else
 					{
-						if(Rates->Hetero->MList[NIndex] == 0)
-							Err = SetStdPMatrix(Rates->Hetero->ModelInv[0], Trees, N, Trees->PList[N->ID], Gamma, Kappa);
-						else
-							Err = SetStdPMatrix(Rates->Hetero->ModelInv[1], Trees, N, Trees->PList[N->ID], Gamma, Kappa);
+						PMatNo = Rates->Hetero->MList[NIndex];
+						Err = SetStdPMatrix(Rates->Hetero->ModelInv[PMatNo], Trees, N, Trees->PList[N->ID], Gamma, Kappa);
 					}
 				}
 				else

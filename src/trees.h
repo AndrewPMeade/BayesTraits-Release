@@ -36,4 +36,6 @@ void	SetNodeIDs(NODE N, int *No);
 
 void	ListOddPPTaxa(TREES *Trees);
 
+void	PrintTreePart(FILE *Str, TREES *Trees, int TNo);
+
 #endif

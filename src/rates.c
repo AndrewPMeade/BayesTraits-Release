@@ -1005,6 +1005,10 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 	if(Opt->UseCovarion == TRUE)
 		fprintf(Str, "Covar On to Off\t Covar Off to On\t");
 
+	if(Opt->Model == DESCHET)
+		fprintf(Str, "No Indep\tNo Dep\tMap\t");
+	
+
 	if(Opt->UseKappa == TRUE)
 		fprintf(Str, "Kappa\t");
 
@@ -1456,6 +1460,12 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OP
 				fprintf(Str, "%f\t", Node->Partial[0][Index] / Tot);
 		}
 
+		if(Opt->Model == DESCHET)
+		{
+			for(Index=0;Index<NOS;Index++)
+				fprintf(Str, "%f\t", Node->Partial[0][Index] / Tot);
+		}
+
 		if(Opt->Model == MULTISTATE)
 		{
 			if(Opt->UseCovarion == FALSE)
@@ -1501,6 +1511,26 @@ int		NoZeroRate(RATES *Rates)
 	return Ret;
 }
 
+void	PrintHetro(FILE* Str, RATES *Rates)
+{
+	int NoI, NoD, Index;
+
+	NoI = NoD = 0;
+	for(Index=0;Index<Rates->Hetero->MListSize;Index++)
+	{
+		if(Rates->Hetero->MList[Index] == 0)
+			NoI++;
+
+		if(Rates->Hetero->MList[Index] == 1)
+			NoD++;
+	}
+
+	fprintf(Str, "%d\t%d\t", NoI, NoD);
+	for(Index=0;Index<Rates->Hetero->MListSize-1;Index++)
+		fprintf(Str, "%d,", Rates->Hetero->MList[Index]);
+	fprintf(Str, "%d\t", Rates->Hetero->MList[Index]);
+}
+
 void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
 	int		Index;
@@ -1520,6 +1550,8 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	}
 	else
 		fprintf(Str, "%d\t%f\t", Rates->TreeNo+1,Rates->Lh);
+
+
 
 	if(Opt->UseRJMCMC == TRUE)
 	{
@@ -1566,6 +1598,9 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->UseCovarion == TRUE)
 		fprintf(Str, "%f\t%f\t", Rates->OffToOn, Rates->OnToOff);
+
+	if(Opt->Model == DESCHET)
+		PrintHetro(Str, Rates);
 
 	if(Opt->UseKappa == TRUE)
 		fprintf(Str, "%f\t", Rates->Kappa);

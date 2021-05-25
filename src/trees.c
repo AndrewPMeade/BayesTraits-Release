@@ -2185,3 +2185,45 @@ void	CTaxaBelow(NODE N, int *No)
 	for(Index=0;Index<N->NoNodes;Index++)
 		CTaxaBelow(N->NodeList[Index], No);
 }
+
+char*	GetTName(FILE *Str, TREES *Trees, int TNo)
+{
+	int Index;
+
+	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	{
+		if(Trees->Taxa[Index]->No == TNo)
+			return Trees->Taxa[Index]->Name;
+	}
+
+	return NULL;
+}
+
+void	PrintTreePart(FILE *Str, TREES *Trees, int TNo)
+{
+	int i, Index, Pos;
+	TREE *Tree;
+	NODE N;
+
+	Tree = Trees->Tree[TNo];
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+
+		if(N->Tip == TRUE)
+			fprintf(Str, "[%s]\t", N->Taxa->Name);
+		else
+		{
+			fprintf(Str, "[");
+			for(i=0;i<N->PSize-1;i++)
+			{
+				Pos = N->Part[i];
+				fprintf(Str, "%s,", GetTName(Str, Trees, Pos));
+			}
+			Pos = N->Part[i];
+			fprintf(Str, "%s", GetTName(Str, Trees, Pos));
+			fprintf(Str, "]\t");
+		}
+	}
+}

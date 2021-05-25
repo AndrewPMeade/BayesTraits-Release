@@ -421,6 +421,12 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->AnalyticalP == TRUE)
 		fprintf(Str, "Analytical P:                    True\n");
 	
+	if(Opt->Model == DESCHET)
+	{
+		fprintf(Str, "Tree 1 Partitions :			   \t");
+		PrintTreePart(Str, Opt->Trees, 0);
+	}
+
 	PrintOptRes(Str, Opt);
 	if(Opt->Analsis == ANALMCMC)
 		PrintPriorOpt(Str, Opt);
