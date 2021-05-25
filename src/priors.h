@@ -13,7 +13,7 @@ double		RateToBetaLh(double Rate, int NoOfCats, double* Prams);
 void		CopyPriors(PRIORS **APriosList, PRIORS **BPriosList, int NoOfPriors);
 void		MutatePriors(RATES *Rates, PRIORS **PriosList, int NoOfPriors);
 /* void		MutatePriors(PRIORS **PriosList, int NoOfPriors); */
-void		MutatePriorsNormal(PRIORS **PriosList, int NoOfPriors, double Dev);
+void		MutatePriorsNormal(RATES *Rates, PRIORS **PriosList, int NoOfPriors, double Dev);
 void		CopyRatePriors(PRIORS**APriosList, PRIORS **BPriosList, int NoOfPriors);
 /*void		CopyMutPriors(PRIORS **APriosList, PRIORS **BPriosList, int NoOfPriors, double Dev); */
 void		CopyMutPriors(RANDSTATES *RandStates, PRIORS **APriosList, PRIORS **BPriosList, int NoOfPriors, double Dev);

@@ -177,29 +177,6 @@ float box_muller(float m, float s)	/* normal random variate generator */
 	return( m + y1 * s );
 }
 
-double nrand(void)
-{
- /* gives a distribution with mean 0 and std 1. 
-
-  To change the mean to M, simply add M to whatever
-  is returned
-
-  To change the std to S, simply multiply whatever is returned 
-  by S. Do the mult first.
-
-  Eg: this returns Z (the thing in the return line)
-
-  for mean M and std S, instead return M + S*Z
-*/
-  double a, b;
-  double pi = 3.14159265358979323846;
- 
-  a = RandomReal();
-  b = RandomReal();
-
- return(  sqrt(-2.0*log(a)) * cos(2*pi*b));
-}
-
 
 /* A C-program for TT800 : July 8th 1996 Version */
 /* by M. Matsumoto, email: matumoto@math.keio.ac.jp */
@@ -470,4 +447,27 @@ void			FreeRandStates(RANDSTATES* RandS)
 {
 	free(RandS->States);
 	free(RandS);
+}
+
+double nrand(RANDSTATES* RandS)
+{
+ /* gives a distribution with mean 0 and std 1. 
+
+  To change the mean to M, simply add M to whatever
+  is returned
+
+  To change the std to S, simply multiply whatever is returned 
+  by S. Do the mult first.
+
+  Eg: this returns Z (the thing in the return line)
+
+  for mean M and std S, instead return M + S*Z
+*/
+  double a, b;
+  double pi = 3.14159265358979323846;
+ 
+  a = GenRandState(RandS);
+  b = GenRandState(RandS);
+
+ return(  sqrt(-2.0*log(a)) * cos(2*pi*b));
 }

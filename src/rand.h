@@ -13,7 +13,7 @@ int				SetSeed(void);
 void			IntSetSeed(int S);
 float			Other(void);
 float			box_muller(float m, float s);
-double			nrand(void);
+/* double			nrand(void); */
 unsigned long	GetSeed(void);
 
 /* A good random number genetrater */
@@ -26,5 +26,6 @@ void			DirichletRandomVariable(double *alp, double *z, int n);
 RANDSTATES*		CreateRandStates(void);
 void			FreeRandStates(RANDSTATES* RandS);
 double			GenRandState(RANDSTATES* RandS);
+double			nrand(RANDSTATES* RandS);
 
 #endif

@@ -23,7 +23,7 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt);
 void		PrintShed(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str);
 void		PrintShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str);
 void		BlankSchedule(SCHEDULE*	Shed);
-void		MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed);
+
 char		RJModelType(int *ModelStr);
 
 double	FindRSquared(RATES* Rates, OPTIONS *Opt);

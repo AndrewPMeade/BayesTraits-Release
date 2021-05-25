@@ -166,6 +166,51 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	free(Vec);
 }
 
+double	CalcPhyloPlastyCost(RATES *NRates, RATES *CRates)
+{
+	PHYLOPLASTY *NPP;
+	PHYLOPLASTY *CPP;
+	double		Cost;
+
+	Cost = log((double)1/10);
+
+	NPP = NRates->PhyloPlasty;
+	CPP = CRates->PhyloPlasty;
+
+	return (NPP->NoDiffRates * Cost) - (CPP->NoDiffRates * Cost);
+}
+
+void	FindNoBL(OPTIONS *Opt, TREES *Trees, RATES *CRates)
+{
+	int Index;
+	double Heat;
+
+
+	CRates->Rates[0] = 3.720719;
+	CRates->PhyloPlasty->NoDiffRates = 1;
+//	CRates->PhyloPlasty->Rates[4] 
+	
+	for(Heat=0;Heat<10;Heat+=0.1)
+		printf("%f\t", Heat);
+	printf("\n");
+	for(Index=1;Index<Trees->NoOfNodes;Index++)
+	{
+		printf("%d\t", Index);
+		for(Heat=0;Heat<10;Heat+=0.1)
+		{
+			CRates->PhyloPlasty->Rates[Index] = Heat;
+			CRates->Lh	=	Likelihood(CRates, Trees, Opt);
+			printf("%f\t", CRates->Lh);
+		}
+		printf("\n");
+		CRates->PhyloPlasty->Rates[Index] = 1;
+		fflush(stdout);
+	}
+	exit(0);
+
+	exit(0);
+}
+
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
 #else
@@ -231,8 +276,12 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	InitMCMC(Opt, Trees, CRates);
 	
+
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
+
+	FindNoBL(Opt, Trees, CRates); 
+
 
 	for(Itters=0;;Itters++)
 	{ 
@@ -248,6 +297,9 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		CalcPriors(NRates, Opt);
 		
 		Heat += NRates->LhPrior - CRates->LhPrior;
+		
+		if(Opt->UsePhyloPlasty == TRUE)
+			Heat += CalcPhyloPlastyCost(NRates, CRates);
 
 		if(Shed->Op == SJUMP)
 		{
@@ -258,7 +310,7 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		{
 			Swap(&NRates, &CRates);
 			Acc++;
-			Shed->Accepted[Shed->Op]++;
+			Shed->Accepted[Shed->Op]++;	
 		}
 
 		if(NRates->Lh == ERRLH)
