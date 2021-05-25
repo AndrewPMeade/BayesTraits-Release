@@ -944,8 +944,6 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	Rates->LhPrior = Ret;
 }
 
-
-
 void	MutatePriors(RATES *Rates, PRIOR **PriosList, int NoOfPriors)
 {
 	int PIndex;

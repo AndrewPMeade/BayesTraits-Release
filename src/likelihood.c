@@ -1063,6 +1063,9 @@ int		ValidLh(double LH, MODEL_TYPE MT)
 	if(LH > 0 && MT == MT_DISCRETE)
 		return FALSE;
 
+	if(LH == ERRLH)
+		return FALSE;
+
 	return TRUE;
 }
 

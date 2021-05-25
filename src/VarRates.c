@@ -808,6 +808,8 @@ void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 	VARRATES *VarRates;
 	double SumBL, Scale;
 
+//	return;
+
 	VarRates = Rates->VarRates;
 	TNo = Rates->TreeNo;
 	Tree = Trees->Tree[TNo];
@@ -1072,8 +1074,6 @@ double	CaclVRPrior(double X, TRANSFORM_TYPE Type, RATES *Rates)
 
 	return Ret;
 }
-
-
 
 double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 {

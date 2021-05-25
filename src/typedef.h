@@ -170,7 +170,7 @@
 #define MAX_KAPPA	3
 
 #define MIN_OU		1E-07
-#define MAX_OU		200
+#define MAX_OU		50
 
 #define MIN_GAMMA	1E-07
 #define MAX_GAMMA	100

@@ -243,7 +243,7 @@ void	MLMapSetRandVals(ML_MAP* MLMap, RANDSTATES *RS)
 	}
 }
 
-void	MLMapSetRatesFixedVals(ML_MAP* MLMap, RATES *Rates, double Val)
+void	MLMapSetRatesFixedVals(ML_MAP *MLMap, RATES *Rates, double Val)
 {
 	int Index;
 
@@ -253,7 +253,7 @@ void	MLMapSetRatesFixedVals(ML_MAP* MLMap, RATES *Rates, double Val)
 		MLMap->PVal[Index] = Val;
 }
 
-void	FindValidMLStartSet(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	FindValidMLStartSet(ML_MAP *MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Index;
 	double Lh;
@@ -277,7 +277,7 @@ void	FindValidMLStartSet(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates
 	exit(0);
 }
 
-double	LhPraxis(void* P, double *List)
+double	LhPraxis(void *P, double *List)
 {
 	double		Ret;
 	PRAXSTATE	*PState;
@@ -444,14 +444,13 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 		if(Opt->ModelType == MT_CONTINUOUS)
 			InitContinusTree(Opt, Trees, Rates->TreeNo);
 
-		if((Opt->NodeData == TRUE) || (Opt->NodeBLData == TRUE))
+		if(Opt->NodeData == TRUE || Opt->NodeBLData == TRUE)
 			SetTreeAsData(Opt, Trees, Rates->TreeNo);
 
 		MLTree(Opt, Trees, Rates);
 
 		Lh = Likelihood(Rates, Trees, Opt);
-
-
+		
 		PrintRates(Opt->LogFile, Rates, Opt, NULL);
 		fprintf(Opt->LogFile, "\n");
 		fflush(Opt->LogFile);

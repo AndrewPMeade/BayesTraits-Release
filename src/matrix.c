@@ -504,7 +504,7 @@ void	Transpose(MATRIX *T, MATRIX *TransT)
 {
 	int x,y;
 
-	if((TransT->NoOfCols != T->NoOfRows) || (TransT->NoOfRows != T->NoOfCols))
+	if(TransT->NoOfCols != T->NoOfRows || TransT->NoOfRows != T->NoOfCols)
 	{
 		printf("Cannot Transpose matrix, as the destinastion matrix is of the order\n");
 		exit(0);
@@ -545,10 +545,8 @@ double*	FlattenMatix(MATRIX *M)
 
 	i = 0;
 
-	Ret = (double*)malloc(sizeof(double) * (M->NoOfRows * M->NoOfCols));
-	if(Ret == NULL)
-		MallocErr();
-
+	Ret = (double*)SMalloc(sizeof(double) * (M->NoOfRows * M->NoOfCols));
+	
 	for(x=0;x<M->NoOfRows;x++)
 	{
 		for(y=0;y<M->NoOfCols;y++)
@@ -572,9 +570,7 @@ MATRIX_INVERT*	CreatMatInvertInfo(int N)
 {
 	MATRIX_INVERT*	Ret;
 
-	Ret = (MATRIX_INVERT*)malloc(sizeof(MATRIX_INVERT));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (MATRIX_INVERT*)SMalloc(sizeof(MATRIX_INVERT));
 
 	Ret->Inv = AllocMatrix(N, N);
 	Ret->TempD = (double*)malloc(sizeof(double) * N);
@@ -588,6 +584,7 @@ void			FreeMatInvertInfo(MATRIX_INVERT *M)
 	FreeMatrix(M->Inv);
 	free(M->TempD);
 	free(M->TempI);
+	free(M);
 }
 
 int				Matrix_Invert(MATRIX *Mat, MATRIX_INVERT *Info)
