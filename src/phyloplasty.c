@@ -688,11 +688,24 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 	fprintf(Out, "%d\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, P->NoNodes);
 
 	if(Opt->Model == M_CONTRAST_STD)
+	{
 		Sigma = Rates->Contrast->SigmaMat->me[0][0];
-	else
-		Sigma = Rates->Contrast->Sigma[0];
+		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
+	}
 
-	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
+	
+	if(Opt->Model == M_CONTRAST_FULL)
+	{
+		Sigma = Rates->Contrast->Sigma[0];
+		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
+	}
+
+	if(Opt->Model == M_CONTRAST_REG)
+	{
+		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->RegAlpha, -1, P->Alpha);
+	}
+
+
 
 	for(Index=0;Index<P->NoNodes;Index++)
 	{

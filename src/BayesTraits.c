@@ -19,6 +19,7 @@
 #include "RandLib.h"
 #include "BatchMode.h"
 
+
 #include "mathlib.h"
 //#include "./MathLib/mconf.h"
 
@@ -33,6 +34,7 @@
 
 #ifdef BTOCL
 #include "btocl_runtime.h"
+#include "btocl_runtime_kernels.h"
 #endif
 
 // #include "btdebug.h"   -- igor
@@ -237,15 +239,19 @@ int main(int argc, char** argv)
 	
 	Opt = SetUpOptions(Trees, TreeFN, DataFN);
 	
-	#ifdef BTOCL
-	btocl_init_runtime();
-	#endif
-	
 	PrintOptions(stdout, Opt);
 
 	GetOptions(Opt);
 	CheckOptions(Opt);
 	
+	#ifdef BTOCL
+	btocl_init_runtime(CL_DEVICE_TYPE_GPU);
+	//btocl_load_all(Opt,Trees);
+	btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE,
+			Trees->NoOfStates, Trees->NoOfSites); 
+	#endif
+
+
 	PreProcess(Opt, Trees);
 
 	if(Opt->Analsis == ANALMCMC)
@@ -260,6 +266,10 @@ int main(int argc, char** argv)
 
 	free(DataFN);
 	free(TreeFN);
+	
+	#ifdef BTOCL
+	btocl_free_runtime();
+	#endif
 
 	return 0;	
 }

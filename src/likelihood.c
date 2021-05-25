@@ -1178,12 +1178,39 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 #ifndef BTOCL_DSC
 		Err = SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
 #else
-		Err = SetAllPMatrixOpenCL(Rates, Trees, Opt, RateMult, Rates->Kappa);
-//		Err = SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
+		// use GPU for setting PMatrix
+		Err = btocl_SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
+		// Use CPU
+		//Err = SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
 #endif
-
-		if(Err == TRUE)
+		//}
+		//btdebug_exit("setpmatrix");			
+		//exit(0);
+			
+		if(Err == TRUE) {
+			//printf("error!!!!\n");
+			//exit(0);
 			return ERRLH;
+		}
+		
+//#ifdef BTOCL_DSC
+//		btdebug_enter("partiallh");
+//		for(SiteNo=0;SiteNo<100;SiteNo++){
+		//printf("NoSites = %d\n",Trees->NoOfSites);
+//		btocl_computePartialLh(Rates, Trees, Opt); // all sites
+		
+		//for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
+		//{
+		//	SumLhLiner(Rates, Trees, Opt, SiteNo);
+			//Err = SumLh(Rates, Trees, Opt, SiteNo);
+		
+		//	if(Err == TRUE)
+		//		return ERRLH;
+		//}
+		
+//		}
+//		btdebug_exit("partiallh");
+//#else  
 
 		for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
 		{
@@ -1193,10 +1220,14 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			if(Err == TRUE)
 				return ERRLH;
 		}
+//#endif
+	
 
 		if(Opt->UseGamma == TRUE)
 			ProcessGamma(Rates, Trees);
 	}
+	
+	// exit(0);
 
 	if(Opt->UseGamma == TRUE)
 		FinishUpGamma(Rates, Opt, Trees);

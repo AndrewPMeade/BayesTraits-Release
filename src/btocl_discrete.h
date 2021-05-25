@@ -3,9 +3,16 @@
 
 #ifdef BTOCL_DSC
 #include "btocl_runtime.h"
+#include "btocl_runtime_kernels.h"
 #include "typedef.h"
 
-int		SetAllPMatrixOpenCL(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, double Kappa);
+void btocl_AllocLhInfo(TREES* Trees);
+void btocl_FreeLhInfo(TREES* Trees);
+
+
+int	 btocl_SetAllPMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, double Kappa);
+
+int btocl_computePartialLh(RATES* Rates, TREES *Trees, OPTIONS *Opt);
 
 #endif
 

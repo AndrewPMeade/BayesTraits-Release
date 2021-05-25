@@ -328,13 +328,13 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
-	double OU;
+	double Rate;
 
-	for(OU=0.00001;OU<20;OU+=0.001)
+	for(Rate=0.00000000001;Rate<20;Rate+=0.001)
 	{
-		Rates->OU = OU;
+		Rates->Rates[0] = Rate;
 		Rates->Lh = Likelihood(Rates, Trees, Opt);
-		printf("%f\t%f\n", Rates->Lh, OU);
+		printf("%f\t%f\n", Rates->Lh, Rate);
 	}
 
 	exit(0);
@@ -390,6 +390,8 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 			ProcessHeaders(Env, Obj, Opt);
 		#endif
 	} 
+
+	fflush(stdout);
 	
 //	Test(Opt, Trees, Rates);
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)

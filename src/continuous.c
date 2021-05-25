@@ -23,6 +23,10 @@
 	#include "btocl_continuous.h"
 #endif
 
+#ifdef BTLAPACK
+#include "btlapack_interface.h"
+#endif
+
 double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree);
 
 void	InitEstData(OPTIONS *Opt, TREES *Trees)
@@ -1701,6 +1705,8 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	TREE	*Tree;
 	CONVAR	*CV;
 
+	Err = FALSE;
+
 	Tree = Trees->Tree[Rates->TreeNo];
 	CV = Tree->ConVars;
 
@@ -1807,8 +1813,13 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 //	KroneckerProduct(Tree->ConVars->InvSigma, Tree->ConVars->InvV, Tree->ConVars->InvKProd);
 //	VectByMatrixMult(Tree->ConVars->ZA, Tree->ConVars->InvKProd, Tree->ConVars->ZATemp);
-	
+//#ifdef BTOCL_CON
+    // only helps for sigma > 1
+//	btocl_VectByKroneckerMult(Tree);
+//#else
 	VectByKroneckerMult(Tree->ConVars->ZA, Tree->ConVars->InvSigma, Tree->ConVars->InvV,Tree->ConVars->ZATemp);
+//#endif
+
 
 	if(Opt->Model == M_CONTINUOUSREG)
 		Len = Trees->NoOfTaxa;

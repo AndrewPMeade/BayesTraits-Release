@@ -607,6 +607,9 @@ typedef struct
 //	MATRIX		*InvKProd;
 #ifdef BTOCL_CON
 	cl_mem      buffer_invV;
+	cl_mem		buffer_invSigma;
+	cl_mem		buffer_ZA;
+	cl_mem		buffer_ZATemp;	
 #endif
 
 	MATRIX		*TVT;
@@ -654,6 +657,19 @@ typedef	struct
 	int			NoContrast;
 
 	CONVAR*		ConVars;
+	
+// information needed to traverse the tree and accumulate partial results
+#ifdef BTOCL_DSC
+    int* groups;
+	int* groupsIdx;  // start/end
+	int* children;
+	int* childrenIdx;
+	int height;
+	int max_nchildren;
+	int* parentInfo;
+	int* isTip;
+#endif
+	
 } TREE;
 
 typedef struct
@@ -676,6 +692,17 @@ typedef	struct
 	double		*val;
 	MATRIX		*Q;
 	MATRIX		*A;
+#ifdef BTOCL_DSC   // may want to separate InvInfo and PMatrix related 
+	double*     vect_t;
+	int*        vect_id;
+	double*     vect_test;
+	cl_mem      buffer_vec;  //  NOS*NOS  read-only
+	cl_mem		buffer_inv_vec; // NOS*NOS  read-only
+	cl_mem		buffer_val;  // NOS   read-only
+	cl_mem		buffer_t;    // NoNodes  read-only
+	cl_mem      buffer_id;    // NoNodes read only
+	cl_mem		buffer_temp; // MaxNodes*NOS*NOS read-write
+#endif
 
 	MATRIX		*TempA;
 	double		*TempVect1;
@@ -744,6 +771,28 @@ typedef struct
 	double		NormConst;
 
 	int			JStop;
+#ifdef BTOCL_DSC	
+	cl_mem 		buffer_pmatrix; // MaxNodes*NOS*NOS  write-only NO read/write!
+	cl_mem      buffer_error;
+	cl_mem      buffer_partialLh;
+	cl_mem		buffer_groups;
+	cl_mem		buffer_groupsIdx;
+	cl_mem		buffer_children;
+	cl_mem		buffer_childrenIdx;
+	cl_mem		buffer_plhFactor; // MaxNodes*NoSites*NOS
+	cl_mem      buffer_debug_plhFactor;
+	int*        perror;
+	double* previous_plh;
+	double* plhFactor;
+	double* temp_plh;
+	double* check_pmatrix;
+	double* debug_plhFactor;
+	// new version
+	cl_mem      buffer_parentInfo;
+	cl_mem      buffer_isTip;
+	int max_nchildren;
+#endif
+	
 } TREES;
 
 typedef struct

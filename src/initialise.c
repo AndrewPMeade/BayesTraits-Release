@@ -121,6 +121,10 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		InitQuadDoubleLh(Opt, Trees);
 #endif
 
+#ifdef BTOCL_DSC
+		btocl_AllocLhInfo(Trees);
+#endif
+
 	}
 
 	if(Opt->SaveTrees != NULL)

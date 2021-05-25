@@ -19,6 +19,10 @@
 #include "RandLib.h"
 #include "QuadDouble.h"
 
+#ifdef BTOCL
+#include "btocl_discrete.h"
+#endif
+
 void	WriteTreeToFile(NODE n, NODE Root, FILE *F);
 
 void	GetNoNodes(NODE N, int *No)
@@ -186,6 +190,13 @@ void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 
 #ifdef QUAD_DOUBLE
 	FreeQuadLh(Opt, Trees);
+#endif
+
+#ifdef BTOCL_DSC
+	// Do this before individual trees are deallocated
+	if(Opt->ModelType == MT_DISCRETE) {
+		btocl_FreeLhInfo(Trees);
+	}
 #endif
 
 	FreeData(Opt);
@@ -1670,7 +1681,7 @@ void	SaveTrees(char	*FileName, TREES* Trees)
 	int		TIndex;
 	char	*Name;
 	char	Buffer[128];
-	int		NoOfChar;
+	size_t	NoOfChar;
 
 
 	TreeFile = fopen(FileName, "w");

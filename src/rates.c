@@ -21,6 +21,7 @@
 #include "ml.h"
 #include "schedule.h"
 #include "modelfile.h"
+#include "SimData.h"
 
 //double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 //void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -750,6 +751,10 @@ RATES*	CreatRates(OPTIONS *Opt)
 		else
 			Ret->Kappa = 1;
 	}
+
+	if(Opt->Analsis == ANALMCMC)
+		CreatPriors(Opt, Ret);
+	
 	
 	if(Opt->DataType == CONTINUOUS)
 	{
@@ -837,6 +842,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 		Ret->ModelFile = LoadModelFile(Opt->LoadModelsFN, Opt, Opt->Trees, Ret);
 		ChangeModelFile(Ret, Ret->RS);
 	}
+
+	SimData(Opt, Opt->Trees, Ret);
 
 	return Ret;
 }
@@ -944,6 +951,9 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST_REG)
 	{
+		sprintf(Buffer, "Alpha");
+		Ret[PIndex++] = StrMake(Buffer);
+
 		for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
 		{
 			sprintf(Buffer, "Beta %d", Index);
@@ -2716,6 +2726,8 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 
 void	FreeRates(RATES *Rates)
 {
+	FreePriors(Rates);
+
 	if(Rates->Contrast != NULL)
 		FreeContrastRates(Rates);
 
@@ -2760,18 +2772,6 @@ void	FreeRates(RATES *Rates)
 
 	if(Rates->ModelFile != NULL)
 		FreeModelFile(Rates->ModelFile);
-
-	if(Rates->PriorDelta != NULL)
-		FreePrior(Rates->PriorDelta);
-
-	if(Rates->PriorKappa != NULL)
-		FreePrior(Rates->PriorKappa);
-
-	if(Rates->PriorOU != NULL)
-		FreePrior(Rates->PriorOU);
-
-	if(Rates->PriorLambda != NULL)
-		FreePrior(Rates->PriorLambda);
 
 	free(Rates);
 }

@@ -363,7 +363,6 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 	}
 }
 
-
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
 #else
@@ -390,9 +389,6 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 			
 	CRates	=	CreatRates(Opt);
 	NRates	=	CreatRates(Opt);
-
-	CreatPriors(Opt, CRates);
-	CreatPriors(Opt, NRates);
 
 	Shed = CreatSchedule(Opt, CRates->RS);
 
@@ -464,7 +460,7 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 		BurntIn = TRUE;
 
 // PrintTime(stdout); printf("\n");
-
+	fflush(stdout);
 	StartT = GetSeconds();	
 	for(Itters=1;;Itters++)
 	{ 
@@ -545,9 +541,6 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 				if( (Opt->UseEqualTrees == FALSE) || 
 					(CRates->TreeNo == Trees->NoOfTrees - 1))
 				{	
-					FreePriors(CRates);
-					FreePriors(NRates);
-
 					FreeRates(CRates);
 					FreeRates(NRates);
 
@@ -555,8 +548,7 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 
 					if(StoneF != NULL)
 						fclose(StoneF);
-					
-				
+									
 					if(Opt->UseSchedule == TRUE)
 						fclose(ShedFile);
 

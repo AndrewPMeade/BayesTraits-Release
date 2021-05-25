@@ -59,7 +59,6 @@ void	SetNoOfThreads(int No)
 
 double	GetSeconds(void)
 {
-
 #ifndef THREADED
 	return  (double)time(NULL);
 #else
