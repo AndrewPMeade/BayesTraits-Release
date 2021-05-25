@@ -958,7 +958,6 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		for(Index=0;Index<NOS;Index++)
 			Sum += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
 
-
 		SiteLh = 0;
 		for(Index=0;Index<NOS;Index++)
 		{
@@ -968,7 +967,6 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			SiteLh += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
 		}
 
-//		printf("site:\t%d\t%f\t%f\n", SiteNo, log(SiteLh), Rates->Rates[0]);fflush(stdout);
 		if(IsNum(log(SiteLh)) == FALSE)
 			return ERRLH;
 

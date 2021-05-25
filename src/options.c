@@ -462,7 +462,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			NOS = Opt->Trees->NoStates;
 			if(Opt->UseCovarion == TRUE)
 				NOS = NOS / 2;
-			for(Index=0;Index<NOS	-1;Index++)
+			for(Index=0;Index<NOS-1;Index++)
 				fprintf(Str, "%c,", Opt->Trees->SymbolList[Index]);
 			fprintf(Str, "%c\n", Opt->Trees->SymbolList[Index]);
 		}

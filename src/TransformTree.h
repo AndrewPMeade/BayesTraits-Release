@@ -1,0 +1,20 @@
+#ifndef CONTRASTS_TRANS_H
+#define CONTRASTS_TRANS_H
+
+#include "TypeDef.h"
+
+void	TransformTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm);
+
+
+void	TransformTreeDelta(NODE N, double Delta, int Norm);
+void	TransformTreeKappa(NODE N, double Kappa, int Norm);
+void	TransformTreeOU(TREES *Trees, NODE N, double OU, int Norm);
+void	TransformTreeLambda(NODE N, double Lambda, int Norm);
+
+int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates);
+
+double	GetTransformDefValue(TRANSFORM_TYPE TranType);
+
+//double	FitTransformToTree(TREES *Trees, TREE *Tree, long long It, TRANSFORM_TYPE Type);
+
+#endif

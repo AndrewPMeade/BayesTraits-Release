@@ -39,7 +39,7 @@
 #include "Options.h"
 #include "Geo.h"
 #include "FatTail.h"
-
+#include "Rates.h"
 
 void	PrintTaxaData(OPTIONS *Opt, TREES* Trees)
 {
@@ -511,8 +511,7 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 
 void	PreProcessDataWithModel(TREES *Trees, MODEL Model)
 {
-
-	if(Model == M_DISC_DEP || Model == M_DISC_INDEP || Model == M_DISC_CV || Model == M_DISC_HET)
+	if(ModelDep(Model) == TRUE)
 		SquashDep(Trees);
 
 	if(GetModelType(Model) == MT_CONTINUOUS || GetModelType(Model) == MT_CONTRAST || GetModelType(Model) == MT_FATTAIL)
@@ -745,7 +744,8 @@ void	SquashDep(TREES	*Trees)
 			Seen = TRUE;
 		}
 
-		if((Taxa->DesDataChar[0][0] == UNKNOWNSTATE) || (Taxa->DesDataChar[1][0] == UNKNOWNSTATE))
+		if(		(Taxa->DesDataChar[0][0] == UNKNOWNSTATE) 
+			||	(Taxa->DesDataChar[1][0] == UNKNOWNSTATE))
 		{
 			TempS = SetDescUnknownStates(Taxa->DesDataChar[0][0], Taxa->DesDataChar[1][0]);
 
@@ -756,10 +756,7 @@ void	SquashDep(TREES	*Trees)
 
 		free(Taxa->DesDataChar[1]);
 		Taxa->DesDataChar[1] = NULL;
-
-/*		printf("%s\t%c\n", Taxa->Name, Taxa->DesDataChar[0][0]); */
 	}
-
 	Trees->NoStates = 4;
 	Trees->NoSites = 1;
 	free(Trees->SymbolList);

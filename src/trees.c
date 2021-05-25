@@ -788,9 +788,9 @@ int		SymbolToPos(char Symbol, char *List)
 
 int		SiteHadUnKnownState(char *StatList)
 {
-	int	Index;
+	size_t	Index;
 
-	for(Index=0;Index<(int)strlen(StatList);Index++)
+	for(Index=0;Index<strlen(StatList);Index++)
 	{
 		if(StatList[Index] == UNKNOWNSTATE)
 			return TRUE;

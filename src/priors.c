@@ -508,6 +508,22 @@ double	LogNormalP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
+void	TestLh(PRIOR *Prior)
+{
+	double X, LogLh;
+
+	Prior->DistVals[0] = 9.0;
+	Prior->DistVals[1] = 1.0;
+
+	for(X=0;X<20;X+=0.01)
+	{
+		LogLh = gsl_cdf_gamma_P(X, Prior->DistVals[0], Prior->DistVals[1]);
+		LogLh = gsl_ran_gamma_pdf(X, Prior->DistVals[0], Prior->DistVals[1]);
+		printf("%f\t%f\n", X, LogLh);
+	}
+
+	exit(0);
+}
 
 double	LogGammaP(double X, PRIOR *Prior)
 {
@@ -515,6 +531,8 @@ double	LogGammaP(double X, PRIOR *Prior)
 
 	if(X < 0.0)
 		return ERRLH;
+
+	TestLh(Prior);
 
 	if(Prior->Discretised == FALSE)
 		Ret = gsl_ran_gamma_pdf(X, Prior->DistVals[0], Prior->DistVals[1]);

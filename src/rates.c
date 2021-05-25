@@ -334,6 +334,17 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 	}
 }
 
+int		MissingDepSite(OPTIONS *Opt, char *SiteData)
+{
+	if(ModelDep(Opt->Model) == FALSE)
+		return FALSE;
+	
+	if(strlen(SiteData) > 1)
+		return TRUE;
+
+	return FALSE;
+}
+
 double* GetEmpPis(OPTIONS *Opt)
 {
 	TREES	*Trees;
@@ -341,7 +352,7 @@ double* GetEmpPis(OPTIONS *Opt)
 	int		State;
 	double	Weight;
 	double	Total;
-	int		SIndex,TIndex,SymbolIndex;
+	int		SIndex, TIndex, SymbolIndex;
 	TAXA	*Taxa;
 
 	Trees = Opt->Trees;
@@ -358,10 +369,11 @@ double* GetEmpPis(OPTIONS *Opt)
 		{
 			Taxa = Trees->Taxa[TIndex];
 
-			if(SiteHadUnKnownState(Taxa->DesDataChar[SIndex]) == FALSE)
+			if(	SiteHadUnKnownState(Taxa->DesDataChar[SIndex]) == FALSE &&
+				MissingDepSite(Opt, Taxa->DesDataChar[SIndex]) == FALSE)
 			{
-				Weight = 1.0/strlen(Taxa->DesDataChar[SIndex]);
-
+ 				Weight = 1.0 / strlen(Taxa->DesDataChar[SIndex]);
+				
 				for(SymbolIndex=0;SymbolIndex<(int)strlen(Taxa->DesDataChar[SIndex]);SymbolIndex++)
 				{
 					State = SymbolToPos(Taxa->DesDataChar[SIndex][SymbolIndex], Trees->SymbolList);
@@ -370,20 +382,20 @@ double* GetEmpPis(OPTIONS *Opt)
 			}
 			else
 			{
-				for(SymbolIndex=0;SymbolIndex<Trees->NoStates;SymbolIndex++)
-					TempPis[SymbolIndex] += 1.0/Trees->NoStates;
+				if(MissingDepSite(Opt, Taxa->DesDataChar[SIndex]) == FALSE)
+					for(SymbolIndex=0;SymbolIndex<Trees->NoStates;SymbolIndex++)
+						TempPis[SymbolIndex] += 1.0 / Trees->NoStates;
 			}
 		}
 	}
 
 	Total = 0;
-
 	for(SIndex=0;SIndex<Trees->NoStates;SIndex++)
 		Total += TempPis[SIndex];
 
 	for(SIndex=0;SIndex<Trees->NoStates;SIndex++)
 		Ret[SIndex] = TempPis[SIndex] / Total;
-
+	
 	free(TempPis);
 
 	return Ret;
@@ -2514,7 +2526,7 @@ int		TryRJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 	int NoOfGroups;
 
 	NoOfGroups = NoOfPramGroups(Rates, NULL, NULL);
-
+#ifndef NO_RJ_ZERO
 	if(RandDouble(Rates->RS) < 0.25)
 	{
 		if(RandDouble(Rates->RS) < 0.5)
@@ -2522,7 +2534,7 @@ int		TryRJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 		else
 			return RJReduce(Rates, Opt);
 	}
-
+#endif
 	if(RandDouble(Rates->RS) < 0.5)
 		return RJSplit(Rates, Opt);
 
@@ -3034,4 +3046,12 @@ void	SetEstDataFromPrior(RATES *Rates)
 		
 		Rates->EstData[Index] = RandFromPrior(Rates->RNG, Prior);
 	}
+}
+
+int			ModelDep(MODEL Model)
+{
+	if(Model == M_DISC_DEP || Model == M_DISC_INDEP || Model == M_DISC_CV || Model == M_DISC_HET)
+		return TRUE;
+
+	return FALSE;
 }
