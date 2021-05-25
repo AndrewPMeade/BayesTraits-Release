@@ -203,6 +203,8 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/croptree2.trees ./Seq/croptree2.txt < in.txt > sout.txt
 
+// ./Seq/Tree-00000503.trees ./Seq/Data-00000503.txt < in.txt > sout.txt
+
 extern double igam(double a, double x);
 
 

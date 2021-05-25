@@ -1072,6 +1072,7 @@ typedef struct
 	int		NoOfRJRates;
 
 	// Number of Priors. 
+//	int		NoOfRatePriors;
 	int		NoOfPriors;
 
 	// Values for the rates being estimated. 

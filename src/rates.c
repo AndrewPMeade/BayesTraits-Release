@@ -752,8 +752,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 			Ret->Kappa = 1;
 	}
 
-	if(Opt->Analsis == ANALMCMC)
-		CreatPriors(Opt, Ret);
 	
 	
 	if(Opt->DataType == CONTINUOUS)

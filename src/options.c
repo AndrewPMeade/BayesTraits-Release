@@ -96,10 +96,10 @@ void	PrintPriorVals(PRIORS	*P, FILE* Str)
 }
 
 
+
 void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 {
 	int		Index;
-	int		VIndex;
 	PRIORS	*P;
 	char	*FRateName;
 
@@ -108,17 +108,8 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 
 	if(Opt->UseRJMCMC == TRUE)
 	{
-		fprintf(Str, "    RJ Prior                     %s ", DISTNAMES[(int)Opt->RJPrior->Dist]);
-		if(Opt->RJPrior->HP == FALSE)
-		{
-			for(VIndex=0;VIndex<DISTPRAMS[Opt->RJPrior->Dist];VIndex++)
-				fprintf(Str, "%2.2f ", Opt->RJPrior->DistVals[VIndex]);
-		}
-		else
-		{
-			for(VIndex=0;VIndex<DISTPRAMS[Opt->RJPrior->Dist];VIndex++)
-				fprintf(Str, "(%2.2f,%2.2f) ", Opt->RJPrior->HP[VIndex*2], Opt->RJPrior->HP[(VIndex*2)+1]);
-		}
+		fprintf(Str, "    RJ Prior                     ");
+		PrintPriorVals(Opt->RJPrior, Str);
 		fprintf(Str, "\n");
 	}
 
@@ -143,19 +134,15 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 	if(Opt->EstGamma == TRUE)
 	{
 		fprintf(Str, "        Gamma                    ");
-		P = Opt->PriorGamma;
+	
+		PrintPriorVals(Opt->PriorGamma, Str);
+		fprintf(Str, "\n");
+	}
 
-		fprintf(Str, "%s ", DISTNAMES[(int)P->Dist]);
-		if(P->UseHP == FALSE)
-		{
-			for(VIndex=0;VIndex<DISTPRAMS[P->Dist];VIndex++)
-				fprintf(Str, "%2.2f ", P->DistVals[VIndex]);
-		}
-		else
-		{
-			for(VIndex=0;VIndex<DISTPRAMS[P->Dist];VIndex++)
-				fprintf(Str, "(%2.2f,%2.2f) ", P->HP[VIndex*2], P->HP[(VIndex*2)+1]);
-		}
+	if(Opt->EstOU == TRUE)
+	{
+		fprintf(Str, "    OU                           ");
+		PrintPriorVals(Opt->PriorOU, Str);
 		fprintf(Str, "\n");
 	}
 
@@ -1605,6 +1592,66 @@ PRIORDIST	StrToPriorDist(char* Str)
 	return (PRIORDIST)-1;
 }
 
+int	SetPriorNo(OPTIONS *Opt, PRIORS *P, int Tokes, char *argv[])
+{
+	PRIORDIST	Dist;
+	double		Num;
+	int			Index;
+	
+	Dist = StrToPriorDist(argv[0]);
+
+	if(Dist == -1)
+	{
+		printf("Could not conver %s to a valid distriubntion\n", argv[0]);
+		printf("Valid distiubtions are 	beta, gamma, uniform, exp\n");
+		return FALSE;
+	}
+
+/*	if((Opt->DataType == CONTINUOUS) && (Dist != UNIFORM))
+	{
+		printf("Only uniform priors can be used with continuous data.\n");
+		return FALSE;				
+	}
+*/
+	if(Tokes!=DISTPRAMS[Dist]+1)
+	{
+		printf("Prior %s equires %d parmeters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
+		return FALSE;
+	}
+
+	for(Index=1;Index<Tokes;Index++)
+	{
+		Num = atof(argv[Index]);
+		if((Num == 0) && (strcmp(argv[Index], "0")!=0))
+		{
+			printf("Could not conver Prior paramiter %s to a valid number\n", argv[Index]);
+			return FALSE;
+		}
+	}
+	
+	free(P->DistVals);
+
+	P->DistVals = (double*)malloc(sizeof(double) * DISTPRAMS[Dist]);
+	if(P->DistVals == NULL)
+		MallocErr();
+
+	P->Dist = Dist;
+
+	for(Index=0;Index<DISTPRAMS[Dist];Index++)
+		P->DistVals[Index] = atof(argv[1+Index]);
+
+	if(P->UseHP == TRUE)
+	{
+		free(P->HP);
+		P->HP = NULL;
+		P->UseHP = FALSE;
+	}
+
+	return TRUE;
+}
+
+
+/*
 int	SetPriorNo(OPTIONS *Opt, int RateNo, int Tokes, char *argv[])
 {
 	PRIORDIST	Dist;
@@ -1665,8 +1712,26 @@ int	SetPriorNo(OPTIONS *Opt, int RateNo, int Tokes, char *argv[])
 
 	return TRUE;
 }
+*/
+void	SetOUPrior(OPTIONS *Opt, int Tokes, char **argv)
+{
+	char *PName;
 
-void	SetPrior(OPTIONS *Opt, int Tokes, char *argv[])
+	if(Opt->EstOU == FALSE)
+		return;
+
+	PName = StrMake(argv[1]);
+	MakeUpper(PName);
+	if(strcmp(PName, "OU") == 0)
+	{
+		SetPriorNo(Opt, Opt->PriorOU, Tokes-2, &argv[2]);
+	}
+
+	free(PName);
+	return;
+}
+
+void	SetPrior(OPTIONS *Opt, int Tokes, char **argv)
 {
 	int			Rate;
 
@@ -1675,6 +1740,8 @@ void	SetPrior(OPTIONS *Opt, int Tokes, char *argv[])
 		printf("Priors can only be set of MCMC analis\n");
 		return;
 	}
+	
+	SetOUPrior(Opt, Tokes, argv);
 
 	Rate = StrToRate(Opt, argv[1]);
 	if(Rate == -1)
@@ -1683,7 +1750,7 @@ void	SetPrior(OPTIONS *Opt, int Tokes, char *argv[])
 		return;
 	}
 
-	SetPriorNo(Opt, Rate, Tokes-2, &argv[2]);
+	SetPriorNo(Opt, Opt->Priors[Rate], Tokes-2, &argv[2]);
 }
 
 void	SetAllPriors(OPTIONS *Opt, int Tokes, char *argv[])
@@ -1697,7 +1764,9 @@ void	SetAllPriors(OPTIONS *Opt, int Tokes, char *argv[])
 	}
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
-		SetPriorNo(Opt, Index, Tokes-1, &argv[1]);
+	{
+		SetPriorNo(Opt, Opt->Priors[Index], Tokes-1, &argv[1]);
+	}
 
 }
 
