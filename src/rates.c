@@ -2167,6 +2167,8 @@ double	MultePram(RATES *Rates, double Val, double Min, double Max, double Dev)
 	double	Ret;
 	int		Exit;
 
+	Rates->LnHastings = CalcNormalHasting(Val, Dev);
+
 	do
 	{
 		Exit = TRUE;
@@ -2182,7 +2184,7 @@ double	MultePram(RATES *Rates, double Val, double Min, double Max, double Dev)
 			Exit = FALSE;
 
 	} while(Exit == FALSE);
-
+	
 	return Ret;		
 }
 

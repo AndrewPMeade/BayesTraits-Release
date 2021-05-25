@@ -1992,7 +1992,7 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 	Tree = Trees->Tree[TreeNo];
 	CV = Tree->ConVars;
 
-	if((Opt->NodeData == TRUE) || (Opt->NodeBLData == TRUE))
+	if(Opt->NodeData == TRUE || Opt->NodeBLData == TRUE)
 		SetTreeAsData(Opt, Trees, TreeNo);
 
 	if(Opt->FixKappa != -1)

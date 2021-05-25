@@ -17,7 +17,7 @@
 //#define BIG_LH
 
 // #define BTOCL
-#define BTLAPACK
+//#define BTLAPACK
 
 #ifdef BTOCL
 	#include "btocl_runtime.h"
