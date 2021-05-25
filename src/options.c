@@ -4066,6 +4066,8 @@ void SetMinMaxRate(OPTIONS *Opt, int Tokes, char **Passed)
 
 void	SetNormQMatrix(OPTIONS *Opt, int Tokes, char **Passed)
 {
+	PRIOR *Prior;
+
 	if(Opt->Model != M_MULTISTATE)
 	{
 		printf("Only multistate models can be normalised.\n");
@@ -4079,9 +4081,17 @@ void	SetNormQMatrix(OPTIONS *Opt, int Tokes, char **Passed)
 	}
 
 	if(Opt->NormQMat == TRUE)
+	{
 		Opt->NormQMat = FALSE;
+		RemovePriorFormOpt("GlobalRate", Opt);
+	}
 	else
+	{
+		Prior = CreateUniformPrior("GlobalRate", 0, 100);
+		AddPriorToOpt(Opt, Prior);
 		Opt->NormQMat = TRUE;
+
+	}
 }
 
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)

@@ -871,6 +871,17 @@ double	CaclAnsStatePriors(RATES *Rates, OPTIONS *Opt)
 	return Ret;
 }
 
+double	CaclNormQPrior(RATES* Rates, OPTIONS* Opt)
+{
+	double Ret;
+	PRIOR *Prior;
+
+	Prior = GetPriorFromName("GlobalRate", Rates->Priors, Rates->NoPriors);
+	Ret = CalcLhPriorP(Rates->GlobablRate, Prior);
+
+	return Ret;
+}
+
 void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 {
 	double	PLh, Ret;
@@ -941,6 +952,16 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	{
 		PLh = CalcTimeSlicePriors(Rates);
 		
+		if(PLh == ERRLH)
+			return;
+
+		Ret += PLh;
+	}
+
+	if(Opt->NormQMat == TRUE)
+	{
+		PLh = CaclNormQPrior(Rates, Opt);
+
 		if(PLh == ERRLH)
 			return;
 
