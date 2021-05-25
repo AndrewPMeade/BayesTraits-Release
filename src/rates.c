@@ -1862,7 +1862,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 
 	Shed->Op = PickACat(Rates, Shed->OptFreq, Shed->NoOfOpts);
 
-	if(Opt->SoloTreeMove == FALSE)
+	if((Opt->SoloTreeMove == FALSE) && (Opt->UseEqualTrees == FALSE))
 		Rates->TreeNo = rand() % Opt->Trees->NoOfTrees;
 
 	switch(Shed->Op)

@@ -738,12 +738,16 @@ PRIORS*	CreatDefPrior(OPTIONS *Opt)
 		MallocErr();
 
 	if(Opt->DataType == DISCRETE)
+	{
 		P->DistVals[0] = 0;
+		P->DistVals[1] = 100;
+	}
 	else
+	{
 		P->DistVals[0] = -100;
-
-	P->DistVals[1] = 100;
-
+		P->DistVals[1] = 100;
+	}
+	
 	P->RateNo = -1;
 
 	P->HP		= NULL;
@@ -959,6 +963,10 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->MakeUM			=	FALSE;
 
 	Ret->UsePhyloPlasty	=	FALSE; 
+
+	Ret->UseEqualTrees	=	FALSE;
+	Ret->ETreeBI		=	-1;
+
 	return Ret; 
 }
 
@@ -2688,6 +2696,41 @@ int	FossilNoPramOK(OPTIONS *Opt, int Tokes)
 	return TRUE;
 }
 
+void	SetEqualTrees(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	int NoTreeBI;
+	char *TreeBI;
+
+	if(Tokes == 1)
+	{
+		Opt->UseEqualTrees = FALSE;
+		return;
+	}
+	
+	if(Tokes != 2)
+	{
+		printf("Equal trees takes no parameters to toggle off or 1 parameter, tree specific burn-in.\n");
+		return;
+	}
+
+	TreeBI = Passed[1];
+
+	if(IsValidInt(TreeBI) == FALSE)
+	{
+		printf("Cound not convert %s to a valid tree specific burn-in number.\n");
+		return;
+	}
+
+	NoTreeBI = atoi(TreeBI);
+	if(NoTreeBI < 0)
+	{
+		printf("Tree specific burn-in must be greater than 0\n");
+		return;
+	}
+
+	Opt->UseEqualTrees = TRUE;
+	Opt->ETreeBI = NoTreeBI;
+}
 
 int		PassLine(OPTIONS *Opt, char *Buffer)
 {
@@ -3262,6 +3305,11 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 			Opt->UsePhyloPlasty = TRUE;
 		else
 			Opt->UsePhyloPlasty = FALSE;
+	}
+
+	if(Command == CEQUALTREES)
+	{
+		SetEqualTrees(Opt, Tokes, Passed);
 	}
 
 	return FALSE;
