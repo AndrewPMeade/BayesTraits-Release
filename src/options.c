@@ -2187,7 +2187,10 @@ void	AddConAnsStatePrior(OPTIONS *Opt, int SiteNo)
 
 	Buffer = (char*)SMalloc(sizeof(char) * 128);
 
-	sprintf(Buffer, "AncState-%d", SiteNo);
+ 	if(Opt->Model == M_CONTINUOUS_REG && SiteNo == 1)
+		sprintf(Buffer, "AncState-Dep");
+	else
+		sprintf(Buffer, "AncState-%d", SiteNo);
 
 	RemovePriorFormOpt(Buffer, Opt);
 	Prior = CreateUniformPrior(Buffer, -100, 100);
