@@ -2490,12 +2490,6 @@ void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
 	Prior = CreatePriorFromStr("RJRates", Tokes, Passed);
 	AddPriorToOpt(Opt, Prior);
 
-	if(Prior->Dist == INVGAMMA)
-	{
-		printf("Inverse gamma cannot be used as rj prior.\n");
-		exit(0);
-	}
-		
 	Opt->UseRJMCMC = TRUE;
 }
 
@@ -2511,12 +2505,6 @@ void	SetRJMCMCHP(OPTIONS *Opt, int Tokes, char** Passed)
 
 	Prior = CreateHyperPriorFromStr("RJRates", Tokes, Passed);
 	AddPriorToOpt(Opt, Prior);
-
-	if(Prior->Dist == INVGAMMA)
-	{
-		printf("Inverse gamma cannot be used as rj prior.\n");
-		exit(0);
-	}
 
 	Opt->UseRJMCMC = TRUE;
 }

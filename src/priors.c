@@ -14,6 +14,7 @@
 #include "RandLib.h"
 #include "Prob.h"
 #include "gsl\gsl_cdf.h"
+#include "gsl\gsl_randist.h"
 
 
 
@@ -27,7 +28,7 @@ extern double igami ( double, double );
 extern double gamma(double a);
 */
 
-extern double chdtr(double df, double x);
+//extern double chdtr(double df, double x);
 
 int		ValidPriorLh(double LH)
 {
@@ -37,46 +38,6 @@ int		ValidPriorLh(double LH)
 	return TRUE;
 }
 
-double		CalcPriorPDFLh(double X, PRIOR *Prior)
-{
-	double Ret;
-
-	Ret = 0.0;
-
-	if(Prior->Dist == UNIFORM)
-	{
-		if(X < Prior->DistVals[0] || X > Prior->DistVals[1])
-			return ERRLH;
-
-		Ret = 1.0 / (Prior->DistVals[1]  - Prior->DistVals[0]);
-		return log(Ret);
-	}
-	
-	if(X < 0.0)
-		return ERRLH;
-	
-	if(Prior->Dist == GAMMA)
-		Ret = PDFGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
-
-	if(Prior->Dist == CHI)
-		Ret = PDFChi(X, Prior->DistVals[0], Prior->DistVals[1]);
-	
-	if(Prior->Dist == EXP)
-		Ret = PDFExp(X, Prior->DistVals[0]);
-	
-	if(Prior->Dist == INVGAMMA)
-		Ret = PDFInvGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
-
-	if(Prior->Dist == SGAMMA)
-		Ret = PDFSGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
-
-	Ret = log(Ret);
-
-	if(ValidPriorLh(Ret) == FALSE)
-		return ERRLH;
-
-	return Ret;	
-}
 
 void	FreePrior(PRIOR* P)
 {
@@ -105,39 +66,6 @@ void	FreePriors(RATES *Rates)
 		FreePrior(Rates->Priors[Index]);	
 }
 
-PRIOR*			CreatPrior(PRIOR* P, int RateNo)
-{
-	PRIOR* Ret;
-	int		NoOfDistVals;
-	
-	Ret = (PRIOR*)SMalloc(sizeof(PRIOR));
-
-	Ret->RateNo		= RateNo;
-
-	Ret->Dist		= P->Dist;
-	Ret->NoOfCats	= -1;
-
-	NoOfDistVals	= DISTPRAMS[P->Dist];
-
-	Ret->DistVals = (double*)SMalloc(sizeof(double) * NoOfDistVals);
-
-	memcpy(Ret->DistVals, P->DistVals, sizeof(double) * NoOfDistVals);
-
-	Ret->UseHP		= P->UseHP;
-
-	if(Ret->UseHP == TRUE)
-	{
-		Ret->HP = (double*)SMalloc(sizeof(double) * (NoOfDistVals * 2));
-		memcpy(Ret->HP, P->HP, sizeof(double) * (NoOfDistVals * 2));
-	}
-	else
-		Ret->HP = NULL;
-
-	Ret->Name = NULL;
-
-	return Ret;
-}
-
 PRIOR*	AllocBlankPrior(int NoP)
 {
 	PRIOR* Ret;
@@ -146,11 +74,12 @@ PRIOR*	AllocBlankPrior(int NoP)
 
 	Ret->DistVals = (double*)SMalloc(sizeof(double) * NoP);
 	
-	Ret->RateNo		= -1;
 	Ret->HP			= NULL;
 	Ret->UseHP		= FALSE;
-	Ret->OffSet		= 0;
 	Ret->Name		= NULL;
+
+	Ret->Discretised= FALSE;
+	Ret->Width		= -1.0;
 
 	return Ret;
 }
@@ -172,15 +101,15 @@ PRIOR*		CreatePrior(char *Name, PRIORDIST PDist, double *PVal)
 	return Ret;
 }
 
-PRIOR*		CreateGammaPrior(char *Name, double Mean, double Var)
+PRIOR*		CreateGammaPrior(char *Name, double Shape, double Scale)
 {
 	PRIOR* Ret;
 
 	Ret = AllocBlankPrior(2);
 	
 	Ret->Dist			= GAMMA;
-	Ret->DistVals[0]	= Mean;
-	Ret->DistVals[1]	= Var;
+	Ret->DistVals[0]	= Shape;
+	Ret->DistVals[1]	= Scale;
 
 	Ret->Name = StrMake(Name);
 	
@@ -202,49 +131,34 @@ PRIOR*		CreateUniformPrior(char *Name, double Min, double Max)
 	return Ret;
 }
 
-PRIOR*		CreateChiPrior(char *Name, double Mean, double Var)
+PRIOR*		CreateChiPrior(char *Name, double Mean)
 {
 	PRIOR* Ret;
 
-	Ret = AllocBlankPrior(2);
+	Ret = AllocBlankPrior(1);
 	
 	Ret->Dist			= CHI;
 	Ret->DistVals[0]	= Mean;
-	Ret->DistVals[1]	= Var;
-
+	
 	Ret->Name = StrMake(Name);
 	
 	return Ret;
 }
 
-PRIOR*		CreateExpPrior(char *Name, double Mean)
+PRIOR*		CreateExpPrior(char *Name, double Alpha)
 {
 	PRIOR* Ret;
 
 	Ret = AllocBlankPrior(1);
 	
 	Ret->Dist			= EXP;
-	Ret->DistVals[0]	= Mean;
+	Ret->DistVals[0]	= Alpha;
 
 	Ret->Name = StrMake(Name);
 		
 	return Ret;
 }
 
-PRIOR*		CreateInvGammaPrior(char *Name, double Alpha, double Beta)
-{
-	PRIOR* Ret;
-
-	Ret = AllocBlankPrior(2);
-	
-	Ret->Dist			= INVGAMMA;
-	Ret->DistVals[0]	= Alpha;
-	Ret->DistVals[1]	= Beta;
-
-	Ret->Name = StrMake(Name);
-			
-	return Ret;
-}
 
 PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta)
 {
@@ -292,7 +206,7 @@ PRIOR*		CreateHyperPrior(char *Name, PRIORDIST PDist, double *PVal)
 
 	Ret->Name = StrMake(Name);
 	Ret->Dist = PDist;
-	Ret->UseHP = TRUE;
+	Ret->UseHP = TRUE;	
 		
 	NoHPParam = NoParam * 2;
 
@@ -313,6 +227,9 @@ PRIOR*		ClonePrior(PRIOR *Prior)
 		Ret = CreatePrior(Prior->Name, Prior->Dist, Prior->DistVals);
 	else
 		Ret = CreateHyperPrior(Prior->Name, Prior->Dist, Prior->HP);
+
+	Ret->Discretised = Prior->Discretised;
+	Ret->Width = Prior->Width;
 
 	return Ret;
 }
@@ -500,249 +417,143 @@ double	RateToBetaLh(double Rate, int NoOfCats, double* Prams)
 }
 */
 
-double	ChiToZ(double Rate, double Mue, double Sig)
+
+
+double	LogGammaP(double X, PRIOR *Prior)
 {
-	double Ret;
+	double Ret, A, B;
 
-	Ret = (Rate - Mue) / Sig;
-	Ret = Ret * Ret;
+	if(X < 0.0)
+		return ERRLH;
 
-	return Ret;
-}
-
-double	FindChiP(double Z, double DF, double Width)
-{
-	double	P1, P2;
-
-	P1 = chdtr(DF, Z+Width);
-	P2 = chdtr(DF, Z);
-	
-
-	return P1 - P2;
-}
-
-double	PChiWidth(double Rate, double Mean, double Sig, double Width)
-{
-	double Z, Ret;
-
-	Z = ChiToZ(Rate, Mean, Sig);
-	Ret = FindChiP(Z, 1, Width);
-
-	return Ret;
-}
-
-/*
-double	CalcChiPriors(RATES* NRates, RATES* CRates, OPTIONS* Opt)
-{
-	PRIORS	*Prior;
-	int		PIndex=0;
-	double	NSum;
-	double	CSum;
-	double	Ret=0;
-	int		NoOfChi;
-
-	NoOfChi = 0;
-	CSum = 0;
-	NSum = 0;
-	for(PIndex=0;PIndex<CRates->NoOfRates;PIndex++)
+	if(Prior->Discretised == FALSE)
+		Ret = gsl_ran_gamma_pdf(X, Prior->DistVals[0], Prior->DistVals[1]);
+	else
 	{
-		Prior = CRates->Prios[PIndex];
-
-		if(Prior->Dist == CHI)
-		{
-			CSum += ChiToZ(CRates->FullRates[Prior->RateNo], CRates->Prios[PIndex]->DistVals[0], CRates->Prios[PIndex]->DistVals[1]);
-			NSum += ChiToZ(NRates->FullRates[Prior->RateNo], NRates->Prios[PIndex]->DistVals[0], NRates->Prios[PIndex]->DistVals[1]);
-
-			NoOfChi++;
-		}
-
-		if(NRates->FullRates[Prior->RateNo] > 100)
-			return -99999;
+		A = gsl_cdf_gamma_P(X, Prior->DistVals[0], Prior->DistVals[1]);
+		B = gsl_cdf_gamma_P(X+Prior->Width, Prior->DistVals[0], Prior->DistVals[1]);
+		Ret = B - A;
 	}
 
-	if(NoOfChi == 0)
-		return 0;
-
-	CRates->LhPrior = log(FindChiP(CSum, NoOfChi, 1.0 / Opt->PriorCats));
-
-	if(NSum > 1000)
-		return -9999;
-
-	NRates->LhPrior = log(FindChiP(NSum, NoOfChi, 1.0 / Opt->PriorCats));
-	
-
-    return NRates->LhPrior - CRates->LhPrior;
+	return log(Ret);
 }
-*/
 
-double PUni(double X, double Min, double Max)
+double LogUniP(double X, PRIOR *Prior)
 {
 	double Ret;
-
-	if(X < Min || X > Max)
-		return 0.0;
 	
-	Ret = 1.0 / (Max - Min);
+	if(X < Prior->DistVals[0] || X > Prior->DistVals[1])
+		return ERRLH;
 
-	return Ret;	
+	Ret = 1.0 / (Prior->DistVals[1] - Prior->DistVals[0]);
+
+	return log(Ret);
 }
 
-double	PExpWidth(double X, double Alpha, double Width)
+
+double LogChiSquaredP(double X, PRIOR *Prior)
 {
-	double P1, P2;
+	double Ret, A, B;
 
-	P1 = CDFExp(X+Width, Alpha);
-	P2 = CDFExp(X, Alpha);
+	if(X < 0.0)
+		return ERRLH;
 
-	return P1 - P2;
-}
-
-double	PGamaWidth(double X, double Alpha, double Beta, double Width)
-{
-	double	P1,P2;
-	
-	P1 = CDFGamma(X+Width, Alpha, Beta);
-	P2 = CDFGamma(X, Alpha, Beta);
-
-	return P1 - P2;
-}
-
-double PInvGammaWidth(double X, double Alpha, double Beta, double Width)
-{
-	double P1, P2;
-
-	P1 = CDFInvGamma(X+Width, Alpha, Beta);
-	P2 = CDFInvGamma(X, Alpha, Beta);
-
-	return P1 - P2;
-}
-
-void InverseGammaTest(void)
-{
-	double X, P;
-	double Alpha, Beta;
-
-	Alpha = 5;
-	Beta = 1;
-	
-//	P = InvGammaCDF(0.5, 3.88, 8.5);
-	
-	for(X=0.001;X<100;X+=0.1)
+	if(Prior->Discretised == FALSE)
+		Ret = gsl_ran_chisq_pdf(X, Prior->DistVals[0]);
+	else
 	{
-//		P = PInvGamma(X, 2, 0.130435);
-	//	P = PGamaWidth(X, 1.0, 2.0, 0.01);
-	//	P = PExpWidth(X, 1.0, 0.01);
-		
-		P = PBetaWidth(X, Alpha, Beta, 1.0 / 100);
+		A = gsl_cdf_chisq_P(X, Prior->DistVals[0]);
+		B = gsl_cdf_chisq_P(X+Prior->Width, Prior->DistVals[0]);
+		Ret = B - A;
+	}
 
-		P = log(P);
+	return log(Ret);
+}
+
+double LogSGammaP(double X, PRIOR *Prior)
+{
+	double Ret, A, B;
+
+	if(X < 0.0)
+		return ERRLH;
+
+	if(Prior->Discretised == TRUE)
+	{
+		printf("Discretised scaled gamma is not supoorted\n");
+		exit(1);
+	}
+
+	Ret = PDFSGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
+
+	return log(Ret);
+}
+
+
+double LogExpP(double X, PRIOR *Prior)
+{
+	double Ret, A, B, Alpha;
+
+	if(X < 0.0)
+		return ERRLH;
+
+	Alpha = Prior->DistVals[0];
+
+	if(Prior->Discretised == FALSE)
+		Ret = gsl_ran_exponential_pdf(X, Alpha);
+	else
+	{
+		A = gsl_cdf_exponential_P(X, Alpha);
+		B = gsl_cdf_exponential_P(X+Prior->Width, Alpha);
+		Ret = B - A;
+	}
+
+	return log(Ret);
+}
+
+void	ChiSTest(void)
+{
+	PRIOR *Prior;
+	double X, P;
+
+	Prior = CreateExpPrior("SG", 1.0);
+
+	for(X=0.000001;X<100;X+=0.01)
+	{
+		P = LogExpP(X, Prior);
 		printf("%f\t%f\n", X, P);
 	}
 
 	exit(0);
 }
 
-void	PriorLhTest(PRIOR *Prior, double Width)
+double	CalcLhPriorP(double X, PRIOR *Prior)
 {
-	double *List;
-	int Index, No;
-	double P;
+	double Ret;
 
-	No = 0;
-	List = LoadDouble("./Seq/Bug/LHTest.txt", &No);
-
-	for(Index=0;Index<No;Index++)
-	{
-	//	P = PDFInvGamma(List[Index], Prior->DistVals[0], Prior->DistVals[1]);
-		P = PInvGammaWidth(List[Index], Prior->DistVals[0], Prior->DistVals[1], Width);
-		printf("%f\t%f\n", log(P), List[Index]);
-	}
-}
-
-double TestPT(void)
-{
-	double S, Lh;
-
-
-	for(S=0;S<500;S+=0.01)
-	{
-		Lh = PDFInvGamma(S, 2.00, 0.13);
-
-		printf("%f\t%f\n", S, log(Lh));
-	}
-//	PDFInvGamma(Val, Prior->DistVals[0], Prior->DistVals[1]);
-	exit(0);
-}
-
-double	CalcGPriorGSL(double X, PRIOR *P, double Width)
-{
-	double A, B;
-
-	A = gsl_cdf_gamma_P(X, P->DistVals[0], P->DistVals[1]);
-	B = gsl_cdf_gamma_P(X+Width, P->DistVals[0], P->DistVals[1]);
-
-	A = B - A;
-	A = log(A);
-	printf("A:\t%f\n", A);
-
-	return A;
-}
-
-void GammaPTest(void)
-{
-	double GLh, Lh, X, Width; 
-	PRIOR *Prior;
-
-	Prior = CreateGammaPrior("Hello", 1.0, 1.0);
-
-
-	Width = 1.0 / 100;
-
-	X = 0.5;
-	Lh = PGamaWidth(X, Prior->DistVals[0], Prior->DistVals[1], Width);
-
-	CalcGPriorGSL(X, Prior, Width);
-	Lh = log(Lh);
-	printf("Lh:\t%f\n", Lh);
-	exit(0);
-
-}
-
-double	CaclPriorCost(double X, PRIOR *Prior, int NoCats)
-{
-	double Ret, Width, Alpha;
-
-	Width = 1.0 / NoCats;
-
-	GammaPTest();
+	ChiSTest();
 
 	switch(Prior->Dist)
 	{
 		case GAMMA:
-			Ret = PGamaWidth(X, Prior->DistVals[0], Prior->DistVals[1], Width);
+			Ret = LogGammaP(X, Prior);
 		break;
 
 		case UNIFORM:
-			Ret = PUni(X, Prior->DistVals[0], Prior->DistVals[1]);
+			Ret = LogUniP(X, Prior);
 		break;
 
 		case EXP:
-			Alpha = 1.0 / Prior->DistVals[0];
-			Ret = PExpWidth(X, Alpha, Width);
+			Ret = LogExpP(X, Prior);
 		break;
 
 		case CHI:
-			printf("Chi is not currenlty implmented. \n");
-			exit(0);
-			Ret = PChiWidth(X, Prior->DistVals[0], Prior->DistVals[1], Width);
+			Ret = LogChiSquaredP(X, Prior);
 		break;
 
-		case INVGAMMA:
-			Ret = PDFInvGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
+		case SGAMMA:
+			Ret = LogSGammaP(X, Prior);
 		break;
 	}
-
-	Ret = log(Ret);
 
 	return Ret;
 }
@@ -758,7 +569,7 @@ double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
 	if(Opt->EstKappa == TRUE)
 	{
 		Prior = GetPriorFromName("Kappa", Rates->Priors, Rates->NoPriors);
-		PLh = CaclPriorCost(Rates->Kappa, Prior, Opt->PriorCats);
+		PLh = CalcLhPriorP(Rates->Kappa, Prior);
 		if(PLh == ERRLH)
 			return ERRLH;
 		Ret += PLh;
@@ -767,7 +578,7 @@ double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
 	if(Opt->EstLambda == TRUE)
 	{
 		Prior = GetPriorFromName("Lambda", Rates->Priors, Rates->NoPriors);
-		PLh = CaclPriorCost(Rates->Lambda, Prior, Opt->PriorCats);
+		PLh = CalcLhPriorP(Rates->Lambda, Prior);
 		if(PLh == ERRLH)
 			return ERRLH;
 		Ret += PLh;
@@ -776,7 +587,7 @@ double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
 	if(Opt->EstDelta == TRUE)
 	{
 		Prior = GetPriorFromName("Delta", Rates->Priors, Rates->NoPriors);
-		PLh = CaclPriorCost(Rates->Delta, Prior, Opt->PriorCats);
+		PLh = CalcLhPriorP(Rates->Delta, Prior);
 		if(PLh == ERRLH)
 			return ERRLH;
 		Ret += PLh;
@@ -785,7 +596,7 @@ double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
 	if(Opt->EstOU == TRUE)
 	{
 		Prior = GetPriorFromName("OU", Rates->Priors, Rates->NoPriors);
-		PLh = CaclPriorCost(Rates->OU, Prior, Opt->PriorCats);
+		PLh = CalcLhPriorP(Rates->OU, Prior);
 		if(PLh == ERRLH)
 			return ERRLH;
 		Ret += PLh;
@@ -794,7 +605,7 @@ double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
 	if(Opt->EstGamma == TRUE)
 	{
 		Prior = GetPriorFromName("Gamma", Rates->Priors, Rates->NoPriors);
-		PLh = CaclPriorCost(Rates->Gamma, Prior, Opt->PriorCats);
+		PLh = CalcLhPriorP(Rates->Gamma, Prior);
 		if(PLh == ERRLH)
 			return ERRLH;
 		Ret += PLh;
@@ -852,7 +663,7 @@ double	CalcRatePrior(RATES* Rates, OPTIONS* Opt)
 		if(Opt->UseRJMCMC == FALSE)
 			Prior = GetPriorFromName(Rates->RateNames[Index], Rates->Priors, Rates->NoPriors);
 	
-		PLh = CaclPriorCost(R, Prior, Opt->PriorCats);
+		PLh = CalcLhPriorP(R, Prior);
 
 		if(PLh == ERRLH || IsNum(PLh) == FALSE)
 			return ERRLH;
@@ -976,39 +787,18 @@ double ChangePrior(RANDSTATES *RandStates, double Rate, double dev)
 }
 
 
-void	CopyMutPriors(RANDSTATES *RandStates, PRIOR **APriosList, PRIOR **BPriosList, int NoOfPriors, double Dev)
-{
-	int		PIndex;
-	PRIOR *APrios=NULL;
-	PRIOR *BPrios=NULL;
-
-	int		RIndex;
-
-	for(PIndex=0;PIndex<NoOfPriors;PIndex++)
-	{
-		APrios = APriosList[PIndex];
-		BPrios = BPriosList[PIndex];
-
-		APrios->Dist	= BPrios->Dist;
-		APrios->NoOfCats= BPrios->NoOfCats;
-		APrios->RateNo	= BPrios->RateNo;
-
-		for(RIndex=0;RIndex<DISTPRAMS[APrios->Dist];RIndex++)
-			APrios->DistVals[RIndex] = ChangePrior(RandStates, BPrios->DistVals[RIndex], Dev);
-	}
-}
-
 void	CopyPrior(PRIOR *A, PRIOR *B)
 {
 	A->Dist		= B->Dist;
-	A->NoOfCats	= B->NoOfCats;
-	A->RateNo	= B->RateNo;
 	A->UseHP	= B->UseHP;
 
 	memcpy(A->DistVals, B->DistVals, sizeof(double) * DISTPRAMS[A->Dist]);
 
 	if(B->UseHP == TRUE)
 		memcpy(A->HP, B->HP, sizeof(double) * DISTPRAMS[A->Dist] * 2);
+
+	A->Discretised = B->Discretised;
+	A->Width = B->Width;
 }
 
 PRIORDIST	StrToPriorDist(char* Str)
@@ -1104,14 +894,11 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 		Ret = CreateUniformPrior(Name, PVal[0], PVal[1]);
 
 	if(PD == CHI)
-		Ret = CreateChiPrior(Name, PVal[0], PVal[1]);
+		Ret = CreateChiPrior(Name, PVal[0]);
 
 	if(PD == EXP)
 		Ret = CreateExpPrior(Name, PVal[0]);
 
-	if(PD == INVGAMMA)
-		Ret = CreateInvGammaPrior(Name, PVal[0], PVal[1]);
-	
 	free(PVal);
 
 	return Ret;

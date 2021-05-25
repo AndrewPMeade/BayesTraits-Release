@@ -151,8 +151,6 @@ void	RecTransContNodeOU(TREES *Trees, NODE N, double OU, double T, double PathLe
 //	N->Length = CaclOU(PathLen+N->Length, OU, T, Dist) - CaclOU(PathLen, OU, T, Dist);
 	N->Length = CaclOU(PathLen+N->Length, OU, T, Dist1) - CaclOU(PathLen, OU, T, Dist2);
 
-	printf("Len:\t%f\n", N->Length);
-
 	if(N->Tip == TRUE)
 		return;
 

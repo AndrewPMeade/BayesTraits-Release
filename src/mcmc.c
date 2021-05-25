@@ -304,12 +304,6 @@ double	RandFromPrior(RANDSTATES *RS, PRIOR *P)
 		SD = sqrt(SD);
 	}
 
-	if(P->Dist == INVGAMMA)
-	{
-		Mean = 100;
-		SD = 50;
-	}
-
 	do
 	{
 		Ret = RandUniDouble(RS, Mean-(2*SD), Mean+(2*SD));

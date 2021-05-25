@@ -10,39 +10,10 @@
 	#define M_PI       3.14159265358979323846
 #endif
 
-extern double gamma(double a);
-
-//	extern double erf(double a);
-
-extern double beta(double a, double b);
 extern double igamc ( double, double );
 extern double igam (double a, double x);
 extern double incbet(double aa, double bb, double xx );
 
-/*
-double erf(double x)
-{
-	double t, y;
-	double a1 =  0.254829592;
-	double a2 = -0.284496736;
-	double a3 =  1.421413741;
-	double a4 = -1.453152027;
-	double a5 =  1.061405429;
-	double p  =  0.3275911;
-
-    // Save the sign of x
-    int sign = 1;
-    if (x < 0)
-        sign = -1;
-    x = fabs(x);
-
-    // A&S formula 7.1.26
-    t = 1.0/(1.0 + p*x);
-    y = 1.0 - (((((a5*t + a4)*t) + a3)*t + a2)*t + a1)*t*exp(-x*x);
-
-    return sign*y;
-}
-*/
 
 double	PDFNorm(double x, double Mean, double Var)
 {
@@ -69,23 +40,12 @@ double		PDFExp(double X, double Mean)
 
 	return Ret;
 }
-/*
-double		PDFGamma(double X, double Alpha, double Beta)
-{
-	double Ret;
-
-	Ret = pow(Beta, Alpha) / gamma(Alpha);
-	Ret = Ret * pow(X, Alpha-1.0) * exp(-Beta * X);
-
-	return Ret;
-}
-*/
 
 double		PDFGamma(double X, double Shape, double Scale)
 {
 	double Ret;
 
-	Ret = gamma(Shape) * pow(Scale, Shape);
+	Ret = tgamma(Shape) * pow(Scale, Shape);
 
 	Ret = 1.0 / Ret;
 
@@ -93,30 +53,6 @@ double		PDFGamma(double X, double Shape, double Scale)
 
 	return Ret;
 }
-
-double		PDFBeta(double X, double Alpha, double Beta)
-{
-	double Ret;
-
-	Ret = pow(X, Alpha - 1.0);
-
-	Ret = Ret * pow(1.0 - X, Beta - 1.0);
-
-	Ret = Ret / beta(Alpha, Beta);
-
-	return Ret;
-}
-
-double		PDFChi(double X, double Alpha, double Beta)
-{
-//	double Ret;
-
-	printf("hs not been implmented.\n");
-	exit(0);
-
-	return 1.0;
-}
-
 
 double	PDFSGamma(double x, double Alpha, double Beta)
 {
@@ -127,7 +63,7 @@ double	PDFSGamma(double x, double Alpha, double Beta)
 	T1 = exp(-(x/s) / Beta);
 	T2 = pow(x/s, -1 + Alpha);
 	T2 = T1 * T2 * pow(Beta, -Alpha);
-	Ret = T2 / gamma(Alpha);
+	Ret = T2 / tgamma(Alpha);
 
 	Ret = Ret / s;
 
@@ -140,7 +76,7 @@ double		PDFInvGamma(double X, double Alpha, double Beta)
 {
 	double Ret;
 
-	Ret = pow(Beta, Alpha) / gamma(Alpha); 
+	Ret = pow(Beta, Alpha) / tgamma(Alpha); 
 
 	Ret = Ret * pow(X, -Alpha - 1.0);
 

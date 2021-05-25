@@ -667,6 +667,30 @@ void	SetRatesLocalRates(RATES *Rates, OPTIONS *Opt)
 		}
 }
 
+void	SetDiscretisedPrior(PRIOR *Prior, OPTIONS *Opt)
+{
+	if(Prior == NULL)
+		return;
+
+	Prior->Discretised = TRUE;
+	Prior->Width = 1.0 / Opt->PriorCats;
+}
+
+void	SetDiscretisedPriors(RATES *Rates, OPTIONS *Opt)
+{
+	PRIOR *Prior;
+	int Index;
+	
+	Prior = GetPriorFromName("RJRates", Rates->Priors, Rates->NoPriors);
+	SetDiscretisedPrior(Prior, Opt);
+
+	for(Index=0;Index<Rates->NoOfRates;Index++)
+	{
+		Prior = GetPriorFromName(Rates->RateNames[Index], Rates->Priors, Rates->NoPriors);
+		SetDiscretisedPrior(Prior, Opt);
+	}
+}
+
 RATES*	CreatRates(OPTIONS *Opt)
 {
 	RATES*	Ret;
@@ -735,7 +759,13 @@ RATES*	CreatRates(OPTIONS *Opt)
 		Ret->DistDataRates = CreateDistDataRates(Opt->DistData, Ret->RS);
 
 	if(Opt->Analsis == ANALMCMC)
+	{
 		CrateRatePriors(Opt, Ret);
+		if(Opt->ModelType == MT_DISCRETE)
+			SetDiscretisedPriors(Ret, Opt);
+	}
+
+	
 	
 	if(Opt->UseGamma == TRUE)
 	{

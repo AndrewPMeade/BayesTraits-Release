@@ -448,7 +448,6 @@ static char    *DISTNAMES[] =
 	"uniform",
 	"chi",
 	"exp",
-	"invgamma",
 	"sgamma"
 };
 
@@ -456,9 +455,8 @@ static int	DISTPRAMS[] =
 {
 	2,
 	2,
-	2,
 	1,
-	2,
+	1,
 	2
 };
 
@@ -469,7 +467,6 @@ typedef enum
 	UNIFORM,
 	CHI,
 	EXP,
-	INVGAMMA,
 	SGAMMA
 } PRIORDIST;
 
@@ -785,14 +782,16 @@ typedef	struct
 
 typedef struct
 {
-	PRIORDIST	Dist;
-	int			RateNo;
-	double		*DistVals;
-	double		*HP;
-	double		OffSet;
-	int			UseHP;
-	int			NoOfCats;
 	char		*Name;
+	PRIORDIST	Dist;
+	double		*DistVals;
+	
+	double		*HP;
+	int			UseHP;
+	
+	int			Discretised;
+	double		Width;
+
 } PRIOR;
 
 typedef	struct

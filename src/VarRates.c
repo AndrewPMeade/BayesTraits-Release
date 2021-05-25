@@ -1148,7 +1148,7 @@ double	CaclVRPrior(VAR_RATES_NODE *PNode, RATES *Rates)
 	
 	Prior = GetVRPrior(PNode->Type, Rates);
 	
-	Ret = CalcPriorPDFLh(PNode->Scale, Prior);
+	Ret = CalcLhPriorP(PNode->Scale, Prior);
 	
 	return Ret;
 }
