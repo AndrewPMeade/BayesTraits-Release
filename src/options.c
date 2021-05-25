@@ -1321,7 +1321,7 @@ int	SetPriorNo(OPTIONS *Opt, int RateNo, int Tokes, char *argv[])
 
 	if(Tokes!=DISTPRAMS[Dist]+1)
 	{
-		printf("Prior %s equires %d paramiters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
+		printf("Prior %s equires %d parmeters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
 		return FALSE;
 	}
 
@@ -2114,7 +2114,7 @@ void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
 
 	if(Tokes - 1 != DISTPRAMS[Dist])
 	{
-		printf("Prior %s take %d paramiters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
+		printf("Prior %s take %d parmeters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
 		return;
 	}
 
@@ -2639,7 +2639,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 			SetPrior(Opt, Tokes, Passed);
 		else
 		{
-			printf("Prior set the prior values, requires a rate paramiters, adistribution type and a number of paramiters\n");
+			printf("Prior set the prior values, requires a rate parmeters, adistribution type and a number of parmeters\n");
 			printf("E.G., Prior q01 Beta 6 24.5\n");
 		}
 	}	
@@ -2757,7 +2757,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		if(Tokes >= 3)
 			AddToRecNode(Opt, Tokes, Passed);
 		else
-			printf("The AddNode command takes at least two paramiters a Node Name and taxa number/s\n");
+			printf("The AddNode command takes at least two parmeters a Node Name and taxa number/s\n");
 	}
 
 
@@ -2766,7 +2766,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		if(Tokes >= 3)
 			DelToRecNode(Opt, Tokes, Passed);
 		else
-			printf("The DelTaxa command requies 2 or more paramiters and Node Name and a list of taxa numbers to remove from that node\n");
+			printf("The DelTaxa command requies 2 or more parmeters and Node Name and a list of taxa numbers to remove from that node\n");
 	}
 
 	if(Command == CEVENROOT)
@@ -3029,15 +3029,15 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 			{
 				Temp = atoi(Passed[1]);
 				if((Temp < 1) || (Temp > Opt->Trees->NoOfSites))
-					printf("The designated dependant site must be > 0 and <= %d\n", Opt->Trees->NoOfSites);
+					printf("The designated dependent site must be > 0 and <= %d\n", Opt->Trees->NoOfSites);
 				else
 					Opt->DependantSite = Temp-1;
 			}
 			else
-				printf("DepSite requires an integers to designated as the dependant value.\n");
+				printf("DepSite requires an integers to designated as the dependent value.\n");
 		}
 		else
-			printf("DepSite requires a site number to designated as the dependant value.\n");
+			printf("DepSite requires a site number to designated as the dependent value.\n");
 	}
 
 	if(Command == CHEADERS)

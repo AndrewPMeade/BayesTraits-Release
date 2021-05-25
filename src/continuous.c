@@ -1257,6 +1257,15 @@ void	SetEstData(TREES *Trees, RATES* Rates)
 	}
 }
 
+void	PrintMathmatCode(void)
+{
+	printf("Part3 = -0.5*ZA.Inverse[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]].ZA\n");
+	printf("Part2 = Log[Det[BlockMatrix[Outer[Times, (Sigma), (V^Delta)]]]^-0.5]\n");
+	printf("Part1 = 1.8378770664093453 ((-(NoOfTaxa*NoOfSites))/2)\n");
+	printf("Lh = Part1 + Part2 + Part3\n");
+	printf("Lh = (Log[2 Pi] ((-(NoOfTaxa*NoOfSites))/2)) + (Log[Det[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]]^-0.5]) + (-0.5*ZA.Inverse[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]].ZA)\n");
+}
+
 double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 	double	Val;
@@ -1376,6 +1385,9 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	Ret = Ret * 1.837877066409345483560659472811;
 			
 #ifdef MATHMAT
+
+	PrintMathmatCode();
+
 	printf("Part3: %f\n", Val);
 	printf("Part2 : %f\n", Det);
 	printf("Part1: %f\n", Ret);
@@ -1543,12 +1555,12 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 	int		TIndex;
 	RATES*	Rates=NULL;
 
-	Trees->TempConVars = AllocTempConVars(Opt, Trees);
-
 	CheckZeroTaxaBL(Trees);
 
 	if(Opt->Model == CONTINUOUSREG)
 		RemoveDependantData(Opt, Trees);
+
+	Trees->TempConVars = AllocTempConVars(Opt, Trees);
 
 	AddRecNodes(Opt, Trees);
 

@@ -70,7 +70,13 @@ extern void PMatrixTest(void);
 	./Seq/AustCon.trees ./Seq/0204.txt < in.txt > sout.txt
 */
 
-/*
+#ifdef JNIRUN
+
+int main(int argc, char** argv)
+{
+}
+
+#else
 
 int main(int argc, char** argv)
 {
@@ -81,7 +87,7 @@ int main(int argc, char** argv)
 
 	if(argc != 3)
 	{
-		printf("The program takes 2 paramiters a tree file and a data file\n");
+		printf("The program takes 2 parmeters a tree file and a data file\n");
 		exit(0);
 	}
 
@@ -117,4 +123,4 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-*/
+#endif

@@ -689,7 +689,9 @@ void	PrintRatesHeadderCon(FILE* Str, OPTIONS *Opt)
 
 		fprintf(Str, "Var\t");
 		fprintf(Str, "R^2\t");
-		fprintf(Str, "Error Ratio\t");
+
+		if(Opt->Analsis == ANALML)
+			fprintf(Str, "Error Ratio\t");
 
 		PrintConRegVarCoVarHeadder(Str, Opt->Trees->NoOfSites, Opt->DependantSite);
 	}
@@ -700,7 +702,7 @@ void	PrintRatesHeadderCon(FILE* Str, OPTIONS *Opt)
 
 		for(x=0;x<Opt->Trees->NoOfSites;x++)
 			for(y=x+1;y<Opt->Trees->NoOfSites;y++)
-				fprintf(Str, "Trait %d %d Co-Var\t", x+1, y+1);
+				fprintf(Str, "R Trait %d %d\t", x+1, y+1);
 	}		
 
 	if(Opt->UseVarData == TRUE)
@@ -796,7 +798,7 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 
 	if(Opt->UseRJMCMC == TRUE)
 	{
-		fprintf(Str, "No Off Paramiters\t");
+		fprintf(Str, "No Off Parmeters\t");
 		fprintf(Str, "Model string\t");
 		if(Opt->Model == DESCDEP)
 			fprintf(Str, "Dep / InDep\t");
@@ -857,6 +859,11 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 double	TransVarCoVar(int N, double x)
 {
 	return (x * (double)N) / (double)(N-1);
+}
+
+double	CalcR(double CV, double VT1, double VT2)
+{
+	return CV / (sqrt(VT1) * sqrt(VT2));
 }
 
 double	FindMean(double *List, int WSize)
@@ -1055,6 +1062,7 @@ void	PrintRegVarCoVar(FILE* Str, RATES *Rates, OPTIONS *Opt)
 	FreeMatrix(Var);
 }
 
+
 void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
 	int		Index;
@@ -1089,9 +1097,12 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 			for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 				fprintf(Str, "%f\t", TransVarCoVar(Opt->Trees->NoOfTaxa, ConVar->Sigma->me[Index][Index]));
 		
+	//		CalcR(ConVar->Sigma->me[x][y], ConVar->Sigma->me[x][x], ConVar->Sigma->me[y][y]);
+
 			for(x=0;x<Opt->Trees->NoOfSites;x++)
 				for(y=x+1;y<Opt->Trees->NoOfSites;y++)
-					fprintf(Str, "%f\t", TransVarCoVar(Opt->Trees->NoOfTaxa, ConVar->Sigma->me[x][y]));
+					fprintf(Str, "%f\t", CalcR(ConVar->Sigma->me[x][y], ConVar->Sigma->me[x][x], ConVar->Sigma->me[y][y]));
+				/*	fprintf(Str, "%f\t", TransVarCoVar(Opt->Trees->NoOfTaxa, ConVar->Sigma->me[x][y])); */
 	}
 	else
 	{
@@ -1100,8 +1111,11 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 			fprintf(Str, "%f\t", ConVar->Beta[Index]);
 
 		fprintf(Str, "%f\t", ConVar->Sigma->me[0][0]);
+
 		fprintf(Str, "%f\t", FindRSquared(Rates, Opt));
-		fprintf(Str, "%f\t", FindERatio(Rates, Opt));
+	
+		if(Opt->Analsis == ANALML)
+			fprintf(Str, "%f\t", FindERatio(Rates, Opt));
 
 		PrintRegVarCoVar(Str, Rates, Opt);
 	}
@@ -2176,6 +2190,8 @@ void	PrintShed(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
 		else
 			fprintf(Str, "0.0\t0\t");
 	fprintf(Str, "\n");
+
+	fflush(Str);
 }
 
 int		GetNoExpRatesModelFile(RATES *Rates, OPTIONS *Opt)

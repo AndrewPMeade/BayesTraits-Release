@@ -6,10 +6,10 @@
 #include "matrix.h"
 //#include <Windows.h>
 
-//CRITICAL_SECTION CriticalSection; 
+//CRITICAL_SECTION CriticalSection;
 
 
-#define	JNIRUN
+//#define	JNIRUN
 
 #ifdef	 JNIRUN
 	#include <JNI.h>
@@ -17,7 +17,7 @@
 
 
 #define MINRATE 1.0e-16
-#define MAXRATE	1000 
+#define MAXRATE	1000
 /*	#define MAXRATE	100 */
 #define MINBL	0.0000001
 
@@ -84,7 +84,7 @@ typedef enum
 	CFOSSIL,
 	CNODEDATA,
 	CALPHAZERO,
-	CHYPERPRIOR, 
+	CHYPERPRIOR,
 	CHPRJ,
 	CHPALL,
 	CNODEBLDATA,
@@ -123,7 +123,7 @@ static char    *COMMANDSTRINGS[] =
 	"addnode",		"addn",
 	"addmrca",		"mrca",
 	"delnode",		"deln",
-	"addtaxa",		"addtaxa", 
+	"addtaxa",		"addtaxa",
 	"deltaxa",		"deltaxa",
 	"evenroot",		"er",
 	"logfile",		"lf",
@@ -133,18 +133,18 @@ static char    *COMMANDSTRINGS[] =
 	"summary",		"sum",
 	"burnin",		"bi",
 	"pis",			"pi",
-	"kappa",		"ka", 
+	"kappa",		"ka",
 	"delta",		"dl",
 	"lambda",		"la",
 	"excludetaxa",	"et",
 	"taxainfo",		"ti",
 	"savetrees",	"st",
 	"testcorrel",	"tc",
-	"surface",		"su", 
-	"covarion",		"cv", 
+	"surface",		"su",
+	"covarion",		"cv",
 	"revjump",		"rj",
 	"exit",			"quit",
-	"fossil",		"fo", 
+	"fossil",		"fo",
 	"nodedata",		"nd",
 	"alphazero",	"az",
 	"hyperprior",	"hp",
@@ -153,12 +153,12 @@ static char    *COMMANDSTRINGS[] =
 	"nodebldata",   "nbd",
 	"gamma",		"ga",
 	"confint",		"cf",
-	"depsite",		"ds", 
-	"headers",		"hd", 
-	"modelfile",	"mf", 
+	"depsite",		"ds",
+	"headers",		"hd",
+	"modelfile",	"mf",
 /*	"prevar",		"pv", */
 	"vardata",		"vd",
-	"rmodel",		"rm", 
+	"rmodel",		"rm",
 	"datadev",		"dd",
 	"#",			"//",
 	"fitnospersite","nps",
@@ -182,12 +182,12 @@ static char    *DEPPRAMS[] =
 {
 	"q12",
 	"q13",
-	"q21", 
+	"q21",
 	"q24",
 	"q31",
-	"q34", 
-	"q42", 
-	"q43", 
+	"q34",
+	"q42",
+	"q43",
 	""
 };
 
@@ -214,17 +214,17 @@ static char    *SHEDOP[] =
 {
 	"Rate",
 	"CV",
-	"Kappa", 
+	"Kappa",
 	"Delta",
 	"Labda",
-	"Jump", 
+	"Jump",
 	"Prior Change",
 	"Est Data",
 	"Var Data",
 	"Solo Tree Move"
 };
 
-static int	DISTPRAMS[] = 
+static int	DISTPRAMS[] =
 {
 	2,
 	2,
@@ -248,7 +248,7 @@ typedef enum
 	EXP=04
 } PRIORDIST;
 
-typedef enum 
+typedef enum
 {
 	MULTISTATE,
 	DESCINDEP,
@@ -258,9 +258,9 @@ typedef enum
 	CONTINUOUSREG
 } MODEL;
 
-typedef enum 
+typedef enum
 {
-	ANALML, 
+	ANALML,
 	ANALMCMC,
 } ANALSIS;
 
@@ -339,7 +339,7 @@ struct RNODE
 {
 	NODETYPE	NodeType;
 	char*		Name;
-	
+
 	int			NoOfTaxa;
 	int			PresInTrees;
 	int			FossilState;
@@ -370,7 +370,7 @@ typedef struct
 	MATRIX		*InvSigma;
 	MATRIX		*KProd;
 	MATRIX		*InvKProd;
-	
+
 	MATRIX		*TVT;
 	MATRIX		*TVTTemp;
 
@@ -390,7 +390,7 @@ typedef struct
 
 
 	TAXADIST	*TaxaDist;
-	
+
 	double		LogDetOfV;
 	double		LogDetOfSigma;
 
@@ -441,7 +441,7 @@ typedef struct
 	double	*T1;
 	int		*T2;
 	MATRIX*	TMat;
-	
+
 	/* FindMLRagVals */
 	MATRIX	*X;
 	MATRIX	*TranX;
@@ -503,7 +503,7 @@ typedef struct
 {
 	MODEL		Model;
 	ANALSIS		Analsis;
-	
+
 	int			NoOfRates;
 	char		**RateName;
 
@@ -526,7 +526,7 @@ typedef struct
 	int			MLTries;
 
 	int			NoOfRecNodes;
-	
+
 	RECNODE		RecNode;
 	RECNODE		*RecNodeList;
 
@@ -562,7 +562,7 @@ typedef struct
 	double		FixGamma;
 
 	int			InvertV;
-	
+
 	PRIORS		*PriorKappa;
 	PRIORS		*PriorDelta;
 	PRIORS		*PriorLambda;
@@ -579,7 +579,7 @@ typedef struct
 	int			LMaxFun;
 
 	int			UseRJMCMC;
-	
+
 	PRIORS		*RJPrior;
 
 	int			NodeData;
@@ -609,7 +609,7 @@ typedef struct
 	int			NoEstChanges;
 
 	int			AnalyticalP;
-	
+
 	int			NOSPerSite;
 
 	int			UseSchedule;
@@ -625,7 +625,7 @@ typedef struct
 	int		NoOfRates;
 	int		NoOfFullRates;
 	int		NoOfPriors;
-	
+
 	double	*Rates;
 	double	*FullRates;
 	double	*Root;

@@ -242,8 +242,7 @@ void	MatrixMult(MATRIX *A, MATRIX *B, MATRIX *Prod)
 				Prod->me[i][k] = Prod->me[i][k] + A->me[i][j] * B->me[j][k];
 		}
 	}
-/*
-
+/*	
 	for(Row=0;Row<B->NoOfRows;Row++)
 	{
 		for(Col=0;Col<B->NoOfCols;Col++)
@@ -254,10 +253,9 @@ void	MatrixMult(MATRIX *A, MATRIX *B, MATRIX *Prod)
 			
 			Prod->me[Row][Col] = Temp;
 		}
-	}	*/
+	}	
+*/
 }
-
-
 
 void	PrintMathematicaVect(double* Vect, int N, char* Banna, FILE *Str)
 {

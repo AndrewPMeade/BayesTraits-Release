@@ -670,6 +670,7 @@ double	CreatFullAP(double T, double Mue, int K, MATRIX *Mat)
 			Mat->me[i][j] = Miss;
 		Mat->me[i][i] = Hit;
 	}
+
 	return 0;
 }
 
@@ -814,7 +815,7 @@ void	SumLikeRModel(NODE N, TREES *Trees, int SiteNo, RATES *Rates)
 				PiT += Rates->Pis[Inner];
 			}
 		}
-
+	
 		Ll = Ll / (Trees->NoOfStates-1);
 		Lr = Lr / (Trees->NoOfStates-1);
 

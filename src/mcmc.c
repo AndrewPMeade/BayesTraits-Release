@@ -110,9 +110,7 @@ void	PrintMCMCSample(int Itters, int Acc, OPTIONS *Opt, RATES *Rates, FILE* Str)
 	if(Opt->UseRJMCMC == FALSE)
 	{
 		for(PIndex=0;PIndex<Rates->NoOfRates;PIndex++)
-		{
 			PrintPrior(Str, Rates->Prios[PIndex]);
-		}
 	}
 	else
 		PrintPrior(Str, Rates->Prios[0]);
