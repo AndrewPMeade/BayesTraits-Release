@@ -43,4 +43,6 @@ PRIORDIST	StrToPriorDist(char* Str);
 PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed);
 PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed);
 
+double		CalcNormalHasting(double x, double SD);
+
 #endif

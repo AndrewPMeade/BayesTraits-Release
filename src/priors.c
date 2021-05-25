@@ -13,6 +13,8 @@
 #include "randdists.h"
 #include "RandLib.h"
 #include "Prob.h"
+#include "LocalTransform.h"
+
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
 
@@ -822,6 +824,17 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 		Ret += PLh;
 	}
 
+	if(Rates->NoLocalTransforms > 0)
+	{
+		PLh = CaclLocalTransformsPrior(Rates);
+		
+		if(PLh == ERRLH)
+			return;
+
+		Ret += PLh;
+	}
+
+
 	Rates->LhPrior = Ret;
 }
 
@@ -1124,4 +1137,14 @@ void	ReplacePrior(OPTIONS *Opt, PRIOR *Prior)
 		printf("Cannot find prior name %s.\n", Prior->Name);
 		exit(0);
 	}
+}
+
+double	CalcNormalHasting(double x, double SD)
+{
+	double Ret;
+
+	Ret = gsl_cdf_gaussian_P(x, SD);
+	//	Ret = ndtr(x/SD);
+
+	return log(Ret);
 }

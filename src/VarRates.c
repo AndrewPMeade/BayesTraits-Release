@@ -82,15 +82,7 @@ char* VarRatesTypeToStr(TRANSFORM_TYPE Type)
 	return NULL;
 }
 
-double	CalcNormalHasting(double x, double SD)
-{
-	double Ret;
 
-	Ret = gsl_cdf_gaussian_P(x, SD);
-//	Ret = ndtr(x/SD);
-
-	return log(Ret);
-}
 
 double	RandGamma(double Shape, double Scale)
 {
@@ -1151,29 +1143,30 @@ PRIOR*	GetVRPrior(TRANSFORM_TYPE Type, RATES *Rates)
 	return NULL;
 }
 
-double	CaclVRPrior(VAR_RATES_NODE *PNode, RATES *Rates)
+double	CaclVRPrior(double X, TRANSFORM_TYPE Type, RATES *Rates)
 {
 	double Ret;
 	PRIOR *Prior;
 
-	if(PNode->Type == VR_KAPPA && PNode->Scale >= MAX_VR_KAPPA)
+	if(Type == VR_KAPPA && X >= MAX_VR_KAPPA)
 		return ERRLH;
 
-	if(PNode->Type == VR_DELTA && PNode->Scale >= MAX_VR_DELTA)
+	if(Type == VR_DELTA && X >= MAX_VR_DELTA)
 		return ERRLH;
 
-	if(PNode->Type == VR_LAMBDA && PNode->Scale >= MAX_VR_LAMBDA)
+	if(Type == VR_LAMBDA && X >= MAX_VR_LAMBDA)
 		return ERRLH;
 
-	if(PNode->Type == VR_OU && PNode->Scale >= MAX_VR_OU)
+	if(Type == VR_OU && X >= MAX_VR_OU)
 		return ERRLH;
-	
-	Prior = GetVRPrior(PNode->Type, Rates);
-	
-	Ret = CalcLhPriorP(PNode->Scale, Prior);
+
+	Prior = GetVRPrior(Type, Rates);
+	Ret = CalcLhPriorP(X, Prior);
 
 	return Ret;
 }
+
+
 
 double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 {
@@ -1190,7 +1183,7 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 	{
 		PNode = VarRates->NodeList[Index];
 
-		PVal = CaclVRPrior(PNode, Rates);
+		PVal = CaclVRPrior(PNode->Scale, PNode->Type, Rates);
 
 		if(PVal == ERRLH)
 			return ERRLH;

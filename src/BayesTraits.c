@@ -111,6 +111,7 @@ void	TestTreeLh(OPTIONS *Opt, TREES *Trees)
 void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 {
 	char Line[1024];
+	size_t len;
 
 	if(argc == 3)
 	{

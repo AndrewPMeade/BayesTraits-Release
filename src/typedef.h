@@ -100,7 +100,7 @@
 #define	PPSCALEDEV	100
 
 /*	Modify the prior cost adding a VarRates scalar */
-#define PPPRIORSCALE 1
+#define VAR_RATES_PRIOR_SCALE 1
 
 /* Value of the VarRates alpha beta*/
 #define	VARRATES_ALPHA		1.1
@@ -173,7 +173,7 @@
 #define MAX_GAMMA	100
 
 #define MIN_LOCAL_RATE 1E-07
-#define MAX_LOCAL_RATE 10
+#define MAX_LOCAL_RATE 100
 
 #define	NORM_MEAN_BL	0.1
 

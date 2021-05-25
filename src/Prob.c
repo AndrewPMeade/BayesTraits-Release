@@ -63,7 +63,7 @@ double	PDFSGamma(double x, double Alpha, double Beta)
 
 	Ret = Ret / s;
 
-	Ret = Ret * PPPRIORSCALE;
+	Ret = Ret * VAR_RATES_PRIOR_SCALE;
 
 	return Ret;
 }

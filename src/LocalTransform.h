@@ -21,4 +21,6 @@ void				ChangeLocalTransform(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE 
 
 int					GetNoTransformType(TRANSFORM_TYPE TType, RATES *Rates);
 
+double				CaclLocalTransformsPrior(RATES *Rates);
+
 #endif

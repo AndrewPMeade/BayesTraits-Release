@@ -285,7 +285,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	fprintf(Str, "Precision:                       %d bits\n", Opt->Precision);
 	fprintf(Str, "Cores:                           %d\n", Opt->Cores);
 
-	PrintTags(Str, Opt);
 
 
 	if(Opt->Analsis == ANALMCMC)
@@ -419,6 +418,8 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		}
 	}
 
+	PrintTags(Str, Opt);
+
 	if(Opt->NoLocalTransforms > 0)
 		PrintLocalTransforms(Str, Opt->LocalTransforms, Opt->NoLocalTransforms);
 
@@ -550,6 +551,7 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	for(Index=0;Index<Opt->NoLocalTransforms;Index++)
 		FreeLocalTransforms(Opt->LocalTransforms[Index]);
+
 	if(Opt->LocalTransforms != NULL)
 		free(Opt->LocalTransforms);
 	
@@ -3315,7 +3317,7 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 
 	if(Tokes < 4)
 	{
-		printf("LocalTransform takes a name, a list of tags, A transform type (node, bl, kappa, lambda, delta, OU) and an optional fixed scalar");
+		printf("LocalTransform takes a name, a list of tags, A transform type (node, branch, kappa, lambda, delta, OU) and an optional fixed scalar");
 		exit(1);
 	}
 
@@ -3343,6 +3345,8 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 	Opt->LocalTransforms = (LOCAL_TRANSFORM**)AddToList(&Opt->NoLocalTransforms, (void**)Opt->LocalTransforms, UVR);
 
 	SetLocalTransformPrior(Opt, Type);
+
+	free(Tags);
 }
 
 void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)

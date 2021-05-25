@@ -25,9 +25,12 @@ void	InitVarRatesFiles(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 void	FinishVarRatesFiles(OPTIONS *Opt);
 void	PrintVarRatesOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It);
 
+double	CaclVRPrior(double X, TRANSFORM_TYPE Type, RATES *Rates);
 double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt);
 void	ChangeVarRatesHyperPrior(RATES *Rates, OPTIONS *Opt);
 
 void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt);
+
+double	CalcNormalHasting(double x, double SD);
 
 #endif

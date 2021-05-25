@@ -65,11 +65,17 @@ int			EstLocalTransforms(LOCAL_TRANSFORM** List, int NoRates)
 
 void		PrintLocalTransform(FILE *Str, LOCAL_TRANSFORM* Trans)
 {
+	int Index;
+
 	fprintf(Str, "    %s %s ", Trans->Name, VarRatesTypeToStr(Trans->Type));	
 	if(Trans->Est == TRUE)
-		fprintf(Str, "Estimate");
+		fprintf(Str, "Estimate ");
 	else
-		fprintf(Str, "%f", Trans->Scale);
+		fprintf(Str, "%f ", Trans->Scale);
+
+	for(Index=0;Index<Trans->NoTags-1;Index++)
+		fprintf(Str, "%s,", Trans->TagList[Index]->Name);
+	fprintf(Str, "%s", Trans->TagList[Index]->Name);
 
 	fprintf(Str, "\n");
 }
@@ -144,6 +150,8 @@ void		ChangeLocalTransform(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *S
 
 	NRate = ChangeLocalScale(Rates->RS, LRate->Scale, Dev);
 
+	Rates->LnHastings = CalcNormalHasting(LRate->Scale, Dev);
+
 	if(NRate > MAX_LOCAL_RATE || NRate < MIN_LOCAL_RATE)
 		NRate = LRate->Scale;
 
@@ -159,6 +167,29 @@ int	GetNoTransformType(TRANSFORM_TYPE TType, RATES *Rates)
 	for(Index=0;Index<Rates->VarRates->NoNodes;Index++)
 		if(Rates->VarRates->NodeList[Index]->Type == TType)
 			Ret++;
+
+	return Ret;
+}
+
+double	CaclLocalTransformsPrior(RATES *Rates)
+{
+	int Index;
+	double Ret, PLh;
+	LOCAL_TRANSFORM *LRate;
+
+	Ret = 0;
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+	{
+		LRate = Rates->LocalTransforms[Index];
+
+		PLh = CaclVRPrior(LRate->Scale, LRate->Type, Rates);
+
+		if(PLh == ERRLH)
+			return PLh;
+
+		Ret += PLh;
+	}
 
 	return Ret;
 }
