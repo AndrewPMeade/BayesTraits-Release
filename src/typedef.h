@@ -7,7 +7,7 @@
 #include "matrix.h"
 #include "RandLib.h"
 // #define	JNIRUN
-#define THREADED
+// #define THREADED
 // #define BIG_LH
 
 #ifdef BIG_LH
@@ -381,8 +381,6 @@ struct INODE
 
 	struct	INODE	**NodeList;
 	int				NoNodes;
-
-
 	char		Visited;
 
 	double		**Partial;
@@ -804,8 +802,13 @@ typedef struct
 	double	Numer;
 	double	Donom;
 
-	double	HMeanSum;
+	
 	int		HMeanCount;
+#ifndef BIG_LH
+	double	HMeanSum;
+#else
+	mpfr_t	HMeanSum;
+#endif
 
 	int		UseEstData;
 	int		*EstDescData;

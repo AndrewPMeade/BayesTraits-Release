@@ -215,6 +215,7 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 
 }
 
+
 void	FindEmpPis(RATES *Rates, OPTIONS *Opt)
 {
 	TREES	*Trees;
@@ -292,6 +293,27 @@ void	SetPiValues(RATES *Rates, OPTIONS *Opt)
 	FindEmpPis(Rates, Opt);
 }
 
+double	GetHMean(OPTIONS *Opt, RATES *Rates)
+{
+#ifndef BIG_LH
+	return log(Rates->HMeanCount / Rates->HMeanSum);
+#else
+	mpfr_t	t1, t2;
+	double Ret;
+
+	mpfr_init2(t1, Opt->Precision);
+	mpfr_init2(t2, Opt->Precision);
+	
+	mpfr_si_div(t1, Rates->HMeanCount, Rates->HMeanSum, DEF_ROUND);
+	mpfr_log(t2, t1, DEF_ROUND);
+
+	Ret  = mpfr_get_d(t2, DEF_ROUND);
+	
+	mpfr_clears(t1, t2, NULL);
+
+	return Ret;
+#endif
+}
 
 void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 {
@@ -466,6 +488,18 @@ int		FindNoEstData(TREES *Trees, OPTIONS *Opt)
 	return Ret;
 }
 
+void	InitHMean(RATES* Rates, OPTIONS *Opt)
+{
+	Rates->HMeanCount = 0;
+
+#ifndef BIG_LH
+	Rates->HMeanSum		= 0.0;
+#else
+	mpfr_init2(Rates->HMeanSum, Opt->Precision);
+	mpfr_set_d(Rates->HMeanSum, 0.0, DEF_ROUND);
+#endif
+}
+
 RATES*	CreatRates(OPTIONS *Opt)
 {
 	RATES*	Ret=NULL;
@@ -500,8 +534,10 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->GammaMults		= NULL;
 	Ret->LastGamma		= -1;
 	Ret->GammaPrior		= NULL;
-	Ret->HMeanCount		= 0;
-	Ret->HMeanSum		= 0.0;
+	
+
+	InitHMean(Ret, Opt);
+
 	Ret->NoEstData		= 0;
 	Ret->EstData		= NULL;
 	Ret->NoOfModels		= -1;
@@ -1141,7 +1177,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->Analsis == ANALMCMC)
 	{
-		HMean = log(Rates->HMeanCount / Rates->HMeanSum);
+		HMean = GetHMean(Opt, Rates);
 		fprintf(Str, "%f\t", HMean);
 	}
 
@@ -1361,6 +1397,8 @@ char	RJModelType(int *ModelStr)
 		return 'D';
 }
 
+
+
 void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
 	int		Index;
@@ -1374,7 +1412,7 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->Analsis == ANALMCMC)
 	{
-		HMean = log(Rates->HMeanCount / Rates->HMeanSum);
+		HMean = GetHMean(Opt, Rates);
 	/*	fprintf(Str, "%f\t%f\t%f\t%d\t", Rates->Lh, Rates->Lh + Rates->LhPrior, HMean, Rates->TreeNo+1); */
 		fprintf(Str, "%f\t%f\t%d\t", Rates->Lh, HMean, Rates->TreeNo+1);
 	}
@@ -1390,11 +1428,12 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 				fprintf(Str, "Z");
 			else
 			{
-				fprintf(Str, "%d ",  Rates->MappingVect[Index]);
-/*				if(Rates->MappingVect[Index] <= 9)
+				// TODO Phoneim remove. 
+		//		fprintf(Str, "%d ",  Rates->MappingVect[Index]);
+				if(Rates->MappingVect[Index] <= 9)
 					fprintf(Str, "%d", Rates->MappingVect[Index]);
 				else
-					fprintf(Str, "%c", Rates->MappingVect[Index] + 'A');*/
+					fprintf(Str, "%c", Rates->MappingVect[Index] + 'A');
 			}
 		}
 		fprintf(Str, "\t");
@@ -1431,6 +1470,8 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	for(Index=0;Index<Rates->NoEstData;Index++)
 		fprintf(Str, "%c\t", Opt->Trees->SymbolList[Rates->EstDescData[Index]]);
 
+
+	// TODO Phoneim remove. 
 	PrintNodeRec(Str, Opt->Trees->Tree[Rates->TreeNo].Root, Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
 
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
@@ -1463,7 +1504,13 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	A->Lambda= B->Lambda;
 
 	A->HMeanCount	= B->HMeanCount;
+	
+#ifndef BIG_LH
 	A->HMeanSum		= B->HMeanSum;
+#else
+	mpfr_set(A->HMeanSum, B->HMeanSum, DEF_ROUND);
+#endif
+
 	A->ModelNo		= B->ModelNo;
 
 	if(Opt->UseRJMCMC == FALSE)
@@ -1807,6 +1854,11 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 				for(Index=0;Index<Rates->NoOfRates;Index++)
 					Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Opt->RateDev);
 
+				// TODO Phoneim remove. 
+//				for(Index=0;Index<Rates->NoOfRates;Index++)
+//					Rates->Rates[Index] = Rates->Rates[0];
+//				Index = RandUSLong(Rates->RS) % Rates->NoOfRates;
+//				Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Opt->RateDev);
 			}
 			else
 			{
@@ -1960,6 +2012,10 @@ void	FreeRates(RATES *Rates)
 
 	if(Rates->Plasty != NULL)
 		FreePlasty(Rates->Plasty);
+		
+#ifdef BIG_LH
+	mpfr_clear(Rates->HMeanSum);
+#endif
 
 	FreeRandStates(Rates->RS);
 	free(Rates);

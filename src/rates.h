@@ -4,6 +4,8 @@
 RATES*		CreatRates(OPTIONS *Opt);
 void		MapRates(RATES* Rates, OPTIONS *Opt);
 
+void		InitHMean(RATES* Rates, OPTIONS *Opt);
+double		GetHMean(OPTIONS *Opt, RATES *Rates);
 void		PrintRatesHeadder(FILE* Str, OPTIONS *Opt);
 void		PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt);
 void		CopyRates(RATES *A, RATES *B, OPTIONS *Opt);

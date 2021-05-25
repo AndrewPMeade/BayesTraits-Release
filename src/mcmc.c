@@ -93,18 +93,41 @@ void	PrintPrior(FILE* Str, PRIORS *Prior)
 		fprintf(Str, "%f\t", Prior->DistVals[Index]);
 }
 
+void	UpDateHMean(OPTIONS *Opt, RATES *Rates)
+{
+#ifndef BIG_LH
+	Rates->HMeanCount++;
+	Rates->HMeanSum += 1/exp(Rates->Lh);
+#else
+	mpfr_t	t1, t2;
+
+	Rates->HMeanCount++;
+
+	mpfr_init2(t1, Opt->Precision);
+	mpfr_init2(t2, Opt->Precision);
+		
+	mpfr_set_d(t1, Rates->Lh, DEF_ROUND);
+
+	mpfr_exp(t2, t1, DEF_ROUND);
+
+	mpfr_d_div(t1, 1.0, t2, DEF_ROUND);
+
+	mpfr_add(t2, t1, Rates->HMeanSum, DEF_ROUND);
+	
+	mpfr_set(Rates->HMeanSum, t2, DEF_ROUND);
+	
+	mpfr_clears(t1, t2, NULL);
+#endif
+}
+
 void	PrintMCMCSample(int Itters, int Acc, OPTIONS *Opt, RATES *Rates, FILE* Str)
 {
 	TREES*	Trees;
 	int		PIndex;
 
 	Trees = Opt->Trees;
-	Rates->Lh = Likelihood(Rates, Trees, Opt);
 
 	fprintf(Str, "%d\t", Itters);
-
-	Rates->HMeanCount++;
-	Rates->HMeanSum += 1/exp(Rates->Lh);
 
 	PrintRates(Str, Rates, Opt);
 
@@ -118,7 +141,6 @@ void	PrintMCMCSample(int Itters, int Acc, OPTIONS *Opt, RATES *Rates, FILE* Str)
 
 	fprintf(Str, "%f\n", (double)Acc/(double)Opt->Sample);
 }
-
 
 void	PrintTest(int Itters, RATES* Rates)
 {
@@ -149,14 +171,10 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	double	*Vec;
 	int		Index;
 
-/*	do
-	{
-		for(Index=0;Index<Rates->NoOfRates;Index++)
-			Rates->Rates[Index] = (RandDouble(Rates->RS) * 0.1) + 0.1;
-	} while((Likelihood(Rates, Trees, Opt) == ERRLH));
-	*/
+	// TODO: Set all Rates to ML Value
 	for(Index=0;Index<Rates->NoOfRates;Index++)
-		Rates->Rates[Index] = 0.01732;
+//		Rates->Rates[Index] = 0.01732;
+		Rates->Rates[Index] = 1;
 	
 	if(Likelihood(Rates, Trees, Opt) != ERRLH)
 		return;
@@ -191,7 +209,23 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	exit(0);
 }
 
+void	MCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double HMean;
+	int		Index;
 
+	for(Index=0;Index<4000;Index++)
+	{
+		Rates->Lh = (double)Index * -1;
+		UpDateHMean(Opt, Rates);
+	}
+	
+	printf("HMean count %d\n", Rates->HMeanCount);
+	HMean = GetHMean(Opt, Rates);
+
+	printf("HMean:\t%f\n", HMean);
+	exit(0);
+}
 
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
@@ -228,6 +262,8 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	CRates	=	CreatRates(Opt);
 	NRates	=	CreatRates(Opt);
 	
+//	MCTest(Opt, Trees, CRates);
+
 	CreatPriors(Opt, CRates);
 	CreatPriors(Opt, NRates);
 
@@ -305,6 +341,9 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		{
 			if((Itters%Opt->Sample==0) && (BurntIn == TRUE))
 			{
+				UpDateHMean(Opt, CRates);
+				CRates->Lh = Likelihood(CRates, Trees, Opt);
+
 				#ifndef JNIRUN
 					PrintMCMCSample(Itters, Acc, Opt, CRates, stdout);
 					fflush(stdout);
@@ -435,8 +474,7 @@ void	LhOverAllModels(OPTIONS *Opt, TREES *Trees)
 	CreatPriors(Opt, Rates);
 	SetRatesToPriors(Opt, Rates);
 
-	Rates->HMeanCount = 0;
-	Rates->HMeanSum = 0;
+	InitHMean(Rates, Opt);
 	printf("\n");
 	
 	for(Index=0;Index<Rates->NoOfModels;Index++)

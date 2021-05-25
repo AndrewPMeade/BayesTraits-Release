@@ -111,6 +111,8 @@ int	PreCalc(TREES *Trees, RATES *Rates)
 		PrintMatrix(InvInfo->Q, "QMat", stdout);
 		PrintMathematicaMatrix(InvInfo->Q, "Q", stdout);
 		exit(0); */
+
+		// TODO Phoneim remove 
 		return ERROR;
 	}
 
