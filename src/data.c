@@ -894,7 +894,7 @@ int		GetFreeTaxaNo(TREES* Trees)
 	int		EstDepData;
 */
 
-void	SetNewConTaxaData(TAXA *Taxa, RECNODE RNode, TREES* Trees)
+void	SetNewConTaxaData(TAXA *Taxa, RECNODE *RNode, TREES* Trees)
 {
 	int	Index;
 
@@ -927,7 +927,7 @@ void	SetNewConTaxaData(TAXA *Taxa, RECNODE RNode, TREES* Trees)
 	
 }
 
-TAXA*	SetNewConTaxa(RECNODE RNode, TREES* Trees)
+TAXA*	SetNewConTaxa(RECNODE *RNode, TREES* Trees)
 {
 	TAXA *Ret;
 	Ret = (TAXA*)malloc(sizeof(TAXA));
@@ -946,7 +946,7 @@ TAXA*	SetNewConTaxa(RECNODE RNode, TREES* Trees)
 	return Ret;
 }
 
-void	AddNewConTaxa(TREES* Trees, RECNODE	RNode)
+void	AddNewConTaxa(TREES* Trees, RECNODE	*RNode)
 {
 	TAXA	**NewTaxa;
 
@@ -966,7 +966,7 @@ void	AddNewConTaxa(TREES* Trees, RECNODE	RNode)
 void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
 {
 	int		Index;
-	RECNODE	RNode;
+	RECNODE	*RNode;
 
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{

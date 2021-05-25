@@ -156,7 +156,7 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 
 }
 
-double	FindAveNodeDepth(RECNODE RNode, OPTIONS *Opt)
+double	FindAveNodeDepth(RECNODE *RNode, OPTIONS *Opt)
 {
 	double Ret=0;
 
@@ -253,8 +253,8 @@ void	PrintHetMap(FILE *Str, OPTIONS *Opt, TREES *Trees)
 
 void	PrintOptions(FILE* Str, OPTIONS *Opt)
 {
-	RECNODE	RNode;
-	int		Index;
+	RECNODE	*RNode;
+	int		Index, RIndex;
 	int		NOS;
 
 	fprintf(Str, "Options:\n");
@@ -461,34 +461,36 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->Analsis == ANALMCMC)
 		PrintPriorOpt(Str, Opt);
 
-	RNode = Opt->RecNode;
-	while((RNode != NULL) && (Opt->Model != M_CONTINUOUS_RR) && (Opt->Model != M_CONTINUOUS_DIR))
+	if(Opt->Model != M_CONTINUOUS_RR && Opt->Model != M_CONTINUOUS_DIR)
 	{
-		if(RNode->NodeType == MRCA)
-			fprintf(Str, "MRCA:         %s                    %f\n", RNode->Name, FindAveNodeDepth(RNode, Opt));
+		for(RIndex=0;RIndex<Opt->NoOfRecNodes;RIndex++)
+		{
+		
+			RNode = Opt->RecNodeList[RIndex];
+			if(RNode->NodeType == MRCA)
+				fprintf(Str, "MRCA:         %s                    %f\n", RNode->Name, FindAveNodeDepth(RNode, Opt));
 			
 		
-		if(RNode->NodeType == NODEREC)
-			fprintf(Str, "Node:         %s                    %f\n", RNode->Name, ((double)RNode->Hits / Opt->Trees->NoOfTrees)*100);
+			if(RNode->NodeType == NODEREC)
+				fprintf(Str, "Node:         %s                    %f\n", RNode->Name, ((double)RNode->Hits / Opt->Trees->NoOfTrees)*100);
 		
 
-		if(RNode->NodeType == FOSSIL)
-		{
-			if(Opt->Model == M_MULTISTATE)
+			if(RNode->NodeType == FOSSIL)
 			{
-				fprintf(Str, "Fossil:       %s                    %f ", RNode->Name, FindAveNodeDepth(RNode, Opt));
-				for(Index=0;Index<RNode->NoFossilStates;Index++)
-					fprintf(Str, "%c ", Opt->Trees->SymbolList[RNode->FossilStates[Index]]);
-				fprintf(Str, "\n");
+				if(Opt->Model == M_MULTISTATE)
+				{
+					fprintf(Str, "Fossil:       %s                    %f ", RNode->Name, FindAveNodeDepth(RNode, Opt));
+					for(Index=0;Index<RNode->NoFossilStates;Index++)
+						fprintf(Str, "%c ", Opt->Trees->SymbolList[RNode->FossilStates[Index]]);
+					fprintf(Str, "\n");
+				}
+				else
+					fprintf(Str, "Fossil:       %s                    %f (%d)\n", RNode->Name, FindAveNodeDepth(RNode, Opt), RNode->FossilStates[0]);
 			}
-			else
-				fprintf(Str, "Fossil:       %s                    %f (%d)\n", RNode->Name, FindAveNodeDepth(RNode, Opt), RNode->FossilStates[0]);
-		}
 		
-		for(Index=0;Index<RNode->Part->NoTaxa;Index++)
-			fprintf(Str, "             %d\t%s\n", RNode->Taxa[Index]->No, RNode->Taxa[Index]->Name);
-
-		RNode = RNode->Next;
+			for(Index=0;Index<RNode->Part->NoTaxa;Index++)
+				fprintf(Str, "             %d\t%s\n", RNode->Taxa[Index]->No, RNode->Taxa[Index]->Name);
+		}
 	}
 
 	if(Opt->Trees->NoOfRemovedTaxa != 0)
@@ -607,12 +609,11 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 char*	CreatRateName(char N1, char N2)
 {
-	char	Buffer[128];
 	char	*Ret;
 
-	sprintf(&Buffer[0], "q%c%c", N1, N2);
-	Ret = (char*)malloc(sizeof(char)*strlen(&Buffer[0]) + 1);
-	strcpy(Ret, &Buffer[0]);
+	Ret = (char*)SMalloc(sizeof(char) * 4);
+
+	sprintf(Ret, "q%c%c", N1, N2);
 	
 	return Ret;
 }
@@ -946,8 +947,8 @@ void	SetFatTailPrior(OPTIONS *Opt)
 	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 	{
 		Opt->Priors[Pos++] = CreateUniformPrior(0.2, 2.0);
-		Opt->Priors[Pos++] = CreateInvGammaPrior(2.0, 0.130435);
-//		Opt->Priors[Pos++] = CreateUniformPrior(0.1, 100.0);
+//		Opt->Priors[Pos++] = CreateInvGammaPrior(2.0, 0.130435);
+		Opt->Priors[Pos++] = CreateUniformPrior(0.0, 100.0);
 	}
 }
 
@@ -1140,7 +1141,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	}
 
 
-	Ret->RecNode		=	NULL;
 	Ret->RecNodeList	=	NULL;
 	Ret->NoOfRecNodes	=	0;
 	Ret->Summary		=	FALSE;
@@ -1899,25 +1899,18 @@ void	PrintUnderNode(NODE N)
 	}
 }
 
-void	FreeRecNode(RECNODE RNode)
-{
-		
-	free(RNode->Name);
-	free(RNode->Taxa);
-	free(RNode->TreeNodes);
-	free(RNode);
-}
 
-RECNODE	OptFindRecNode(OPTIONS *Opt, char* Name)
+RECNODE*	OptFindRecNode(OPTIONS *Opt, char* Name)
 {
-	RECNODE Ret;
+	RECNODE *Ret;
+	int Index;
 
-	Ret = Opt->RecNode;
-	while(Ret!=NULL)
+	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
+		Ret = Opt->RecNodeList[Index];
+
 		if(strcmp(Name, Ret->Name)==0)
 			return Ret;
-		Ret = Ret->Next;
 	}
 
 	return NULL;
@@ -2134,7 +2127,7 @@ char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char *argv[])
 
 void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 {
-	RECNODE		RNode;
+	RECNODE		*RNode;
 	int			Index, NoTaxa;
 	int			*FStates, NoFStates;
 	char**		ConFState;
@@ -2172,7 +2165,7 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	if(ValidTaxaList(argv, Index, Tokes, Opt) == FALSE)
 		return;
 
-	RNode = (RECNODE)SMalloc(sizeof(struct RNODE));
+	RNode = (RECNODE*)SMalloc(sizeof(RECNODE));
 
 	RNode->Part				= NULL;
 	RNode->FossilStates		= NULL;
@@ -2207,67 +2200,12 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 
 	RNode->Part = CreatPart(NoTaxa);
 	
-	RNode->Next = Opt->RecNode;
-	Opt->RecNode = RNode;
-
 	RNode->TreeNodes = (NODE*)SMalloc(sizeof(NODE)*Opt->Trees->NoOfTrees);
 
 	SetRecNodes(RNode, Opt->Trees);
-	
-	Opt->NoOfRecNodes++;
+
+	Opt->RecNodeList = (RECNODE**)AddToList(&Opt->NoOfRecNodes, (void**)Opt->RecNodeList, RNode);
 }
-
-void	DelRecNode(OPTIONS *Opt, char* NodeName)
-{
-	int		Found;
-	RECNODE	RNode=NULL;
-	RECNODE Last;
-
-	Found = FALSE;
-
-	RNode = Opt->RecNode;
-
-	while(RNode != NULL)
-	{
-		if(strcmp(RNode->Name, NodeName)==0)
-			Found = TRUE;
-
-		RNode = RNode->Next;
-	}
-
-	if(Found == FALSE)
-	{
-		printf("Could not find node %s\n", NodeName);
-		return;
-	}
-
-	RNode = Opt->RecNode;
-	if(strcmp(RNode->Name, NodeName)==0)
-		Opt->RecNode = Opt->RecNode->Next;
-	else
-	{
-		Last = RNode;
-		RNode = RNode->Next;
-		Found = FALSE;
-		while(Found == FALSE)
-		{
-			if(strcmp(RNode->Name, NodeName) == 0)
-			{
-				Last->Next = RNode->Next;
-				Found = TRUE;
-			}
-			else
-			{	
-				Last = RNode;
-				RNode = RNode->Next;
-			}
-		}
-	}
-
-	FreeRecNode(RNode);
-	Opt->NoOfRecNodes--;
-}
-
 
 void	SetEvenRoot(TREES *Trees)
 {
@@ -2376,7 +2314,6 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 		}
 
 		if( (Command == CNODE)		||
-			(Command == CDELNODE)	||
 			(Command == CADDTAXA)	||
 			(Command == CDELTAXA)	||
 			(Command == CCOVARION)	||
@@ -2756,23 +2693,7 @@ void	SetCI(OPTIONS *Opt, char *Rate)
 }
 
 
-void	FlattenRecNode(OPTIONS *Opt)
-{
-	int		Index;
-	RECNODE	RNode;
-
-	if(Opt->NoOfRecNodes == 0)
-		return;
-	
-	Opt->RecNodeList = (RECNODE*)malloc(sizeof(struct RNODE**) * Opt->NoOfRecNodes);
-	if(Opt->RecNodeList == NULL)
-		MallocErr();
-
-	for(Index=0,RNode=Opt->RecNode;Index<Opt->NoOfRecNodes;Index++, RNode = RNode->Next)
-		Opt->RecNodeList[Index] = RNode;
-}
-
-void	FreeRecNode(RECNODE R, int NoSites)
+void	FreeRecNode(RECNODE *R, int NoSites)
 {
 	int Index;
 
@@ -2797,23 +2718,21 @@ void	FreeRecNode(RECNODE R, int NoSites)
 
 void	FreeRecNodes(OPTIONS *Opt, int NoSites)
 {
-	int	Index, CIndex;
-	RECNODE	R;
+	int	Index;
+	RECNODE	*R;
 
-	if(Opt->RecNodeList != NULL)
-		free(Opt->RecNodeList);
-
-	FlattenRecNode(Opt);
+	if(Opt->RecNodeList == NULL)
+		return;
 
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
 		R = Opt->RecNodeList[Index];
-		FreeRecNode(R);
+		FreeRecNode(R, NoSites);
 	}
 	
 	free(Opt->RecNodeList);
 	Opt->NoOfRecNodes = 0;
-	Opt->RecNode = NULL;
+	Opt->RecNodeList = NULL;
 }
 
 
@@ -3659,14 +3578,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		}
 	}
 
-	if(Command == CDELNODE)
-	{
-		if(Tokes == 2)
-			DelRecNode(Opt, Passed[1]);
-		else
-			printf("The del node command remove a node, it take the name of the node\n");
-
-	}
+	
 
 	if(Command == CADDTAXA)
 	{

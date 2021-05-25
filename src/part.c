@@ -184,7 +184,7 @@ void	SetParts(TREES *Trees)
 		SetTreePart(Trees->Tree[TIndex]->Root);
 }
 
-void	SetRecNodePart(RECNODE RNode)
+void	SetRecNodePart(RECNODE *RNode)
 {
 	int Index;
 	PART *Part;
@@ -197,7 +197,7 @@ void	SetRecNodePart(RECNODE RNode)
 	qsort(Part->Taxa, Part->NoTaxa, sizeof(int), PartCompID);
 }
 
-void	SetRecNodes(RECNODE RNode, TREES *Trees)
+void	SetRecNodes(RECNODE *RNode, TREES *Trees)
 {
 	NODE	N;
 	int		TIndex, Depth;
@@ -224,7 +224,7 @@ void	SetRecNodes(RECNODE RNode, TREES *Trees)
 	}	
 }
 
-NODE	FindNode(RECNODE RNode, TREE *Tree, int *Depth)
+NODE	FindNode(RECNODE *RNode, TREE *Tree, int *Depth)
 {
 	NODE Ret;
 	int NIndex;

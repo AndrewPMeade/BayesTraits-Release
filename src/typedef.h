@@ -226,7 +226,6 @@ typedef enum
 	CHELP,
 	CNODE,
 	CMRCA,
-	CDELNODE,
 	CADDTAXA,
 	CDELTAXA,
 	CEVENROOT,
@@ -302,7 +301,6 @@ static char    *COMMANDSTRINGS[] =
 	"help",			"he",
 	"addnode",		"addn",
 	"addmrca",		"mrca",
-	"delnode",		"deln",
 	"addtaxa",		"addtaxa",
 	"deltaxa",		"deltaxa",
 	"evenroot",		"er",
@@ -660,7 +658,7 @@ struct INODE
 
 typedef struct INODE*	NODE;
 
-struct RNODE
+typedef struct
 {
 	NODETYPE	NodeType;
 	char*		Name;
@@ -679,10 +677,7 @@ struct RNODE
 
 	char**		ConData;
 
-	struct		RNODE *Next;
-};
-
-typedef struct RNODE*	RECNODE;
+} RECNODE;
 
 typedef struct
 {
@@ -1023,8 +1018,7 @@ typedef struct
 	int			MLTries;
 
 	int			NoOfRecNodes;
-	RECNODE		RecNode;
-	RECNODE		*RecNodeList;
+	RECNODE		**RecNodeList;
 
 	TREES		*Trees;
 

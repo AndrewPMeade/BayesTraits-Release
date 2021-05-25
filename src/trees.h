@@ -30,7 +30,7 @@ void	SetFossils(TREES *Trees, OPTIONS *Opt);
 void	SetMinBL(TREES *Trees);
 void	SetNOSPerSite(OPTIONS *Opt);
 
-void	AddNewRecNode(TREES* Trees, RECNODE RecNode);
+void	AddNewRecNode(TREES* Trees, RECNODE *RecNode);
 void	SetNodeTipData(OPTIONS *Opt, NODE N, TREE* Tree, TREES *Trees);
 
 void	MakeUM(TREES* Trees);

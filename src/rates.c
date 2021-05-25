@@ -897,7 +897,7 @@ void	PrintEstDataHeader(FILE *Str, OPTIONS *Opt)
 void	PrintConRecNodesHeadder(FILE *Str, OPTIONS *Opt)
 {
 	int		Index, SiteIndex;
-	RECNODE	RNode;
+	RECNODE	*RNode;
 		
 	if(Opt->ModelType != MT_CONTRAST)
 		return;
@@ -1157,7 +1157,7 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 {
 	int			Index;
 	int			SiteIndex;
-	RECNODE		RNode=NULL;
+	RECNODE		*RNode;
 
 	if(Opt->Analsis == ANALMCMC)
 		fprintf(Str, "Iteration\tLh\tHarmonic Mean\tTree No\t");
@@ -1448,7 +1448,7 @@ void	PrintRegVarCoVar(FILE* Str, RATES *Rates, OPTIONS *Opt)
 void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 {
 	int			Index, SiteIndex;
-	RECNODE		RNode;
+	RECNODE		*RNode;
 	NODE		N;
 	CONTRAST	*Con;
 	double		Alpha; //, Sigma, Lh;

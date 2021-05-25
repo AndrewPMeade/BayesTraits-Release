@@ -20,7 +20,6 @@
 #define NO_SLICE_STEPS 100
 #define	MAX_STEP_DIFF	5.0
 
-double	NodeSliceSampler(NODE N, RANDSTATES *RS);
 void	SetInitAnsStates(OPTIONS *Opt, TREES *Trees, TREE *Tree);
 
 //void MapRatesToTree(TREE *Tree, int NoSites, FATTAILRATES *FTR)
@@ -397,9 +396,11 @@ double	CalcNodeStableLh(NODE N, int NoSites, STABLEDIST **SDList, int UseGeoMode
 			x = N->FatTailNode->Ans[SIndex]- N->NodeList[Index]->FatTailNode->Ans[SIndex];
 			
 			L = StableDistTPDF(SD, x , N->NodeList[Index]->Length);
+				
 			Ret += L;
 		}
 	}
+
 
 	return Ret;
 }
@@ -411,7 +412,7 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FATTAILRATES *FTR;
 	TREE *Tree;
 	int	UseGeoModel;
-
+	
 	Tree = Trees->Tree[Rates->TreeNo];
 	NoSites = Trees->NoOfSites;
 	FTR = Rates->FatTailRates;
@@ -425,6 +426,7 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	for(Index=0;Index<FTR->NoSD;Index++)
 		SetStableDist(FTR->SDList[Index], FTR->Alpha[Index], FTR->Scale[Index]);
 	
+
 	Ret = 0;
 #ifdef OPENMP_THR
 	#pragma omp parallel for num_threads(Opt->Cores) reduction(+:Ret)
@@ -433,11 +435,11 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	{
 		if(Tree->NodeList[Index]->Tip == FALSE)
 			Ret += CalcNodeStableLh(Tree->NodeList[Index], NoSites, FTR->SDList, UseGeoModel);
-
 	}
 
 	if(ValidLh(Ret) == FALSE)
 		return ERRLH;
+
 
 	return Ret;
 }

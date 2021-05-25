@@ -7,7 +7,7 @@
 #include "genlib.h"
 
 
-void	MakeMSFossilMask(RECNODE RNode, int *Mask, int NOS)
+void	MakeMSFossilMask(RECNODE *RNode, int *Mask, int NOS)
 {
 	int Index;
 
@@ -92,7 +92,7 @@ void	MakeDiscreteFossilMask(int *Mask, int FState)
 	}
 }
 
-int*	MakeFossilMask(RECNODE	RNode, int NOS, MODEL M)
+int*	MakeFossilMask(RECNODE *RNode, int NOS, MODEL M)
 {
 	int *Ret, Index;
 
@@ -122,8 +122,8 @@ int*	MakeFossilMask(RECNODE	RNode, int NOS, MODEL M)
 
 void	SetFossils(TREES *Trees, OPTIONS *Opt)
 {
-	RECNODE	RNode;
-	int		TIndex;
+	RECNODE	*RNode;
+	int		Index, TIndex;
 	NODE	N;
 
 	if(Opt->UseCovarion == TRUE)
@@ -132,10 +132,10 @@ void	SetFossils(TREES *Trees, OPTIONS *Opt)
 		exit(1);
 	}
 
-	RNode = Opt->RecNode;
 
-	while(RNode != NULL)
+	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
+		RNode = Opt->RecNodeList[Index];
 		if(RNode->NodeType == FOSSIL)
 		{
 			for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
@@ -146,7 +146,6 @@ void	SetFossils(TREES *Trees, OPTIONS *Opt)
 			}
 		}
 
-		RNode = RNode->Next;
 	}
 }
 

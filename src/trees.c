@@ -1603,7 +1603,7 @@ void	ReLinkAns(NODE N)
 
 }
 
-void	AddNewRecNodeTree(TREES *Trees, TREE *Tree, RECNODE RecNode)
+void	AddNewRecNodeTree(TREES *Trees, TREE *Tree, RECNODE *RecNode)
 {
 	NODE	NewTaxa, Node;
 	NODE	*NList;
@@ -1642,80 +1642,7 @@ void	AddNewRecNodeTree(TREES *Trees, TREE *Tree, RECNODE RecNode)
 
 }
 
-/*
-void	AddNewRecNodeTree(TREES *Trees, TREE *Tree, RECNODE RecNode)
-{
-	NODE	New;
-	NODE	NewTaxa;
-	NODE	Ans;
-	NODE	NodeList;
-	NODE	Node; 
-	int		NoNodes;
-	int		Index;
-
-	NoNodes = 0;
-	Node = FindNode(RecNode, Tree, &NoNodes, Trees->NoOfNodes);
-
-	NoNodes = Trees->NoOfNodes;
-
-	NodeList = (NODE)malloc(sizeof(struct INODE) * (NoNodes + 2));
-	if(NodeList == NULL)
-		MallocErr();
-
-	memcpy(NodeList, Tree->NodeList, sizeof(struct INODE) * NoNodes);
-	ReLinkNodes(NodeList, Tree->NodeList, Trees->NoOfNodes);
-
-	Tree->Root = &NodeList[Tree->Root->ID];
-	ReLinkAns(Tree->Root);
-
-	Node = &NodeList[Node->ID];
-	Ans = Node->Ans;
-
-	New = &NodeList[NoNodes];
-	NewTaxa = &NodeList[NoNodes+1];
-
-	BlankNode(New);
-	BlankNode(NewTaxa);
-
-	New->Length = MINBL;
-	NewTaxa->Length = MINBL;
-
-
-	New->Left = Node;
-	New->Right= NewTaxa;
-	New->Ans = Ans;
-
-	if(Node == Ans->Left)
-		Ans->Left = New;
-	else
-		Ans->Right= New;
-	
-	New->Left->Ans = New;
-	New->Right->Ans= New;
-
-	New->Tip = FALSE;
-
-	NewTaxa->Ans = Ans;
-	NewTaxa->Tip = TRUE;
-	NewTaxa->Taxa= GetTaxaFromName(RecNode->Name, Trees->Taxa, Trees->NoOfTaxa);
-	NewTaxa->TipID= NewTaxa->Taxa->No;
-
-	New->ID = Trees->NoOfNodes;
-	NewTaxa->ID = Trees->NoOfNodes+1;
-
-	free(Tree->NodeList);
-	Tree->NodeList = NodeList;
-
-	for(Index=0;Index<NoNodes;Index++)
-	{
-		Node = &NodeList[Index];
-		if(Node->Tip == TRUE)
-			Node->Taxa = GetTaxaFromID(Node->TipID, Trees->Taxa, Trees->NoOfTaxa);
-	}
-}
-*/
-
-void	AddNewRecNode(TREES* Trees, RECNODE RecNode)
+void	AddNewRecNode(TREES* Trees, RECNODE *RecNode)
 {
 	int	TIndex;
 	TREE	*Tree;

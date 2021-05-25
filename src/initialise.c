@@ -72,8 +72,6 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 	if(Opt->Stones != NULL)
 		Opt->Stones->ItStart = Opt->Itters + 1;
-
-	FlattenRecNode(Opt);
 	
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 	{

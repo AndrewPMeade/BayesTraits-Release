@@ -10,8 +10,8 @@ void	FreeParts(TREES *Trees);
 void	FreePart(PART *Part);
 PART*	CreatPart(int NoTaxa);
 
-void	SetRecNodes(RECNODE RNode, TREES *Trees);
-NODE	FindNode(RECNODE RNode, TREE *Tree, int *Depth);
+void	SetRecNodes(RECNODE *RNode, TREES *Trees);
+NODE	FindNode(RECNODE *RNode, TREE *Tree, int *Depth);
 
 void	GetPartDiff(PART *Ans, PART *Cur, PART *Diff);
 
