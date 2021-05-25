@@ -3300,47 +3300,73 @@ double	ValidLocalRateScalar(char *Str)
 	return Ret;
 }
 
+TAG**	GetTagListFromNames(OPTIONS *Opt, char **NList, int Tokes, int *NoTags)
+{
+	TAG **Ret;
+	TAG *Tag;
+	int Index;
+
+	Ret = (TAG**)SMalloc(sizeof(TAG*) * Tokes);
+
+	*NoTags = 0;
+
+	for(Index=0;Index<Tokes;Index++)
+	{
+		Tag = GetTagFromName(Opt, NList[Index]);
+		if(Tag != NULL)
+		{
+			Ret[*NoTags] = Tag;
+			(*NoTags)++;
+		}
+		else
+			return Ret;
+	}
+
+	printf("LocalTransform takes a name, a list of tags, A transform type (node, bl, kappa, lambda, delta, OU) and an optional fixed scalar");
+	exit(0);
+
+	return NULL;
+}
+
 void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 {
-	TRANSFORM_TYPE	Type;
-	double			Scale;
-	int				Est;
-	TAG				*Tag;
+	TRANSFORM_TYPE		Type;
+	double				Scale;
+	int					Est, Pos, NoTags;
+	char				*Name;
+	TAG					**Tags;
 	LOCAL_TRANSFORM		*UVR;
-/*
-	if(Opt->ModelType == MT_CONTINUOUS)
+
+	if(Tokes <= 4)
 	{
-		printf("Local Rates not not compatable with model.\n");
+		printf("LocalTransform takes a name, a list of tags, A transform type (node, bl, kappa, lambda, delta, OU) and an optional fixed scalar");
 		exit(1);
 	}
-*/
-	if(!(Tokes == 3 || Tokes == 4))
-	{
-		printf("UserVarRates takes a tag, rate type (node, bl, kappa, lambda, delta, OU).\n");
-		exit(1);
-	}
+
+	Name = Passed[1];
 
 	Scale = -1;
 	Est = TRUE;
 
-	Tag = GetTagFromName(Opt, Passed[1]);
+	NoTags = Tokes;
+//	Tags = GetTagListFromName(Opt, Passed[1], &NoTags);
 
-	if(Tag == NULL)
+	Tags = GetTagListFromNames(Opt, &Passed[2], Tokes, &NoTags);
+
+	Pos = 2 + NoTags;
+
+	Type = StrToVarRatesType(Passed[Pos++]);
+
+	if(Tokes != Pos)
 	{
-		printf("Cannot find valid tag name %s.\n", Passed[1]);
-		exit(0);
-	}
-
-	Type = StrToVarRatesType(Passed[2]);
-
-	if(Tokes == 4)
-	{
-		Scale = ValidLocalRateScalar(Passed[3]);
+		Scale = ValidLocalRateScalar(Passed[Pos]);
 		Est = FALSE;
 	}
 
-	UVR = CreateLocalTransforms(Tag, Type, Est, Scale);
+	
+	UVR = CreateLocalTransforms(Name, Tags, NoTags, Type, Est, Scale);
 	Opt->LocalTransforms = (LOCAL_TRANSFORM**)AddToList(&Opt->NoLocalTransforms, (void**)Opt->LocalTransforms, UVR);
+
 }
 
 void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)
@@ -3425,7 +3451,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	
 	Tokes = MakeArgv(Buffer, Passed, BUFFERSIZE);
-//	Tokes = MakeArgv(Buffer, Passed, 1024);
 
 	if(Tokes == BUFFERSIZE)
 	{

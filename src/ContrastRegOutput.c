@@ -395,8 +395,8 @@ void	OutputConReg(FILE *Str, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	for(Index=0;Index<Trees->NoOfSites-1;Index++)
 		fprintf(Str, "%0.12f\t", RegConPost->SE[Index]);
 
-	PrintRegConPost(RegConPost);
-	exit(0);
+//	PrintRegConPost(RegConPost);
+//	exit(0);
 
 
 	FreeRegConPost(RegConPost);

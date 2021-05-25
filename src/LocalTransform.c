@@ -8,15 +8,16 @@
 #include "trees.h"
 
 
-LOCAL_TRANSFORM*	CreateLocalTransforms(TAG *Tag, TRANSFORM_TYPE Type, int Est, double Scale)
+LOCAL_TRANSFORM*	CreateLocalTransforms(char *Name, TAG **TagList, int NoTags, TRANSFORM_TYPE Type, int Est, double Scale)
 {
 	LOCAL_TRANSFORM* Ret;
 
-	Ret = (LOCAL_TRANSFORM*)malloc(sizeof(LOCAL_TRANSFORM));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (LOCAL_TRANSFORM*)SMalloc(sizeof(LOCAL_TRANSFORM));
 
-	Ret->Tag = Tag;
+
+	Ret->Name = StrMake(Name);
+	Ret->TagList = CloneMem(sizeof(TAG**) * NoTags, TagList);
+	Ret->NoTags = NoTags;	
 	Ret->Type = Type;
 	Ret->Est = Est;
 	Ret->Scale = Scale;
@@ -26,20 +27,19 @@ LOCAL_TRANSFORM*	CreateLocalTransforms(TAG *Tag, TRANSFORM_TYPE Type, int Est, d
 
 void		FreeLocalTransforms(LOCAL_TRANSFORM* LTrans)
 {
+	free(LTrans->Name);
+	free(LTrans->TagList);
 	free(LTrans);
 }
 
 void		CopyLocalTransforms(LOCAL_TRANSFORM* ATrans, LOCAL_TRANSFORM* BTrans)
 {
-	ATrans->Type	= BTrans->Type;
 	ATrans->Scale	= BTrans->Scale;
-	ATrans->Tag		= BTrans->Tag;
-	ATrans->Est		= BTrans->Est;
 }
 
 LOCAL_TRANSFORM*	CloneLocalTransform(LOCAL_TRANSFORM* LTrans)
 {
-	return CreateLocalTransforms(LTrans->Tag, LTrans->Type, LTrans->Est, LTrans->Scale);
+	return CreateLocalTransforms(LTrans->Name, LTrans->TagList, LTrans->NoTags, LTrans->Type, LTrans->Est, LTrans->Scale);
 }
 
 int			NoEstLocalTransform(LOCAL_TRANSFORM** List, int NoRates)
@@ -65,7 +65,7 @@ int			EstLocalTransforms(LOCAL_TRANSFORM** List, int NoRates)
 
 void		PrintLocalTransform(FILE *Str, LOCAL_TRANSFORM* Trans)
 {
-	fprintf(Str, "    %s %s ", Trans->Tag->Name, VarRatesTypeToStr(Trans->Type));	
+	fprintf(Str, "    %s %s ", Trans->Name, VarRatesTypeToStr(Trans->Type));	
 	if(Trans->Est == TRUE)
 		fprintf(Str, "Estimate");
 	else
@@ -89,7 +89,7 @@ void		PrintLocalTransforms(FILE *Str, LOCAL_TRANSFORM** List, int NoRates)
 void	ApplyLocalTransforms(RATES *Rates, TREES *Trees, OPTIONS *Opt, int Norm)
 {
 	LOCAL_TRANSFORM *LRate;
-	int Index;
+	int TIndex, Index;
 	TREE *Tree;
 	NODE N;
 
@@ -98,9 +98,12 @@ void	ApplyLocalTransforms(RATES *Rates, TREES *Trees, OPTIONS *Opt, int Norm)
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
 	{
 		LRate = Rates->LocalTransforms[Index];
-		N = LRate->Tag->NodeList[Rates->TreeNo];
-		
-		VarRatesNode(Trees, Tree, N, LRate->Scale, LRate->Type);
+
+		for(TIndex=0;TIndex<LRate->NoTags;TIndex++)
+		{
+			N = LRate->TagList[TIndex]->NodeList[Rates->TreeNo];
+			VarRatesNode(Trees, Tree, N, LRate->Scale, LRate->Type);
+		}
 	}
 
 //	SaveTrees("sout.trees", Trees);exit(0);

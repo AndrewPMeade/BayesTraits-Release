@@ -936,7 +936,7 @@ void	PrintLocalRateHeader(FILE *Str, OPTIONS *Opt)
 	{
 		LRate = Opt->LocalTransforms[Index];
 		if(LRate->Est == TRUE)
-			fprintf(Str, "%s - %s\t", LRate->Tag->Name, VarRatesTypeToStr(LRate->Type));
+			fprintf(Str, "%s - %s\t", LRate->Name, VarRatesTypeToStr(LRate->Type));
 	}
 }
 

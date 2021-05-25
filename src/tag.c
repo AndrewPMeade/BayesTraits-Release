@@ -19,6 +19,7 @@ TAG*	GetTagFromName(OPTIONS *Opt, char *Name)
 	return NULL;
 }
 
+
 void	FreeTag(TAG *Tag)
 {
 	int Index;

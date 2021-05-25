@@ -5,7 +5,7 @@
 
 void				ApplyLocalTransforms(RATES *Rates, TREES *Trees, OPTIONS *Opt, int Norm);
 
-LOCAL_TRANSFORM*	CreateLocalTransforms(TAG *Tag, TRANSFORM_TYPE Type, int Est, double Scale);
+LOCAL_TRANSFORM*	CreateLocalTransforms(char *Name, TAG **TagList, int NoTags, TRANSFORM_TYPE Type, int Est, double Scale);
 void				FreeLocalTransforms(LOCAL_TRANSFORM* LTrans);
 
 void				CopyLocalTransforms(LOCAL_TRANSFORM* ATrans, LOCAL_TRANSFORM* BTrans);

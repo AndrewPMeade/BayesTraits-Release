@@ -994,10 +994,13 @@ typedef struct
 
 typedef struct
 {
+	char			*Name;
 	TRANSFORM_TYPE	Type;
 	double			Scale;
 	int				Est;
-	TAG				*Tag;
+//	TAG				*Tag;
+	TAG				**TagList;
+	int				NoTags;
 } LOCAL_TRANSFORM;
 
 
