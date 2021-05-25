@@ -1928,8 +1928,6 @@ int		GetTaxaNoFormName(char* Name, TREES* Trees, int *No)
 	return FALSE;
 }
 
-
-
 int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 {
 	int		Index;
@@ -1947,7 +1945,8 @@ int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 
 			if(GetTaxaFromID(TaxaNo, Opt->Trees->Taxa, Opt->Trees->NoOfTaxa) == NULL)
 			{
-				printf("Could not convert %s to a valid taxa number\n", List[Index]);
+				printf("Error: Could not convert %s to a valid taxa number.\n", List[Index]);
+				exit(0);
 				return FALSE;
 			}
 		}
@@ -1955,7 +1954,8 @@ int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 		{
 			if(GetTaxaNoFormName(List[Index], Opt->Trees, &TaxaNo) == FALSE)
 			{
-				printf("Could not convert %s to a valid taxa name\n", List[Index]);
+				printf("Error: Could not convert %s to a valid taxa name.\n", List[Index]);
+				exit(0);
 				return FALSE;
 			}
 		}
@@ -2239,8 +2239,17 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 
 	if(Opt->DataType == CONTINUOUS)
 	{
-		if((Opt->Model != M_CONTRAST) && (Command == CVARRATES))
+		if(Command == CVARRATES)
+		{
+			if(Opt->ModelType != MT_CONTRAST)
+				return FALSE;
+
+			if(Opt->Analsis == ANALMCMC)
+				return TRUE;
+
 			return FALSE;
+		}
+
 
 		if((Opt->Model != M_CONTRAST_REG) && (Command == CRJDUMMY))
 			return FALSE;

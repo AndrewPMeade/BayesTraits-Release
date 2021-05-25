@@ -191,7 +191,7 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, long long It)
 	PLASTYNODE	*PNode;
 	PLASTY		*Plasty;
 	
-	ScaleTest();
+//	ScaleTest();
 
 	Plasty = Rates->Plasty;
 
@@ -698,8 +698,22 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 
 	fprintf(Out, "%lld\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, P->NoNodes);
 
-	Sigma = Rates->Contrast->Sigma[0];
-	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
+	if(Opt->Model == M_CONTRAST_CORREL)
+	{
+		Sigma = Rates->Contrast->SigmaMat->me[0][0];
+		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
+	}
+
+	if(Opt->Model == M_CONTRAST)
+	{
+		Sigma = Rates->Contrast->Sigma[0];
+		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
+	}
+
+	if(Opt->Model == M_CONTRAST_REG)
+	{
+		fprintf(Out, "%f\t-1\t%f\t", Rates->Contrast->RegAlpha, P->Alpha);
+	}
 	
 	for(Index=0;Index<P->NoNodes;Index++)
 	{
