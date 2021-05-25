@@ -876,3 +876,32 @@ void	PrintTime(FILE* Str)
 
 	free(Now);
 }
+
+void**	AddToList(int *No, void** OldList, void* Item)
+{
+	void	**Ret;
+
+	if(*No == 0)
+	{
+		Ret = (void**)malloc(sizeof(void*));
+		if(Ret == NULL)
+			MallocErr();
+		Ret[0] = Item;
+		(*No)++;
+		return Ret;
+	}
+
+	Ret = (void**)malloc(sizeof(void*) * (*No + 1));
+	if(Ret == NULL)
+		MallocErr();
+
+	memcpy(Ret, OldList, *No * sizeof(void*));
+	free(OldList);
+
+
+	Ret[*No] = Item;
+
+	(*No)++;
+
+	return Ret;
+}

@@ -15,4 +15,7 @@ CONTRASTR*	AllocContrastRates(OPTIONS *Opt, RATES *Rates);
 
 void	MLContrast(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
+void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates);
+void	CopyContrastRates(RATES* R1, RATES* R2, int NoSites);
+
 #endif

@@ -79,4 +79,6 @@ void		PrintFixSize(char *String, int Size, FILE* Str);
 void		GotoFileEnd(FILE *File, char *Buffer, int Size);
 
 void		PrintTime(FILE* Str);
+
+void**		AddToList(int *No, void** OldList, void* Item);
 #endif

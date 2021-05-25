@@ -9,402 +9,362 @@
 #include "rand.h"
 #include "likelihood.h"
 
-int			FindNoPPLists(int NoTaxa)
+double**	MakeTrueBL(TREES *Trees)
 {
-	int Ret;
-
-	Ret = NoTaxa * NoTaxa;
-	Ret = (Ret - NoTaxa) / 2;
-	Ret = Ret + NoTaxa;
-
-	return Ret;
-}
-
-NODE	GetTNodeFromID(char* TName, TREES *Trees, TREE *Tree)
-{
-	int Index;
-	NODE N;
-	for(Index=0;Index<Trees->NoOfNodes;Index++)
-	{
-		N = &Tree->NodeList[Index];
-		if(N->Tip == TRUE)
-		{
-			if(strcmp(TName, N->Taxa->Name) == 0)
-				return N;
-		}
-	}
-
-	return NULL;
-}
-
-int	NoNodesBelow(TREE *Tree, NODE N)
-{
-	int Ret;
-
-	Ret = 0;
-
-	while(N != Tree->Root)
-	{
-		N = N->Ans;
-		Ret++;
-	}
-
-	return Ret;
-}
-
-PPCOVARPAIR*	MakePPVar(TREES *Trees, TREE *Tree, int TaxaID)
-{
-	PPCOVARPAIR* Ret;
-	NODE Taxa;
-	int		Index;
-
-	Ret = (PPCOVARPAIR*)malloc(sizeof(PPCOVARPAIR));
+	double **Ret;
+	int		Index, NIndex;
+	TREE	*T;
+	Ret = (double**)malloc(sizeof(double*) * Trees->NoOfTrees);
 	if(Ret == NULL)
 		MallocErr();
 
-	Taxa = GetTNodeFromID(Trees->Taxa[TaxaID].Name, Trees, Tree);
-
-	Ret->x = TaxaID;
-	Ret->y = TaxaID;
-
-	Ret->Sum = 0;
-	Ret->No = NoNodesBelow(Tree, Taxa);
-
-	if(Ret->No == 0)
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
 	{
-		Ret->NList = NULL;
-		return Ret;
+		Ret[Index] = (double*)malloc(sizeof(double) * Trees->NoOfNodes);
+		if(Ret[Index] == NULL)
+			MallocErr();
 	}
 
-	Ret->NList = (NODE*)malloc(sizeof(NODE) * Ret->No);
-	if(Ret->NList == NULL)
-		MallocErr();
-
-	Index=0;
-	while(Taxa != Tree->Root)
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
 	{
-		Ret->NList[Index] = Taxa;
-		Index++;
-		Taxa = Taxa->Ans;
+		T = &Trees->Tree[Index];
+		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+			Ret[Index][NIndex] = T->NodeList[NIndex].Length;
 	}
-	
-	for(Index=0;Index<Ret->No;Index++)
-		Ret->Sum += Ret->NList[Index]->Length;
 
 	return Ret;
 }
 
-NODE	FindCommonNode(TREES *Trees, TREE *Tree, NODE NX, NODE NY)
+PLASTY*	CreatPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+{
+	PLASTY* Ret;
+
+	Ret = (PLASTY*)malloc(sizeof(PLASTY));
+	if(Ret == NULL)
+		MallocErr();
+
+	Ret->NoTrees = Trees->NoOfTrees;
+	Ret->NoNodes = 0;
+	Ret->NodeList= NULL;
+
+	Ret->TrueBL = MakeTrueBL(Trees);
+
+	return Ret;
+}
+
+void	FreePlasty(PLASTY* Plasty)
 {
 	int Index;
 
-	for(Index=0;Index<Trees->NoOfNodes;Index++)
-		Tree->NodeList[Index].Visited = FALSE;
-	
-	while(NX!=Tree->Root)
+	for(Index=0;Index<Plasty->NoTrees;Index++)
+		free(Plasty->TrueBL[Index]);
+	free(Plasty->TrueBL);
+
+	if(Plasty->NodeList != NULL)
 	{
-		NX = NX->Ans;
-		NX->Visited = TRUE;
+		for(Index=0;Index<Plasty->NoNodes;Index++)
+			free(Plasty->NodeList[Index]);
+		
+		free(Plasty->NodeList);
 	}
 
+	free(Plasty);
+}
+
+void	PlastySwap(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+{
+	PLASTY		*Plasty;
+	int			N1, N2;
+	PLASTYNODE	*T;
+
+	Plasty = Rates->Plasty;
+
+	N1 = rand() % Plasty->NoNodes;
 	do
 	{
-		NY = NY->Ans;
-	} while(NY->Visited != TRUE);
+		N2 = rand() % Plasty->NoNodes;
+	}while(N1 == N2);
 
-	return NY;
+	T = Plasty->NodeList[N1];
+	Plasty->NodeList[N1] = Plasty->NodeList[N2];
+	Plasty->NodeList[N2] = T;
 }
 
-PPCOVARPAIR*	MakePPCoVar(TREES *Trees, TREE *Tree, int XID, int YID)
+void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
-	PPCOVARPAIR* Ret;
-	NODE		XTaxa;
-	NODE		YTaxa;
-	NODE		CNode;
-	int			Index;
+	PLASTYNODE	*PNode;
+	TREE		*T;
+	NODE		N;
+	PLASTY		*Plasty;
 
-	Ret = (PPCOVARPAIR*)malloc(sizeof(PPCOVARPAIR));
-	if(Ret == NULL)
+	Plasty = Rates->Plasty;
+
+	PNode = (PLASTYNODE*)malloc(sizeof(PLASTYNODE));
+	if(PNode == NULL)
 		MallocErr();
 
-	XTaxa = GetTNodeFromID(Trees->Taxa[XID].Name, Trees, Tree);
-	YTaxa = GetTNodeFromID(Trees->Taxa[YID].Name, Trees, Tree);
-	CNode = FindCommonNode(Trees, Tree, XTaxa, YTaxa);
+	T = &Trees->Tree[0];
 
-	Ret->x = XID;
-	Ret->y = YID;
+	N = &T->NodeList[rand() % Trees->NoOfNodes];
 
-	Ret->Sum = 0;
+	PNode->Node = N;
 
-	Ret->No = NoNodesBelow(Tree, CNode);
+	if(GenRandState(Rates->RandStates) < 0.20)
+		PNode->Type = PPBRANCH;
+	else
+		PNode->Type = PPNODE;
 
-	if(Ret->No == 0)
-	{
-		Ret->NList = NULL;
-		return Ret;
-	}
+	if(GenRandState(Rates->RandStates) < 0.5)
+		PNode->Scale = GenRandState(Rates->RandStates);
+	else
+		PNode->Scale = 1 + (GenRandState(Rates->RandStates) * 9);
 
-	Ret->NList = (NODE*)malloc(sizeof(NODE) * Ret->No);
-	if(Ret->NList == NULL)
-		MallocErr();
+	Plasty->NodeList = (PLASTYNODE**) AddToList(&Plasty->NoNodes, Plasty->NodeList, (void*)PNode);
+
+//	Rates->LhPrior = 300;
+	Rates->LogHRatio= -PPCOST;
+}
+
+void	PlastyDel(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+{
+	PLASTY		*Plasty;
+	PLASTYNODE	**NList;
+	int			Index, No;
 	
-	Index=0;
-	while(CNode != Tree->Root)
+	Plasty = Rates->Plasty;
+
+	if(Plasty->NoNodes == 1)
 	{
-		Ret->NList[Index] = CNode;
-		Index++;
-		CNode = CNode->Ans;
-	}
-
-	return Ret;
-}
-
-
-void		BuildPhyloPlastyConVar(TREES *Trees, TREE *Tree, PPCOVARV *PPCV)
-{
-	int x,y;
-	int	Pos;
-
-	Pos = 0;
-	for(x=0;x<Trees->NoOfTaxa;x++)
-	{
-		for(y=x;y<Trees->NoOfTaxa;y++)
-		{
-			if(x == y)
-				PPCV->List[Pos] = MakePPVar(Trees, Tree, x);
-			else
-				PPCV->List[Pos] = MakePPCoVar(Trees, Tree, x, y);
-			Pos++;
-		}			
-	}
-}
-
-PPCOVARV*	InitPhyloPlastyConVar(TREES	*Trees, TREE *Tree)
-{
-	PPCOVARV	*Ret;
-	
-	Ret = (PPCOVARV*)malloc(sizeof(PPCOVARV));
-	if(Ret == NULL)
-		MallocErr();
-
-	Ret->No =FindNoPPLists(Trees->NoOfTaxa);
-
-	Ret->List = (PPCOVARPAIR**)malloc(sizeof(PPCOVARPAIR*) * Ret->No);
-	if(Ret->List == NULL)
-		MallocErr();
-
-	BuildPhyloPlastyConVar(Trees, Tree, Ret);
-
-	return Ret;
-}
-
-void	CalcPSize(PPCOVARPAIR* Pair)
-{
-	int Index;
-
-	Pair->Sum = 0;
-	for(Index=0;Index<Pair->No;Index++)
-		Pair->Sum += Pair->NList[Index]->Length;
-}
-
-void	MapPhyloPlastyToV(TREES	*Trees, TREE *Tree)
-{
-	int			Index;
-	CONVAR		*ConVar;
-	PPCOVARV	*PPCoVarV;
-	int			x,y;
-	double		Dist;
-
-	ConVar = Tree->ConVars;
-
-	PPCoVarV = ConVar->PPCoVarV;
-
-	for(Index=0;Index<PPCoVarV->No;Index++)
-		CalcPSize(PPCoVarV->List[Index]);
-
-	for(Index=0;Index<PPCoVarV->No;Index++)
-	{
-		x = PPCoVarV->List[Index]->x;
-		y = PPCoVarV->List[Index]->y;
-		Dist = PPCoVarV->List[Index]->Sum;
-
-		ConVar->V->me[x][y] = Dist;
-		ConVar->V->me[y][x] = Dist;
-	}
-
-	CopyMatrix(ConVar->TrueV, ConVar->V);
-}
-
-
-void		PrintNode(NODE N)
-{
-	if(N->Tip == TRUE)
-	{
-		printf("%s\t", N->Taxa->Name);
+		free(Plasty->NodeList[0]);
+		free(Plasty->NodeList);
+		Plasty->NodeList = NULL;
+		Plasty->NoNodes = 0;
 		return;
 	}
 
-	PrintNode(N->Left);
-	PrintNode(N->Right);
-}
+	No = rand() % Plasty->NoNodes;
 
-PHYLOPLASTY*	CreatPhyloPlasty(OPTIONS *Opt, RATES *Rates)
-{
-	TREES		*Trees;
-	TREE		*Tree;
-	PHYLOPLASTY	*Ret;
-	int			Index;
-	
-	Trees = Opt->Trees;
-	Tree  = &Trees->Tree[0];
+	free(Plasty->NodeList[No]);
+	Plasty->NodeList[No] = NULL;
 
-	Ret = (PHYLOPLASTY*)malloc(sizeof(PHYLOPLASTY));
-	if(Ret == NULL)
-		MallocErr();
 
-	Ret->NoBL	 = Trees->NoOfNodes;
-	
-	Ret->RealBL= (double*)malloc(sizeof(double) * Ret->NoBL);
-	if(Ret->RealBL == NULL)
-		MallocErr();
-	
-	for(Index=0;Index<Ret->NoBL;Index++)
-		Ret->RealBL[Index] = Tree->NodeList[Index].Length;
-	
-	Ret->NodeList	= NULL;
-	Ret->NoNodes	= 0;
-
-	return Ret;
-}
-
-void	MapPPNodeToTree(NODE N, double Scale)
-{
-	N->Length =  N->Length * Scale;
-	if(N->Tip == TRUE)
-		return;
-
-	MapPPNodeToTree(N->Left, Scale);
-	MapPPNodeToTree(N->Right, Scale);
-}
-
-void	MapPPToTree(TREES* Trees, RATES* Rates)
-{
-	TREE		*Tree;
-	PHYLOPLASTY	*PP;
-	int			Index;
-
-	PP = Rates->PhyloPlasty;
-	Tree = &Trees->Tree[Rates->TreeNo];
-
-	for(Index=0;Index<PP->NoBL;Index++)
-		Tree->NodeList[Index].Length = PP->RealBL[Index];
-
-	for(Index=0;Index<PP->NoNodes;Index++)
-		MapPPNodeToTree(PP->NodeList[Index]->Node, PP->NodeList[Index]->Scale);
-}
-
-void	SetPhyloPlastyV(TREES* Trees, RATES* Rates)
-{
-	TREE	*Tree;
-	int		Index;
-
-	Tree = &Trees->Tree[Rates->TreeNo];
-
-	MapPPToTree(Trees, Rates);
-//	CalcPVarCoVar(Trees, Tree); 
-	MapPhyloPlastyToV(Trees, Tree);
-}
-
-void			FindScaleNodeNTaxa(NODE N, PPSCALENODE* SNode)
-{
-	if(N->Tip == TRUE)
-	{
-		SNode->NoTaxa++;
-		return;
-	}
-
-	FindScaleNodeNTaxa(N->Left, SNode);
-	FindScaleNodeNTaxa(N->Right, SNode);
-}
-
-PPSCALENODE*	InitPPScaleNode(NODE N, double Scale)
-{
-	PPSCALENODE*	Ret;
-
-	Ret = (PPSCALENODE*)malloc(sizeof(PPSCALENODE));
-	if(Ret == NULL)
-		MallocErr();
-
-	Ret->Node	= N;
-	Ret->Scale	= Scale;
-
-	Ret->NoTaxa = 0;
-	FindScaleNodeNTaxa(N, Ret);
-	
-	return Ret;
-}
-
-void	AddPPNode(RATES *Rates, NODE N, double Scale)
-{
-	PPSCALENODE*	SNode;
-	PPSCALENODE**	NList;
-	PHYLOPLASTY*	PP;
-
-	PP = Rates->PhyloPlasty;
-	SNode = InitPPScaleNode(N, Scale);
-
-	NList = (PPSCALENODE**)malloc(sizeof(PPSCALENODE*) * (PP->NoNodes + 1));
+	NList = (PLASTYNODE**)malloc(sizeof(PLASTYNODE*) * (Plasty->NoNodes - 1));
 	if(NList == NULL)
 		MallocErr();
 
-	if(PP->NoNodes > 1)
+	No = 0;
+	for(Index=0;Index<Plasty->NoNodes;Index++)
 	{
-		memcpy(NList, PP->NodeList, sizeof(PPSCALENODE*) * PP->NoNodes);
-		free(PP->NodeList);
+		if(Plasty->NodeList[Index] != NULL)
+			NList[No++] = Plasty->NodeList[Index];
 	}
 
-	NList[PP->NoNodes] = SNode;
-	PP->NodeList = NList;	
-	PP->NoNodes++;
+	free(Plasty->NodeList);
+	Plasty->NodeList = NList;
+	Plasty->NoNodes--;
+
+	Rates->LogHRatio= PPCOST;
 }
 
-void	BlankPP(PHYLOPLASTY *PP)
+double	ChangePlastyRate(double Rate, double dev, RANDSTATES *RS)
 {
-	int				Index;
+	double Ret;
+	
+	do
+	{
+		Ret = (GenRandState(RS) * dev) - (dev / 2.0); 
+		Ret += Rate;
+	} while(Ret <= 0);
 
-	for(Index=0;Index<PP->NoNodes;Index++)
-		free(PP->NodeList[Index]);
-
-	free(PP->NodeList);
-	PP->NodeList	= NULL;
-	PP->NoNodes		= 0;
+	return Ret;
 }
 
-void	CopyPhyloPlasty(PHYLOPLASTY *A, PHYLOPLASTY *B)
+void	MutatePlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+{
+	PLASTY		*Plasty;
+	PLASTYNODE	*Node;
+	int			No;
+
+	Plasty = Rates->Plasty;
+
+	No = rand() % Plasty->NoNodes;
+	Node = Plasty->NodeList[No];
+
+	Node->Scale = ChangePlastyRate(Node->Scale, Opt->RateDev, Rates->RandStates);
+}
+
+void	PlastyMove(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+{
+	PLASTY *Plasty;
+
+	Plasty = Rates->Plasty;
+
+	if(Plasty->NoNodes == 0)
+	{
+		PlastyAdd(Rates, Trees, Opt);
+		return;
+	}
+
+	if((Plasty->NoNodes > 1) && (GenRandState(Rates->RandStates) < 0.05))
+	{	
+		PlastySwap(Rates, Trees, Opt);
+		return;
+	}
+
+	if(GenRandState(Rates->RandStates) < 0.2)
+	{
+		PlastyDel(Rates, Trees, Opt);
+		return;
+	}
+
+	if(GenRandState(Rates->RandStates) < 0.5)
+		PlastyAdd(Rates, Trees, Opt);
+	else
+		MutatePlasty(Rates, Trees, Opt);
+
+}
+
+PLASTYNODE *ClonePlastyNode(PLASTYNODE *N2)
+{
+	PLASTYNODE *Ret;
+
+	Ret = (PLASTYNODE*)malloc(sizeof(PLASTYNODE));
+	if(Ret == NULL)
+		MallocErr();
+
+	Ret->Node = N2->Node;
+	Ret->Scale= N2->Scale;
+	Ret->Type = N2->Type;
+
+	return Ret;
+}
+
+void	BlankPlasty(PLASTY *P)
 {
 	int Index;
 
-	BlankPP(A);
-
-	A->NodeList = (PPSCALENODE**)malloc(sizeof(PPSCALENODE*) * B->NoNodes);
-	if(A->NodeList == NULL)
-		MallocErr();
-
-	for(Index=0;Index<B->NoNodes;Index++)
+	if(P->NoNodes != 0)
 	{
-		A->NodeList[Index] = (PPSCALENODE*)malloc(sizeof(PPSCALENODE));
-		if(A->NodeList[Index] == NULL)
-			MallocErr();
-
-		A->NodeList[Index]->Node	= B->NodeList[Index]->Node;
-		A->NodeList[Index]->Scale	= B->NodeList[Index]->Scale;
-		A->NodeList[Index]->NoTaxa	= B->NodeList[Index]->NoTaxa;
+		for(Index=0;Index<P->NoNodes;Index++)
+			free(P->NodeList[Index]);
+		free(P->NodeList);
 	}
 
-	A->NoNodes = B->NoNodes;
+	P->NodeList = NULL;
+	P->NoNodes = 0;
 }
 
-void	PhyloPlasyMove(RATES *Rates)
+void	PlastyCopy(RATES *R1, RATES *R2)
 {
-	
+	PLASTYNODE	**NList;
+	PLASTY		*P1, *P2;
+	int			Index;
+
+	P1 = R1->Plasty;
+	P2 = R2->Plasty;
+
+	if(P2->NoNodes == 0)
+	{
+		BlankPlasty(P1);
+		return;
+	}
+
+	NList = (PLASTYNODE**)malloc(sizeof(PLASTYNODE*) * P2->NoNodes);
+	if(NList == NULL)
+		MallocErr();
+
+	for(Index=0;Index<P2->NoNodes;Index++)
+		NList[Index] = ClonePlastyNode(P2->NodeList[Index]);
+
+	BlankPlasty(P1);
+
+	P1->NodeList = NList;
+	P1->NoNodes = P2->NoNodes;
+}
+
+void	PlastyNode(NODE N, PLASTYNODE *P)
+{
+	N->Length = N->Length * P->Scale;
+	if(P->Type == PPBRANCH)
+		return;
+
+	if(N->Tip == TRUE)
+		return;
+
+	PlastyNode(N->Left, P);
+	PlastyNode(N->Right, P);
+}
+
+void	Plasty(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int Index;
+	int	TNo;
+	TREE *T;
+	PLASTY *P;
+
+	P = Rates->Plasty;
+	TNo = Rates->TreeNo;
+	T = &Trees->Tree[TNo];
+
+	for(Index=0;Index<Trees->NoOfNodes;Index++)
+		T->NodeList[Index].Length = P->TrueBL[TNo][Index];
+
+	for(Index=0;Index<P->NoNodes;Index++)
+		PlastyNode(P->NodeList[Index]->Node, P->NodeList[Index]);
+}
+
+void	InitPPTreeFile(OPTIONS *Opt, TREES *Trees)
+{
+	char	*Buffer;
+	int		Index;
+
+	Buffer = (char*)malloc(sizeof(char) * (strlen(Opt->LogFN) + 7));
+	if(Buffer == NULL)
+		MallocErr();
+	sprintf(Buffer, "%s.trees", Opt->LogFN);
+	Opt->PPTree = OpenWrite(Buffer);
+
+	fprintf(Opt->PPTree, "#NEXUS\n");
+	fprintf(Opt->PPTree, "\tBegin Trees;\n");
+	fprintf(Opt->PPTree, "\t\tTranslate\n");
+
+	for(Index=0;Index<Trees->NoOfTaxa-1;Index++)
+		fprintf(Opt->PPTree, "\t\t%d\t%s,\n", Trees->Taxa[Index].No, Trees->Taxa[Index].Name);
+	fprintf(Opt->PPTree, "\t\t%d\t%s\n\t\t;\n", Trees->Taxa[Index].No, Trees->Taxa[Index].Name);
+
+	fflush(Opt->PPTree);
+}
+
+void	PrintPPNode(FILE *Out, NODE N)
+{
+	if(N->Tip == TRUE)
+	{
+		fprintf(Out, "%d:%f", N->Taxa->No, N->Length);
+		return;
+	}
+
+	fprintf(Out, "(");
+
+	PrintPPNode(Out, N->Left);
+	fprintf(Out, ",");
+	PrintPPNode(Out, N->Right);
+	fprintf(Out, "):%f", N->Length);
+}
+
+void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	PLASTY *P;
+	TREE	*T;
+
+	P = Rates->Plasty;
+	T = &Trees->Tree[Rates->TreeNo];
+
+	Plasty(Opt, Trees, Rates);
+
+	fprintf(Opt->PPTree, "\tTree T_%d = (", P->NoNodes);
+	PrintPPNode(Opt->PPTree, T->Root->Left);
+	fprintf(Opt->PPTree, ",");
+	PrintPPNode(Opt->PPTree, T->Root->Right);
+	fprintf(Opt->PPTree, ");\n");
+	fflush(Opt->PPTree);
 }

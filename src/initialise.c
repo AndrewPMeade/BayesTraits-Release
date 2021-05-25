@@ -18,6 +18,7 @@
 #include "genlib.h"
 #include "continuous.h"
 #include "initialise.h"
+#include "phyloplasty.h"
 
 OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 {
@@ -41,6 +42,9 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	FlattenRecNode(Opt);
 
 	Opt->LogFile		= OpenWrite(Opt->LogFN);
+
+	if(Opt->UsePhyloPlasty == TRUE)
+		InitPPTreeFile(Opt, Trees);
 
 	#ifdef JNIRUN
 		Opt->LogFileRead = OpenRead(Opt->LogFN);
