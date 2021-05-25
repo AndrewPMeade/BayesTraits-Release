@@ -113,6 +113,8 @@ NODE	AllocNode(void)
 	Ret->VPosY			=	-1;
 
 	Ret->PatternNo		=	-1;
+
+	Ret->LandscapeBeta	=	0.0;
 	
 	return Ret;
 }

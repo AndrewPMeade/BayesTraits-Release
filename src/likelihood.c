@@ -56,6 +56,7 @@
 #include "LocalTransform.h"
 #include "DistData.h"
 #include "TimeSlices.h"
+#include "Landscape.h"
 
 #ifdef BTOCL
 	#include "btocl_discrete.h"
@@ -984,6 +985,9 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
 	if(Opt->ModelType == MT_CONTINUOUS)
 		return;
+
+	if(Opt->UseLandscape == TRUE)
+		MapLandscape(Opt, Trees, Rates);
 	
 	if(NeedToReSetBL(Opt, Rates) == TRUE)
 	{

@@ -304,6 +304,17 @@ void	PrintRJLocalTrans(FILE* Str, OPTIONS *Opt)
 {
 	fprintf(Str, "Min Trans Taxa No:               %d\n", Opt->MinTransTaxaNo);
 	
+	fprintf(Str, "RJ Local Branch:                 ");
+	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
+		fprintf(Str, "True\n");
+	else
+		fprintf(Str, "False\n");	
+
+	fprintf(Str, "RJ Local Node:                   ");
+	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
+		fprintf(Str, "True\n");
+	else
+		fprintf(Str, "False\n");	
 
 	fprintf(Str, "RJ Local Kappa:                  ");
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
@@ -517,9 +528,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		if(Opt->NodeBLData == TRUE)
 			fprintf(Str, "Model for Node BLS Data:         True\n");
 	
-		if(Opt->UseVarRates == TRUE)
-			fprintf(Str, "Using VarRates:                  True\n");
-
 	}
 	else
 	{
@@ -604,13 +612,13 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->DistData != NULL)
 		PrintDistData(Str, Opt->DistData);
 
-
-
 	if(Opt->NoCShed > 0)
 	{
 		fprintf(Str, "Custom Schedule:\n");
 		PrintCustomSchedule(Str, Opt->NoCShed, Opt->CShedList);
 	}
+	
+
 
 	PrintTimeSlices(Str, Opt->TimeSlices);
 	PrintPatterns(Str, Opt->NoPatterns, Opt->PatternList);
@@ -1301,8 +1309,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->MakeUM			=	FALSE;
 
-	Ret->UseVarRates	=	FALSE; 
-
 	Ret->UseEqualTrees	=	FALSE;
 	Ret->ETreeBI		=	-1;
 
@@ -1364,6 +1370,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->UsePisInAncStates = TRUE;
 	Ret->RJZero			   = TRUE;
+	
+	Ret->UseLandscape		= FALSE;
 
 	free(Buffer);
 
@@ -3472,12 +3480,6 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 		return FALSE;
 	}
 
-	if(Opt->Trees->NoTrees != 1)
-	{
-		printf("RJ Local Scalar is only valid with a single tree.\n");
-		return FALSE;
-	}
-
 	NameToRJLocalType(Passed[1], &Err);
 
 	if(Err == TRUE)
@@ -3960,19 +3962,19 @@ void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
 
 void	SetVarRatesOpt(OPTIONS *Opt)
 {
-	if(Opt->UseVarRates == TRUE)
+	if(	Opt->UseRJLocalScalar[VR_BL]	== TRUE ||
+		Opt->UseRJLocalScalar[VR_BL]	== TRUE)
 	{
-		RemovePriorFormOpt("VRNode", Opt);
-		RemovePriorFormOpt("VRBL", Opt);
-		Opt->UseVarRates = FALSE;
-		return;
+		printf("Node or branch RJ allready set.\n");
+		exit(1);
 	}
-
-	Opt->UseVarRates = TRUE;
 
 	SetLocalTransformPrior(Opt, VR_BL);
 	SetLocalTransformPrior(Opt, VR_NODE);
 
+	Opt->UseRJLocalScalar[VR_BL]	= TRUE;
+	Opt->UseRJLocalScalar[VR_NODE]	= TRUE;
+	
 	Opt->SaveTrees = TRUE;
 }
 
@@ -4206,6 +4208,21 @@ void	SetRJZero(OPTIONS *Opt, int Tokes, char **Passed)
 		Opt->RJZero = TRUE;
 }
 
+
+void	SetLandscape(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("Landscape Does not take any parameters.\n");
+		exit(1);
+	}
+
+	if(Opt->UseLandscape == TRUE)
+		Opt->UseLandscape = FALSE;
+	else
+		Opt->UseLandscape = TRUE;
+
+}
 
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 {
@@ -4665,6 +4682,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CRJZERO)
 		SetRJZero(Opt, Tokes, Passed);
+
+	if(Command == CLANDSCAPE)
+		SetLandscape(Opt, Tokes, Passed);
 	
 
 	return FALSE;

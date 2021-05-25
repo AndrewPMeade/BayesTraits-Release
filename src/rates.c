@@ -58,6 +58,7 @@
 #include "LocalTransform.h"
 #include "DistData.h"
 #include "TimeSlices.h"
+#include "Landscape.h"
 
 void	SetRegBetaZero(int NoSites, RATES *Rates)
 {
@@ -812,6 +813,9 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->AutoAccept		=	FALSE;
 	Ret->CalcLh			=	TRUE;
+
+
+	Ret->Landscape		=	NULL;
 		
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
@@ -820,6 +824,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->NormConst		=	-1;
 	Ret->GlobablRate	=	1.0;
+
 
 	SetRatesLocalRates(Ret, Opt);
 	
@@ -861,6 +866,10 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	if(Opt->TimeSlices->NoTimeSlices > 0)
 		Ret->TimeSlices = CreateRatesTimeSlices(Ret, Opt->TimeSlices);
+
+
+	if(Opt->UseLandscape == TRUE)
+		Ret->Landscape = CreateLandscape(Opt);
 
 	if(Opt->DataType == CONTINUOUS)
 	{
@@ -939,7 +948,10 @@ RATES*	CreatRates(OPTIONS *Opt)
 		ChangeModelFile(Ret, Ret->RS);
 	}
 
+
 	SimData(Opt, Opt->Trees, Ret);
+
+
 
 	return Ret;
 }
@@ -1043,12 +1055,12 @@ void	PrintLocalRateHeader(FILE *Str, OPTIONS *Opt)
 
 void	PrintLocalTransformHeadder(FILE *Str, OPTIONS *Opt)
 {
-	if(Opt->UseVarRates == TRUE)
-	{
+	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
 		fprintf(Str, "No RJ Local Branch\t");
+	
+	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
 		fprintf(Str, "No RJ Local Node\t");
-	}
-
+	
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
 		fprintf(Str, "No RJ Local Kappa\t");
 
@@ -1592,11 +1604,12 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 
 void	PrintLocalTransformNo(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
-	if(Opt->UseVarRates == TRUE)
-	{
+
+	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_BL, Rates));
+
+	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_NODE, Rates));
-	}
 
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_KAPPA, Rates));

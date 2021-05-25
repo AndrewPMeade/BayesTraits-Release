@@ -139,8 +139,7 @@
 // use ML paramter for indpedent contrast MCMC / Var Rates
 //#define CONTRAST_ML_PARAM
 
-// No kappa, lambda, delta, OU. 
-#define	NO_RJ_LOCAL_SCALAR	4
+
 
 // Minimum number of taxa to transform a node (kappa, lamabed ect)
 //#define MIN_TAXA_VR_TRANS	5
@@ -217,12 +216,17 @@
 
 #define MIN_NO_TAXA_RJ_LOCAL_TRANS 10
 
+// Number of local scalars 
+#define	NO_RJ_LOCAL_SCALAR	6
+
 static char    *RJ_LOCAL_SCALAR_NAMES[] =
 {
 	"kappa",
 	"lambda",
 	"delta", 
-	"ou"
+	"ou",
+	"node", 
+	"branch"
 };
 
 typedef enum 
@@ -318,6 +322,7 @@ typedef enum
 	CNOSLICESAMPLESTEPS,
 	CPISANCSTATES,
 	CRJZERO,
+	CLANDSCAPE,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -404,6 +409,7 @@ static char    *COMMANDSTRINGS[] =
 	"NoSliceSampleSteps", "nsss",
 	"PisAncStates",		"pas",
 	"RJZero",			"rjz",
+	"Landscape",		"LS",
 	""
 };
 
@@ -731,6 +737,8 @@ struct INODE
 
 	CONDATA		*ConData;
 	FATTAILNODE	*FatTailNode;
+
+	double		LandscapeBeta;
 };
 
 typedef struct INODE*	NODE;
@@ -1084,6 +1092,20 @@ typedef struct
 
 typedef struct
 {
+	double		Beta;
+	PART		*Part;
+	NODE		*NodeList;
+	long long	NodeID;
+} LANDSCAPE_NODE;
+
+typedef struct
+{
+	int				NoNodes;
+	LANDSCAPE_NODE	**NodeList;
+} LANDSCAPE;
+
+typedef struct
+{
 	MODEL		Model;
 	ANALSIS		Analsis;
 	MODEL_TYPE	ModelType;
@@ -1198,7 +1220,7 @@ typedef struct
 	long		Seed;
 	int			MakeUM;
 
-	int			UseVarRates;
+//	int			UseVarRates;
 
 	int			UseEqualTrees;
 	int			ETreeBI;
@@ -1259,6 +1281,8 @@ typedef struct
 	int			UsePisInAncStates;
 		
 	int			RJZero;
+
+	int			UseLandscape;
 
 } OPTIONS;
 
@@ -1433,6 +1457,8 @@ typedef struct
 
 	double			GlobablRate;
 	double			NormConst;
+
+	LANDSCAPE		*Landscape;
 } RATES;
 
 typedef struct
