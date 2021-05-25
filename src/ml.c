@@ -330,7 +330,7 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 	double OU;
 
-	for(OU=0;OU<50;OU+=0.001)
+	for(OU=0.00001;OU<20;OU+=0.001)
 	{
 		Rates->OU = OU;
 		Rates->Lh = Likelihood(Rates, Trees, Opt);
