@@ -691,7 +691,7 @@ char**	ContrastRegRateNames(OPTIONS *Opt)
 	char	*Buffer;
 	int		Index, Pos;
 	
-	Opt->NoOfRates = Opt->Trees->NoOfSites;
+	Opt->NoOfRates = (Opt->Trees->NoOfSites - 1);
 	 
 	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
@@ -699,12 +699,9 @@ char**	ContrastRegRateNames(OPTIONS *Opt)
 		MallocErr();
 	
 	Pos = 0;
-	sprintf(Buffer, "Alpha");
-	Ret[Pos++] = StrMake(Buffer);
-
 	for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
 	{
-		sprintf(Buffer, "Beta-%d", Index);
+		sprintf(Buffer, "Beta-%d", Index+1);
 		Ret[Pos++] = StrMake(Buffer);
 	}
 
@@ -725,14 +722,14 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 		case M_CONTINUOUS_REG:
 			return RetModelRateName(Opt);
 
+		case M_CONTRAST:
+			return ContrastFullRateNames(Opt);
+
 		case M_CONTRAST_CORREL:
 			return ContrastRateNames(Opt);
 
 		case M_CONTRAST_REG:
 			return ContrastRegRateNames(Opt);
-
-		case M_CONTRAST:
-			return ContrastFullRateNames(Opt);
 	}
 
 	return NULL;
@@ -1125,12 +1122,15 @@ void	PrintModelChoic(TREES *Trees)
 		if(Trees->NoOfSites > 1)
 			printf("6)	Continuous: Regression\n");
 
-		printf("7)	Independent Contrast\n");
+		if(EstData(Trees) == FALSE)
+		{
+			printf("7)	Independent Contrast\n");
 
-		printf("8)	Independent Contrast: Correlation\n");
+			printf("8)	Independent Contrast: Correlation\n");
 
-		if(Trees->NoOfSites > 1)
-			printf("9)	Independent Contrast: Regression\n");
+			if(Trees->NoOfSites > 1)
+				printf("9)	Independent Contrast: Regression\n");
+		}
 	}
 
 	if((Trees->NoOfSites == 2) && (Trees->NoOfStates == 2))
@@ -1169,28 +1169,12 @@ int		GetModelInt()
 	return Ret;
 }
 
-int		ValidModelChoice(TREES *Trees, int ModelNo)
+int		ValidModelChoice(TREES *Trees, MODEL Model)
 {
-
-	int MaxModelNo;
-
-	
-	MaxModelNo = 11;
-
-#ifdef PUBLIC_BUILD
-	MaxModelNo = 10;
-#endif
-
-	if((ModelNo < 1) || (ModelNo > MaxModelNo))
-	{
-		printf("Model must be 1-10.\n");
-		return FALSE;
-	}
-
-	if(ModelNo == 1)
+	if(Model == M_MULTISTATE)
 		return TRUE;
 
-	if((ModelNo == 2) || (ModelNo == 3) || (ModelNo == 10) || (ModelNo == 11))
+	if((Model == M_DESCINDEP) || (Model == M_DESCINDEP) || (Model == M_DESCCV) || (Model == M_DESCHET))
 	{
 		if((Trees->NoOfSites != 2) || (Trees->NoOfStates != 2))
 		{
@@ -1203,22 +1187,28 @@ int		ValidModelChoice(TREES *Trees, int ModelNo)
 
 	if(Trees->ValidCData == FALSE)
 	{
-		printf("Model %d requires continues data.\n", ModelNo);
+		printf("Model requires continues data.\n");
 		return FALSE;
 	}
 
-	if((ModelNo == 6) && (Trees->NoOfSites < 2))
+	if((Model == M_CONTINUOUS_REG) || (Model == M_CONTRAST_REG))
 	{
-		printf("Continuous Regression, requires two or more sites.\n");
-		return FALSE;
+		if(Trees->NoOfSites < 2)
+		{
+			printf("Regression, requires two or more sites.\n");
+			return FALSE;
+		}
 	}
 
-	if((ModelNo == 9) && (Trees->NoOfSites < 2))
+	if(EstData(Trees) == TRUE)
 	{
-		printf("Regression, requires two or more sites.\n");
-		return FALSE;
+		if((Model == M_CONTRAST) || (Model == M_CONTRAST_CORREL) || (Model == M_CONTRAST_REG))
+		{
+			printf("Currently estimating unknown data values is not supported in independent contrast methods, please use the continues models.\n");
+			return FALSE;
+		}
 	}
-
+	
 	return TRUE;
 }
 
@@ -1266,6 +1256,7 @@ MODEL	IntToModel(int No)
 void	GetModelChoice(TREES *Trees, MODEL *Model, int *Valid)
 {
 	int		No;
+	MODEL	M;
 
 	*Valid = FALSE;
 
@@ -1273,11 +1264,14 @@ void	GetModelChoice(TREES *Trees, MODEL *Model, int *Valid)
 	if(No == -1)
 		return;	
 
-	if(ValidModelChoice(Trees, No) == FALSE)
+	M = IntToModel(No);
+
+	if(ValidModelChoice(Trees, M) == FALSE)
 		return;
 
 	*Valid = TRUE;
-	*Model = IntToModel(No);
+	*Model = M;
+
 }
 
 MODEL	GetModel(TREES *Trees)
@@ -2225,6 +2219,15 @@ void	GetBasePis(OPTIONS *Opt, char* Type)
 
 int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 {
+#ifdef BTOCL
+	if(Command == CCOVARION)
+	{
+		printf("Covarion is not currently supported with OpenCL\n");
+		return FALSE;
+	}
+#endif
+
+
 	if(Opt->DataType == CONTINUOUS)
 	{
 		if(Opt->Model == M_CONTRAST_CORREL)
@@ -2305,7 +2308,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CCAPRJRATES)	||
 			(Command == CVARRATES)		||
 			(Command == CSAVEMODELS)	||
-			(Command == CLOADMODELS)
+			(Command == CLOADMODELS)	||
+			(Command == CSHEDULE)
 			)
 		{
 			printf("Command %s (%s) is not valid with the ML model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -3904,6 +3908,14 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetSteppingstone(Opt, Passed, Tokes);
 	}
 
+	if(Command == CSHEDULE)
+	{
+		if(Opt->UseSchedule == FALSE)
+			Opt->UseSchedule = TRUE;
+		else
+			Opt->UseSchedule = FALSE;
+	}
+
 	return FALSE;
 }
 
@@ -3962,7 +3974,7 @@ void	CheckOptions(OPTIONS *Opt)
 	{
 		if(FindNoOfRates(Opt) > 25)
 		{
-			printf("To many free parameter to estimate (%d), try reducing the model or using RJ MCMC\n", NoFreeP);
+			printf("Too many free parameter to estimate (%d), try reducing the model or using RJ MCMC\n", NoFreeP);
 			printf("If you believe you data can support this number of free parameter please contact the developers to have this limitation removed.\n");
 			exit(0);
 		}	

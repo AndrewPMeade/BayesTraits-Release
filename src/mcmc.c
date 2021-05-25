@@ -389,8 +389,7 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 			
 	CRates	=	CreatRates(Opt);
 	NRates	=	CreatRates(Opt);
-
-	
+		
 	CreatPriors(Opt, CRates);
 	CreatPriors(Opt, NRates);
 

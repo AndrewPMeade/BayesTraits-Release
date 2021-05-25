@@ -1136,9 +1136,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		Err;
 	int		GammaCat;
 	double	RateMult;
-
 	
-
  	if(Rates->ModelFile == NULL)
 		MapRates(Rates, Opt);
 	else

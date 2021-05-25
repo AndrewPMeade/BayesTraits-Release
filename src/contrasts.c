@@ -1083,7 +1083,6 @@ double	CalcRegLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, double Alpha, double 
 	double		GlobalVar;
 	double		SumLogVar;
 	double		T1, Ret;
-	double		AlphaErr;
 
 	ConRates = Rates->Contrast;
 	T = Trees->Tree[Rates->TreeNo];
@@ -1216,15 +1215,25 @@ void	CaclRegBeta(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 //	printf("Inverse[Transpose[Ux].Ux].(Transpose[Ux].Uy)\n");
 	
 	if(Trees->NoOfSites == 2)
-		BSpace->InvUx->me[0][0] = 1.0 / BSpace->Prod1->me[0][0];
+	{
+		if(Opt->TestCorrel == FALSE)
+			BSpace->InvUx->me[0][0] = 1;
+		else
+			BSpace->InvUx->me[0][0] = 1.0 / BSpace->Prod1->me[0][0];
+	}
 	else
 	{
-		Err = InvertMatrix(BSpace->Prod1->me, Trees->NoOfSites-1, BSpace->TempDVect, BSpace->TempIVect, BSpace->InvUx->me);
-
-		if(Err != NO_ERROR)
+		if(Opt->TestCorrel == FALSE)
+			SetIdentityMatrix(BSpace->InvUx);
+		else
 		{
-			printf("Matrix singular: %s::%d\n", __FILE__, __LINE__);
-			exit(0);
+			Err = InvertMatrix(BSpace->Prod1->me, Trees->NoOfSites-1, BSpace->TempDVect, BSpace->TempIVect, BSpace->InvUx->me);
+
+			if(Err != NO_ERROR)
+			{
+				printf("Matrix singular: %s::%d\n", __FILE__, __LINE__);
+				exit(0);
+			}
 		}
 	}
 
@@ -1234,12 +1243,6 @@ void	CaclRegBeta(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	for(Index=0;Index<Trees->NoOfSites-1;Index++)
 		Rates->Contrast->RegBeta[Index] = BSpace->Prod3->me[0][Index];
-
-	if(Opt->TestCorrel == FALSE)
-	{
-		for(Index=0;Index<Trees->NoOfSites-1;Index++)
-			Rates->Contrast->RegBeta[Index] = 0;
-	}
 }
 
 
@@ -1299,8 +1302,7 @@ double CaclRegContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		CaclRegBeta(Opt, Trees, Rates);
 	
 	CR->RegAlpha = CalcRegAlpha(Tree, CR, Trees->NoOfSites);
-	
-	
+		
 	CR->RegSigma = CaclRegSigma(Tree, CR->RegBeta, Trees->NoOfSites);
 		
 	Ret = CalcRegLh(Opt, Trees, Rates, CR->RegAlpha, CR->RegBeta);
@@ -1325,7 +1327,6 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 //	TransContNodeLambda(Trees->Tree[Rates->TreeNo]->Root, 0.5, TRUE);
 //	SaveTrees("DTest.trees", Trees); exit(0);
 
-
 	if(NeedToReSetBL(Opt) == TRUE)
 	{
 		ReSetBranchLength(Trees->Tree[Rates->TreeNo]);
@@ -1344,14 +1345,16 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	CalcContrast(Trees, Rates);	
 #endif	
 
+	if(Opt->Model == M_CONTRAST)
+		Rates->Lh = CaclStdContrastLh(Opt, Trees, Rates);
+
 	if(Opt->Model == M_CONTRAST_CORREL)
 		Rates->Lh = CalcContLh(Opt, Trees, Rates);
 	
 	if(Opt->Model == M_CONTRAST_REG)
 		Rates->Lh = CaclRegContrastLh(Opt, Trees, Rates);
 
-	if(Opt->Model == M_CONTRAST)
-		Rates->Lh = CaclStdContrastLh(Opt, Trees, Rates);
+
 	
 	if(Rates->Lh != Rates->Lh)
 		return ERRLH;
@@ -1554,16 +1557,16 @@ void	MapConValsToRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 
 	if(Opt->Model == M_CONTRAST_REG)
 	{
-		Rates->Rates[0] = ConR->RegAlpha;
-		if(Opt->TestCorrel == TRUE)
-			memcpy((void*)&Rates->Rates[1], ConR->RegBeta, sizeof(double) * (NoSites-1));
+	//	Rates->Rates[0] = ConR->RegAlpha;
+		
+		memcpy((void*)&Rates->Rates[0], ConR->RegBeta, sizeof(double) * (NoSites-1));
 		return;
 	}
 }
 
 void	MapRatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 {
-	int x, NoSites;
+	int NoSites;
 
 	NoSites = Opt->Trees->NoOfSites;
 	
@@ -1572,15 +1575,10 @@ void	MapRatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 	
 	if(Opt->Model == M_CONTRAST_REG)
 	{
-		ConR->RegAlpha = Rates->Rates[0];
+		// Reg Alpha will be set to ML values from Beta's
+		ConR->RegAlpha = 0;
 
-		if(Opt->TestCorrel == TRUE)
-			memcpy(ConR->RegBeta, (void*)&Rates->Rates[1], sizeof(double) * (NoSites-1));
-		else
-		{
-			for(x=0;x<NoSites-1;x++)
-				ConR->RegBeta[x] = 0.0;
-		}
+		memcpy(ConR->RegBeta, (void*)Rates->Rates, sizeof(double) * (NoSites-1));
 	}
 
 	if(Opt->Model == M_CONTRAST)

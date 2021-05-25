@@ -233,6 +233,7 @@ typedef enum
 	CVARRATES,
 	CSTONES,
 	CADDERR,
+	CSHEDULE, 
 	CUNKNOWN,
 } COMMANDS;
 
@@ -307,6 +308,7 @@ static char    *COMMANDSTRINGS[] =
 	"varrates",		"vr",
 	"stones",		"st",
 	"adderr",		"er",
+	"schedule",		"sh", 
 	""
 };
 
@@ -1248,6 +1250,7 @@ typedef struct
 	AUTOTUNE	*DeltaAT;
 	AUTOTUNE	*LambdaAT;
 	AUTOTUNE	*OUAT;
+	
 
 } SCHEDULE;
 

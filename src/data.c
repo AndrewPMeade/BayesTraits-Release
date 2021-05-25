@@ -1182,3 +1182,27 @@ void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
 
 	SetTreesDistToRoot(Trees);
 }
+
+
+void		SetDataRegTC(OPTIONS *Opt)
+{
+	int TIndex, SIndex;
+	TREES *Trees;
+	TAXA	*Taxa;
+
+	Trees = Opt->Trees;
+
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		Taxa = Trees->Taxa[TIndex];
+		printf("%s\t", Taxa->Name);
+		for(SIndex=1;SIndex<Trees->NoOfSites;SIndex++)
+		{
+			Taxa->ConData[SIndex] = 1;
+			printf("%f\t", Taxa->ConData[SIndex]);
+		}
+		printf("\n");
+	}
+//	exit(0);
+}

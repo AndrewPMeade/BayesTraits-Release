@@ -11,7 +11,7 @@ ANALSIS		GetAnalsis(TREES *Trees);
 MODEL_TYPE	GetModelType(MODEL Model);
 void		GetOptions(OPTIONS *Opt);
 
-int			ValidModelChoice(TREES *Trees, int ModelNo);
+int			ValidModelChoice(TREES *Trees, MODEL Model);
 
 void		PrintOptions(FILE* Str, OPTIONS *Opt);
 void		FreeOptions(OPTIONS *Opt, int NoSites);

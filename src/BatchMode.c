@@ -41,13 +41,13 @@ MODEL	GetBatchModel(TREES *Trees, char *MLine)
 	}
 
 	MNo = atoi(MLine);
-	if(ValidModelChoice(Trees, MNo) == FALSE)
+	Ret = IntToModel(MNo);
+
+	if(ValidModelChoice(Trees, Ret) == FALSE)
 	{
 		printf("%s is not a valid model\n", MLine);
 		exit(0);
-	}
-
-	Ret = IntToModel(MNo);
+	}	
 
 	return Ret;
 }

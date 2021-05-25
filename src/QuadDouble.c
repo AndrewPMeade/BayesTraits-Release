@@ -61,7 +61,7 @@ void	FreeQuadLh(OPTIONS *Opt, TREES *Trees)
 	int TIndex, NIndex, Index;
 	NODE N;
 	TREE *T;
-
+	
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
 		T = Trees->Tree[TIndex];

@@ -440,7 +440,9 @@ double	RJSplitRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int SizeG0, in
 	T2 = (1.0 / NoSplitable);
 
 
-	T3 = (1.0 / ( pow((double)2.0, NiNj - 1) - 1.0));
+//	Pre V 2 , mapping between exact model space is not needed. 
+//	T3 = (1.0 / ( pow((double)2.0, NiNj - 1) - 1.0));
+	T3 = 1;
  
 	
 	T4 = (1.0 / (Rate * (NiNj)));
@@ -461,8 +463,7 @@ double	RJMergeRatio(int NoOfGroups)
 	KC2 = NoOfGroups * (NoOfGroups - 1);
 	KC2 = KC2 / 2;
 	Ret = Ret * (1.0 / (double)KC2);
-
-
+	
 	return Ret;
 }
 

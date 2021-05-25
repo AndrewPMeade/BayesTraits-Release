@@ -29,6 +29,7 @@
 
 double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree);
 
+
 void	InitEstData(OPTIONS *Opt, TREES *Trees)
 {
 	int		*TempEst;
@@ -2097,9 +2098,7 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 	Trees->TempConVars = AllocTempConVars(Opt, Trees);
 
 	InitEstData(Opt, Trees);
-
-
-
+	
 	Opt->InvertV = FALSE;
 	if(	(Opt->EstDelta == TRUE) ||
 		(Opt->EstKappa == TRUE) ||

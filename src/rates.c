@@ -56,9 +56,7 @@ int		FindNoConRates(OPTIONS *Opt)
 		break;
 
 		case M_CONTRAST_REG:
-			if(Opt->TestCorrel == FALSE)
-				return 1;
-			return Opt->Trees->NoOfSites; 
+			return Opt->Trees->NoOfSites - 1; 
 		break;
 
 		case M_CONTRAST:
@@ -139,14 +137,12 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 	{
 		Rates->Means[0] = Rates->Rates[0];
 
+//		memcpy(Rates->Beta, Rates->Rates, sizeof(double) * Rates->NoOfRates);
 		for(Index=1;Index<Rates->NoOfRates;Index++)
 		{
-			if(Opt->TestCorrel == FALSE)
-				Rates->Beta[Index - 1] = Rates->Rates[Index] = 0;
-			else
-				Rates->Beta[Index - 1] = Rates->Rates[Index];
+			Rates->Beta[Index - 1] = Rates->Rates[Index];
 		}
-
+		
 		return;
 	}
 	
@@ -2684,8 +2680,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 		case STREEMOVE:
 			Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoOfTrees;
 		break;
-
-
+		
 		case SGAMMA:
 			Rates->Gamma =  ChangeRate(Rates, Rates->Gamma, Opt->RateDev);
 		break;

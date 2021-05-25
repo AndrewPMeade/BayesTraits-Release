@@ -45,6 +45,12 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 {
 	int		Index;
 	int		ID;
+
+	if(Opt->Model == M_CONTRAST_REG)
+	{
+		if(Opt->TestCorrel == FALSE)
+			SetDataRegTC(Opt);
+	}
 	
 	SetNoOfThreads(Opt->Cores);
 

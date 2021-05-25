@@ -24,4 +24,6 @@ void		FreeTaxa(TAXA *Taxa, int NoOfSites);
 void		FindSiteSymbols(TREES *Trees, int SiteNo);
 void		AddRecNodes(OPTIONS *Opt, TREES *Trees);
 char*		SetDescUnknownStates(char S1, char S2);
+
+void		SetDataRegTC(OPTIONS *Opt);
 #endif

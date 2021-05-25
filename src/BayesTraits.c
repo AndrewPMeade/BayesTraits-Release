@@ -209,6 +209,8 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/PrimatesBrainBody.trees ./Seq/PrimatesBrainBody.txt < in.txt > sout.txt
 
+// ./Seq/mammal-1.trees ./Seq/MammalBrainBodyGtEst.txt < in.txt > sout.txt
+
 extern double igam(double a, double x);
 
 
@@ -256,8 +258,7 @@ int main(int argc, char** argv)
 	btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE,
 			Trees->NoOfStates, Trees->NoOfSites); 
 	#endif
-
-
+	
 	PreProcess(Opt, Trees);
 
 	if(Opt->Analsis == ANALMCMC)
