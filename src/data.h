@@ -10,6 +10,8 @@ void		PreProcessDataWithModel(TREES *Trees, MODEL Model);
 void		PrintData(TREES* Trees, OPTIONS *Opt);
 void		PrintTaxaData(OPTIONS *Opt, TREES* Trees);
 
+
+
 ANALSIS		GetAnalsis(TREES *Trees);
 void		SquashDep(TREES	*Trees);
 void		RemoveConMissingData(TREES* Trees);

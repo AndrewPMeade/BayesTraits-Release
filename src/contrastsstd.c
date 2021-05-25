@@ -63,9 +63,9 @@ double	CaclStdContrastLhMLSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Sit
 			{
 				Con = N->ConData->Contrast[CIndex];
 
-				GlobalVar += (Con->Cont[SiteNo] * Con->Cont[SiteNo]) / Con->Var[SiteNo];
+				GlobalVar += (Con->Cont[SiteNo] * Con->Cont[SiteNo]) / Con->Var;
 
-				SumLogVar += log(Con->Var[SiteNo]);
+				SumLogVar += log(Con->Var);
 				NoCon++;
 			}
 		}
@@ -75,7 +75,7 @@ double	CaclStdContrastLhMLSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Sit
 //	SumLogVar = T->Root->ConData->SumLogVar[SiteNo];
 
 //	exit(0);
-	SumLogVar += log(T->Root->ConData->Contrast[0]->Err[SiteNo]);
+	SumLogVar += log(T->Root->ConData->Contrast[0]->Err);
 
 	T1 = GlobalVar;
 	GlobalVar = GlobalVar / (NoCon+1);
@@ -110,23 +110,24 @@ double	CaclAlphaErr(NODE N, double EstAlpha, int SiteNo)
 	Con = N->ConData->Contrast[0];
 
 	Ret = (EstAlpha - Con->Data[SiteNo]) * (EstAlpha - Con->Data[SiteNo]);
-	Ret = Ret / Con->Err[SiteNo];
+	Ret = Ret / Con->Err;
 
 	return Ret;
 }
 
-double CaclStdContrastLhMCMCSite(OPTIONS *Opt, TREES* Trees, RATES* Rates, int SiteNo)
+double CaclStdContrastLhMCMC(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
-	int			Index, CIndex;
+	int			Index, CIndex, SIndex;
 	TREE		*T;
 	NODE		N;
 	CONTRAST	*Con;
 	CONTRASTR	*ConRates;
-	double		GlobalVar;
+	double		*GlobalVar;
 	double		SumLogVar;
 	double		T1, T2;
-	int			NoCon;
-	double		Ret;
+	int			NoCon, NoSites;
+	double		Ret, GRet;
+
 
 	ConRates = Rates->Contrast;
 	T = Trees->Tree[Rates->TreeNo];
@@ -143,6 +144,12 @@ double CaclStdContrastLhMCMCSite(OPTIONS *Opt, TREES* Trees, RATES* Rates, int S
 	ConRates->Alpha[SiteNo] = RES_ALPHA;
 #endif
 
+	NoSites = Trees->NoSites;
+
+	GlobalVar = SMalloc(sizeof(double) * NoSites);
+	for(SIndex=0;SIndex<NoSites;SIndex++)
+		GlobalVar[SIndex] = 0;
+
 	for(Index=0;Index<T->NoNodes;Index++)
 	{
 		N = T->NodeList[Index];
@@ -151,44 +158,39 @@ double CaclStdContrastLhMCMCSite(OPTIONS *Opt, TREES* Trees, RATES* Rates, int S
 			for(CIndex=0;CIndex<N->ConData->NoContrast;CIndex++)
 			{
 				Con = N->ConData->Contrast[CIndex];
-				GlobalVar += (Con->Cont[SiteNo] * Con->Cont[SiteNo]) / Con->Var[SiteNo];
+				SumLogVar += log(Con->Var);
 
-				SumLogVar += log(Con->Var[SiteNo]);
+				for(SIndex=0;SIndex<NoSites;SIndex++)
+					GlobalVar[SIndex] += (Con->Cont[SIndex] * Con->Cont[SIndex]) / Con->Var;
+				
 				NoCon++;
 			}
 		}
 	}
 	
 	NoCon = T->NoContrast;
-//	GlobalVar = T->Root->ConData->GVar[SiteNo];
-//	SumLogVar = T->Root->ConData->SumLogVar[SiteNo];
 
-	SumLogVar += log(T->Root->ConData->Contrast[0]->Err[SiteNo]);
+	SumLogVar += log(T->Root->ConData->Contrast[0]->Err);
 
-	T1 = GlobalVar;
-	GlobalVar = GlobalVar / NoCon;
+	GRet = 0;
+	for(SIndex=0;SIndex<NoSites;SIndex++)
+	{
+		T1 = GlobalVar[SIndex];
+		GlobalVar[SIndex] = GlobalVar[SIndex] / NoCon;
 
-	Ret = (NoCon+1) * log(6.28318530717958647692528676655900576839 * ConRates->Sigma[SiteNo]);
+		Ret = (NoCon+1) * log(6.28318530717958647692528676655900576839 * ConRates->Sigma[SIndex]);
 
-	T2 = ((NoCon+1) * GlobalVar) +  CaclAlphaErr(T->Root, ConRates->Alpha[SiteNo], SiteNo);
-	Ret += SumLogVar + (T2 / ConRates->Sigma[SiteNo]);
-	Ret *= -0.5;
+		T2 = ((NoCon+1) * GlobalVar[SIndex]) +  CaclAlphaErr(T->Root, ConRates->Alpha[SIndex], SIndex);
+		Ret += SumLogVar + (T2 / ConRates->Sigma[SIndex]);
+		Ret *= -0.5;
 
-	return Ret;
+		GRet += Ret;
+	}
+
+	free(GlobalVar);
+	return GRet;
 }
 
-double	CaclStdContrastLhMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	double Ret;
-	int Index;
-
-	Ret = 0;
-
-	for(Index=0;Index<Trees->NoSites;Index++)
-		Ret += CaclStdContrastLhMCMCSite(Opt, Trees, Rates, Index);
-
-	return Ret;
-}
 
 double	CaclStdContrastLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {

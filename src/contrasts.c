@@ -75,8 +75,8 @@ CONTRAST*	AllocContrastMem(int NoSites)
 
 	Ret->Data = (double*)SMalloc(sizeof(double) * NoSites);
 	Ret->Cont = (double*)SMalloc(sizeof(double) * NoSites);
-	Ret->Var  = (double*)SMalloc(sizeof(double) * NoSites);
-	Ret->Err  = (double*)SMalloc(sizeof(double) * NoSites);
+//	Ret->Var  = (double*)SMalloc(sizeof(double) * NoSites);
+//	Ret->Err  = (double*)SMalloc(sizeof(double) * NoSites);
 	Ret->v		= (double*)SMalloc(sizeof(double) * NoSites);
 
 	return Ret;
@@ -102,12 +102,12 @@ void	AllocContrast(NODE N, TREES *Trees, int NoSites)
 	for(Index=0;Index<NoC;Index++)
 	{
 		Ret = AllocContrastMem(NoSites);
+		Ret->Var = 0;
+		Ret->Err = 0;
 
 		for(SIndex=0;SIndex<NoSites;SIndex++)
 		{
 			Ret->Cont[SIndex]		= 0;
-			Ret->Var[SIndex]		= 0;
-			Ret->Err[SIndex]		= 0;
 			Ret->Data[SIndex]		= -1;
 
 			if(N->Tip == TRUE)
@@ -190,8 +190,6 @@ void	FreeContrastS(CONTRAST* C)
 {
 	free(C->Cont);
 	free(C->Data);
-	free(C->Err);
-	free(C->Var);
 	free(C->v);
 	free(C);
 }
@@ -233,13 +231,15 @@ CONTRAST*	CopyC(CONTRAST *Con, int NoSites)
 	CONTRAST* Ret;
 
 	Ret = AllocContrastMem(NoSites);
+	
+	Ret->Err = Con->Err;
+	Ret->Var = Con->Var;
 
 	for(Index=0;Index<NoSites;Index++)
 	{
 		Ret->Cont[Index] = Con->Cont[Index];
 		Ret->Data[Index] = Con->Data[Index];
-		Ret->Err[Index] = Con->Err[Index];
-		Ret->Var[Index] = Con->Var[Index];
+
 		Ret->v[Index]	= Con->v[Index];
 	}
 
@@ -256,8 +256,8 @@ void	AddPolyContrast(CONTRAST *C0, CONTRAST *Dest, NODE Add, int NoSites)
 	C1 = Add->ConData->Contrast[0];
 	for(SIndex=0;SIndex<NoSites;SIndex++)
 	{
-		l0 = C0->Err[SIndex];
-		l1 = Add->Length + C1->Err[SIndex];
+		l0 = C0->Err;
+		l1 = Add->Length + C1->Err;
 
 		t = (l0 * C1->Data[SIndex]) +  (l1 * C0->Data[SIndex]);
 		t = t / (l0 + l1);
@@ -265,8 +265,8 @@ void	AddPolyContrast(CONTRAST *C0, CONTRAST *Dest, NODE Add, int NoSites)
 		Dest->Data[SIndex] = t;
 		Dest->Cont[SIndex] = C0->Data[SIndex] - C1->Data[SIndex];
 
-		Dest->Err[SIndex] = (l0 * l1) / (l0 + l1);
-		Dest->Var[SIndex] = l0 + l1;		
+		Dest->Err = (l0 * l1) / (l0 + l1);
+		Dest->Var = l0 + l1;		
 	}
 }
 
@@ -290,8 +290,8 @@ void	PrintNodeContrast(NODE N, int NoSites)
 		{ 
 			printf("%12.12f\t", ConData->Contrast[CIndex]->Data[Index]); 
 			printf("%12.12f\t", ConData->Contrast[CIndex]->Cont[Index]);
-			printf("%12.12f\t", ConData->Contrast[CIndex]->Var[Index]);
-			printf("%12.12f\t", ConData->Contrast[CIndex]->Err[Index]);
+			printf("%12.12f\t", ConData->Contrast[CIndex]->Var);
+			printf("%12.12f\t", ConData->Contrast[CIndex]->Err);
 
 			printf("%12.12f\t", ConData->Contrast[CIndex]->v[Index]);
 
@@ -353,6 +353,72 @@ void	RecCalcContrast(NODE N, int NoSites)
 	cilk_sync;
 #endif
 
+	N0 = N->NodeList[0];
+	N1 = N->NodeList[1];
+
+	C = N->ConData->Contrast[0];
+	C0 = N0->ConData->Contrast[0];
+	C1 = N1->ConData->Contrast[0];
+
+	l0 = N0->Length + C0->Err;
+	l1 = N1->Length + C1->Err;
+
+	C->Err = (l0 * l1) / (l0 + l1);
+	C->Var = l0 + l1;
+
+	for(SIndex=0;SIndex<NoSites;SIndex++)
+	{
+
+		t = (l0 * C1->Data[SIndex]) +  (l1 * C0->Data[SIndex]);
+		t = t / (l0 + l1);
+		
+		C->Data[SIndex] = t;
+		C->Cont[SIndex] = C0->Data[SIndex] - C1->Data[SIndex];
+
+
+		C->v[SIndex] = C->Err;
+		if(N->Length > 0)
+			C->v[SIndex] += N->Length;
+	}
+
+	for(Index=1;Index<N->ConData->NoContrast;Index++)
+		AddPolyContrast(N->ConData->Contrast[Index-1], N->ConData->Contrast[Index], N->NodeList[Index+1], NoSites);
+		
+	C = N->ConData->Contrast[0];
+	N->ConData->Contrast[0] = N->ConData->Contrast[N->ConData->NoContrast-1];
+	N->ConData->Contrast[N->ConData->NoContrast-1] = C;
+}
+
+/*
+void	RecCalcContrast(NODE N, int NoSites)
+{
+	CONTRAST	*C, *C0, *C1;
+	double		t;
+	double		l0, l1;
+	NODE		N0, N1;
+	int			Index, SIndex;
+
+	if(N->Tip == TRUE)
+		return;
+#ifndef CLIK_P
+	for(Index=0;Index<N->NoNodes;Index++)
+	{
+	#ifdef OPENMP_THR
+			if(N->NodeList[Index]->Visited == FALSE)
+	#endif
+				RecCalcContrast(N->NodeList[Index], NoSites);
+	}
+
+#else 
+	for(Index=0;Index<N->NoNodes-1;Index++)
+	{
+		cilk_spawn RecCalcContrast(N->NodeList[Index], NoSites);
+	}
+
+	RecCalcContrast(N->NodeList[Index], NoSites);
+	cilk_sync;
+#endif
+
 	if(N->NoNodes == 1)
 	{
 		printf("nodes with only one descente causes problems. \n");
@@ -365,7 +431,6 @@ void	RecCalcContrast(NODE N, int NoSites)
 	C = N->ConData->Contrast[0];
 	C0 = N0->ConData->Contrast[0];
 	C1 = N1->ConData->Contrast[0];
-
 
 	for(SIndex=0;SIndex<NoSites;SIndex++)
 	{
@@ -394,6 +459,8 @@ void	RecCalcContrast(NODE N, int NoSites)
 	N->ConData->Contrast[N->ConData->NoContrast-1] = C;
 }
 
+*/
+
 void	LinCalcContrast(NODE N, int NoSites)
 {
 	CONTRAST	*C, *C0, *C1;
@@ -414,8 +481,8 @@ void	LinCalcContrast(NODE N, int NoSites)
 
 	for(SIndex=0;SIndex<NoSites;SIndex++)
 	{
-		l0 = N0->Length + C0->Err[SIndex];
-		l1 = N1->Length + C1->Err[SIndex];
+		l0 = N0->Length + C0->Err;
+		l1 = N1->Length + C1->Err;
 
 		t = (l0 * C1->Data[SIndex]) +  (l1 * C0->Data[SIndex]);
 		t = t / (l0 + l1);
@@ -423,8 +490,8 @@ void	LinCalcContrast(NODE N, int NoSites)
 		C->Data[SIndex] = t;
 		C->Cont[SIndex] = C0->Data[SIndex] - C1->Data[SIndex];
 
-		C->Err[SIndex] = (l0 * l1) / (l0 + l1);
-		C->Var[SIndex] = l0 + l1;
+		C->Err = (l0 * l1) / (l0 + l1);
+		C->Var = l0 + l1;
 
 	}
 
@@ -474,7 +541,7 @@ void	PrintContrasts(TREES* Trees, RATES* Rates)
 			C = N->ConData->Contrast[CIndex];
 
 			for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
-				printf("%f\t%f\t%f\t%f\t", C->Cont[SIndex], C->Data[SIndex], C->Err[SIndex], C->Var[SIndex]);
+				printf("%f\t%f\t%f\t%f\t", C->Cont[SIndex], C->Data[SIndex], C->Err, C->Var);
 
 			printf("\n");
 		}
@@ -537,8 +604,8 @@ void RecCaclNodeGVar(NODE N, int SiteNo, double *GlobalVar, double *SumLogVar, i
 	for(CIndex=0;CIndex<N->ConData->NoContrast;CIndex++)
 	{
 		Con =  N->ConData->Contrast[CIndex];
-		*GlobalVar += (Con->Cont[SiteNo] * Con->Cont[SiteNo]) / Con->Var[SiteNo];
-		*SumLogVar += log(Con->Var[SiteNo]);
+		*GlobalVar += (Con->Cont[SiteNo] * Con->Cont[SiteNo]) / Con->Var;
+		*SumLogVar += log(Con->Var);
 		(*NoCont)++;
 	}
 }
@@ -589,7 +656,7 @@ double	CalcContrastCoVar(TREE *Tree, int S1, int S2)
 			{
 				Con = N->ConData->Contrast[CIndex];
 
-				Ret += (Con->Cont[S1] * Con->Cont[S2]) / Con->Var[S1];
+				Ret += (Con->Cont[S1] * Con->Cont[S2]) / Con->Var;
 			}
 		}
 	}
@@ -664,8 +731,8 @@ void	GetCalcSiteLhParams(TREE *Tree, int SiteNo, double *GlobalVar, double *SumL
 			{
 				Con = N->ConData->Contrast[CIndex];
 
-				*GlobalVar += (Con->Cont[SiteNo] * Con->Cont[SiteNo]) / Con->Var[SiteNo];
-				*SumLogVar += log(Con->Var[SiteNo]);
+				*GlobalVar += (Con->Cont[SiteNo] * Con->Cont[SiteNo]) / Con->Var;
+				*SumLogVar += log(Con->Var);
 			}
 		}
 	}
@@ -690,7 +757,7 @@ double	CalcSiteLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, int SiteNo)
 
 	GetCalcSiteLhParams(Tree, SiteNo, &GlobalVar, &SumLogVar);
 
-	SumLogVar += log(Tree->Root->ConData->Contrast[0]->Err[SiteNo]);
+	SumLogVar += log(Tree->Root->ConData->Contrast[0]->Err);
 
 	T1 = GlobalVar;
 	
@@ -758,7 +825,7 @@ double	CaclAllSiteLhCont(TREE *Tree, RATES *Rates, double *SumLV)
 			{
 				Con = N->ConData->Contrast[CIndex];
 
-				*SumLV += log(Con->Var[0]);
+				*SumLV += log(Con->Var);
 
 				if(NoSites == 1)
 					Temp = Con->Cont[0] * InvSig->me[0][0] * Con->Cont[0];
@@ -769,7 +836,7 @@ double	CaclAllSiteLhCont(TREE *Tree, RATES *Rates, double *SumLV)
 				if(NoSites > 2)
 					Temp = CaclAllSiteLhContMult(Con->Cont, InvSig->me, Rates->Contrast->SigmaInvInfo->TempD, Rates->Contrast->SigmaInvInfo->Inv->NoOfCols);
 
-				Ret += Temp / Con->Var[0];
+				Ret += Temp / Con->Var;
 
 		//		Ret += log(Con->Var[0]);
 
@@ -811,7 +878,7 @@ double	CalcAllSiteLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, double AlphaErr)
 	
 	GlobalVar = CaclAllSiteLhCont(Tree, Rates, &SumLV);
 
-	SumLV += log(Tree->Root->ConData->Contrast[0]->Err[0]);
+	SumLV += log(Tree->Root->ConData->Contrast[0]->Err);
 	
 	N = NoCon + 1;
 	K = Trees->NoSites;
@@ -880,7 +947,7 @@ double	CalcAlphaErr(NODE Node, double* EstAlpha, MATRIX *Sig2, int NoSites)
 	{
 		SErr = (EstAlpha[Index] - Con->Data[Index]) * (EstAlpha[Index] - Con->Data[Index]);
 
-		Ret += SErr / (Con->Err[Index] * Sig2->me[Index][Index]);
+		Ret += SErr / (Con->Err * Sig2->me[Index][Index]);
 	}
 
 	return Ret;
@@ -914,7 +981,7 @@ double NewCalcSig(OPTIONS *Opt, TREES* Trees, RATES* Rates, double Alpha)
 			{
 				Con = N->ConData->Contrast[CIndex];
 
-				Var += ((Con->Cont[0] - Alpha) * (Con->Cont[0] - Alpha)) / Con->Var[0];
+				Var += ((Con->Cont[0] - Alpha) * (Con->Cont[0] - Alpha)) / Con->Var;
 			}
 		}
 	}
@@ -962,7 +1029,7 @@ void	TestCalcSig(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 			{
 				Con = N->ConData->Contrast[CIndex];
 
-				Var += ((Con->Cont[0] - Alpha) * (Con->Cont[0] - Alpha)) / Con->Var[0];
+				Var += ((Con->Cont[0] - Alpha) * (Con->Cont[0] - Alpha)) / Con->Var;
 
 			}
 		}
@@ -1039,7 +1106,7 @@ double CalcContrastMCMCSiteLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, int Site
 //	GlobalVar = T->Root->ConData->GVar[SiteNo];
 //	SumLogVar = T->Root->ConData->SumLogVar[SiteNo];
 	
-	SumLogVar += log(Tree->Root->ConData->Contrast[0]->Err[SiteNo]);
+	SumLogVar += log(Tree->Root->ConData->Contrast[0]->Err);
 
 	T1 = GlobalVar;
 	GlobalVar = GlobalVar / NoCon;
@@ -1075,7 +1142,7 @@ double	CalcMCMCAlpha(NODE N, double Alpha, int SiteNo)
 	Con = N->ConData->Contrast[0];
 
 	Ret = (Alpha - Con->Data[SiteNo]) * (Alpha - Con->Data[SiteNo]);
-	Ret = Ret / Con->Err[SiteNo];	
+	Ret = Ret / Con->Err;	
 
 	return Ret;
 }
@@ -1120,7 +1187,7 @@ double CaclRegSigma(TREE *Tree, double *Beta, int NoSites)
 		{
 			for(CIndex=0;CIndex<N->ConData->NoContrast;CIndex++)
 			{
-				Var = N->ConData->Contrast[CIndex]->Var[0];
+				Var = N->ConData->Contrast[CIndex]->Var;
 
 				Uy = N->ConData->Contrast[CIndex]->Cont[0] / sqrt(Var);
 				
@@ -1157,7 +1224,7 @@ double	CaclRegAlphaLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, double Alpha)
 
 	AlphaErr = Con->Data[0] - Alpha;
 	AlphaErr = AlphaErr  * AlphaErr;
-	AlphaErr = AlphaErr / (Con->Err[0] * Con->Var[0]);
+	AlphaErr = AlphaErr / (Con->Err * Con->Var);
 
 	return AlphaErr;
 }
@@ -1197,9 +1264,9 @@ double	CalcRegLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, double Alpha, double 
 				T1 = Con->Cont[0] - T1;
 				T1 = T1 * T1;
 
-				GlobalVar += T1 / Con->Var[0];
+				GlobalVar += T1 / Con->Var;
 
-				SumLogVar += log(Con->Var[0]);
+				SumLogVar += log(Con->Var);
 			}
 		}
 	}
@@ -1208,7 +1275,7 @@ double	CalcRegLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, double Alpha, double 
 //	SumLogVar = T->Root->ConData->SumLogVar[SiteNo];
 	
 //	exit(0);
-	SumLogVar += log(T->Root->ConData->Contrast[0]->Err[0]);
+	SumLogVar += log(T->Root->ConData->Contrast[0]->Err);
 
 	T1 = GlobalVar;
 
@@ -1242,7 +1309,7 @@ void	SetRegUyMatrix(TREE *Tree, MATRIX *Uy)
 		if(N->Tip == FALSE)
 		{
 			for(CIndex=0;CIndex<N->ConData->NoContrast;CIndex++)
-				Uy->me[0][Pos++] = N->ConData->Contrast[CIndex]->Cont[0] / sqrt(N->ConData->Contrast[CIndex]->Var[0]);
+				Uy->me[0][Pos++] = N->ConData->Contrast[CIndex]->Cont[0] / sqrt(N->ConData->Contrast[CIndex]->Var);
 		}
 	}
 
@@ -1266,7 +1333,7 @@ void	SetRegUxMatrix(TREE *Tree, MATRIX *Ux, int NoSites)
 			{
 				for(CIndex=0;CIndex<N->ConData->NoContrast;CIndex++)
 				{
-					Ux->me[Pos][SIndex-1] = N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(N->ConData->Contrast[CIndex]->Var[SIndex]);
+					Ux->me[Pos][SIndex-1] = N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(N->ConData->Contrast[CIndex]->Var);
 					Pos++;
 				}
 			}
@@ -1386,7 +1453,7 @@ double CaclRegContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	int		NoSites;
 
 	Tree = Trees->Tree[Rates->TreeNo];
-	V0 = Tree->Root->ConData->Contrast[0]->Err[0];
+	V0 = Tree->Root->ConData->Contrast[0]->Err;
 	NoCon = Tree->NoContrast;
 
 	CR = Rates->Contrast;
@@ -1397,9 +1464,9 @@ double CaclRegContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	NoSites = Rates->Contrast->NoSites;
 
 	CR->RegAlpha = CalcRegAlpha(Tree, CR, NoSites);
-	CR->RegSigma = CaclRegSigma(Tree, CR->RegBeta, NoSites);
+//	CR->RegSigma = CaclRegSigma(Tree, CR->RegBeta, NoSites);
 		
-	Ret = CalcRegLh(Opt, Trees, Rates, CR->RegAlpha, CR->RegBeta);
+		Ret = CalcRegLh(Opt, Trees, Rates, CR->RegAlpha, CR->RegBeta);
 /*
 	printf("LH\t%f\t%d\tAlpha:\t%f\tBeta\t%f\tSigma2\t%f\tV0\t%f\n", Ret, Rates->TreeNo, CR->RegAlpha, CR->RegBeta[0], CR->RegSigma, V0);
 

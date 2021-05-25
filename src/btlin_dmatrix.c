@@ -49,7 +49,7 @@ DMATRIX* btlin_allocDMATRIX(int r, int c) {
 DMATRIX* btlin_randomDMATRIX(int r, int c,int max) {
   int i;
   DMATRIX* ret = btlin_allocDMATRIX(r,c);
-  srand(time(0));
+//  srand(time(0));
   for(i = 0; i < r*c; i++) {
     ret->m[i] = (rand()%(2*max+1) - max)*1.0;
 

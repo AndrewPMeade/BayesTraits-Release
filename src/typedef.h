@@ -642,8 +642,12 @@ typedef struct
 {
 	double	*Data;
 	double	*Cont;
-	double	*Var;
-	double	*Err;
+//	double	*Var;
+//	double	*Err;
+
+	double	Var;
+	double	Err;
+
 
 	double	*v;
 } CONTRAST;

@@ -68,7 +68,7 @@ void			SetRegConPost(TREE *Tree, REG_CON_POST* RegConPost)
 			{
 				for(SIndex=0;SIndex<RegConPost->NoSites;SIndex++)
 				{
-					RegConPost->Contrasts[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(N->ConData->Contrast[CIndex]->Var[SIndex]);
+					RegConPost->Contrasts[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(N->ConData->Contrast[CIndex]->Var);
 				//	RegConPost->Contrasts[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex];
 				//	RegConPost->ContrastsVar[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(N->ConData->Contrast[CIndex]->Var[SIndex]);
 				}
