@@ -4,11 +4,8 @@
 #pragma warning(disable : 4996)
 #include <stdio.h>
 #include "matrix.h"
-//#include <Windows.h>
 
-//CRITICAL_SECTION CriticalSection;
-
-#define	JNIRUN
+// #define	JNIRUN
 
 #ifdef	 JNIRUN
 	#include "jni.h"
@@ -43,7 +40,7 @@
 
 #define ERRLH -999999
 
-#define NOOFOPERATORS	10
+#define NOOFOPERATORS	11
 #define ZERORATENO		-1
 
 //extern double LhPraxis(LhPraxisdouble *);
@@ -123,6 +120,7 @@ typedef enum
 	CSTREEMOVE,
 	CSETSEED,
 	CMAKEUM,
+	CPHYLOPLASTY,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -187,6 +185,7 @@ static char    *COMMANDSTRINGS[] =
 	"solotreemove",	"stree",
 	"setseed",		"ss",
 	"makeum",		"mum",
+	"phyloplasty",	"fp", 
 	""
 };
 
@@ -387,6 +386,26 @@ typedef struct
 
 typedef struct
 {
+	int		x;
+	int		y;
+
+	double	Sum;
+
+	int		No;
+	NODE	*NList;
+
+} PPCOVARPAIR;
+
+typedef struct
+{
+	int				No;
+	PPCOVARPAIR		**List;
+
+} PPCOVARV;
+
+
+typedef struct
+{
 	MATRIX		*TrueV;
 	MATRIX		*V;
 	MATRIX		*InvV;
@@ -419,6 +438,8 @@ typedef struct
 	double		LogDetOfSigma;
 
 	double		*DepVect;
+
+	PPCOVARV	*PPCoVarV;
 } CONVAR;
 
 typedef	struct
@@ -522,6 +543,20 @@ typedef struct
 	int		Site;
 	int		NoPoints;
 } VARDATA;
+
+typedef struct
+{
+	double		*RealBL;
+	int			*Cats;
+	int			NoCats;
+
+	double		*Rates;
+	int			NoRates;
+
+	int			OnePos;
+
+	int			InvV;
+} PHYLOPLASTY;
 
 typedef struct
 {
@@ -642,6 +677,9 @@ typedef struct
 	int			SoloTreeMove;
 	long		Seed;
 	int			MakeUM;
+
+	int			UsePhyloPlasty;
+
 } OPTIONS;
 
 
@@ -702,7 +740,8 @@ typedef struct
 
 	int		VarDataSite;
 
-	RANDSTATES*	RandStates;
+	RANDSTATES	*RandStates;
+	PHYLOPLASTY	*PhyloPlasty;
 } RATES;
 
 typedef struct
@@ -730,9 +769,9 @@ typedef enum
 	SPPROR=6,
 	SESTDATA=7,
 	SVARDATA=8,
-	SSOLOTREEMOVE
+	SSOLOTREEMOVE=9,
+	SPPMOVE=10
 } OPERATORS;
-
 
 typedef struct
 {

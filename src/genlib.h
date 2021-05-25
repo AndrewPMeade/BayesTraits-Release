@@ -77,4 +77,6 @@ void 		Swap(void** a, void** b);
 void		PrintFixSize(char *String, int Size, FILE* Str);
 
 void		GotoFileEnd(FILE *File, char *Buffer, int Size);
+
+void		PrintTime(FILE* Str);
 #endif

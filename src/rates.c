@@ -15,6 +15,7 @@
 #include "data.h"
 #include "matrix.h"
 #include "randdists.h"
+#include "phyloplasty.h"
 
 double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -284,6 +285,67 @@ void	SetPiValues(RATES *Rates, OPTIONS *Opt)
 	FindEmpPis(Rates, Opt);
 }
 
+void			SetPhyloPlastyRates(PHYLOPLASTY *PhyloPlasty)
+{
+	int Index;
+
+	PhyloPlasty->Rates = (double*)malloc(sizeof(double) * 100);
+	if(PhyloPlasty->Rates == NULL)
+		MallocErr();
+
+	for(Index=0;Index<100;Index++)
+		PhyloPlasty->Rates[Index] = (double)(Index + 1) * 0.1;
+
+	PhyloPlasty->NoRates = 100;
+}
+
+int				FindOneRate(PHYLOPLASTY *PhyloPlasty)
+{
+	int Index;
+
+	for(Index=0;Index<PhyloPlasty->NoRates;Index++)
+		if(PhyloPlasty->Rates[Index] == 1)
+			return Index;
+
+	return -1;
+}
+
+PHYLOPLASTY*	CreatPhyloPlasty(OPTIONS *Opt, RATES *Rates)
+{
+	TREES		*Trees;
+	PHYLOPLASTY	*Ret;
+	int			Index;
+	
+	Trees = Opt->Trees;
+
+	Ret = (PHYLOPLASTY*)malloc(sizeof(PHYLOPLASTY));
+	if(Ret == NULL)
+		MallocErr();
+
+	Ret->NoCats = Trees->NoOfNodes;
+
+	Ret->Cats = (int*)malloc(sizeof(int) * Ret->NoCats);
+	if(Ret->Cats == NULL)
+		MallocErr();
+
+	Ret->RealBL = (double*)malloc(sizeof(double) * Ret->NoCats);
+	if(Ret->RealBL == NULL)
+		MallocErr();
+
+	SetPhyloPlastyRates(Ret);
+
+	Ret->OnePos = FindOneRate(Ret);
+	for(Index=0;Index<Ret->NoCats;Index++)
+		Ret->Cats[Index] = Ret->OnePos;
+
+	for(Index=0;Index<Ret->NoCats;Index++)
+		Ret->RealBL[Index] = Trees->Tree->NodeList[Index].Length;
+
+	Ret->InvV = TRUE;
+
+	return Ret;
+}
+
 void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 {
 	int		Index;
@@ -336,6 +398,9 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 
 		if(Opt->UseVarData == TRUE)
 			Rates->VarDataSite = 0;
+
+		if(Opt->UsePhyloPlasty == TRUE)
+			Rates->PhyloPlasty = CreatPhyloPlasty(Opt, Rates);
 
 	}
 	else
@@ -477,8 +542,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->Lambda			=	-1;
 	Ret->Delta			=	-1;
 
-	Ret->RandStates		= CreateRandStates();
-
+	Ret->PhyloPlasty	=	NULL;
+	Ret->RandStates		=	CreateRandStates();
 
 	if(Opt->UseGamma == TRUE)
 	{
@@ -589,6 +654,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 		Ret->FixedModels = LoadModelFile(Ret, Opt);
 		SetFixedModel(Ret, Opt);	
 	}
+
+	
 
 	return Ret;
 }
@@ -724,6 +791,9 @@ void	PrintRatesHeadderCon(FILE* Str, OPTIONS *Opt)
 	}
 
 	PrintEstDataHeader(Str, Opt);
+
+	if(Opt->UsePhyloPlasty == TRUE)
+		fprintf(Str, "No PhyloPlasty\t");
 
 	if(Opt->Analsis != ANALMCMC)
 		fprintf(Str, "\n");
@@ -1062,6 +1132,21 @@ void	PrintRegVarCoVar(FILE* Str, RATES *Rates, OPTIONS *Opt)
 	FreeMatrix(Var);
 }
 
+int		NoUsePhyloPlasty(RATES* Rates)
+{
+	PHYLOPLASTY	*PP;
+	int	Index;
+	int Ret;
+
+	PP = Rates->PhyloPlasty;
+
+	Ret = 0;
+	for(Index=0;Index<PP->NoCats;Index++)
+		if(PP->Cats[Index] != PP->OnePos)
+			Ret++;
+
+	return Ret;
+}
 
 void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
@@ -1162,6 +1247,9 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	for(Index=0;Index<Rates->NoEstData;Index++)
 		fprintf(Str, "%f\t", Rates->EstData[Index]);
+
+	if(Opt->UsePhyloPlasty == TRUE)
+		fprintf(Str, "%d\t", NoUsePhyloPlasty(Rates));
 }
 
 void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OPTIONS *Opt)
@@ -1363,6 +1451,25 @@ void	CopyRJRtaes(RATES *A, RATES *B, OPTIONS *Opt)
 	memcpy(A->MappingVect, B->MappingVect, sizeof(int)*B->NoOfFullRates);
 }
 
+/*
+typedef struct
+{
+	double		*RealBL;
+	int			*Cats;
+	int			NoCats;
+
+	double		*Rates;
+	int			NoRates;
+
+	int			InvV;
+} 
+*/
+
+void	CopyPhyloPlasty(PHYLOPLASTY *A, PHYLOPLASTY *B)
+{
+	memcpy(A->Cats, B->Cats, sizeof(int) * A->NoCats);
+}
+
 void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 {
 	int	Index;
@@ -1423,6 +1530,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	}
 
 	A->VarDataSite = B->VarDataSite;
+
+	if(Opt->UsePhyloPlasty == TRUE)
+		CopyPhyloPlasty(A->PhyloPlasty, B->PhyloPlasty);
 } 
 
 
@@ -1851,6 +1961,9 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 			Rates->TreeNo = rand() % Opt->Trees->NoOfTrees;
 		break;
 
+		case(SPPMOVE):
+			PhyloPlasyMove(Rates);
+		break;
 	}
 
 	Shed->Tryed[Shed->Op]++;
@@ -2125,6 +2238,12 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Left = Left - Shed->OptFreq[9];
 	}
 
+	if(Opt->UsePhyloPlasty == TRUE)
+	{
+		Shed->OptFreq[10] = 0.5;
+		Left = Left - Shed->OptFreq[10];
+	}
+
 	Rates = 0;
 	if(Opt->DataType == CONTINUOUS)
 		Rates = Opt->Trees->NoOfSites;
@@ -2137,6 +2256,8 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Shed->OptFreq[0] = 0;
 	else
 		Shed->OptFreq[0] = Left;
+	
+	Shed->OptFreq[0] = 0;
 
 	if(Opt->UseModelFile == TRUE)
 		Shed->OptFreq[0] = 0.3;

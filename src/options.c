@@ -381,6 +381,10 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 
 		if(Opt->UseVarData == TRUE)
 			fprintf(Str, "Varable Data form file:          %s\n", Opt->VarDataFile);
+	
+		if(Opt->UsePhyloPlasty == TRUE)
+			fprintf(Str, "Using PhyloPlasty:               True\n");
+	
 	}
 	else
 	{
@@ -914,6 +918,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->MakeUM			=	FALSE;
 
+	Ret->UsePhyloPlasty	=	FALSE; 
 	return Ret; 
 }
 
@@ -1048,10 +1053,7 @@ ANALSIS	GetAnalsis(TREES *Trees)
 		else
 			Comment = TRUE;
 	}
-
 }
-
-
 
 COMMANDS	StringToCommand(char *Str)
 {
@@ -2019,7 +2021,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CNODEBLDATA)||
 			(Command == CNODEDATA)  ||
 			(Command == CDEPSITE)   ||
-			(Command == CDATADEV)
+			(Command == CDATADEV)	||
+			(Command == CPHYLOPLASTY) 
 			)
 		{
 			printf("Command %s (%s) is not valid with Discrete data\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2045,7 +2048,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command ==	CREVJUMP)   ||
 			(Command == CMODELFILE) ||
 			(Command == CSCHEDULE)	||
-			(Command == CSTREEMOVE)
+			(Command == CSTREEMOVE) ||
+			(Command == CPHYLOPLASTY)
 			)
 		{
 			printf("Command %s (%s) is not valid with the ML model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -3029,7 +3033,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		}
 		else
 			printf("HyperPrior requires a rate, a distrubion and a set of upper and lower values for the paramtiers\n");
-		
 	}
 
 	if(Command == CHPRJ)
@@ -3189,6 +3192,20 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		else
 			Opt->MakeUM = TRUE;
 	*/
+	}
+
+	if(Command == CPHYLOPLASTY) 
+	{
+		if(Opt->Trees->NoOfTrees > 1)
+		{
+			printf("PhyloPlasty can only be used on a single tree.\n");
+			return FALSE;
+		}
+
+		if(Opt->UsePhyloPlasty == FALSE)
+			Opt->UsePhyloPlasty = TRUE;
+		else
+			Opt->UsePhyloPlasty = FALSE;
 	}
 
 	return FALSE;

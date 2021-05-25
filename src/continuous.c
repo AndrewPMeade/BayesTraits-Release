@@ -15,6 +15,7 @@
 #include "rand.h"
 #include "rates.h"
 #include "ckappa.h"
+#include "phyloplasty.h"
 
 void	InitEstData(OPTIONS *Opt, TREES *Trees)
 {
@@ -1266,6 +1267,55 @@ void	PrintMathmatCode(void)
 	printf("Lh = (Log[2 Pi] ((-(NoOfTaxa*NoOfSites))/2)) + (Log[Det[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]]^-0.5]) + (-0.5*ZA.Inverse[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]].ZA)\n");
 }
 
+void	MapRateToTree(TREES* Trees, RATES* Rates)
+{
+	TREE		*Tree;
+	PHYLOPLASTY	*PP;
+	int			Index;
+
+	PP = Rates->PhyloPlasty;
+	Tree = &Trees->Tree[Rates->TreeNo];
+
+	for(Index=0;Index<PP->NoCats;Index++)
+		Tree->NodeList[Index].Length = PP->RealBL[Index] * PP->Rates[PP->Cats[Index]];
+}
+
+void	SetPhyloPlastyV(TREES* Trees, RATES* Rates)
+{
+	TREE	*Tree;
+	int		Index;
+
+	Tree = &Trees->Tree[Rates->TreeNo];
+
+	MapRateToTree(Trees, Rates);
+//	CalcPVarCoVar(Trees, Tree); 
+	MapPhyloPlastyToV(Trees, Tree);
+
+	return;
+
+	printf("Stat\t");
+	PrintTime(stdout);
+	printf("\n");
+	fflush(stdout);
+	for(Index=0;Index<10000;Index++)
+	{
+		MapRateToTree(Trees, Rates);
+		MapPhyloPlastyToV(Trees, Tree);
+
+		CopyMatrix(Tree->ConVars->TrueV, Tree->ConVars->V);
+		if(Index%1000==0)
+		{
+			printf("\tdone\t%d\n", Index);
+			fflush(stdout);
+		}
+
+		FindInvV(Trees, Tree);
+	}
+	printf("End\t");
+	PrintTime(stdout);
+	exit(0);
+}
+
 double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 	double	Val;
@@ -1308,6 +1358,9 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	if(Opt->InvertV	== TRUE)
 	{
+		if(Opt->UsePhyloPlasty == TRUE)
+			SetPhyloPlastyV(Trees, Rates);
+
 		if(Opt->EstKappa == TRUE)
 			MakeKappaV(Trees, Tree, Rates->Kappa);
 		else
@@ -1460,6 +1513,11 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 		for(Index=0;Index<Trees->NoOfTaxa;Index++)
 			CV->DepVect[Index] = Trees->Taxa[Index].Dependant;
 	}
+
+	if(Opt->UsePhyloPlasty == TRUE)
+		CV->PPCoVarV = InitPhyloPlastyConVar(Trees, &Trees->Tree[TreeNo]);
+	else
+		CV->PPCoVarV = NULL;
 }
 
 void		FreeTempConVars(TEMPCONVAR* TempCon)
@@ -1572,7 +1630,8 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 	Opt->InvertV = FALSE;
 	if(	(Opt->EstDelta == TRUE) ||
 		(Opt->EstKappa == TRUE) ||
-		(Opt->EstLambda== TRUE))
+		(Opt->EstLambda== TRUE) ||
+		(Opt->UsePhyloPlasty == TRUE))
 		Opt->InvertV = TRUE;
 
 	if(Opt->Analsis == ANALMCMC)

@@ -3,7 +3,7 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
-
+#include <time.h>
 #include "genlib.h"
 
 
@@ -859,4 +859,20 @@ void Swap(void** a, void** b)
 void	GotoFileEnd(FILE *File, char *Buffer, int Size)
 {
 	while(fgets(Buffer, Size, File) != NULL);
+}
+
+void	PrintTime(FILE* Str)
+{
+	time_t	*Now;
+	struct tm *Time;
+
+	Now = (time_t*)malloc(sizeof(time_t));
+
+	time(Now);
+	Time = localtime(Now);
+
+	fprintf(Str, "%02d/%02d/%d ", Time->tm_mday, Time->tm_mon+1, Time->tm_year+1900);
+	fprintf(Str, "%d:%02d:%02d", Time->tm_hour, Time->tm_min, Time->tm_sec);
+
+	free(Now);
 }
