@@ -574,7 +574,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 			if(Opt->Model == MULTISTATE)
 				Ret->EstDescData[Index] = rand() % Opt->Trees->NoOfStates;
 			else
-				Ret->EstDescData[Index] = rand() % 2;
+		//		Ret->EstDescData[Index] = rand() % 2;
+			Ret->EstDescData[Index] = rand() % 1;
 		}
 	}
 
@@ -1678,13 +1679,13 @@ void	MutateEstRates(OPTIONS* Opt, RATES* Rates)
 	{
 		Site = rand() % Rates->NoEstData;
 		Old = Rates->EstDescData[Site];
-		do
-		{
+//		do
+//		{
 			if(Opt->Model == MULTISTATE)
 				New = rand() % Opt->Trees->NoOfStates;
 			else
 				New = rand() % 2;
-		} while(New == Old);
+//		} while(New == Old);
 		Rates->EstDescData[Site] = New;
 		return;
 	}
@@ -1727,11 +1728,8 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 
 	Shed->Op = PickACat(Shed->OptFreq, Shed->NoOfOpts);
 
-	if(GenRand() < 0.5)
-	{
+	if(Opt->SoloTreeMove == FALSE)
 		Rates->TreeNo = IntRand() % Opt->Trees->NoOfTrees;
-		return;
-	}
 
 	switch(Shed->Op)
 	{
@@ -1832,11 +1830,13 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 			Rates->VarDataSite = rand() % Opt->VarData->NoPoints;
 		break;
 
+		case(SSOLOTREEMOVE):
+			Rates->TreeNo = IntRand() % Opt->Trees->NoOfTrees;
+		break;
+
 	}
 
 	Shed->Tryed[Shed->Op]++;
-
-//	Rates->TreeNo = IntRand() % Opt->Trees->NoOfTrees;
 }
 
 void	FreeRates(RATES *Rates)
@@ -2100,7 +2100,12 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Shed->OptFreq[8] = 0.1;
 		Left = Left - Shed->OptFreq[8];
 	}
-	
+
+	if(Opt->SoloTreeMove == TRUE)
+	{
+		Shed->OptFreq[9] = 0.2;
+		Left = Left - Shed->OptFreq[9];
+	}
 
 	Rates = 0;
 	if(Opt->DataType == CONTINUOUS)

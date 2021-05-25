@@ -161,9 +161,9 @@ void	MCMC(OPTIONS *Opt, TREES *Trees)
 	SCHEDULE*	Shed=NULL;
 	FILE*		ShedFile=NULL;
 
-
 	if(Opt->UseSchedule == TRUE)
 		ShedFile	= OpenWrite(Opt->ScheduleFile);
+	
 	Shed		= CreatSchedule(Opt);
 
 	if(Opt->UseSchedule == TRUE)
@@ -281,4 +281,31 @@ void	MCMC(OPTIONS *Opt, TREES *Trees)
 			return;
 		}
 	}
+}
+
+void	LhOverAllModels(OPTIONS *Opt, TREES *Trees)
+{
+	RATES	*Rates;
+	int		Index;
+
+	Rates = CreatRates(Opt);
+
+	CreatPriors(Opt, Rates);
+	SetRatesToPriors(Opt, Rates);
+
+	Rates->HMeanCount = 0;
+	Rates->HMeanSum = 0;
+	printf("\n");
+	
+	for(Index=0;Index<Rates->NoOfModels;Index++)
+	{
+		Rates->ModelNo = Index;
+		memcpy(Rates->Rates, Rates->FixedModels[Index], sizeof(double) * Rates->NoOfRates);
+		Rates->Lh = Likelihood(Rates, Trees, Opt);
+	
+		if(Rates->Lh != ERRLH)
+			PrintMCMCSample(Index, 1, Opt, Rates, stdout);
+	}
+
+	exit(0);
 }

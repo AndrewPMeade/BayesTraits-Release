@@ -683,7 +683,7 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 	for(x=0;x<Trees->NoOfTaxa;x++)
 	{
 		X->me[x][0] = 1;
-	//	X->me[x][0] = 0;
+	/*	X->me[x][0] = 0; */
 	}
 
 	for(x=1;x<Trees->NoOfSites+1;x++)

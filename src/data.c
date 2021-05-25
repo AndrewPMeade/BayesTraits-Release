@@ -31,7 +31,7 @@ void	PrintTaxaData(OPTIONS *Opt, TREES* Trees)
 	}
 }
 
-void	PrintData(TREES* Trees)
+void	PrintDataDesc(TREES* Trees)
 {
 	int		NIndex;
 	int		SiteIndex,StateIndex;
@@ -52,6 +52,7 @@ void	PrintData(TREES* Trees)
 			printf("%s\t", T->Name);
 			for(SiteIndex=0;SiteIndex<Trees->NoOfSites;SiteIndex++)
 			{
+				
 				for(StateIndex=0;StateIndex<Trees->NoOfStates;StateIndex++)
 				{
 					printf("%1.0f", N->Partial[SiteIndex][StateIndex]);
@@ -60,10 +61,41 @@ void	PrintData(TREES* Trees)
 
 			printf("\n");
 		}
-
-		
 	}
 }
+
+void	PrintDataCon(TREES* Trees, OPTIONS *Opt)
+{
+	int		TIndex;
+	int		SIndex;
+	TAXA	*Taxa;
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		Taxa = &Trees->Taxa[TIndex];
+
+		printf("%s\t", Taxa->Name);
+		if(strcmp(Taxa->Name, "donii") == 0)
+			printf("Yetp\n");
+		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+			printf("%f\t", Taxa->ConData[SIndex]);
+		if(Opt->Model == CONTINUOUSREG)
+			printf("|\t%f", Taxa->Dependant);
+		printf("\n");
+	}
+}
+
+void	PrintData(TREES* Trees, OPTIONS *Opt)
+{
+	if(Opt->DataType == CONTINUOUS)
+	{
+		PrintDataCon(Trees, Opt);
+		return;
+	}	
+
+	PrintDataDesc(Trees);
+}
+
 
 TAXA*	FindTaxaFromName(char *Name, TREES* Trees)
 {
@@ -301,7 +333,7 @@ void	BildSymbolList(TREES *Trees)
 	char*	Temp=NULL;
 	int		TIndex,SIndex,TokeIndex;
 
-//	Temp = (char*)malloc(sizeof(char) * (Trees->NoOfTaxa * Trees->NoOfTaxa) + 1);
+/*	Temp = (char*)malloc(sizeof(char) * (Trees->NoOfTaxa * Trees->NoOfTaxa) + 1); */
 	Temp = (char*)malloc(sizeof(char) * BUFFERSIZE);
 	if(Temp == NULL)
 		MallocErr();
@@ -509,7 +541,7 @@ void	FreeData(OPTIONS *Opt)
 	}
 }
 
-//char*	SetDescUnknownStates(char** Sites)
+/* char*	SetDescUnknownStates(char** Sites) */
 char*	SetDescUnknownStates(char S1, char S2)
 {
 	char	*Ret=NULL;

@@ -3,8 +3,6 @@
 #include <string.h>
 #include <math.h>
 
-
-
 #include "typedef.h"
 #include "trees.h"
 #include "data.h"
@@ -101,31 +99,30 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 	./Seq/Monarch.trees ./Seq/Monarch.txt < in.txt > sout.txt
 
-  MonarchRec-7.trees
 	./Seq/MamTrees-50.trees ./Seq/MamData-Missing.txt < in.txt > sout.txt
-  ./Seq/MonarchRec.trees ./Seq/Monarch-T1-T2.txt < in2.txt > sout.txt 
+	./Seq/MonarchRec.trees ./Seq/Monarch-T1-T2.txt < in2.txt > sout.txt 
 
-  ./Seq/MonarchRec.trees ./Seq/Monarch-T1.txt <in2.txt >sout.txt
-  ./Seq/MonarchRec.trees ./Seq/Monarch-T1.txt < in.txt > sout.txt
-  ./Seq/IE-M1P-RS.trees ./Seq/IE-MS.nex-0007.txt  < in.txt > sout.txt
+	./Seq/MonarchRec.trees ./Seq/Monarch-T1.txt <in2.txt >sout.txt
+	./Seq/MonarchRec.trees ./Seq/Monarch-T1.txt < in.txt > sout.txt
+	./Seq/IE-M1P-RS.trees ./Seq/IE-MS.nex-0007.txt  < in.txt > sout.txt
 
-  ./Seq/IECon.trees ./Seq/
-  ./Seq/IECon.trees ./Seq/IE-MSAllCogs.txt < in.txt > sout.txt
+	./Seq/IECon.trees ./Seq/
+	./Seq/IECon.trees ./Seq/IE-MSAllCogs.txt < in.txt > sout.txt
 
-  ./Seq/CIE.trees ./Seq/IE-Lex.txt < in.txt > sout.txt
+	./Seq/CIE.trees ./Seq/IE-Lex.txt < in.txt > sout.txt
 
-  ./Seq/bayes3.trees ./Seq/SerSD.txt  < in.txt > sout.txt
-  ./Seq/TestTree.trees ./Seq/TestTree.txt < TestIn.txt > sout.txt
+	./Seq/bayes3.trees ./Seq/SerSD.txt  < in.txt > sout.txt
+	./Seq/TestTree.trees ./Seq/TestTree.txt < TestIn.txt > sout.txt
 
-  ./Seq/MamTrees-50.trees ./Seq/MamData.txt < in.txt > sout.txt
+	./Seq/MamTrees-50.trees ./Seq/MamData.txt < in.txt > sout.txt
 
-  ./Seq/WConTree.trees ./Seq/Wres.txt < in.txt > sout.txt
+	./Seq/WConTree.trees ./Seq/Wres.txt < in.txt > sout.txt
 
-  ./Seq/SmallIE.trees ./Seq/SmallIELex.txt < in.txt > sout.txt
+	./Seq/SmallIE.trees ./Seq/SmallIELex.txt < in.txt > sout.txt
 
-  ./Seq/Primates.trees ./Seq/PrimatesEstData.txt < in.txt > sout.txt
-  ./Seq/9tree.trees ./Seq/9F.txt < in.txt > sout.txt
-  ./Seq/AustCon.trees ./Seq/0204.txt < in.txt > sout.txt
+	./Seq/Primates.trees ./Seq/PrimatesEstData.txt < in.txt > sout.txt
+	./Seq/9tree.trees ./Seq/9F.txt < in.txt > sout.txt
+	./Seq/AustCon.trees ./Seq/0204.txt < in.txt > sout.txt
 */
 
 int main(int argc, char** argv)
@@ -160,6 +157,8 @@ int main(int argc, char** argv)
 	GetOptions(Opt);
 	
 	PreProcess(Opt, Trees);
+
+/*	LhOverAllModels(Opt, Trees); */
 
 	if(Opt->Analsis == ANALMCMC)
 		MCMC(Opt, Trees);

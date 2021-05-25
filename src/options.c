@@ -295,7 +295,13 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		}
 
 		if(Opt->UseModelFile == TRUE)
-			fprintf(Str, "Models taken form:               %s\n", Opt->ModelFile);
+		fprintf(Str, "Models taken form:               %s\n", Opt->ModelFile);
+
+		fprintf(Str, "Solo Tree Move:                  ");
+		if(Opt->SoloTreeMove == TRUE)
+			fprintf(Str, "True\n");
+		else
+			fprintf(Str, "False\n");
 	}
 
 	if(Opt->NOSPerSite == TRUE)
@@ -877,6 +883,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->UseSchedule	=	FALSE;
 	Ret->ScheduleFile	=	NULL;
 
+	Ret->SoloTreeMove	=	FALSE;
+
 	return Ret; 
 }
 
@@ -1421,6 +1429,43 @@ Symbol	0,0	0,1	1,0	1,1
 23		-	X	X	X
 */
 
+int	ValidDescFossileState(int FNo)
+{
+	if((FNo >= 0) && (FNo <= 3))
+		return TRUE;
+
+	if((FNo >= 10) && (FNo <= 15))
+		return TRUE;
+
+	if((FNo >= 20) && (FNo <= 23))
+		return TRUE;
+
+	printf("Unknown discrete fossilisation sate.\nKnown values are\n");
+
+	printf("X	Likilhood values unchanged\n");
+	printf("-	Likilhood set to zero\n\n");
+	printf("Symbol     0,0   0,1   1,0   1,1\n");
+	printf("0          X     -     -     -\n");
+	printf("1          -     X     -     -\n");
+	printf("2          -     -     X     -\n");
+	printf("3          -     -     -     X\n");
+	printf("\n");
+	printf("10         X     X     -     -\n");
+	printf("11         X     -     X     -\n");
+	printf("12         X     -     -     X\n");
+	printf("13         -     X     X     -\n");
+	printf("14         -     X     -     X\n");
+	printf("15         -     -     X     X\n");
+	printf("\n");
+	printf("20         X     X     X     -\n");
+	printf("21         X     X     -     X\n");
+	printf("22         X     -     X     X\n");
+	printf("23         -     X     X     X\n");
+
+
+	return FALSE;
+}
+
 /* Will have to add support for extra states (10 to 23) */
 int	DesFossilSate(char* State, OPTIONS *Opt)
 {
@@ -1429,16 +1474,12 @@ int	DesFossilSate(char* State, OPTIONS *Opt)
 	if(IsValidInt(State) == FALSE)
 	{
 		printf("Could not convert %s to a valid Discrete state", State);
-		printf("Discrete Fossil state must be between 0 and 3.\n\t0\t0,0\n\t1\t0,1\n\t2\t1,0\n\t3\t1,1\n");
 		return -1;
 	}
 
 	Ret = atoi(State);
-	if((Ret > 3) || (Ret < 0))
-	{
-		printf("Discrete Fossil state must be between 0 and 3.\n\t0\t0,0\n\t1\t0,1\n\t2\t1,0\n\t3\t1,1\n");
+	if(ValidDescFossileState(Ret) == FALSE)
 		return -1;
-	}
 
 	return Ret;
 }
@@ -1926,7 +1967,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command ==	CHPALL)		||
 			(Command ==	CREVJUMP)   ||
 			(Command == CMODELFILE) ||
-			(Command == CSCHEDULE)
+			(Command == CSCHEDULE)	||
+			(Command == CSTREEMOVE)
 			)
 		{
 			printf("Command %s (%s) is not valid with the ML model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -3013,7 +3055,13 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 	if(Command == CSCHEDULE)
 		SetScheduleUse(Opt); 
 
-
+	if(Command == CSTREEMOVE)
+	{
+		if(Opt->SoloTreeMove == TRUE)
+			Opt->SoloTreeMove = FALSE;
+		else
+			Opt->SoloTreeMove = TRUE;
+	}
 
 	return FALSE;
 }

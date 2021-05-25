@@ -250,10 +250,8 @@ void	MatrixMult(MATRIX *A, MATRIX *B, MATRIX *Prod)
 		{
 			Temp = 0;
 			for(Index=0;Index<A->NoOfCols;Index++)
-			{
-			//	Temp += B->me[Row][Col] * A->me[Row][Index];
 				Temp += B->me[Index][Col] * A->me[Row][Index];
-			}
+			
 			Prod->me[Row][Col] = Temp;
 		}
 	}	*/

@@ -521,11 +521,11 @@ void	SetNodeTipData(NODE N, TREE* Tree, TREES *Trees)
 	{
 		if(SiteHadUnKnownState(N->Taxa->DesDataChar[SiteIndex]) == FALSE)
 		{
-			// Set all boxes to 0 
+			/* Set all boxes to 0  */
 			for(StateIndex=0;StateIndex<NOS;StateIndex++)
 				N->Partial[SiteIndex][StateIndex] = 0;
 
-			// Set the corrispoding boxes to 1 
+			/* Set the corrispoding boxes to 1  */
 			StrLen = (int)strlen(N->Taxa->DesDataChar[SiteIndex]);
 
 			for(StateIndex=0;StateIndex<StrLen;StateIndex++)
@@ -540,7 +540,7 @@ void	SetNodeTipData(NODE N, TREE* Tree, TREES *Trees)
 				N->Partial[SiteIndex][StateIndex] = 1;
 		}
 
-		// Copy the sites for the covarion mode
+		/* Copy the sites for the covarion mode */
 		if(Trees->UseCovarion == TRUE)
 		{
 			for(StateIndex=0;StateIndex<NOS;StateIndex++)
@@ -586,10 +586,10 @@ void	SetTipData(TREE *Tree, TREES *Trees)
 			{
 				if(SiteHadUnKnownState(N->Taxa->DesDataChar[SiteIndex]) == FALSE)
 				{
-					// Set all boxes to 0 
+					
 					for(StateIndex=0;StateIndex<NOS;StateIndex++)
 						N->Partial[SiteIndex][StateIndex] = 0;
-					// Set the corrispoding boxes to 1 
+					
 					StrLen = (int)strlen(N->Taxa->DesDataChar[SiteIndex]);
 
 					for(StateIndex=0;StateIndex<StrLen;StateIndex++)
@@ -604,7 +604,7 @@ void	SetTipData(TREE *Tree, TREES *Trees)
 						N->Partial[SiteIndex][StateIndex] = 1;
 				}
 
-				// Copy the sites for the covarion mode
+				
 				if(Trees->UseCovarion == TRUE)
 				{
 					for(StateIndex=0;StateIndex<NOS;StateIndex++)

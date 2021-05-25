@@ -1,13 +1,10 @@
 #if !defined (TYPEDEFS)
 #define TYPEDEFS
 
-
 #pragma warning(disable : 4996)
-
 
 #include <stdio.h>
 #include "matrix.h"
-
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000 
@@ -24,7 +21,7 @@
 
 #define ERRLH -999999
 
-#define NOOFOPERATORS	9
+#define NOOFOPERATORS	10
 #define ZERORATENO		-1
 
 extern double LhPraxis(double *);
@@ -83,13 +80,14 @@ typedef enum
 	CDEPSITE,
 	CHEADERS,
 	CMODELFILE,
-//	CPREVAR,
+/*	CPREVAR, */
 	CVARDATA,
 	CRMODEL,
 	CDATADEV,
 	CCOMMENT,
 	CNOSPERSITE,
 	CSCHEDULE,
+	CSTREEMOVE,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -144,13 +142,14 @@ static char    *COMMANDSTRINGS[] =
 	"depsite",		"ds", 
 	"headers",		"hd", 
 	"modelfile",	"mf", 
-//	"prevar",		"pv",
+/*	"prevar",		"pv", */
 	"vardata",		"vd",
 	"rmodel",		"rm", 
 	"datadev",		"dd",
 	"#",			"//",
 	"fitnospersite","nps",
 	"schedule",		"sch",
+	"solotreemove",	"stree",
 	""
 };
 
@@ -206,7 +205,8 @@ static char    *SHEDOP[] =
 	"Jump", 
 	"Prior Change",
 	"Est Data",
-	"Var Data"
+	"Var Data",
+	"Solo Tree Move"
 };
 
 static int	DISTPRAMS[] = 
@@ -559,6 +559,8 @@ typedef struct
 
 	int			UseSchedule;
 	char		*ScheduleFile;
+
+	int			SoloTreeMove;
 } OPTIONS;
 
 
@@ -645,6 +647,7 @@ typedef enum
 	SPPROR=6,
 	SESTDATA=7,
 	SVARDATA=8,
+	SSOLOTREEMOVE
 } OPERATORS;
 
 
