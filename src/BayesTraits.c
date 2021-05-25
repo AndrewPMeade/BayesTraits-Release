@@ -95,9 +95,9 @@ int main(int argc, char** argv)
 // ./Seq/MammalBig.trees ./Seq/MammalBig.txt < in.txt > sout.txt
 // ./Seq/LhInDep.trees ./Seq/LhInDep.txt < in.txt > sout.txt
 
-// ./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < in.txt > sout.txt
-// ./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < in.txt > sout.txt
-
+// ./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < BigMamIn.txt > sout.txt
+// ./Seq/PhyCorrectT.trees ./Seq/PhyCorrectT.txt < in.txt > sout.txt
+// ./Seq/Zuzana/Chiroptera.trees ./Seq/Zuzana/Chiroptera_BrW.txt  < ./Seq/Zuzana/in.txt > sout.txt
 int main(int argc, char** argv)
 {
 	TREES*		Trees=NULL;

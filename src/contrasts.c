@@ -275,7 +275,7 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	if(Opt->Analsis == ANALML)
 	{
 		CalcContLh(Opt, Trees, Rates);
-		if(Opt->Analsis != ANALMCMC)
+		if(Opt->Analsis == ANALMCMC)
 		{
 			Con->EstAlpha[0] = Con->Alpha[0];
 			Con->EstSigma[0] = Con->Sigma[0];

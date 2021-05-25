@@ -270,6 +270,7 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			SetTreeAsData(Opt, Trees, NRates->TreeNo);
 
 		NRates->Lh = Likelihood(NRates, Trees, Opt);
+
 		CalcPriors(NRates, Opt);
 
 		Heat = NRates->Lh - CRates->Lh;

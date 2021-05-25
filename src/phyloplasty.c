@@ -31,8 +31,12 @@ double	PPSGammaPDF(double x, double Alpha, double Beta)
 	T2 = pow(x/s, -1 + Alpha);
 	T2 = T1 * T2 * pow(Beta, -Alpha);
 	Ret = T2 / gamma(Alpha);
+
+	Ret = Ret / s;
 	
-	return Ret / s;
+	Ret = Ret * PPPRIORSCALE;
+
+	return Ret;
 }
 
 double	RandGamma(double Shape, double Scale)
@@ -118,9 +122,11 @@ void	MakeValidNodes(TREES *Trees, PLASTY* Plasty)
 
 }
 
+
 PLASTY*	CreatPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
 	PLASTY* Ret;
+
 
 	Ret = (PLASTY*)malloc(sizeof(PLASTY));
 	if(Ret == NULL)
@@ -186,10 +192,14 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, int It)
 
 	PNode->Node = N;
 
+#ifdef PPBLO
+	PNode->Type = PPBRANCH;
+#else
 	if(GenRandState(Rates->RandStates) < 0.1)
 		PNode->Type = PPBRANCH;
 	else
 		PNode->Type = PPNODE;
+#endif
 
 #ifdef PPUNIFORM
 	PNode->Scale = GenRandState(Rates->RandStates) * PPMAXSCALE;
@@ -313,6 +323,10 @@ void	MakeTNodeList(PLASTY *Plasty, NODE N, NODE* List, int *Size)
 
 void	SawpNodeType(PLASTYNODE	*PNode)
 {
+#ifdef PPBLO
+	return;
+#endif
+
 	if(PNode->Type == PPNODE)
 		PNode->Type = PPBRANCH;
 	else

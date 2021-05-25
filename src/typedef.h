@@ -33,6 +33,9 @@
 //#define	PPSCALEDEV	10
 #define	PPSCALEDEV	100
 
+#define	PPBLO
+#define PPPRIORSCALE 6
+
 /* Value of the PP alpha gamma */
 #define	PPALPHA		1.1
 #define PPBETA		1
@@ -40,7 +43,7 @@
 #define PPALPHASCLAE 0.1
 
 /* Use uniform or gamma value priors*/
-#define PPUNIFORM
+//#define PPUNIFORM
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000
