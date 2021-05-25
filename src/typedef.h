@@ -593,7 +593,6 @@ struct INODE
 	QDOUBLE		**BigPartial;
 #endif
 
-
 	TAXA		*Taxa;
 
 //	int			*Part;
@@ -880,10 +879,6 @@ typedef struct
 
 	int			NoTrees;
 	double		**TrueBL;
-	double		*ScaleBL;
-
-	int			NoValidNode;
-	NODE		*ValidNode;
 
 	NODE		*TempList;
 	int			NoTempList;

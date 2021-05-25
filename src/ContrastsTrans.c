@@ -33,7 +33,6 @@ void	RecTransContNodeDelta(NODE N, double Delta, double PathLen)
 void	TransContNodeDelta(NODE N, double Delta, int Norm)
 {
 	double SumBL,Scale;
-	int Index;
 
 	if(Norm == TRUE)
 		SumBL = SumNodeBL(N);

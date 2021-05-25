@@ -92,27 +92,35 @@ double**	MakeTrueBL(TREES *Trees)
 	return Ret;
 }
 
-int		IsValidVarRatesNode(OPTIONS *Opt, NODE N)
+int		IsValidVarRatesNode(NODE N, RJ_VARRATE_TYPE	Type)
 {
 	PART *Part;
+
+	if(N == NULL)
+		return FALSE;
 
 	Part = N->Part;
 
 	if(N->Length == 0)
 		return FALSE;
 
-	if(N->Ans == NULL)
-		return FALSE;
+	if(Type == VR_BL || Type == VR_NODE)
+	{
+		if(N->Tip == TRUE && Type == VR_NODE)
+			return FALSE;
 
-	if(Opt->UseVarRates == TRUE)
+		if(N->Ans == NULL)
+			return FALSE;
+
 		return TRUE;
+	}
 
 	if(Part->NoTaxa >= MIN_TAXA_VR_TRANS)
 		return TRUE;
 
 	return FALSE;
 }
-
+/*
 int		FindNoValidNodes(OPTIONS *Opt, TREES *Trees)
 {
 	TREE	*T;
@@ -152,7 +160,7 @@ void	MakeValidNodes(OPTIONS *Opt, TREES *Trees, PLASTY* Plasty)
 			Plasty->ValidNode[Plasty->NoValidNode++] = N;
 	}
 }
-
+*/
 
 PLASTY*	CreatVarRates(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
@@ -169,13 +177,15 @@ PLASTY*	CreatVarRates(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 
 	Ret->TrueBL = MakeTrueBL(Trees);
 
-	MakeValidNodes(Opt, Trees, Ret);
+//	MakeValidNodes(Opt, Trees, Ret);
 
-	Ret->ScaleBL = (double*)malloc(sizeof(double) * Ret->NoValidNode);
-	if(Ret->ScaleBL == NULL)
+//	Ret->ScaleBL = (double*)malloc(sizeof(double) * Ret->NoValidNode);
+//	if(Ret->ScaleBL == NULL)
+//		MallocErr();
+
+	Ret->TempList = (NODE*)malloc(sizeof(NODE) * Trees->MaxNodes);
+	if(Ret->TempList == NULL)
 		MallocErr();
-
-	Ret->TempList = (NODE*)malloc(sizeof(NODE) * Ret->NoValidNode);
 
 #ifdef PPUNIFORM
 	Ret->Alpha = -1;
@@ -203,8 +213,8 @@ void	FreeVarRates(PLASTY* Plasty)
 	}
 
 	free(Plasty->TempList);
-	free(Plasty->ScaleBL);
-	free(Plasty->ValidNode);
+//	free(Plasty->ScaleBL);
+//	free(Plasty->ValidNode);
 	free(Plasty);
 }
 
@@ -277,6 +287,8 @@ void		FreeVarRatesNode(PLASTYNODE* VarRatesNode)
 	free(VarRatesNode);
 }
 
+//RJ_VARRATE_TYPE	Get
+
 RJ_VARRATE_TYPE	GetVarRatesType(RANDSTATES *RS, SCHEDULE *Shed)
 {
 	int Pos;
@@ -335,7 +347,7 @@ void	CheckPlasyNodes(PLASTY *Plasty)
 
 }
 
-void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed, NODE N, long long It)
+void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, RJ_VARRATE_TYPE Type, NODE N, long long It)
 {
 	PLASTYNODE	*PNode;
 	PLASTY		*Plasty;
@@ -344,7 +356,7 @@ void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed, N
 
 	PNode = CreateVarRatesNode(It, N);
 
-	PNode->Type = GetVarRatesType(Rates->RS, Shed);
+	PNode->Type = Type;
 
 	if(PNode->Type == VR_BL || PNode->Type == VR_NODE)
 		SetVRNodeBLRates(PNode, Rates->RS);
@@ -467,24 +479,34 @@ int		IsVarRateTypeRate(RJ_VARRATE_TYPE Type)
 	return FALSE;
 }
 
-int		ValidMoveNode(OPTIONS *Opt, PLASTY *Plasty, NODE N, RJ_VARRATE_TYPE Type)
+
+int GetPlastyNode(int ID, PLASTY *Plasty, RJ_VARRATE_TYPE Type)
 {
+	int Index;
+
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+	{
+		if(	Plasty->NodeList[Index]->Node->ID == ID && 
+			Plasty->NodeList[Index]->Type == Type)
+			return Index;
+	}
+
+	return -1;
+}
+
+int		ValidMoveNode(PLASTY *Plasty, NODE N, RJ_VARRATE_TYPE Type)
+{
+	int ID;
+
 	if(N == NULL)
 		return FALSE;
-
-	if(N->Ans == NULL)
+	
+	if(IsValidVarRatesNode(N, Type) == FALSE)
 		return FALSE;
+	
+	ID = GetPlastyNode(N->ID, Plasty, Type);
 
-	if(IsValidVarRatesNode(Opt, N) == FALSE)
-		return FALSE;
-
-	if(NodeScaled(N->ID, Plasty) == FALSE)
-		return FALSE;
-
-	if(IsVarRateTypeRate(Type) == TRUE)
-		return TRUE;
-
-	if(N->Part->NoTaxa >= MIN_TAXA_VR_TRANS)
+	if(ID == -1)
 		return TRUE;
 
 	return FALSE;
@@ -492,9 +514,8 @@ int		ValidMoveNode(OPTIONS *Opt, PLASTY *Plasty, NODE N, RJ_VARRATE_TYPE Type)
 
 void	MakeTNodeList(OPTIONS *Opt, PLASTY *Plasty, RJ_VARRATE_TYPE Type, NODE N, NODE* List, int *Size)
 {
-	int Index;
 
-	if(ValidMoveNode(Opt, Plasty, N, Type) == TRUE)
+	if(ValidMoveNode(Plasty, N, Type) == TRUE)
 	{
 		List[*Size] = N;
 		(*Size)++;
@@ -503,29 +524,8 @@ void	MakeTNodeList(OPTIONS *Opt, PLASTY *Plasty, RJ_VARRATE_TYPE Type, NODE N, N
 	if(N->Tip == TRUE)
 		return;
 
-	for(Index=0;Index<N->NoNodes;Index++)
-		MakeTNodeList(Opt, Plasty,Type, N->NodeList[Index], List, Size);
-}
-
-void	SawpNodeType(PLASTYNODE	*PNode)
-{
-#ifdef PPBLO
-	return;
-#endif
-
-	if(PNode->Type == VR_NODE)
-	{
-		PNode->Type = VR_BL;
-		return;
-	}
-	
-	if(PNode->Type == VR_BL)
-	{
-		PNode->Type = VR_NODE;
-		return;
-	}
-
-	return;
+//	for(Index=0;Index<N->NoNodes;Index++)
+//		MakeTNodeList(Opt, Plasty,Type, N->NodeList[Index], List, Size);
 }
 
 void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
@@ -543,16 +543,8 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 
 	N = PNode->Node;
 
-	if( (RandDouble(Rates->RS) < 0.05) && 
-		(PNode->Node->Tip == FALSE))
-	{
-		SawpNodeType(PNode);
-		return;
-	}
-
 	Plasty->NoTempList = 0;
-//	if((N->Ans != NULL) && (IsValidVarRatesNode(Opt, N->Ans) == TRUE) && (N != Trees->Tree[0]->Root))
-	if(ValidMoveNode(Opt, Plasty, N->Ans, PNode->Type) == TRUE)
+	if(ValidMoveNode(Plasty, N->Ans, PNode->Type) == TRUE)
 		Plasty->TempList[Plasty->NoTempList++] = N->Ans;
 
 	if(N->Tip == FALSE)
@@ -562,45 +554,31 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	}
 
 	if(Plasty->NoTempList == 0)
-	{
-		SawpNodeType(PNode);
 		return;
-	}
-
+	
 	No = RandUSLong(Rates->RS) % Plasty->NoTempList;
 	PNode->Node = Plasty->TempList[No];
-
-//	CheckPlasyNodes(Plasty);
 
 	return;
 }
 
-int GetPlastyNode(int ID, PLASTY *Plasty)
+
+NODE	GetVarRatesNode(RATES *Rates, TREES *Trees, RJ_VARRATE_TYPE	Type)
 {
-	int Index;
-
-	for(Index=0;Index<Plasty->NoNodes;Index++)
-		if(Plasty->NodeList[Index]->Node->ID == ID)
-			return Index;
-
-	return -1;
-}
-
-NODE	GetVarRatesNode(RATES *Rates, TREES *Trees)
-{
-	PLASTY *	Plasty;
+	PLASTY		*Plasty;
+	TREE		*Tree;
 	NODE		N;
-
+	int			Pos;
+	
+	Tree = Trees->Tree[Rates->TreeNo];
 	Plasty = Rates->Plasty;
 
-/*	do
+	do
 	{
-		N = Plasty->ValidNode[RandUSLong(Rates->RS) % Plasty->NoValidNode];
-	}while(N == Trees->Tree[0]->Root || N->Part->NoTaxa < MIN_TAXA_VR_TRANS);
-	*/ 
-
-	N = Plasty->ValidNode[RandUSLong(Rates->RS) % Plasty->NoValidNode];
-
+		Pos = RandUSInt(Rates->RS) % Tree->NoNodes;
+		N = Tree->NodeList[Pos];
+	}while(IsValidVarRatesNode(N, Type) == FALSE); 
+	
 	return N;
 }
 
@@ -609,16 +587,19 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	PLASTY *	Plasty;
 	int			PNodeID;
 	NODE		N;
-
+	RJ_VARRATE_TYPE		Type;
 	
+
+	Type = GetVarRatesType(Rates->RS, Shed);
+		
 	Plasty = Rates->Plasty;
 	
-	N = GetVarRatesNode(Rates, Trees);
+	N = GetVarRatesNode(Rates, Trees, Type);
 
-	PNodeID = GetPlastyNode(N->ID, Plasty);
+	PNodeID = GetPlastyNode(N->ID, Plasty, Type);
 
 	if(PNodeID == -1)
-		VarRatesAddNode(Rates, Trees, Opt, Shed, N, It);
+		VarRatesAddNode(Rates, Trees, Opt, Type, N, It);
 	else
 		VarRatesDelNode(Rates, Trees, Opt, PNodeID);	
 
@@ -1033,7 +1014,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 		fprintf(Out, "%f\t-1\t%f\t", Rates->Contrast->RegAlpha, P->Alpha);
 	}
 	
-	fprintf(Out, "\n");
+//	fprintf(Out, "\n");
 	for(Index=0;Index<P->NoNodes;Index++)
 	{
 		PNode = P->NodeList[Index];
@@ -1044,10 +1025,10 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 		fprintf(Out, "%d\t", PNode->NodeID);
 
 		OutputVarRatesType(Out, PNode->Type);
-		fprintf(Out, "\n");
+//		fprintf(Out, "\n");
 	}
 	fprintf(Out, "\n");
-	exit(0);
+//	exit(0);
 	fflush(Out);
 }	
 

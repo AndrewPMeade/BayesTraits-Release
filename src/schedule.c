@@ -144,7 +144,7 @@ void	SetVarRatesShed(OPTIONS *Opt, SCHEDULE *Shed)
 		Shed->FreqVarRatesOp[No] = 0.1;
 		No++;
 
-		Shed->VarRatesOp[No] = VR_NODE;
+		Shed->VarRatesOp[No] = VR_BL;
 		Shed->FreqVarRatesOp[No] = 0.1;
 		No++;
 	}
