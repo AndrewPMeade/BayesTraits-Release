@@ -563,8 +563,6 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	{
 		Rates->FatTailRates = CreateFatTailRates(Opt, Trees);
 		MapFatTailRateToRates(Rates, Rates->FatTailRates);
-
-
 	}
 }
 

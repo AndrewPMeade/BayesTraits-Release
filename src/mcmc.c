@@ -592,7 +592,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *Shed)
 	fflush(Opt->LogFile);
 
 
-	MCMCTest(Opt, Trees, CRates, Shed);
+//	MCMCTest(Opt, Trees, CRates, Shed);
 
 
 	StartT = GetSeconds();	

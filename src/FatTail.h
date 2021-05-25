@@ -3,6 +3,12 @@
 
 #include "TypeDef.h"
 
+//#define FAT_TAIL_ML_PARAM
+#ifdef FAT_TAIL_ML_PARAM
+	#define FAT_TAIL_ML_SIG2	1.874589821111	
+	#define FAT_TAIL_ML_ROOT	0.073277330319
+#endif
+
 void			InitFatTailTrees(OPTIONS *Opt, TREES *Trees);
 void			FreeFatTailTrees(OPTIONS *Opt, TREES *Trees);
 

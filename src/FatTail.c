@@ -46,6 +46,8 @@
 #include "DistData.h"
 #include "Threaded.h"
 
+
+
 void	SetInitAnsStates(OPTIONS *Opt, TREES *Trees, TREE *Tree);
 
 //void MapRatesToTree(TREE *Tree, int NoSites, FATTAILRATES *FTR)
@@ -181,6 +183,10 @@ FATTAILRATES*	CreateFatTailRates(OPTIONS *Opt, TREES *Trees)
 			Ret->Alpha[Index] = FAT_TAIL_NORMAL_VAL;
 
 		Ret->Scale[Index] = 0.5;
+
+		#ifdef FAT_TAIL_ML_PARAM
+			Ret->Scale[Index] = FAT_TAIL_ML_SIG2;
+		#endif
 	}
 
 	
@@ -427,6 +433,12 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	Tree = Trees->Tree[Rates->TreeNo];
 	NoSites = Trees->NoSites;
 	FTR = Rates->FatTailRates;
+
+#ifdef FAT_TAIL_ML_PARAM
+	FTR->AnsVect[0] = FAT_TAIL_ML_ROOT;
+	FTR->SDList[0]->Scale = FAT_TAIL_ML_SIG2;
+	Rates->Rates[0] = FAT_TAIL_ML_SIG2;
+#endif
 
 	UseGeoModel = FALSE;
 	
@@ -805,6 +817,8 @@ void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed
 	int Pos;
 	double NewR, OldR, Dev;
 
+
+	
 //	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
 	Shed->PNo = GetMutateFatTailRatesPos(Opt, Trees, Rates, Shed);
 
