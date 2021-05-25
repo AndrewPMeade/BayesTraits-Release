@@ -18,4 +18,6 @@ void		PrintShed(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str);
 
 void		SetCustomShed(SCHEDULE* Shed);
 
+void		SetShedOpFreq(SCHEDULE*	Shed, int No, double Val);
+
 #endif

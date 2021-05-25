@@ -402,12 +402,14 @@ void	TransformTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 		
 	if(Opt->UseLambda == TRUE)
 	{
+//		return;
 		SetTreeDistToRoot(Tree);
 
 		if(Opt->EstLambda == TRUE)
 			TransformTreeLambda(Root, Rates->Lambda, Norm);
 		else
 			TransformTreeLambda(Root, Opt->FixLambda, Norm);
+
 	}
 }
 

@@ -1999,8 +1999,23 @@ int		TaxaNoToIndex(TREES *Trees, int No)
 	return -1;
 }
 
+void	SaveUserBrachLengthsTree(TREE *Tree)
+{
+	int Index;
 
-void	SetUserBranchLength(TREE *Tree)
+	for(Index=0;Index<Tree->NoNodes;Index++)
+		Tree->NodeList[Index]->UserLength = Tree->NodeList[Index]->Length;
+}
+
+void	SaveUserBrachLengths(TREES *Trees)
+{
+	int Index;
+
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
+		SaveUserBrachLengthsTree(Trees->Tree[Index]);
+}
+
+void	SetUserBranchLengthTree(TREE *Tree)
 {
 	int Index;
 	NODE N;
@@ -2012,9 +2027,9 @@ void	SetUserBranchLength(TREE *Tree)
 	}
 }
 
-void	ReSetBranchLength(TREE *Tree)
+void	SetUserBranchLength(TREE *Tree)
 {
-	SetUserBranchLength(Tree);
+	SetUserBranchLengthTree(Tree);
 	SetTreeDistToRoot(Tree);
 }
 
@@ -2146,4 +2161,14 @@ void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Ou
 	fprintf(Out, ";\n");
 
 	fflush(Out);
+}
+
+void	PrintTreeBL(TREE *Tree)
+{
+	int Index;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+		printf("BL:\t%d\t%f\t", Index, Tree->NodeList[Index]->Length);
+
+	printf("\n");
 }

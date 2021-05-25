@@ -108,7 +108,7 @@
 #define VARRATES_HP_ALPHA_SCLAE 0.1
 
 // Only allow one type (Node, BL, Kappa ect) of variables rates operator per node 
-#define VARRATES_ONE_OP_PER_NODE
+//#define VARRATES_ONE_OP_PER_NODE
 
 // use ML paramter for indpedent contrast MCMC / Var Rates
 //#define CONTRAST_ML_PARAM
@@ -116,8 +116,15 @@
 // No kappa, lambda, delta, OU. 
 #define	NO_RJ_LOCAL_SCALAR	4
 
+// Minimum number of taxa to transform a node (kappa, lamabed ect)
+#define MIN_TAXA_VR_TRANS	5
+
+// Minimum number of taxa to Var Rate a ndoe
+#define MIN_TAXA_VR_NODE	0
+
 #define MINRATE 1.0e-16
 #define MAXRATE	100
+
 /*	#define MAXRATE	100 */
 #define MINBL	0.0000001
 
@@ -181,8 +188,7 @@
 #define MAX_VR_LAMBDA	1
 #define MAX_VR_OU		100
 
-// Minimum number of taxa to transform a node. 
-#define MIN_TAXA_VR_TRANS	5
+
 
 // Value for a normal distribution for a fat tail model
 #define FAT_TAIL_NORMAL_VAL 2.0
@@ -192,6 +198,8 @@
 #define MIN_VALID_ACC 0.2
 #define MAX_VALID_ACC 0.4
 
+
+// 
 static char    *RJ_LOCAL_SCALAR_NAMES[] =
 {
 	"kappa",
@@ -354,7 +362,7 @@ static char    *COMMANDSTRINGS[] =
 	"adderr",		"er",
 	"schedule",		"sh", 
 	"rjdummy",		"rjd",
-	"scaletrees",	"st", 
+	"scaletrees",	"sct", 
 	"rjlocaltransform", "rjlt", 
 	"fattailnormal", "ftn",
 	"addtag",		"at",
@@ -1376,29 +1384,29 @@ static char    *SHEDOP[] =
 
 typedef enum
 {
-	SRATES,
-	SCV,
-	SKAPPA,
-	SDELTA,
-	SLABDA,
-	SJUMP,
-	SPPROR,
-	SESTDATA,
-	SSOLOTREEMOVE,
-	SPPADDREMOVE,
-	SPPMOVE,
-	SPPCHANGESCALE,
-	SPPHYPERPRIOR,
-	SHETERO, 
-	STREEMOVE,
-	SOU,
-	SGAMMAMOVE,
-	SRJDUMMY, 
-	SRJDUMMYMOVE,
-	SRJDUMMYCHANGEBETA,
-	SFATTAILANS,
-	SLOCALRATES,
-	SDATADIST
+	S_RATES,
+	S_CV,
+	S_KAPPA,
+	S_DELTA,
+	S_LABDA,
+	S_JUMP,
+	S_PPROR,
+	S_EST_DATA,
+	S_SOLO_TREE_MOVE,
+	S_VARRATES_ADD_REMOVE,
+	S_VARRATES_MOVE,
+	S_VARRATES_CHANGE_SCALE,
+	S_VARRATES_HYPER_PRIOR,
+	S_HETERO, 
+	S_TREE_MOVE,
+	S_OU,
+	S_GAMMA_MOVE,
+	S_RJ_DUMMY, 
+	S_RJ_DUMMY_MOVE,
+	S_RJ_DUMMY_CHANG_EBETA,
+	S_FAT_TAILANS,
+	S_LOCAL_RATES,
+	S_DATA_DIST
 } OPERATORS;
 
 

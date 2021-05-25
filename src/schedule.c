@@ -80,21 +80,6 @@ void	BlankSchedule(SCHEDULE*	Shed)
 	}
 }
 
-//void	ScaleSchedVect(SCHEDULE * Sched)
-void	NormaliseVector(double *Vect, int Size)
-{
-	double	SF;
-	int		Index;
-
-	SF = 0;
-	for(Index=0;Index<Size;Index++)
-		SF += Vect[Index];
-
-	SF = 1 / SF;
-
-	for(Index=0;Index<Size;Index++)
-		Vect[Index] *= SF;
-}
 
 int		MultiTree(OPTIONS *Opt)
 {
@@ -113,11 +98,8 @@ void	SetVarRatesShed(OPTIONS *Opt, SCHEDULE *Shed)
 
 	Max = NO_RJ_LOCAL_SCALAR + 2;
 
-	Shed->FreqVarRatesOp	= (double*)malloc(sizeof(double) * Max);
-	Shed->VarRatesOp		= (TRANSFORM_TYPE*)malloc(sizeof(TRANSFORM_TYPE) * Max);
-
-	if(Shed->FreqVarRatesOp == NULL || Shed->VarRatesOp == NULL)
-		MallocErr();
+	Shed->FreqVarRatesOp	= (double*)SMalloc(sizeof(double) * Max);
+	Shed->VarRatesOp		= (TRANSFORM_TYPE*)SMalloc(sizeof(TRANSFORM_TYPE) * Max);
 
 	No = 0;
 
@@ -154,53 +136,53 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	for(Index=0;Index<Shed->NoOfOpts;Index++)
 		Shed->OptFreq[Index] = 0.0;
 
-	if((Opt->UseCovarion == TRUE) && (Opt->LoadModels == FALSE))
-		Shed->OptFreq[SCV] = 0.2;
+	if(Opt->UseCovarion == TRUE && Opt->LoadModels == FALSE)
+		Shed->OptFreq[S_CV] = 0.2;
 
-	if((Opt->EstKappa == TRUE) && (Opt->LoadModels == FALSE))
-		Shed->OptFreq[SKAPPA] = 0.1;
+	if(Opt->EstKappa == TRUE && Opt->LoadModels == FALSE)
+		Shed->OptFreq[S_KAPPA] = 0.1;
 
-	if((Opt->EstDelta == TRUE) && (Opt->LoadModels == FALSE))
-		Shed->OptFreq[SDELTA] = 0.1;
+	if(Opt->EstDelta == TRUE && Opt->LoadModels == FALSE)
+		Shed->OptFreq[S_DELTA] = 0.1;
 
-	if((Opt->EstLambda == TRUE)  && (Opt->LoadModels == FALSE))
-		Shed->OptFreq[SLABDA] = 0.1;
+	if(Opt->EstLambda == TRUE  && Opt->LoadModels == FALSE)
+		Shed->OptFreq[S_LABDA] = 0.1;
 
-	if((Opt->UseRJMCMC == TRUE) && (Opt->LoadModels == FALSE))
-		Shed->OptFreq[SJUMP] = 0.1;
+	if(Opt->UseRJMCMC == TRUE && Opt->LoadModels == FALSE)
+		Shed->OptFreq[S_JUMP] = 0.1;
 
 	if(UsingHP(Opt) == TRUE)
-		Shed->OptFreq[SPPROR] = 0.1;
+		Shed->OptFreq[S_PPROR] = 0.1;
 
 	if(EstData(Opt->Trees) == TRUE)
-		Shed->OptFreq[SESTDATA] = 0.5;
+		Shed->OptFreq[S_EST_DATA] = 0.5;
 
-	if((Opt->EstOU == TRUE) && (Opt->LoadModels == FALSE))
-		Shed->OptFreq[SOU] = 0.1;
+	if(Opt->EstOU == TRUE && Opt->LoadModels == FALSE)
+		Shed->OptFreq[S_OU] = 0.1;
 
 	if(Opt->EstGamma == TRUE)
-		Shed->OptFreq[SGAMMAMOVE] = 0.1;
+		Shed->OptFreq[S_GAMMA_MOVE] = 0.1;
 
 	if(Opt->ModelType == MT_FATTAIL)
-		Shed->OptFreq[SFATTAILANS] = 0.9;
+		Shed->OptFreq[S_FAT_TAILANS] = 0.5;
 
 	if(MultiTree(Opt) == TRUE)
-		Shed->OptFreq[STREEMOVE] = 0.1;
+		Shed->OptFreq[S_TREE_MOVE] = 0.1;
 	
 	if(EstLocalTransforms(Opt->LocalTransforms, Opt->NoLocalTransforms) == TRUE && Opt->LoadModels == FALSE)
-		Shed->OptFreq[SLOCALRATES] = 0.1;
+		Shed->OptFreq[S_LOCAL_RATES] = 0.1;
 
 	if(UseNonParametricMethods(Opt) == TRUE)
 	{
-		Shed->OptFreq[SPPADDREMOVE] = 0.5;
-		Shed->OptFreq[SPPMOVE] = 0.05;
-		Shed->OptFreq[SPPCHANGESCALE] = 0.4;
+		Shed->OptFreq[S_VARRATES_ADD_REMOVE] = 0.5;
+		Shed->OptFreq[S_VARRATES_MOVE] = 0.05;
+		Shed->OptFreq[S_VARRATES_CHANGE_SCALE] = 0.4;
 		
 		SetVarRatesShed(Opt, Shed);
 	}
 
 	if(Opt->Model == M_DESCHET)
-		Shed->OptFreq[SHETERO] = 0.4;
+		Shed->OptFreq[S_HETERO] = 0.4;
 
 	Rates = 0;
 	if(Opt->DataType == CONTINUOUS)
@@ -211,12 +193,12 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 				Rates++;
 
 	if(Rates == 0)
-		Shed->OptFreq[SRATES] = 0;
+		Shed->OptFreq[S_RATES] = 0;
 	else
 	{
-		Shed->OptFreq[SRATES] = 0.5;
+		Shed->OptFreq[S_RATES] = 0.5;
 		if(Opt->ModelType == MT_FATTAIL)
-			Shed->OptFreq[SRATES] = 0.05;
+			Shed->OptFreq[S_RATES] = 0.05;
 	}
 	
 #ifdef CONTRAST_ML_PARAM
@@ -225,19 +207,19 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 #endif
 
 	if(Opt->LoadModels == TRUE)
-		Shed->OptFreq[SRATES] = 0.4;
+		Shed->OptFreq[S_RATES] = 0.4;
 	
 	if(Opt->RJDummy == TRUE)
 	{
-		Shed->OptFreq[SRATES]		= 0.5;
-		Shed->OptFreq[SRJDUMMY]		= 0.2;
-		Shed->OptFreq[SRJDUMMYMOVE] = 0.2;
-		Shed->OptFreq[SRJDUMMYCHANGEBETA] = 0.2;
+		Shed->OptFreq[S_RATES] = 0.5;
+		Shed->OptFreq[S_RJ_DUMMY] = 0.2;
+		Shed->OptFreq[S_RJ_DUMMY_MOVE] = 0.2;
+		Shed->OptFreq[S_RJ_DUMMY_CHANG_EBETA] = 0.2;
 	}
 
 	if(Opt->UseDistData == TRUE)
-		Shed->OptFreq[SDATADIST] = 0.2;
-
+		Shed->OptFreq[S_DATA_DIST] = 0.2;
+	
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 }
 
@@ -666,8 +648,8 @@ double	GetRDDecAccRate(OPTIONS *Opt, SCHEDULE* Shed)
 		Ret = (double)Shed->PAcc[0] / Shed->PTried[0];
 	else
 	{
-		Acc = Shed->PAcc[0] + Shed->Accepted[SCV];
-		Tried = Shed->PTried[0] + Shed->Tryed[SCV];
+		Acc = Shed->PAcc[0] + Shed->Accepted[S_CV];
+		Tried = Shed->PTried[0] + Shed->Tryed[S_CV];
 		Ret = (double)Acc/Tried;
 	}
 
@@ -680,8 +662,6 @@ void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 	
 	for(Index=0;Index<Shed->NoFullATList;Index++)
 		AutoTuneUpDate(Shed->FullATList[Index], RS);
-
-//	Shed->FullATList[1]->CDev = 132640.854585;
 }
 
 void		SetCustomShed(SCHEDULE* Shed)
@@ -691,7 +671,14 @@ void		SetCustomShed(SCHEDULE* Shed)
 	for(Index=0;Index<Shed->NoOfOpts;Index++)
 		Shed->OptFreq[Index] = 0.0;
 
-	Shed->OptFreq[SPPMOVE] = 1.0;
+	Shed->OptFreq[S_VARRATES_MOVE] = 1.0;
 
+	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
+}
+
+
+void	SetShedOpFreq(SCHEDULE*	Shed, int No, double Val)
+{
+	Shed->OptFreq[No] = Val;
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 }

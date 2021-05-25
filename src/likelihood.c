@@ -628,11 +628,7 @@ void	SetUpGamma(RATES* Rates, OPTIONS* Opt)
 	SetGammaBlank(Rates, Opt);
 
 	if(RateW == NULL)
-	{
-		RateW = (double*)malloc(sizeof(double) * Opt->GammaCats);
-		if(RateW == NULL)
-			MallocErr();
-	}
+		RateW = (double*)SMalloc(sizeof(double) * Opt->GammaCats);
 
 	DiscreteGamma(RateW, Rates->GammaMults, Rates->Gamma, Rates->Gamma, Rates->GammaCats, 0);
 }
@@ -981,8 +977,10 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	
 	if(NeedToReSetBL(Opt, Rates) == TRUE)
 	{
-		ReSetBranchLength(Trees->Tree[Rates->TreeNo]);
-				
+		SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
+		
+//		PrintTreeBL(Trees->Tree[Rates->TreeNo]); exit(0);			
+
 		TransformTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
 		ApplyLocalTransforms(Rates, Trees, Opt, NORMALISE_TREE_CON_SCALING);
@@ -1022,13 +1020,17 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		GammaCat;
 	double	RateMult;
 
+	
+
  	if(Rates->ModelFile == NULL)
 		MapRates(Rates, Opt);
 	else
 		MapModelFile(Opt, Rates);
 	
 	LhTransformTree(Rates, Trees, Opt);
-
+//	PrintTreeBL(Trees->Tree[Rates->TreeNo]);
+//	exit(0);
+	
 	if(Opt->NoLh == TRUE)
 		return -1.0;
 

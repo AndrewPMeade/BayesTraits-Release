@@ -354,6 +354,7 @@ void	RecCalcContrast(NODE N, int NoSites)
 	C0 = N0->ConData->Contrast[0];
 	C1 = N1->ConData->Contrast[0];
 
+
 	for(SIndex=0;SIndex<NoSites;SIndex++)
 	{
 		l0 = N0->Length + C0->Err[SIndex];
@@ -510,7 +511,11 @@ void	CalcContrast(TREES* Trees, RATES* Rates)
 {
 	TREE	*Tree;
 	
+
+
 	Tree = Trees->Tree[Rates->TreeNo];
+
+
 
 	RecCalcContrast(Tree->Root, Rates->Contrast->NoSites);
 //	RecCalcContrast(Tree->Root, Trees->NoOfSites);

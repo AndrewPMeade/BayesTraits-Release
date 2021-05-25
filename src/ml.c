@@ -348,6 +348,13 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 void	MLTest2(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	double R, Lh;
+	return;
+	R = 1.0;
+	Rates->Lambda = 1.0;
+	Lh = Likelihood(Rates, Trees, Opt);
+	printf("%f\t%f\n", R, Lh);
+
+	exit(0);
 
 	for(R=0.0001;R<1;R+=0.0001)
 	{
@@ -355,7 +362,7 @@ void	MLTest2(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		Lh = Likelihood(Rates, Trees, Opt);
 		printf("%f\t%f\n", R, Lh);
 	}
-
+	 
 	exit(0);
 }
 

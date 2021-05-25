@@ -29,7 +29,7 @@ double	CaclVRPrior(double X, TRANSFORM_TYPE Type, RATES *Rates);
 double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt);
 void	ChangeVarRatesHyperPrior(RATES *Rates, OPTIONS *Opt);
 
-void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt);
+void	SetVarRatesFromStr(RATES *Rates, OPTIONS *Opt, char *Str);
 
 double	CalcNormalHasting(double x, double SD);
 

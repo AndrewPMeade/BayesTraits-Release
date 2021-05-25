@@ -893,8 +893,7 @@ void	OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				fprintf(Opt->LogFatTail, "%f\t%f\t", Long, Lat);
 			}
 			else
-			{
-				NodeToLongLat(N, &Long, &Lat);
+			{				
 				for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 					fprintf(Opt->LogFatTail, "%f\t", N->FatTailNode->Ans[SIndex]);
 			}

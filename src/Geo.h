@@ -21,5 +21,5 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 void	GeoUpDateAnsStates (OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
 
-void	LoadGeoData(char *Str, OPTIONS *Opt, TREES *Trees, RATES *CRates);
+void	LoadGeoData(OPTIONS *Opt, TREES *Trees, RATES *CRates, char *Str);
 #endif

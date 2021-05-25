@@ -152,6 +152,8 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 	if(Opt->SaveTrees == TRUE)
 		InitialiseOutputTrees(Opt, Trees);
+
+	SaveUserBrachLengths(Trees);
 }
 
 

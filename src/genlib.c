@@ -1089,3 +1089,19 @@ int StrICmp(char const *a, char const *b)
 			return d;
 	}
 }
+
+
+void	NormaliseVector(double *Vect, int Size)
+{
+	double	SF;
+	int		Index;
+
+	SF = 0;
+	for(Index=0;Index<Size;Index++)
+		SF += Vect[Index];
+
+	SF = 1 / SF;
+
+	for(Index=0;Index<Size;Index++)
+		Vect[Index] *= SF;
+}

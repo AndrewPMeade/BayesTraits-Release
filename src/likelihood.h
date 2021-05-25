@@ -19,4 +19,6 @@ int			IsNum(double n);
 int			SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt);
 int			SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma);
 
+void		LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt);
+
 #endif

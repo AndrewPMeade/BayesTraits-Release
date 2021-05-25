@@ -54,7 +54,8 @@ void	AddTaxaErr(TREES *Trees, int TaxaID, double Err);
 int		TaxaIndexToNo(TREES *Trees, int Index);
 int		TaxaNoToIndex(TREES *Trees, int ID);
 
-void	ReSetBranchLength(TREE *Tree);
+void	SaveUserBrachLengths(TREES *Trees);
+void	SetUserBranchLength(TREE *Tree);
 void	SetTreesDistToRoot(TREES *Trees);
 void	SetTreeDistToRoot(TREE *Tree);
 void	RecSetDistToRoot(NODE N);
@@ -70,4 +71,6 @@ NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo);
 
 void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees);
 void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Out);
+
+void	PrintTreeBL(TREE *Tree);
 #endif

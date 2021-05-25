@@ -101,4 +101,7 @@ void		CalcRSqr(double *x, double *y, int Size, double *R2, double *Slope, double
 
 int			StrICmp(char const *a, char const *b);
 
+void	NormaliseVector(double *Vect, int Size);
+
+
 #endif

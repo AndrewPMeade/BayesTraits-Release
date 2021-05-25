@@ -753,6 +753,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->NoPriors		=	0;
 	Ret->Priors			=	NULL;
+
 	Ret->AutoAccept		=	FALSE;
 	Ret->CalcLh			=	TRUE;
 	
@@ -1989,7 +1990,7 @@ void	CopyRJRtaes(RATES *A, RATES *B, OPTIONS *Opt)
 void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 {
 	int	Index;
-
+	
 	A->Delta = B->Delta;
 	A->Kappa = B->Kappa;
 	A->Lambda= B->Lambda;
@@ -2211,14 +2212,14 @@ int		ValidMove(RATES *Rates, int No)
 {
 	VARRATES *PP;
 
-	if(No == SPPMOVE || No == SPPCHANGESCALE)
+	if(No == S_VARRATES_MOVE || No == S_VARRATES_CHANGE_SCALE)
 	{
 		PP = Rates->VarRates;
 		if(PP->NoNodes == 0)
 			return FALSE;
 	}
 
-	if(No == SRJDUMMYMOVE || No == SRJDUMMYCHANGEBETA)
+	if(No == S_RJ_DUMMY_MOVE || No == S_RJ_DUMMY_CHANG_EBETA)
 	{
 		if(Rates->RJDummy->NoDummyCode == 0)
 			return FALSE;
@@ -2624,102 +2625,102 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 	
 	switch(Shed->Op)
 	{
-		case SRATES:
+		case S_RATES:
 			ChangeRates(Opt, Rates, Shed, It);
 		break;
 
-		case SCV:
+		case S_CV:
 			ChangeCVRates(Opt, Rates, Shed);
 		break;
 
-		case SKAPPA:
+		case S_KAPPA:
 			ChangeKappa(Opt, Rates, Shed);
 		break;
 
-		case SDELTA:
+		case S_DELTA:
 			ChangeDelta(Opt, Rates, Shed);
 		break;
 
-		case SLABDA:
+		case S_LABDA:
 			ChangeLambda(Opt, Rates, Shed);
 		break;
 
-		case SOU:
+		case S_OU:
 			ChangeOU(Opt, Rates, Shed);
 		break;
 
-		case SJUMP:
+		case S_JUMP:
 			RJMove(Opt, Rates ,Shed);
 		break;
 
-		case SPPROR:
+		case S_PPROR:
 			MutatePriorsNormal(Rates, Rates->Priors, Rates->NoPriors, Opt->HPDev);
 		break;
 
-		case SESTDATA:
+		case S_EST_DATA:
 			MutateEstRates(Opt, Rates, Shed);
 		break;
 
-		case SSOLOTREEMOVE:
+		case S_SOLO_TREE_MOVE:
 			Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoOfTrees;
 		break;
 
-		case SPPADDREMOVE:
+		case S_VARRATES_ADD_REMOVE:
 			VarRatesAddRemove(Rates, Opt->Trees, Opt, Shed, It);
 		break;
 
-		case SPPMOVE:
+		case S_VARRATES_MOVE:
 			VarRatesMoveNode(Rates, Opt->Trees, Opt);
 		break;
 		
-		case SPPCHANGESCALE:
+		case S_VARRATES_CHANGE_SCALE:
 			ChangeVarRatesScale(Rates, Opt->Trees, Opt, Shed);
 		break;
 
-		case SPPHYPERPRIOR:
+		case S_VARRATES_HYPER_PRIOR:
 			ChangeVarRatesHyperPrior(Rates, Opt);
 		break;
 
-		case SHETERO:
+		case S_HETERO:
 			MutateHetero(Rates);
 		break;
 
-		case STREEMOVE:
+		case S_TREE_MOVE:
 			Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoOfTrees;
 		break;
 		
-		case SGAMMAMOVE:
+		case S_GAMMA_MOVE:
 			ChangeGammaRates(Rates, Shed);
 		break;
 
-		case SRJDUMMY:
+		case S_RJ_DUMMY:
 			RJDummyMove(It, Opt, Opt->Trees, Rates);
 		break;
 
-		case SRJDUMMYMOVE:
+		case S_RJ_DUMMY_MOVE:
 			RJDummyMoveNode(Opt, Opt->Trees, Rates);
 		break;
 
-		case SRJDUMMYCHANGEBETA:
+		case S_RJ_DUMMY_CHANG_EBETA:
 			RJDummyChange(Opt, Opt->Trees, Rates);
 		break;
 
-		case SFATTAILANS:
+		case S_FAT_TAILANS:
 			if(Opt->Model == M_FATTAIL)
 			{
 			//	SliceSampleFatTail(Opt, Opt->Trees, Rates);
 				AllSliceSampleFatTail(Opt, Opt->Trees, Rates);
 			}
 			else
-			//	GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
-				GeoUpDateAnsStates(Opt, Opt->Trees, Rates);
+				GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
+			//	GeoUpDateAnsStates(Opt, Opt->Trees, Rates);
 		break;
 
-		case SLOCALRATES:
+		case S_LOCAL_RATES:
 			ChangeLocalTransform(Opt, Opt->Trees, Rates, Shed);
 		break;
 
-		case SDATADIST:
+		case S_DATA_DIST:
 			ChangeTreeDistData(Opt, Rates);
 		break;
 	}

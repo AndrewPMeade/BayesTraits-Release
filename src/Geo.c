@@ -11,11 +11,14 @@
 #include "likelihood.h"
 #include "Rates.h"
 
+
 #ifndef M_PI
 	#define M_PI 3.14159265358979323846
 #endif
 
 #define EARTH_KM 6371.0
+//#define EARTH_KM 1.0
+
 #define EARTH_KM_EARTH_KM 40589641
 
 void	ValidGeoData(TREES *Trees)
@@ -213,6 +216,14 @@ void	NodeToLongLat(NODE N, double *Long, double *Lat)
 	XYZToLongLat(X, Y, Z, Long, Lat);
 }
 
+void	LongLatToNode(NODE N, double Long, double Lat)
+{
+	double X, Y, Z;
+
+	LongLatToXYZ(Long, Lat, &X, &Y, &Z);
+	XYZToNode(N, X, Y, Z);
+}
+
 /* Self MCMC
 void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 {
@@ -334,6 +345,8 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FATTAILRATES *FTR;
 	NODE N;
 	
+	LhTransformTree(Rates, Trees, Opt);
+
 	Tree = Trees->Tree[Rates->TreeNo];
 
 	FTR = Rates->FatTailRates;
@@ -396,8 +409,10 @@ void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FATTAILRATES *FTR;
 	NODE N;
 
-	Tree = Trees->Tree[Rates->TreeNo];
+	LhTransformTree(Rates, Trees, Opt);
 
+	Tree = Trees->Tree[Rates->TreeNo];
+	
 	FTR = Rates->FatTailRates;
 
 	MapRatesToFatTailRate(Rates, FTR);
@@ -541,17 +556,23 @@ void GeoTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 void	SetLoadGeoData(char **AnsState, TREES *Trees, TREE *Tree)
 {
 	int Index, SIndex, Pos;
+	double Long, Lat;
 	NODE N;
+	int NoInt;
 
 	Pos = 0;
 
+	NoInt = 0;
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		N = Tree->NodeList[Index];
 		if(N->Tip == FALSE)
 		{
-			for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
-				N->FatTailNode->Ans[SIndex] = atof(AnsState[Pos++]);
+			NoInt++;
+			Long = atof(AnsState[Pos++]);
+			Lat = atof(AnsState[Pos++]);
+
+			LongLatToNode(N, Long, Lat);
 		}
 	}
 }
@@ -572,7 +593,7 @@ void	LoadGeoDataTest(OPTIONS *Opt, TREES *Trees, RATES *CRates)
 	exit(0);
 }
 
-void	LoadGeoData(char *Str, OPTIONS *Opt, TREES *Trees, RATES *CRates)
+void	LoadGeoData(OPTIONS *Opt, TREES *Trees, RATES *CRates, char *Str)
 {
 	TREE *Tree;
 	FATTAILRATES *FTR;
@@ -591,20 +612,16 @@ void	LoadGeoData(char *Str, OPTIONS *Opt, TREES *Trees, RATES *CRates)
 
 	FTR->Alpha[0] = atof(Passed[2]);
 	FTR->Scale[0] = atof(Passed[3]);
-	
+		
 	SetLoadGeoData(&Passed[4], Trees, Tree);
+
 	MapFatTailRateToRates(CRates, FTR);
 
-	FatTailGetAnsSates(Tree, 1, FTR);
+	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
 
 	CRates->Lh = Likelihood(CRates, Trees, Opt);
 
-	return;
+	printf("checkpoint lh:\t%f\n", CRates->Lh);
 
-
-	printf("Init Lh:\t%f\n", CRates->Lh);
-
-//	LoadGeoDataTest(Opt, Trees, CRates);
-
-	exit(0);
+//	exit(0);
 }
