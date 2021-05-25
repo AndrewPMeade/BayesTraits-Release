@@ -107,6 +107,7 @@ void		CreatPriors(OPTIONS *Opt, RATES* Rates)
 		if(Opt->ResTypes[Index] == RESNONE)
 			NoOfPriors++;
 	}
+	fflush(stdout);
 	
 	Rates->NoOfPriors = NoOfPriors;
 	

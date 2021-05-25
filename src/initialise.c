@@ -18,6 +18,7 @@
 #include "genlib.h"
 #include "continuous.h"
 #include "initialise.h"
+#include "phyloplasty.h"
 
 OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 {
@@ -37,8 +38,16 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 void	PreProcess(OPTIONS *Opt, TREES* Trees)
 {
 	int		Index;
+	int		ID;
 
 	FlattenRecNode(Opt);
+	
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
+	{
+		ID = 0;
+		SetNodeIDs(Trees->Tree[Index].Root, &ID);
+	}
+	
 
 	Opt->LogFile		= OpenWrite(Opt->LogFN);
 

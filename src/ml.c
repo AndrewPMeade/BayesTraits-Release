@@ -155,7 +155,9 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	SUMMARY	*Summary;
 	char	Buffer[1024];
 	int		ti;
+#ifdef JNIRUN
 	long	FP;
+#endif
 
 	if(Opt->Summary == TRUE)
 		Summary = CreatSummary(Opt);

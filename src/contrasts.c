@@ -8,6 +8,7 @@
 #include "contrasts.h"
 #include "praxis.h"
 #include "rand.h"
+#include "phyloplasty.h"
 
 
 CONTRAST*	AllocContrast(NODE N)
@@ -264,11 +265,17 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	CONTRASTR	*Con;
 
 	Con = Rates->Contrast;
+
+	if(Opt->UsePhyloPlasty == TRUE)
+		Plasty(Opt, Trees, Rates);
+
 	CalcContrast(Trees, Rates);	
 	
-	if(Opt->Analsis == ANALML)
+//	if(Opt->Analsis == ANALML)
 	{
 		CalcContLh(Opt, Trees, Rates);
+		Con->EstAlpha[0] = Con->Alpha[0];
+		Con->EstSigma[0] = Con->Sigma[0];
 		return Rates->Lh;
 	}
 
@@ -359,12 +366,11 @@ void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	Con = Rates->Contrast;
 
-//	if(GenRandState(Rates->RandStates) < 0.5)
+	if(GenRandState(Rates->RandStates) < 0.5)
 	{
 		for(Index=0;Index<Trees->NoOfSites;Index++)
 			Con->EstAlpha[Index] += (GenRandState(Rates->RandStates) * Opt->RateDev) - (Opt->RateDev / 2.0);
-	}
-//	else
+	}	else
 	{
 		for(Index=0;Index<Trees->NoOfSites;Index++)
 			Con->EstSigma[Index] = ChangeContrastRate(Con->EstSigma[Index], Opt->RateDev, Rates->RandStates);

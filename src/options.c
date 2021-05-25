@@ -650,6 +650,7 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 			return RetModelRateName(Opt);
 		case CONTRASTM:
 			return ContrastRateNames(Opt);
+
 	}
 
 	return NULL;
@@ -787,7 +788,10 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	if((Model == DESCDEP) || (Model == DESCINDEP))
 		SquashDep(Trees);
 
-	if((Model == CONTINUOUSRR) || (Model == CONTINUOUSDIR) || (Model == CONTINUOUSREG))
+	if( (Model == CONTINUOUSRR)  || 
+		(Model == CONTINUOUSDIR) || 
+		(Model == CONTINUOUSREG) ||
+		(Model == CONTRASTM))
 		RemoveConMissingData(Trees);
 
 
@@ -806,6 +810,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->AlphaZero	= FALSE;
 	Ret->HPDev		= 1;
 	Ret->DependantSite= -1;
+
+	Ret->PPTree		= NULL;
+	Ret->PPLog		= NULL;
 
 	Ret->ModelFile	= NULL;
 	Ret->UseModelFile= FALSE;

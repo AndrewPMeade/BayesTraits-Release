@@ -1241,6 +1241,10 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	for(Index=0;Index<Rates->NoEstData;Index++)
 		fprintf(Str, "%f\t", Rates->EstData[Index]);
+
+	if(Opt->UsePhyloPlasty == TRUE)
+		fprintf(Str, "%d\t", Rates->Plasty->NoNodes);
+	
 }
 
 void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OPTIONS *Opt)
@@ -1505,6 +1509,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 
 	if(Opt->Model == CONTRASTM)
 		CopyContrastRates(A, B, Opt->Trees->NoOfSites);
+
+	if(Opt->UsePhyloPlasty == TRUE)
+		PlastyCopy(A, B);
 
 	A->VarDataSite = B->VarDataSite;
 } 
@@ -1941,6 +1948,9 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 			Rates->TreeNo = rand() % Opt->Trees->NoOfTrees;
 		break;
 
+		case(SPPMOVE):
+			PlastyMove(Rates, Opt->Trees, Opt);
+		break;
 	}
 
 	Shed->Tryed[Shed->Op]++;
@@ -2232,10 +2242,10 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 			if(Opt->ResTypes[Index] == RESNONE)
 				Rates++;
 
-	if(Rates == 0)
+//	if(Rates == 0)
 		Shed->OptFreq[0] = 0;
-	else
-		Shed->OptFreq[0] = Left;
+//	else
+//		Shed->OptFreq[0] = Left;
 	
 	if(Opt->UseModelFile == TRUE)
 		Shed->OptFreq[0] = 0.3;

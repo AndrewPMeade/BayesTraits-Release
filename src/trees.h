@@ -10,6 +10,7 @@ void	AllocPartial(TREES* Trees, int Gamma);
 TAXA*	GetTaxaFromID(int ID, TAXA *Taxa, int NoOfTaxa);
 TAXA*	GetTaxaFromName(char *Name, TAXA *Taxa, int NoOfTaxa);
 
+void	CTaxaBelow(NODE N, int *No);
 void	PrintTrees(FILE*	Str, TREES *Trees, DATATYPE DataType);
 
 /* void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates); */
@@ -30,5 +31,9 @@ void	AddNewRecNode(TREES* Trees, RECNODE RecNode);
 void	SetNodeTipData(NODE N, TREE* Tree, TREES *Trees);
 
 void	MakeUM(TREES* Trees);
+
+void	SetNodeIDs(NODE N, int *No);
+
+void	ListOddPPTaxa(TREES *Trees);
 
 #endif

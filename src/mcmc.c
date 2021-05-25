@@ -16,6 +16,7 @@
 #include "data.h"
 #include "gamma.h"
 #include "ml.h"
+#include "phyloplasty.h"
 
 #ifdef	 JNIRUN
 //	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
@@ -183,7 +184,9 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	char		Buffer[1024];
 	SCHEDULE*	Shed=NULL;
 	FILE*		ShedFile=NULL;
+#ifdef	JNIRUN
 	long		FP;
+#endif
 
 	if(Opt->UseSchedule == TRUE)
 		ShedFile = OpenWrite(Opt->ScheduleFile);
@@ -204,6 +207,10 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	SetRatesToPriors(Opt, CRates);
 	SetRatesToPriors(Opt, NRates);
+
+	if(Opt->UsePhyloPlasty == TRUE)
+		InitPPFiles(Opt, Trees, CRates);
+
 
 	#ifndef JNIRUN
 		PrintOptions(stdout, Opt);
@@ -253,11 +260,7 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		CalcPriors(NRates, Opt);
 		
 		Heat += NRates->LhPrior - CRates->LhPrior;
-		
-		if(Shed->Op == SJUMP)
-		{
-			Heat = Heat + NRates->LogHRatio;
-		}
+		Heat += NRates->LogHRatio;
 		
 		if((log(GenRandState(CRates->RandStates)) <= Heat) && (NRates->Lh != ERRLH))
 		{
@@ -288,6 +291,9 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 					if(Opt->UseSchedule == TRUE)
 						PrintShed(Opt, Shed, ShedFile);
 
+					if(Opt->UsePhyloPlasty == TRUE)
+						PrintPPOutput(Opt, Trees, CRates, Itters);
+					
 					BlankSchedule(Shed);
 					#ifdef JNIRUN
 						fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
@@ -301,6 +307,10 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				#endif
 			}
 		}
+
+		CRates->LhPrior = NRates->LhPrior = 0;
+		CRates->LogHRatio = NRates->LogHRatio = 0;
+		CRates->LogJacobion = NRates->LogJacobion = 0;
 
 		if((Opt->Itters == Itters) && (Opt->Itters != -1))
 		{

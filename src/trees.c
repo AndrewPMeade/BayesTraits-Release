@@ -15,7 +15,7 @@
 #include "treepasser.h"
 #include "treenode.h"
 
-void	SetNodeIDs(NODE N, int *No);
+
 void	WriteTreeToFile(NODE n, NODE Root, FILE *F);
 
 void	BlankNode(NODE N)
@@ -1446,4 +1446,105 @@ void	MakeUM(TREES* Trees)
 	}
 
 //	exit(0);
+}
+
+
+NODE	GetNodeFromTID(TREE *Tree, int NoNodes, int ID)
+{
+	int Index;
+	NODE	N;
+
+	for(Index=0;Index<NoNodes;Index++)
+	{
+		if(Tree->NodeList[Index].Tip == TRUE)
+		{
+			N = &Tree->NodeList[Index];
+			if(N->Taxa->No == ID)
+				return N;
+		}
+	}
+
+	return NULL;
+}
+
+void	ListOddPPTaxa(TREES *Trees)
+{
+	int		TIndex, Index;
+	TAXA	*CT, *T;
+	NODE	CN, N;
+	int		No;
+	int		GID;
+
+
+	for(TIndex=0;TIndex<Trees->NoOfNodes;TIndex++)
+	{
+		printf("%d\t%f\t%f\t", TIndex, Trees->Tree[0].NodeList[TIndex].Length, log(Trees->Tree[0].NodeList[TIndex].Length));
+
+		if(Trees->Tree[0].NodeList[TIndex].Length == 0)
+			printf("Zeor\n");
+		else
+			printf("NonZero\n");
+
+	}
+
+	exit(0);
+
+	printf("\n\n");
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		CT = &Trees->Taxa[TIndex];
+		CN = GetNodeFromTID(&Trees->Tree[0], Trees->NoOfNodes, CT->No);
+
+		printf("%d\t%s\t%f\n", TIndex, CT->Name, CT->ConData[0], N->Length);
+
+
+		
+	}
+	exit(0);
+
+	GID = 0;
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		CT = &Trees->Taxa[TIndex];
+		CN = GetNodeFromTID(&Trees->Tree[0], Trees->NoOfNodes, CT->No);
+		if(CT->ConData[0] != -1)
+		{
+			No = 0;
+			for(Index=TIndex+1;Index<Trees->NoOfTaxa;Index++)
+			{
+				T = &Trees->Taxa[Index];
+				if(T->ConData[0] == CT->ConData[0])
+				{
+					N = GetNodeFromTID(&Trees->Tree[0], Trees->NoOfNodes, T->No);
+					if(N->Length == CN->Length)
+					{
+
+						printf("%d\t%d\t%s\t%f\t%f\t0\n", GID, No+1, T->Name, T->ConData[0], N->Length);
+						T->ConData[0] = -1;
+						No++;
+					}
+				}					
+			}
+
+			if(No > 0)
+			{
+				printf("%d\t%d\t%s\t%f\t%f\t1\n\n\n", GID, No+1, CT->Name, CT->ConData[0], CN->Length);
+				GID++;
+			}
+		}
+	}
+
+	exit(0);
+}
+
+void	CTaxaBelow(NODE N, int *No)
+{
+	
+	if(N->Tip == TRUE)
+	{
+		(*No)++;
+		return;
+	}
+	CTaxaBelow(N->Left, No);
+	CTaxaBelow(N->Right, No);
 }

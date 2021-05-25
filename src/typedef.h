@@ -23,6 +23,7 @@
 */
 #endif
 
+#define PPCOST 3
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000
@@ -243,7 +244,8 @@ static char    *SHEDOP[] =
 	"Prior Change",
 	"Est Data",
 	"Var Data",
-	"Solo Tree Move"
+	"Solo Tree Move",
+	"PP Move"
 };
 
 static int	DISTPRAMS[] =
@@ -544,7 +546,8 @@ typedef struct
 {
 	NODE		Node;
 	double		Scale;
-	PLASTYTYPE	Type;	
+	PLASTYTYPE	Type;
+	int			NodeID;
 } PLASTYNODE;
 
 typedef struct
@@ -552,10 +555,18 @@ typedef struct
 	int			NoNodes;
 	PLASTYNODE **NodeList;
 	
+	int			NoID;
 	
-
 	int			NoTrees;
 	double		**TrueBL;
+	double		*ScaleBL;
+
+	int			NoValidNode;
+	NODE		*ValidNode;
+
+	NODE		*TempList;
+	int			NoTempList;
+
 } PLASTY;
 
 typedef struct
@@ -580,9 +591,9 @@ typedef struct
 	RESTYPES	*ResTypes;
 	int			*ResNo;
 	double		*ResConst;
-	double		RateDev;
 	double		EstDataDev;
 
+	double		RateDev;
 	double		*RateDevList;
 
 
@@ -607,6 +618,8 @@ typedef struct
 	char		*DataFN;
 	FILE		*LogFile;
 	FILE		*LogFileRead;
+	FILE		*PPTree;
+	FILE		*PPLog;
 	char		*LogFileBuffer;
 	char		**PassedOut;
 
