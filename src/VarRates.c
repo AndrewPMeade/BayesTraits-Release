@@ -223,6 +223,10 @@ TRANSFORM_TYPE	GetVarRatesType(RANDSTATES *RS, SCHEDULE *Shed)
 //	if(Shed->VarRatesOp[Pos] == VR_BL)
 //		return VR_NODE;
 
+//	if(Shed->VarRatesOp[Pos] == VR_NODE)
+//		return VR_BL;
+
+	
 	return Shed->VarRatesOp[Pos];
 }
 

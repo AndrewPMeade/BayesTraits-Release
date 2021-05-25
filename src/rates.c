@@ -1153,7 +1153,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		else
 		{
 			for(Index=0;Index<Opt->Trees->NoSites;Index++)
-				fprintf(Str, "Sig2 %d\t", Index+1, Index+1);
+				fprintf(Str, "Sig2 %d\t", Index+1);
 		//		fprintf(Str, "Alpha %d\tScale %d\t", Index+1, Index+1);
 		}
 	}

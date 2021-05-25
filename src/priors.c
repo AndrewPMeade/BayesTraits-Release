@@ -1191,11 +1191,13 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 	if(PD == PDIST_NORMAL)
 		Ret = CreateNormalPrior(Name, PVal[0], PVal[1]);
 
+	if(PD == PDIST_SGAMMA)
+		Ret = CreateSGammaPrior(Name, PVal[0], PVal[1]);
+
 	free(PVal);
 
 	return Ret;
 }
-
 
 PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed)
 {

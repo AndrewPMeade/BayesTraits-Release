@@ -3939,7 +3939,7 @@ void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
 	sscanf(Passed[1], "%lld", &TItter);
 	if(TItter < -1) 
 	{
-		printf("Burn In period must be 0 or greater, or -1 to run an infinite chain.\n");
+		printf("Number of itterations must be 0 or greater, or -1 to run an infinite chain.\n");
 		return;
 	}
 
