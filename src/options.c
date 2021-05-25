@@ -3612,7 +3612,7 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 
 	NoTags = Tokes;
 
-	Tags = GetTagListFromNames(Opt, &Passed[2], Tokes, &NoTags);
+	Tags = GetTagListFromNames(Opt, &Passed[2], Tokes-2, &NoTags);
 
 	Pos = 2 + NoTags;
 

@@ -67,6 +67,7 @@ int btlapack_invcholesky(double* a, int n, double *det) {
   //btdebug_enter("btlapackchfact");
   
   uplo = 'L';
+//  dpotrf_(&uplo, &n, a, &n, &info);
   dpotrf_(&uplo, &n, a, &n, &info);
   
   //btdebug_exit("btlapackchfact");

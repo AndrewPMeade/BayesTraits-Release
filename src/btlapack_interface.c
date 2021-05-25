@@ -37,6 +37,7 @@
 
 #include "Trees.h"
 #include "Continuous.h"
+#include "GenLib.h"
 
 
 // OpenCL headers
@@ -49,7 +50,7 @@
 // V is in Tree->ConVars->V 
 // InvV should be stroed in Tree->ConVars->InvV
 // Log Det of V should be stroed in Tree->ConVars->LogDetOfV
-void	btlapack_FindInvV(TREES *Trees, TREE* Tree) 
+int	btlapack_FindInvV(TREES *Trees, TREE* Tree) 
 { 
 	int		err;
 	
@@ -60,17 +61,22 @@ void	btlapack_FindInvV(TREES *Trees, TREE* Tree)
 	//printf("size %d\n",Tree->ConVars->InvV->NoOfRows);
 	
 	//err = btlapack_invldlW(Tree->ConVars->InvV->me[0], Trees->TempConVars->TMat->me[0]  , Tree->ConVars->InvV->NoOfRows, &Tree->ConVars->LogDetOfV);
+
 	err = btlapack_invcholesky(Tree->ConVars->InvV->me[0], Tree->ConVars->InvV->NoOfRows, &Tree->ConVars->LogDetOfV);
+
 
 	//printf("LogDetOfV=%f;\n", Tree->ConVars->LogDetOfV);
 	//btlin_print(Tree->ConVars->InvV->me[0],Tree->ConVars->InvV->NoOfRows,Tree->ConVars->InvV->NoOfRows);
 
 	if(err != 0)
 	{
+		return FALSE;
 		printf("V Matrix inverstion error in %s %d\n", __FILE__, __LINE__);
 		PrintMathematicaMatrix(Tree->ConVars->V, "V=", stdout);
 		exit(0);
 	}	
+
+	return TRUE;
 	
 	//btdebug_exit("inverse");
 }

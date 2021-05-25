@@ -182,9 +182,7 @@ int		PassBatchLine(char *Line, char **TreeFN, char **DataFN, char **ComList)
 		return FALSE;
 	}
 
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
+	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
 
 	*TreeFN = Line;
@@ -253,9 +251,7 @@ void	BatchRun(char *BatchFN)
 
 	TF = LoadTextFile(BatchFN, FALSE);
 
-	Buffer = (char**)malloc(sizeof(char*) * TF->MaxLine);
-	if(Buffer == NULL)
-		MallocErr();
+	Buffer = (char**)SMalloc(sizeof(char*) * TF->MaxLine);
 	BNo = 1;
 	for(Index=0;Index<TF->NoOfLines;Index++)
 	{

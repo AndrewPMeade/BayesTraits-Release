@@ -377,14 +377,14 @@ void	BildSymbolList(TREES *Trees)
 	}
 
 	/* To add a hiden state */
-	if(strlen(Temp) == 1)
+/*	if(strlen(Temp) == 1)
 	{
 		if(IsSymbolInList('0', Temp) == FALSE)
 			Temp[strlen(Temp)] = '0';
 		else
 			Temp[strlen(Temp)] = '1';
 	}
-
+	*/
 	Trees->SymbolList = StrMake(Temp);
 
 	Trees->NoStates = (int)strlen(Trees->SymbolList);
@@ -941,9 +941,7 @@ void	SetNewConTaxaData(TAXA *Taxa, RECNODE *RNode, TREES* Trees)
 TAXA*	SetNewConTaxa(RECNODE *RNode, TREES* Trees)
 {
 	TAXA *Ret;
-	Ret = (TAXA*)malloc(sizeof(TAXA));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (TAXA*)SMalloc(sizeof(TAXA));
 
 	Ret->Name			= StrMake(RNode->Name);
 	Ret->No				= GetFreeTaxaNo(Trees);
@@ -951,6 +949,8 @@ TAXA*	SetNewConTaxa(RECNODE *RNode, TREES* Trees)
 
 	Ret->Exclude		= FALSE;
 	Ret->EstDepData		= FALSE;
+	Ret->RealData		= NULL;
+
 
 	SetNewConTaxaData(Ret, RNode, Trees);
 
@@ -961,9 +961,7 @@ void	AddNewConTaxa(TREES* Trees, RECNODE	*RNode)
 {
 	TAXA	**NewTaxa;
 
-	NewTaxa = (TAXA**)malloc(sizeof(TAXA*) * (Trees->NoTaxa + 1));
-	if(NewTaxa == NULL)
-		MallocErr();
+	NewTaxa = (TAXA**)SMalloc(sizeof(TAXA*) * (Trees->NoTaxa + 1));
 
 	memcpy(NewTaxa, Trees->Taxa, sizeof(TAXA*) * Trees->NoTaxa);
 

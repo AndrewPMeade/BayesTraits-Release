@@ -45,7 +45,7 @@
 // V is in Tree->ConVars->V
 // InvV should be stroed in Tree->ConVars->InvV
 // Log Det of V should be stroed in Tree->ConVars->LogDetOfV
-void	btocl_FindInvV(TREES *Trees, TREE* Tree)
+int	btocl_FindInvV(TREES *Trees, TREE* Tree)
 {
 
 	int err;
@@ -69,11 +69,12 @@ void	btocl_FindInvV(TREES *Trees, TREE* Tree)
 
 	if(err != 0)
 	{
+		return FALSE;
 		printf("V Matrix inversion error in %s %d\n", __FILE__, __LINE__);
 		PrintMathematicaMatrix(Tree->ConVars->V, "V=", stdout);
 		exit(0);
 	}
-
+	return TRUE;
 }
 
 void    btocl_VectByKroneckerMult(TREE* Tree) {
