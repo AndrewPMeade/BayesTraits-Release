@@ -810,8 +810,6 @@ void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 	VARRATES *VarRates;
 	double SumBL, Scale;
 
-//	CheckVarRatesData(Opt, Trees, Rates);
-
 	VarRates = Rates->VarRates;
 	TNo = Rates->TreeNo;
 	Tree = Trees->Tree[TNo];
@@ -829,29 +827,6 @@ void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 	ScaleSubTree(Tree->Root, Scale);
 }
 
-void	InitVarRatesTreeFile(OPTIONS *Opt, TREES *Trees)
-{
-	char	*Buffer;
-	int		Index;
-	
-	Buffer = (char*)SMalloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
-			
-	sprintf(Buffer, "%s.VarRates.trees", Opt->LogFN);
-	Opt->PPTree = OpenWrite(Buffer);
-	free(Buffer);
-
-	fprintf(Opt->PPTree, "#NEXUS\n");
-	fprintf(Opt->PPTree, "\tBegin Trees;\n");
-	fprintf(Opt->PPTree, "\t\tTranslate\n");
-
-	for(Index=0;Index<Trees->NoOfTaxa-1;Index++)
-		fprintf(Opt->PPTree, "\t\t%d\t%s,\n", Trees->Taxa[Index]->No+1, Trees->Taxa[Index]->Name);
-	fprintf(Opt->PPTree, "\t\t%d\t%s\n\t\t;\n", Trees->Taxa[Index]->No+1, Trees->Taxa[Index]->Name);
-
-	fflush(Opt->PPTree);
-}
-
-
 
 void	RecPrintPPNodes(FILE *Out, NODE N)
 {
@@ -865,7 +840,6 @@ void	RecPrintPPNodes(FILE *Out, NODE N)
 
 	for(Index=0;Index<N->NoNodes;Index++)
 		RecPrintPPNodes(Out, N->NodeList[Index]);
-
 }
 
 
@@ -880,57 +854,43 @@ void	VarRatesLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	T = Trees->Tree[0];
 	VarRates = Rates->VarRates;
 
-	fprintf(Opt->PPLog, "%d\n", Trees->NoOfTaxa);
+	fprintf(Opt->VarRatesLog, "%d\n", Trees->NoOfTaxa);
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		fprintf(Opt->PPLog, "%d\t%s\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
-/*
-	fprintf(Opt->PPLog, "%d\n", P->NoValidNode);
-	for(Index=0;Index<P->NoValidNode;Index++)
-	{
-		N = P->ValidNode[Index];
-		No = 0;
-		CTaxaBelow(N, &No);
-		fprintf(Opt->PPLog, "%d\t%f\t%d\t", N->ID, N->Length, No);
-		RecPrintPPNodes(Opt->PPLog, N);
-		fprintf(Opt->PPLog, "\n");
-	}
-	*/
+		fprintf(Opt->VarRatesLog, "%d\t%s\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
 
-	fprintf(Opt->PPLog, "%d\n", T->NoNodes);
+	fprintf(Opt->VarRatesLog, "%d\n", T->NoNodes);
 	for(Index=0;Index<T->NoNodes;Index++)
 	{
-	//	N = P->ValidNode[Index];
 		N = T->NodeList[Index];
 		No = 0;
 		CTaxaBelow(N, &No);
-		fprintf(Opt->PPLog, "%d\t%f\t%d\t", N->ID, N->Length, No);
-		RecPrintPPNodes(Opt->PPLog, N);
-		fprintf(Opt->PPLog, "\n");
+		fprintf(Opt->VarRatesLog, "%d\t%f\t%d\t", N->ID, N->Length, No);
+		RecPrintPPNodes(Opt->VarRatesLog, N);
+		fprintf(Opt->VarRatesLog, "\n");
 	}
 
-	fprintf(Opt->PPLog, "It\tLh\tLh + Prior\tNo Pram\tAlpha\tSigma^2\tAlpha Scale Prior\t");
-	fprintf(Opt->PPLog, "Node ID\tScale\tCreat It\tNode / Branch\t");
+	fprintf(Opt->VarRatesLog, "It\tLh\tLh + Prior\tNo Pram\tAlpha\tSigma^2\tAlpha Scale Prior\t");
+	fprintf(Opt->VarRatesLog, "Node ID\tScale\tCreat It\tNode / Branch\t");
 
-	fprintf(Opt->PPLog, "\n");
+	fprintf(Opt->VarRatesLog, "\n");
 
-	fflush(Opt->PPLog);
+	fflush(Opt->VarRatesLog);
 }
 
 void	IntiVarRatesLogFile(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	char	*Buffer;
 
-	Buffer = (char*)malloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
-	if(Buffer == NULL)
-		MallocErr();
+	Buffer = (char*)SMalloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
+
 
 	sprintf(Buffer, "%s.VarRates.txt", Opt->LogFN);
-	Opt->PPLog = OpenWrite(Buffer);
+	Opt->VarRatesLog = OpenWrite(Buffer);
 	free(Buffer);
 
 	VarRatesLogFileHeader(Opt, Trees, Rates);
 
-	fflush(Opt->PPLog);
+	fflush(Opt->VarRatesLog);
 }
 
 void	GetNodeIDList(NODE N, int *Size, int *List)
@@ -951,61 +911,12 @@ void	GetNodeIDList(NODE N, int *Size, int *List)
 
 void	InitVarRatesFiles(OPTIONS *Opt, TREES *Trees, RATES* Rates)
 {
-	InitVarRatesTreeFile(Opt, Trees);
 	IntiVarRatesLogFile(Opt, Trees, Rates);
 }
 
 void	FinishVarRatesFiles(OPTIONS *Opt)
 {
-	fprintf(Opt->PPTree, "end;");
-	fclose(Opt->PPTree);
-	fclose(Opt->PPLog);
-}
-
-void	PrintPPNode(FILE *Out, NODE N)
-{
-	int Index;
-
-	if(N->Tip == TRUE)
-	{
-		fprintf(Out, "%d:%f", N->Taxa->No+1, N->Length);
-		return;
-	}
-
-	fprintf(Out, "(");
-	for(Index=0;Index<N->NoNodes-1;Index++)
-	{
-		PrintPPNode(Out, N->NodeList[Index]);
-		fprintf(Out, ",");
-	}
-	PrintPPNode(Out, N->NodeList[Index]);
-	fprintf(Out, "):%f", N->Length);
-}
-
-void	PrintVarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
-{
-	VARRATES	*VarRates;
-	TREE	*Tree;
-	int		Index;
-
-	VarRates = Rates->VarRates;
-	Tree = Trees->Tree[Rates->TreeNo];
-
-	ReSetBranchLength(Tree);
-	VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
-
-	fprintf(Opt->PPTree, "\tTree VarRates_%llu_%d = (", It, VarRates->NoNodes);
-
-	for(Index=0;Index<Tree->Root->NoNodes-1;Index++)
-	{
-		PrintPPNode(Opt->PPTree, Tree->Root->NodeList[Index]);
-		fprintf(Opt->PPTree, ",");
-	}
-
-	PrintPPNode(Opt->PPTree, Tree->Root->NodeList[Index]);
-	fprintf(Opt->PPTree, ");\n");
-
-	fflush(Opt->PPTree);
+	fclose(Opt->VarRatesLog);
 }
 
 void	OutputVarRatesType(FILE *Out, TRANSFORM_TYPE Type)
@@ -1029,7 +940,7 @@ void	OutputVarRatesType(FILE *Out, TRANSFORM_TYPE Type)
 		fprintf(Out, "OU\t");
 }
 
-void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
+void	LogVarRatesResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 {
 	FILE		*Out;
 	VARRATES		*VarRates;
@@ -1041,7 +952,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 	VarRates = Rates->VarRates;
 //	CheckPlasyNodes(P);
 
-	Out = Opt->PPLog;
+	Out = Opt->VarRatesLog;
 
 	fprintf(Out, "%lld\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, VarRates->NoNodes);
 
@@ -1086,10 +997,8 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 
 void	PrintVarRatesOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 {
-	PrintVarRatesTree(Opt, Trees, Rates, It);
-	LogPPResults(Opt, Trees, Rates, It);
+	LogVarRatesResults(Opt, Trees, Rates, It);
 }
-
 
 void	NormalTest(void)
 {
@@ -1410,8 +1319,6 @@ void	SpecifcPairTest(OPTIONS *Opt, RATES *Rates)
 	printf("Lh:\t%f\n", Lh);
 
 	CalcPriors(Rates, Opt);
-
-	PrintVarRatesTree(Opt, Opt->Trees, Rates, 1);
 		
 	exit(0);
 }
@@ -1529,15 +1436,11 @@ void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt)
 	char **Passed;
 	int Index, Tokes;
 	char *S;
-
-	PrintVarRatesTree(Opt, Opt->Trees, Rates, 1);
 	
-
 	S = StrMake(Str);
 
 	Passed = (char**)SMalloc(sizeof(char*) * strlen(Str));
 	
-
 	Tokes = MakeArgv(S, Passed, (int)strlen(S));
 
 	Rates->Contrast->Alpha[0] = atof(Passed[4]);
@@ -1546,7 +1449,6 @@ void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt)
 	Index = 7;
 	for(;Index<Tokes;Index+=4)
 		AddTextVarRate(Opt->Trees->Tree[0], Rates, 4, &Passed[Index]);
-//		printf("%s\n", Passed[Index]);
 	
 	DumpVarRates(Rates);
 
@@ -1554,25 +1456,3 @@ void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt)
 	
 	free(Passed);
 }
-
-/*
-PLASTY*	CreatPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt) { return NULL; }
-void	FreePlasty(PLASTY* Plasty) { }
-
-void	PPAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, int It) { }
-void	PPChangeScale(RATES *Rates, TREES *Trees, OPTIONS *Opt) { }
-void	PPMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt) { }
-
-
-void	PlastyCopy(RATES *R1, RATES *R2) { }
-void	Plasty(OPTIONS *Opt, TREES *Trees, RATES *Rates) { }
-
-void	InitPPFiles(OPTIONS *Opt, TREES *Trees, RATES *Rates) { }
-void	PrintPPOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It) { }
-
-double	CalcPPPriors(RATES *Rates, OPTIONS *Opt) { return 0;}
-void	ChangePPHyperPrior(RATES *Rates, OPTIONS *Opt) { }
-
-*/
-
-

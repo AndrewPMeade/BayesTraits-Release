@@ -111,7 +111,6 @@ void	TestTreeLh(OPTIONS *Opt, TREES *Trees)
 void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 {
 	char Line[1024];
-	size_t len;
 
 	if(argc == 3)
 	{
@@ -205,6 +204,8 @@ int main(int argc, char** argv)
 
 	if(Opt->Analsis == ANALML)
 		FindML(Opt, Trees);
+
+	Finalise(Opt, Trees);
 
 	NoSites = Trees->NoOfSites;
 	FreeTrees(Trees, Opt);

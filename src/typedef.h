@@ -241,7 +241,7 @@ typedef enum
 	CDELTA,
 	CLAMBDA,
 	CEXTTAXA,
-	CSAVETREES,
+	CSAVEINITIALTREES,
 	CTESTCORREL,
 	CSURFACE,
 	CCOVARION,
@@ -284,6 +284,7 @@ typedef enum
 	CLOCALTRANSFORM,
 	CDISTDATA,
 	CNOLH,
+	CSAVETREES,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -317,7 +318,7 @@ static char    *COMMANDSTRINGS[] =
 	"delta",		"dl",
 	"lambda",		"la", 
 	"excludetaxa",	"et",
-	"savetrees",	"st",
+	"saveinitialtrees", "sit",
 	"testcorrel",	"tc",
 	"surface",		"su",
 	"covarion",		"cv",
@@ -361,6 +362,7 @@ static char    *COMMANDSTRINGS[] =
 	"localtransform",	"lt",
 	"distdata",			"dd",
 	"nolh",			"nl",
+	"savetrees",	"st",
 	""
 };
 
@@ -1042,8 +1044,9 @@ typedef struct
 	char		*DataFN;
 	FILE		*LogFile;
 	FILE		*LogFileRead;
-	FILE		*PPTree;
-	FILE		*PPLog;
+//	FILE		*PPTree;
+	FILE		*OutTrees;
+	FILE		*VarRatesLog;
 	FILE		*LogFatTail;
 	char		*LogFileBuffer;
 	char		**PassedOut;
@@ -1077,7 +1080,7 @@ typedef struct
 	PRIOR		**AllPriors;
 	int			NoAllPriors;
 
-	char		*SaveTrees;
+	char		*SaveInitialTrees;
 
 	int			GammaCats;
 
@@ -1102,11 +1105,7 @@ typedef struct
 	int			FindCF;
 	char*		CFRate;
 
-//	int			DependantSite;
 	int			Headers;
-
-//	char*		ModelFile;
-//	int			UseModelFile;
 
 	int			UseRModel;
 	double		RModelP;
@@ -1120,7 +1119,6 @@ typedef struct
 	int			NOSPerSite;
 
 	int			UseSchedule;
-//	char		*ScheduleFile;
 
 	long		Seed;
 	int			MakeUM;
@@ -1149,9 +1147,6 @@ typedef struct
 	double		ScaleTrees;
 
 	int			UseRJLocalScalar[NO_RJ_LOCAL_SCALAR];
-//	PRIOR		**RJLocalScalarPriors;
-
-//	int			UseGeoData;
 	int			FatTailNormal;
 
 	int			EstData;
@@ -1166,6 +1161,8 @@ typedef struct
 	int			UseDistData;
 
 	int			NoLh;
+
+	int			SaveTrees;
 	
 } OPTIONS;
 

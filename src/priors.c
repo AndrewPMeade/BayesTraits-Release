@@ -628,11 +628,8 @@ double	CalcLhPriorP(double X, PRIOR *Prior)
 	return Ret;
 }
 
-
-
 double		RandFromPrior(gsl_rng *RNG, PRIOR *Prior)
 {
-	int i;
 	switch(Prior->Dist)
 	{
 		case PDIST_GAMMA:

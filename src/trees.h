@@ -68,4 +68,6 @@ void	ScaleUserTrees(TREES *Trees, double Scale);
 
 NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo);
 
+void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees);
+void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Out);
 #endif

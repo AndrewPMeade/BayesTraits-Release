@@ -911,7 +911,6 @@ double AddBigLh(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
 	int NoUnderFlow, Index;
 	TREE	*Tree;
-	NODE N;
 
 	Tree = Trees->Tree[Rates->TreeNo];
 
@@ -919,7 +918,6 @@ double AddBigLh(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	for(Index=0;Index<Tree->NoNodes;Index++)
 		NoUnderFlow += Tree->NodeList[Index]->NoUnderFlow;
 
-//	printf("No Under:\t%d\n", NoUnderFlow);
 	return NoUnderFlow * log(LH_UNDER_FLOW);
 }
 

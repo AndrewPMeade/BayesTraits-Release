@@ -140,7 +140,6 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		btocl_AllocPMatrixInfo(Trees);
 		//btocl_AllocLhInfo(Trees);
 #endif
-
 	}
 
 	if(FindNoEstDataPoint(Opt, Trees) > 0)
@@ -148,6 +147,20 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	else
 		Opt->EstData = FALSE;
 		
-	if(Opt->SaveTrees != NULL)
-		SaveTrees(Opt->SaveTrees, Opt->Trees);
+	if(Opt->SaveInitialTrees != NULL)
+		SaveTrees(Opt->SaveInitialTrees, Opt->Trees);
+
+	if(Opt->SaveTrees == TRUE)
+		InitialiseOutputTrees(Opt, Trees);
+}
+
+
+
+void Finalise(OPTIONS *Opt, TREES* Trees)
+{
+	if(Opt->SaveTrees == TRUE)
+	{
+		fprintf(Opt->OutTrees, "end;");
+		fclose(Opt->OutTrees);
+	}
 }

@@ -379,7 +379,7 @@ void	SetTreeDistData(RATES *Rates, OPTIONS *Opt, TREES *Trees)
 
 void	ChangeTreeDistData(OPTIONS *Opt, RATES *Rates)
 {
-	int Index, TaxaNo, SiteNo, NPos;
+	int Index, TaxaNo, NPos;
 	DIST_DATA		*DD;
 	DIST_DATE_RATES	*DDRates;
 	DIST_DATA_TAXA	*DDTaxa;

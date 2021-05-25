@@ -1406,7 +1406,7 @@ void WriteTreeToFile(NODE n, NODE Root, FILE *F)
 	BL = n->Length;
 
 	if(n->Tip == TRUE)
-		fprintf(F, "%d:%10.10f", n->TipID, BL);
+		fprintf(F, "%d:%10.10f", n->Taxa->No+1, BL);
 	else
 	{
 		fprintf(F, "(");
@@ -1423,8 +1423,32 @@ void WriteTreeToFile(NODE n, NODE Root, FILE *F)
 			fprintf(F, "):%10.10f", BL);	
 		else
 			fprintf(F, ")");	
-
 	}
+}
+
+void	SaveTreesHeader(FILE *Out, TREES* Trees)
+{
+	int TIndex;
+
+	fprintf(Out, "#NEXUS\n");
+	fprintf(Out, "begin trees;\n");
+	fprintf(Out, "\ttranslate\n");
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		fprintf(Out, "\t\t%d %s", Trees->Taxa[TIndex]->No+1, Trees->Taxa[TIndex]->Name);
+
+		if(TIndex<Trees->NoOfTaxa-1)
+			fprintf(Out, ",\n");
+		else
+			fprintf(Out, ";\n");
+	}
+}
+
+void	SaveTreeFotter(FILE *Out)
+{
+	fprintf(Out, "end;");
+	fclose(Out);
 }
 
 void	SaveTrees(char	*FileName, TREES* Trees)
@@ -1437,32 +1461,12 @@ void	SaveTrees(char	*FileName, TREES* Trees)
 	size_t	NoOfChar;
 
 
-	TreeFile = fopen(FileName, "w");
-	if(TreeFile == NULL)
-	{
-		printf("Could not open file %s for writting\n", FileName);
-		return;
-	}
+	TreeFile = OpenWrite(FileName);
+	
+	SaveTreesHeader(TreeFile, Trees);
 
 	sprintf(&Buffer[0], "%d", Trees->NoOfTrees);
 	NoOfChar = strlen(&Buffer[0]);
-
-	fprintf(TreeFile, "#NEXUS\n");
-
-	fprintf(TreeFile, "begin trees;\n");
-	fprintf(TreeFile, "\ttranslate\n");
-
-	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
-	{
-
-		fprintf(TreeFile, "\t\t%d %s", Trees->Taxa[TIndex]->No, Trees->Taxa[TIndex]->Name);
-
-		if(TIndex<Trees->NoOfTaxa-1)
-			fprintf(TreeFile, ",\n");
-		else
-			fprintf(TreeFile, ";\n");
-	}
-
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
@@ -1475,9 +1479,7 @@ void	SaveTrees(char	*FileName, TREES* Trees)
 		free(Name);
 	}
 
-	fprintf(TreeFile, "end;\n");
-	fclose(TreeFile);
-
+	SaveTreeFotter(TreeFile);
 }	
 
 void	SetNodeIDs(TREE *Tree)
@@ -1487,7 +1489,6 @@ void	SetNodeIDs(TREE *Tree)
 	for(Index=0;Index<Tree->NoNodes;Index++)
 		Tree->NodeList[Index]->ID = Index;
 }
-
 
 void SetMinBL(TREES *Trees)
 {
@@ -2114,4 +2115,35 @@ NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo)
 				return Tree->NodeList[Index];
 
 	return NULL;
+}
+
+void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees)
+{
+	char	*Buffer;
+
+	Buffer = (char*)SMalloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
+
+	sprintf(Buffer, "%s.Output.trees", Opt->LogFN);
+	Opt->OutTrees = OpenWrite(Buffer);
+	free(Buffer);
+
+	SaveTreesHeader(Opt->OutTrees, Trees);
+
+	fflush(Opt->OutTrees);
+}
+
+void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Out)
+{
+	TREE *Tree;
+	NODE Root;
+	 
+	fprintf(Out, "\t\ttree No_%lld = ", No);
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	Root = Tree->Root;
+
+	WriteTreeToFile(Root, Root, Out);
+	fprintf(Out, ";\n");
+
+	fflush(Out);
 }

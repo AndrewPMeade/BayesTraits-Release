@@ -259,6 +259,18 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	fprintf(Str, "Data File Name:                  %s\n", Opt->DataFN);
 	fprintf(Str, "Log File Name:                   %s\n", Opt->LogFN);
 
+	fprintf(Str, "Save Initial Trees:              ");
+	if(Opt->SaveInitialTrees == NULL)
+		fprintf(Str, "False\n");
+	else
+		fprintf(Str, "%s\n", Opt->SaveInitialTrees);
+
+	fprintf(Str, "Save Trees:                      ");
+	if(Opt->SaveTrees == FALSE)
+		fprintf(Str, "False\n");
+	else
+		fprintf(Str, "True\n");		
+
 	if(Opt->Headers == FALSE)
 	fprintf(Str, "Output Headers                   FALSE\n");
 
@@ -535,8 +547,8 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	free(Opt->ResNo);
 	free(Opt->ResConst);
 	 
-	if(Opt->SaveTrees != NULL)
-		free(Opt->SaveTrees);
+	if(Opt->SaveInitialTrees != NULL)
+		free(Opt->SaveInitialTrees);
 	
 	FreeRecNodes(Opt, NoSites);
 
@@ -987,13 +999,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	int		Index;
 	char	*Buffer;
 
-	Ret = (OPTIONS*)malloc(sizeof(OPTIONS));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (OPTIONS*)SMalloc(sizeof(OPTIONS));
 
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();	
+	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
 	Ret->Trees		= Trees;
 	Ret->Model		= Model;
@@ -1009,8 +1017,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->AlphaZero	= FALSE;
 	Ret->HPDev		= 1;
 
-	Ret->PPTree		= NULL;
-	Ret->PPLog		= NULL;
+	Ret->OutTrees	= NULL;
+	Ret->VarRatesLog= NULL;
 
 	Ret->LogFatTail	= NULL;
 	
@@ -1133,8 +1141,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->UseEqualTrees	=	FALSE;
 	Ret->ETreeBI		=	-1;
 
-	Ret->SaveTrees		=	NULL;
-
+	Ret->SaveInitialTrees=	NULL;
+	Ret->SaveTrees		=	FALSE;
 
 	Ret->Precision		=	sizeof(double) * 8;
 
@@ -3239,6 +3247,7 @@ void	SetRJLocalTransform(OPTIONS *Opt, char **Passed, int Tokes)
 	Opt->UseRJLocalScalar[Type]	= TRUE;
 
 	SetLocalTransformPrior(Opt, Type);
+	Opt->SaveTrees = TRUE;
 }
 
 void	SetFatTailNormal(OPTIONS *Opt)
@@ -3346,6 +3355,8 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 	SetLocalTransformPrior(Opt, Type);
 
 	free(Tags);
+
+	Opt->SaveTrees = TRUE;
 }
 
 void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)
@@ -3369,6 +3380,14 @@ void	SetNoLh(OPTIONS *Opt)
 		Opt->NoLh = FALSE;
 	else
 		Opt->NoLh = TRUE;
+}
+
+void	SetSaveTrees(OPTIONS *Opt)
+{
+	if(Opt->SaveTrees == TRUE)
+		Opt->SaveTrees = FALSE;
+	else
+		Opt->SaveTrees = TRUE;
 }
 
 void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
@@ -3429,7 +3448,7 @@ void	SetVarRatesOpt(OPTIONS *Opt)
 	if(Opt->Trees->NoOfTrees > 1)
 	{
 		printf("VarRates can only be used on a single tree.\n");
-		exit(0);
+		exit(1);
 	}
 
 	if(Opt->UseVarRates == TRUE)
@@ -3442,9 +3461,27 @@ void	SetVarRatesOpt(OPTIONS *Opt)
 
 	Opt->UseVarRates = TRUE;
 
-
 	SetLocalTransformPrior(Opt, VR_BL);
 	SetLocalTransformPrior(Opt, VR_NODE);
+
+	Opt->SaveTrees = TRUE;
+}
+
+void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Opt->SaveInitialTrees != NULL)
+	{
+		free(Opt->SaveInitialTrees);
+		Opt->SaveInitialTrees = NULL;
+	}
+
+	if(Tokes == 2)
+		Opt->SaveInitialTrees = StrMake(Passed[1]);
+	else
+	{
+		printf("Save Initial Trees requies a file name.\n");
+		exit(1);
+	}
 }
 
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
@@ -3696,21 +3733,8 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		}
 	}
 
-	if(Command == CSAVETREES)
-	{
-		if(Tokes == 2)
-			Opt->SaveTrees = StrMake(Passed[1]);
-		else
-		{
-			if(Opt->SaveTrees != NULL)
-			{
-				free(Opt->SaveTrees);
-				Opt->SaveTrees = NULL;
-			}
-			else
-				printf("Save trees requies a file name.\n");
-		}
-	}
+	if(Command == CSAVEINITIALTREES)
+		SaveInitialTrees(Opt, Tokes, Passed);
 
 	if(Command == CTESTCORREL)
 	{
@@ -3933,6 +3957,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CNOLH)
 		SetNoLh(Opt);
 
+	if(Command == CSAVETREES)
+		SetSaveTrees(Opt);
+
 	return FALSE;
 }
 
@@ -3941,9 +3968,7 @@ void	GetOptionsArry(OPTIONS *Opt, int Size, char** OptStr)
 	int		Index;
 	char	**Passed;
 
-	Passed = (char**)malloc(sizeof(char*)*BUFFERSIZE);
-	if(Passed == NULL)
-		MallocErr();
+	Passed = (char**)SMalloc(sizeof(char*)*BUFFERSIZE);
 
 	for(Index=0;Index<Size;Index++)
 		PassLine(Opt, OptStr[Index], Passed);
@@ -3956,10 +3981,8 @@ void	GetOptions(OPTIONS *Opt)
 	char	*Buffer;
 	char	**Passed;
 
-	Passed = (char**)malloc(sizeof(char*) * BUFFERSIZE);
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if((Buffer == NULL) || (Passed == NULL))
-		MallocErr();
+	Passed = (char**)SMalloc(sizeof(char*) * BUFFERSIZE);
+	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
 	do
 	{

@@ -620,7 +620,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 				if(UseNonParametricMethods(Opt) == TRUE)
 					PrintVarRatesOutput(Opt, Trees, CRates, Itters);
-
+				
 				if(Opt->ModelType == MT_FATTAIL)
 					OutputFatTail(Itters, Opt, Trees, CRates);
 
@@ -638,6 +638,9 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 				if(Opt->SaveModels == TRUE)
 					SaveModelFile(SaveModelF, Opt, Trees, CRates);
+
+				if(Opt->SaveTrees == TRUE)
+					OutputTree(Opt, Trees, CRates, Itters, Opt->OutTrees);
 			}
 
 			if(Itters % Opt->Sample == 0)
