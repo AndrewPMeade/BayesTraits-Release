@@ -1,7 +1,6 @@
 #include "TypeDef.h"
 #ifdef BTLAPACK
 
-
 /* Multiple Matrix by Vector, can be change for non squar matrixes*/
 void MatrixVectProduct(double* M, double* V, double* U, int N)
 { 
@@ -22,19 +21,56 @@ void VectMatrixProduct(double* V, double* M, double* U, int N)
 */
 double VectVectDotProduct(double *V1, double *V2, int N)
 {
-	double Sum;
-	int Index;
-
-
-	Sum = cblas_dasum(N, V1, 1);
-	printf("%f\n", Sum);
-
-	Sum = 0;
-	for(Index=0;Index<Sum;Index++)
-	{
-		
-	}
 	return cblas_ddot(N, V1, 1, V2, 1);
+}
+
+#else
+/* Multiple Matrix by Vector, can be change for non squar matrixes*/
+void MatrixVectProduct(double* M, double* V, double* U, int N)
+{ 
+	int y, x;
+	double Sum;
+
+	for(y=0;y<N;y++)
+	{
+		Sum = 0;
+		for(x=0;x<N;x++)
+			Sum += V[x] * M[y * N + x];
+
+		U[y] = Sum;
+	}
+}
+
+/* 
+Multiple Vector by Matrix, can be change for non squar matrixes
+Note: same code as above but using tranpos 
+*/
+void VectMatrixProduct(double* V, double* M, double* U, int N)
+{
+	int		x,y;
+	double	Sum;
+
+	for(y=0;y<N;y++)
+	{
+		Sum = 0;
+		for(x=0;x<N;x++)	
+			Sum += M[x * N + y] * V[x];
+
+
+		U[y] = Sum;
+	}
+}
+
+double VectVectDotProduct(double *V1, double *V2, int N)
+{
+	double Ret;
+	int x;
+
+	Ret = 0;
+	for(x=0;x<N;x++)
+		Ret = Ret + (V1[x] * V2[x]);
+
+	return Ret;
 }
 
 #endif

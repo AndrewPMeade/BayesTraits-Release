@@ -47,7 +47,7 @@
 #include "RandLib.h"
 #include "RandDists.h"
 #include "Part.h"
-
+#include "CBlasWrapper.h"
 
 #ifdef BTOCL
 	#include "btocl_continuous.h"
@@ -55,8 +55,8 @@
 
 #ifdef BTLAPACK
 	#include "btlapack_interface.h"
-	#include "CBlasWrapper.h"
 #endif
+
 
 double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree);
 
@@ -688,19 +688,12 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 	Ret->Beta	=	NULL;
 
 	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_RR))
-		Ret->Alpha	=	(double*)malloc(sizeof(double) * Trees->NoSites);
+		Ret->Alpha	=	(double*)SMalloc(sizeof(double) * Trees->NoSites);
 	else
-		Ret->Alpha	=	(double*)malloc(sizeof(double) * 1);
-
-	if(Ret->Alpha == NULL)
-		MallocErr();
+		Ret->Alpha	=	(double*)SMalloc(sizeof(double) * 1);
 
 	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_REG))
-	{
-		Ret->Beta = (double*)malloc(sizeof(double) * Trees->NoSites);
-		if(Ret->Beta == NULL)
-			MallocErr();
-	}
+		Ret->Beta = (double*)SMalloc(sizeof(double) * Trees->NoSites);
 
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
@@ -1126,16 +1119,6 @@ double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree)
 
 	return P1 * P2;
 }
-/*
-void matvecprod(double* A, double* v, double* u, int N)
-{ 
-	double alpha= 1.0, beta= 0.0;
-	char no= 'N', tr= 'T';
-	int m= N, n= N, lda= N, incx= 1, incy= N;
-
-	dgemv(&no,&m,&n,&alpha,A,&lda,v,&incx,&beta,u,&incy);
-}
-*/
 
 
 
@@ -1147,14 +1130,32 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 
 	CV = Tree->ConVars;
 
-//	TestKMLTT(Trees, Tree);
-#ifdef BTLAPACK
 	MatrixVectProduct(CV->InvV->me[0], CV->TVect1, CV->TVect2, Trees->NoTaxa);
 	Ret  = VectVectDotProduct(CV->TVect2, CV->TVect3, Trees->NoTaxa);
-#else
-	#ifdef OPENMP_THR
-	#pragma omp parallel for private(x, Ret) num_threads(4)
-	#endif
+
+
+	// Use sum of least squares, should not be used.
+//	if(SLS == TRUE)
+//		return Ret * (1.0/(Trees->NoTaxa - (Trees->NoOfSites+1)));
+
+	Ret = Ret * (1.0/Trees->NoTaxa);
+
+	return Ret;
+}
+
+
+/*
+double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
+{
+	double	Ret;
+	int		x,y;
+	CONVAR	*CV;
+
+	CV = Tree->ConVars;
+
+#ifdef OPENMP_THR
+#pragma omp parallel for private(x, Ret) num_threads(4)
+#endif
 	for(y=0;y<Trees->NoTaxa;y++)
 	{
 		Ret = 0;
@@ -1167,15 +1168,16 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 	Ret = 0;
 	for(x=0;x<Trees->NoTaxa;x++)
 		Ret = Ret + (CV->TVect2[x] * CV->TVect3[x]);
-#endif
+
 	// Use sum of least squares, should not be used.
-//	if(SLS == TRUE)
-//		return Ret * (1.0/(Trees->NoTaxa - (Trees->NoOfSites+1)));
+	//	if(SLS == TRUE)
+	//		return Ret * (1.0/(Trees->NoTaxa - (Trees->NoOfSites+1)));
 
 	Ret = Ret * (1.0/Trees->NoTaxa);
 
 	return Ret;
 }
+*/
 
 double	FindMLVar(TREES* Trees, TREE *Tree, int Site1, double Alpha1, double Beta1, int Site2, double Alpha2, double Beta2)
 {
