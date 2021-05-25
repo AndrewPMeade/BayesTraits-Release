@@ -551,6 +551,16 @@ double LogSGammaP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
+double	LogExpContinuous(double X, PRIOR *Prior)
+{
+	double A, B, Alpha;
+
+	Alpha = 1.0 / Prior->DistVals[0];
+
+	A = -Alpha * X;
+	B = log(Alpha);
+	return A + B;
+}
 
 double LogExpP(double X, PRIOR *Prior)
 {
@@ -562,7 +572,8 @@ double LogExpP(double X, PRIOR *Prior)
 	Alpha = Prior->DistVals[0];
 
 	if(Prior->Discretised == FALSE)
-		Ret = gsl_ran_exponential_pdf(X, Alpha);
+//		Ret = gsl_ran_exponential_pdf(X, Alpha);
+		return LogExpContinuous(X, Prior);
 	else
 	{
 		A = gsl_cdf_exponential_P(X, Alpha);
@@ -777,12 +788,27 @@ double	CalcRatePrior(RATES* Rates, OPTIONS* Opt)
 	return Ret;
 }
 
+double	CalcRegVarPrior(RATES* Rates)
+{
+	double Ret, Var;
+	PRIOR *Prior;
+
+	Var = Rates->Contrast->GlobalVar;
+
+	Prior = GetPriorFromName("Var", Rates->Priors, Rates->NoPriors);
+
+	Ret = CalcLhPriorP(Var, Prior);
+
+	return Ret;
+}
+
 void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 {
 	double	PLh, Ret;
 		
 	Ret = 0;
 	PLh = 0;
+	
 
 	Rates->LhPrior = ERRLH;
 
@@ -797,8 +823,16 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	PLh = CalcTreeTransPrior(Rates, Opt);
 	if(PLh == ERRLH)
 		return;
-
 	Ret += PLh;
+
+
+	if(Opt->Model == M_CONTRAST_REG && Opt->NoLh == FALSE)
+	{
+		PLh = CalcRegVarPrior(Rates);
+		if(PLh == ERRLH)
+			return;
+		Ret += PLh;
+	}
 
 	if(Opt->RJDummy == TRUE)
 	{
@@ -809,8 +843,7 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 			return;
 		Ret += PLh;
 	}
-
-
+	
 	if(UseNonParametricMethods(Opt) == TRUE)
 	{
 		PLh = CalcVarRatesPriors(Rates, Opt);

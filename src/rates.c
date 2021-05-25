@@ -1568,7 +1568,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	if(Opt->LoadModels == TRUE)
 		fprintf(Str, "%d\t", Rates->ModelNo);
 
-	if((Opt->Model == M_CONTINUOUS_RR) || (Opt->Model == M_CONTINUOUS_DIR))
+	if(Opt->Model == M_CONTINUOUS_RR || Opt->Model == M_CONTINUOUS_DIR)
 	{
 		for(Index=0;Index<Trees->NoOfSites;Index++)
 		{

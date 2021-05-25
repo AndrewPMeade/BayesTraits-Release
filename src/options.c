@@ -979,6 +979,12 @@ void	AllocRatePriors(OPTIONS *Opt)
 		
 		AddPriorToOpt(Opt, Prior);
 	}
+
+	if(Opt->Model == M_CONTRAST_REG)
+	{
+		Prior = CreateUniformPrior("Var", -100, 100);
+		AddPriorToOpt(Opt, Prior);
+	}
 }
 
 MODEL_TYPE	GetModelType(MODEL Model)

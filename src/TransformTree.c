@@ -442,12 +442,11 @@ void	TransformToMinMax(TRANSFORM_TYPE Type, double *Min, double *Max)
 }
 
 //double	CalcTreeToTreeDist(
-
+/*
 double	FitTransformToTree(TREES *Trees, long long It, TRANSFORM_TYPE Type)
 {
 	double Min, Max;
 
 	TransformToMinMax(Type, &Min, &Max);
-
-
 }
+*/
