@@ -71,12 +71,17 @@ void			SetRegConPost(TREE *Tree, REG_CON_POST* RegConPost)
 					RegConPost->Contrasts[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(N->ConData->Contrast[CIndex]->Var);
 				//	RegConPost->Contrasts[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex];
 				//	RegConPost->ContrastsVar[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(N->ConData->Contrast[CIndex]->Var[SIndex]);
+
+				
 				}
+				
 
 				Pos++;
 			}
 		}
 	}
+
+	
 }
 
 void			SetRegConPostPreRes(double *Beta, REG_CON_POST* RegConPost)
@@ -398,6 +403,9 @@ void	ProcRegConPost(REG_CON_POST *RegConPost, int TestCorrel)
 	RegConPost->GR2 = CalcGlobalR2(RegConPost);
 }
 
+//./Seq/Bug/tree.trees ./Seq/Bug/logCval.logLongVol.txt < ./Seq/Bug/in.txt > ./Seq/Bug/sout.txt
+//./Seq/Bug/Mammal-1.trees ./Seq/Bug/MammalBrainBody.txt < ./Seq/Bug/in.txt > ./Seq/Bug/sout.txt
+
 
 void	OutputConReg(FILE *Str, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
@@ -424,7 +432,6 @@ void	OutputConReg(FILE *Str, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 //	PrintRegConPost(RegConPost);
 //	exit(0);
-
-
+	
 	FreeRegConPost(RegConPost);
 }
