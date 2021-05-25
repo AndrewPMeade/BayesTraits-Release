@@ -3,21 +3,11 @@
 
 #include "typedef.h"
 
-PPCOVARV*		InitPhyloPlastyConVar(TREES	*Trees, TREE *Tree);
-void			MapPhyloPlastyToV(TREES	*Trees, TREE *Tree);
+PLASTY*	CreatPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt);
+void	FreePlasty(PLASTY* Plasty);
 
-void			PhyloPlasyMove(RATES *Rates);
-PHYLOPLASTY*	CreatPhyloPlasty(OPTIONS *Opt, RATES *Rates);
-
-void			SetPhyloPlastyV(TREES* Trees, RATES* Rates);
-void			CopyPhyloPlasty(PHYLOPLASTY *A, PHYLOPLASTY *B);
-
-void			BlankPP(PHYLOPLASTY *PP);
-void			AddPPNode(RATES *Rates, NODE N, double Scale);
-
-void			PhyloPlasyMove(RATES *Rates);
+void	PlastyMove(RATES *Rates, TREES *Trees, OPTIONS *Opt);
+void	PlastyCopy(RATES *R1, RATES *R2);
+void	Plasty(RATES *Rates, TREES *Trees, OPTIONS *Opt);
 
 #endif
-
-
-

@@ -15,7 +15,6 @@
 #include "rand.h"
 #include "rates.h"
 #include "ckappa.h"
-#include "phyloplasty.h"
 #include "contrasts.h"
 
 
@@ -1314,9 +1313,6 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	if(Opt->InvertV	== TRUE)
 	{
-		if(Opt->UsePhyloPlasty == TRUE)
-			SetPhyloPlastyV(Trees, Rates);
-
 		if(Opt->EstKappa == TRUE)
 			MakeKappaV(Trees, Tree, Rates->Kappa);
 		else
@@ -1440,7 +1436,6 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 		InitContrastTree(Opt, Trees, TreeNo);
 		return;
 	}
-
 	
 	Trees->Tree[TreeNo].ConVars = AllocConVar(Opt, Trees);	
 	CV = Trees->Tree[TreeNo].ConVars;
@@ -1476,11 +1471,6 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 		for(Index=0;Index<Trees->NoOfTaxa;Index++)
 			CV->DepVect[Index] = Trees->Taxa[Index].Dependant;
 	}
-
-	if(Opt->UsePhyloPlasty == TRUE)
-		CV->PPCoVarV = InitPhyloPlastyConVar(Trees, &Trees->Tree[TreeNo]);
-	else
-		CV->PPCoVarV = NULL;
 }
 
 void		FreeTempConVars(TEMPCONVAR* TempCon)

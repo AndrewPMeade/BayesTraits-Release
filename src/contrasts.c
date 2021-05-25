@@ -7,6 +7,8 @@
 #include "genlib.h"
 #include "contrasts.h"
 #include "praxis.h"
+#include "rand.h"
+
 
 CONTRAST*	AllocContrast(NODE N)
 {
@@ -101,13 +103,7 @@ void	RecCalcContrast(NODE N)
 	C->Data = t;
 	C->Cont = C1->Data - C2->Data;
 
-	
-/* Common Varince */
-//	C->Var = l1 + l2;
-//	C->Var = C->Cont / sqrt(C->Var);
-
 	C->Err = (l1 * l2) / (l1 + l2);
-
 	C->Var = l1 + l2;
 }
 
@@ -192,8 +188,10 @@ void	CalcContLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	SumLogVar += log(T->Root->Contrast->Err);
 
+	
+
 	T1 = GlobalVar;
-	GlobalVar = GlobalVar / NoCon;
+	GlobalVar = GlobalVar / (NoCon+1);
 	Rates->Lh = (NoCon+1) * log(6.28318530717958647692528676655900576839 * GlobalVar);
 	Rates->Lh += SumLogVar + (T1 / GlobalVar);
 	Rates->Lh *= -0.5;
@@ -202,68 +200,89 @@ void	CalcContLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	Rates->Contrast->Sigma[0] = GlobalVar;
 }
 
-
-double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
+void CalcContrastMCMC(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
-	int i;
+	int			Index;
+	TREE		*T;
+	NODE		N;
+	CONTRAST	*Con;
+	CONTRASTR	*ConRates;
+	double		GlobalVar;
+	double		SumLogVar;
+	double		T1, T2;
+	int			NoCon;
 
-	PrintTime(stdout);
-	
-	for(i=0;i<1000000;i++)
-	{
-		CalcContrast(Trees, Rates);
-		CalcContLh(Opt, Trees, Rates);
+	ConRates = Rates->Contrast;
+	T = &Trees->Tree[Rates->TreeNo];
 
-		if(i%10000 == 0)
-		{
-			printf("i\t%d\n", i);
-			fflush(stdout);
-		}
-	}
-
-	PrintTime(stdout);
-	return Rates->Lh;
-
-	/*
-
-	Sigma = ConRates->Sigma[0];
-
-	Lh = 0;
-	P = Trees->NoOfSites;
-	Const = CalcContrastConst(Trees->NoOfSites, Sigma);
+	NoCon = 0;
+	GlobalVar = 0;
+	SumLogVar = 0;
 
 	for(Index=0;Index<Trees->NoOfNodes;Index++)
 	{
 		N = &T->NodeList[Index];
 		if(N->Tip == FALSE)
 		{
-			C = N->Contrast;
-			CR = N->Right->Contrast;
-			CL = N->Left->Contrast;
+			Con = N->Contrast;
+			GlobalVar += (Con->Cont * Con->Cont) / Con->Var;
 
-			SumBL = N->Left->Length + CL->Err + N->Right->Length + CR->Err;
-	
-			Temp = C->Data * C->Data;
-
-			Temp = Temp / (Sigma * Sigma * SumBL);
-			Temp = exp(-(Temp * 0.5));
-			
-
-			T2 = pow(SumBL, Trees->NoOfSites/2.0) * Const;
-			T2 = 1.0 / T2;
-
-			Lh += log(Temp * T2);
+			SumLogVar += log(Con->Var);
+			NoCon++;
 		}
 	}
 
-	Rates->Lh = Lh; 
-	return Lh; */
+	SumLogVar += log(T->Root->Contrast->Err);
+
+	T1 = GlobalVar;
+	GlobalVar = GlobalVar / NoCon;
+	Rates->Lh = (NoCon+1) * log(6.28318530717958647692528676655900576839 * ConRates->EstSigma[0]);
+
+	T2 = ((NoCon+1) * GlobalVar) + ConRates->AlphaErr;
+	Rates->Lh += SumLogVar + (T2 / ConRates->EstSigma[0]);
+	Rates->Lh *= -0.5;
+
+	Rates->Contrast->Alpha[0] = T->Root->Contrast->Data;
+	Rates->Contrast->Sigma[0] = GlobalVar;
+}
+
+double	CalcMCMCAlpha(NODE N, double Alpha)
+{
+	double Ret;
+	CONTRAST	*Con;
+
+	Con = N->Contrast;
+
+	Ret = (Alpha - Con->Data) * (Alpha - Con->Data);
+	Ret = Ret / Con->Err;	
+
+	return Ret;
+}
+
+double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
+{
+	CONTRASTR	*Con;
+
+	Con = Rates->Contrast;
+	CalcContrast(Trees, Rates);	
+	
+	if(Opt->Analsis == ANALML)
+	{
+		CalcContLh(Opt, Trees, Rates);
+		return Rates->Lh;
+	}
+
+	Con->AlphaErr = CalcMCMCAlpha(Trees->Tree[0].Root, Con->EstAlpha[0]);
+	CalcContrastMCMC(Opt, Trees, Rates);
+
+	return Rates->Lh;
 }
 
 
 CONTRASTR*	AllocContrastRates(OPTIONS *Opt, RATES *Rates)
 {
 	CONTRASTR*	Ret;
+	int			Index;
 
 	Ret = (CONTRASTR*)malloc(sizeof(CONTRASTR));
 	if(Ret == NULL)
@@ -274,6 +293,25 @@ CONTRASTR*	AllocContrastRates(OPTIONS *Opt, RATES *Rates)
 
 	if((Ret->Alpha == NULL) || (Ret->Sigma == NULL))
 		MallocErr();
+
+	Ret->EstAlpha = NULL;
+	Ret->EstSigma = NULL;
+
+	if(Opt->Analsis == ANALMCMC)
+	{
+		Ret->EstAlpha = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
+		Ret->EstSigma = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
+
+		Rates->Contrast = Ret;
+		CalcContrast(Opt->Trees, Rates);
+		CalcContLh(Opt, Opt->Trees, Rates);
+	
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		{
+			Ret->EstAlpha[Index] = Ret->Alpha[Index];	
+			Ret->EstSigma[Index] = Ret->Sigma[Index];
+		}
+	}
 	
 	return Ret;
 }
@@ -301,68 +339,60 @@ double	MLContrastPraxis(void* P, double *List)
 	return -PState->Rates->Lh;
 }
 
-void	MLContrast(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+double	ChangeContrastRate(double Rate, double dev, RANDSTATES *RS)
 {
-	PRAXSTATE	*PState;
-	double		*TempV;
+	double Ret;
+	
+	do
+	{
+		Ret = (GenRandState(RS) * dev) - (dev / 2.0); 
+		Ret += Rate;
+	} while(Ret <= 0);
+
+	return Ret;
+}
+
+void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates)
+{
 	int			Index;
-	double		Sig;
-	TREE		*Tree;
-	
-/*	double		Sig;
+	CONTRASTR*	Con;
 
-	Rates->TreeNo = 45;
-	InitContinusTree(Opt, Trees, Rates->TreeNo);
-	for(Sig = 0.0001;Sig<10;Sig+=0.01)
+	Con = Rates->Contrast;
+
+//	if(GenRandState(Rates->RandStates) < 0.5)
 	{
-		Rates->Contrast->Sigma[0] = Sig;
-		CalcContrastLh(Opt, Trees, Rates);
-		printf("%f\t%f\n", Sig, Rates->Lh);
+		for(Index=0;Index<Trees->NoOfSites;Index++)
+			Con->EstAlpha[Index] += (GenRandState(Rates->RandStates) * Opt->RateDev) - (Opt->RateDev / 2.0);
+	}
+//	else
+	{
+		for(Index=0;Index<Trees->NoOfSites;Index++)
+			Con->EstSigma[Index] = ChangeContrastRate(Con->EstSigma[Index], Opt->RateDev, Rates->RandStates);
+	}
+}
+
+
+void	CopyContrastRates(RATES* R1, RATES* R2, int NoSites)
+{
+	int			Index;
+	CONTRASTR	*C1, *C2;
+
+	C1 = R1->Contrast;
+	C2 = R2->Contrast;
+
+	for(Index=0;Index<NoSites;Index++)
+	{
+		C1->Alpha[Index] = C2->Alpha[Index];
+		C1->Sigma[Index] = C2->Sigma[Index];
 	}
 
-	exit(0);
-*/
+	if(C2->EstAlpha == NULL)
+		return;
 
-//	printf("=================== Tree %d ===================\n", Rates->TreeNo+1);
-
-	Tree = &Trees->Tree[Rates->TreeNo];
-
-	CalcContrast(Trees, Rates);
-	CalcContLh(Opt, Trees, Rates);
-
-	return;
-
-	
-//	PrintContrasts(Trees,Rates);
-//	exit(0);
-
-	TempV = (double*)malloc(sizeof(double) * Trees->NoOfSites);
-	if(TempV == NULL) MallocErr();
-	for(Index=0;Index<Trees->NoOfSites;Index++)
-		TempV[Index] = Rates->Contrast->Sigma[Index];
-
-	TempV[0] = 3; 
-		
-	PState = IntiPraxis(MLContrastPraxis, TempV, Trees->NoOfSites, 0, 1, 4, 1000);
-//	PState = IntiPraxis(LhPraxis, TempV, Rates->NoOfRates, 0, 1, 4, 5000);
-
- 	PState->Trees	= Trees;
-	PState->Opt		= Opt;
-	PState->Rates	= Rates;
-
-	praxis(PState);
-
-	for(Index=0;Index<Trees->NoOfSites;Index++)
-		Rates->Contrast->Sigma[Index] = TempV[Index];
-
-	CalcContrast(Trees, Rates);
-	CalcContLh(Opt, Trees, Rates);
-	FreePracxStates(PState);
-
-
-	for(Sig=0.0;Sig<10;Sig+=0.01)
+	for(Index=0;Index<NoSites;Index++)
 	{
-		Rates->Contrast->Sigma[0] = Sig;
-		CalcContLh(Opt, Trees, Rates);
+		C1->EstAlpha[Index] = C2->EstAlpha[Index];
+		C1->EstSigma[Index] = C2->EstSigma[Index];
 	}
+
 }

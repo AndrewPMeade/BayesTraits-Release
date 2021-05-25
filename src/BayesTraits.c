@@ -92,6 +92,8 @@ int main(int argc, char** argv)
 // ./Seq/Mammal-ArtPrim.trees ./Seq/Mammal-ArtPrim.txt < in.txt > sout.txt 
 // ./Seq/ContrastTestLh.trees ./Seq/ContrastTestLh.txt < in.txt > sout.txt
 
+// ./Seq/LhInDep.trees ./Seq/LhInDep.txt < in.txt > sout.txt
+
 
 int main(int argc, char** argv)
 {

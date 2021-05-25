@@ -212,7 +212,7 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		BLh = ERRLH;
 
 		if(Opt->Model == CONTRASTM)
-			MLContrast(Opt, Trees, Rates);
+			CalcContrastLh(Opt, Trees, Rates);
 		else
 		{
 			if(Rates->NoOfRates > 1)

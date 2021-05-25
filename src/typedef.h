@@ -267,7 +267,7 @@ typedef enum
 	GAMMA=1,
 	UNIFORM=2,
 	CHI=3,
-	EXP=04
+	EXP=4
 } PRIORDIST;
 
 typedef enum
@@ -301,6 +301,12 @@ typedef enum
 	PIEMP,
 	PINONE,
 } PITYPES;
+
+typedef enum
+{
+	PPNODE,
+	PPBRANCH
+} PLASTYTYPE;
 
 typedef struct
 {
@@ -398,26 +404,6 @@ typedef struct
 
 typedef struct
 {
-	int		x;
-	int		y;
-
-	double	Sum;
-
-	int		No;
-	NODE	*NList;
-
-} PPCOVARPAIR;
-
-typedef struct
-{
-	int				No;
-	PPCOVARPAIR		**List;
-
-} PPCOVARV;
-
-
-typedef struct
-{
 	MATRIX		*TrueV;
 	MATRIX		*V;
 	MATRIX		*InvV;
@@ -451,7 +437,6 @@ typedef struct
 
 	double		*DepVect;
 
-	PPCOVARV	*PPCoVarV;
 } CONVAR;
 
 typedef	struct
@@ -557,29 +542,31 @@ typedef struct
 
 typedef struct
 {
-	NODE	Node;
-	int		NoTaxa;
-	double	Scale;
-} PPSCALENODE;
+	NODE		Node;
+	double		Scale;
+	PLASTYTYPE	Type;	
+} PLASTYNODE;
 
 typedef struct
 {
-	double			*RealBL;
-	int				NoBL;
+	int			NoNodes;
+	PLASTYNODE **NodeList;
+	
+	
 
-	PPSCALENODE**	NodeList;
-	int				NoNodes;
-/*	double		*Rates;
-	int			NoRates;
-	int			NoDiffRates;
-
-	int			InvV; */
-} PHYLOPLASTY;
+	int			NoTrees;
+	double		**TrueBL;
+} PLASTY;
 
 typedef struct
 {
 	double*	Alpha;
 	double* Sigma;
+
+	double*	EstAlpha;
+	double*	EstSigma;
+
+	double	AlphaErr;
 } CONTRASTR;
 
 typedef struct
@@ -765,8 +752,8 @@ typedef struct
 	int		VarDataSite;
 
 	RANDSTATES		*RandStates;
-	PHYLOPLASTY		*PhyloPlasty;
 
+	PLASTY			*Plasty;
 	CONTRASTR		*Contrast;
 } RATES;
 

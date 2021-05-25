@@ -16,7 +16,6 @@
 #include "data.h"
 #include "gamma.h"
 #include "ml.h"
-#include "phyloplasty.h"
 
 #ifdef	 JNIRUN
 //	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
@@ -167,80 +166,6 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	free(Vec);
 }
 
-double	CalcPhyloPlastyCost(RATES *NRates, RATES *CRates)
-{
-	PHYLOPLASTY *NPP;
-	PHYLOPLASTY *CPP;
-	double		Cost;
-
-	Cost = log((double)1/10);
-
-	NPP = NRates->PhyloPlasty;
-	CPP = CRates->PhyloPlasty;
-
-	return (NPP->NoNodes * Cost) - (CPP->NoNodes * Cost);
-}
-
-void	FindNoBL(OPTIONS *Opt, TREES *Trees, RATES *CRates)
-{
-	int Index;
-	double Heat;
-
-	/* For Mamals */
-	CRates->Rates[0] = 3.720719;
-
-	/* For lizards */
-	CRates->Rates[0] = 1.756726;
-
-	for(Heat=0;Heat<10;Heat+=0.1)
-		printf("%f\t", Heat);
-	printf("\n");
-
-	for(Index=1;Index<Trees->NoOfNodes;Index++)
-	{
-		AddPPNode(CRates, &Trees->Tree[0].NodeList[Index], 0);
-		
-		printf("%d\t", Index);
-		for(Heat=0;Heat<10;Heat+=0.1)
-		{			
-			if(Heat == 0)
-				CRates->PhyloPlasty->NodeList[0]->Scale = 0.001;
-			else
-				CRates->PhyloPlasty->NodeList[0]->Scale = Heat;
-			CRates->Lh	=	Likelihood(CRates, Trees, Opt);
-			printf("%f\t", CRates->Lh);
-		}
-
-		printf("\n");
-		fflush(stdout);
-		BlankPP(CRates->PhyloPlasty);
-	}
-	exit(0);
-
-/*
-	CRates->Rates[0] = 3.720719;
-	CRates->PhyloPlasty->NoDiffRates = 1;
-//	CRates->PhyloPlasty->Rates[4] 
-	
-	for(Heat=0;Heat<10;Heat+=0.1)
-		printf("%f\t", Heat);
-	printf("\n");
-	for(Index=1;Index<Trees->NoOfNodes;Index++)
-	{
-		printf("%d\t", Index);
-		for(Heat=0;Heat<10;Heat+=0.1)
-		{
-			CRates->PhyloPlasty->Rates[Index] = Heat;
-			CRates->Lh	=	Likelihood(CRates, Trees, Opt);
-			printf("%f\t", CRates->Lh);
-		}
-		printf("\n";)
-		CRates->PhyloPlasty->Rates[Index] = 1;
-		fflush(stdout);
-	}
-*/
-	exit(0);
-}
 
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
@@ -261,7 +186,7 @@ void	FindNoBL(OPTIONS *Opt, TREES *Trees, RATES *CRates)
 	long		FP;
 
 	if(Opt->UseSchedule == TRUE)
-		ShedFile	= OpenWrite(Opt->ScheduleFile);
+		ShedFile = OpenWrite(Opt->ScheduleFile);
 	
 	Shed = CreatSchedule(Opt);
 
@@ -327,17 +252,8 @@ void	FindNoBL(OPTIONS *Opt, TREES *Trees, RATES *CRates)
 		Heat = NRates->Lh - CRates->Lh;
 		CalcPriors(NRates, Opt);
 		
-	/*	if(Shed->Op == SESTDATA)
-		{
-			printf("%f\t%f\n", CRates->Lh, NRates->Lh);
-			fflush(stdout);
-		}
-*/
 		Heat += NRates->LhPrior - CRates->LhPrior;
 		
-		if(Opt->UsePhyloPlasty == TRUE)
-			Heat += CalcPhyloPlastyCost(NRates, CRates);
-
 		if(Shed->Op == SJUMP)
 		{
 			Heat = Heat + NRates->LogHRatio;
