@@ -162,7 +162,11 @@ FATTAILRATES*	CreateFatTailRates(OPTIONS *Opt, TREES *Trees)
 
 	for(Index=0;Index<Ret->NoSD;Index++)
 	{
-		Ret->Alpha[Index] = 0.5;
+		if(Opt->FatTailNormal == FALSE)
+			Ret->Alpha[Index] = 0.5;
+		else
+			Ret->Alpha[Index] = 2.0;
+
 		Ret->Scale[Index] = 0.5;
 	}
 
@@ -709,12 +713,30 @@ void	AllSliceSampleFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
 }
 
+int	GetMutateFatTailRatesPos(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE* Shed)
+{
+	int Pos;
+
+
+
+	if(Opt->FatTailNormal == FALSE)
+		return RandUSInt(Rates->RS) % Shed->NoParm;
+
+	do
+	{
+		Pos = RandUSInt(Rates->RS) % Shed->NoParm;
+	}while(Rates->Rates[Pos] == FAT_TAIL_NORMAL_VAL);
+
+	return Pos;
+}
+
 void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
 {
 	int Pos;
 	double NewR, OldR, Dev;
 
-	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
+//	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
+	Shed->PNo = GetMutateFatTailRatesPos(Opt, Trees, Rates, Shed);
 
 	Pos = Shed->PNo;
 	Dev = Opt->RateDevList[Shed->PNo];
@@ -852,15 +874,40 @@ double	FatTailLhPraxis(void* P, double *List)
 	return Ret;
 }
 
-void	SetRandFatTail(RATES *Rates, int SiteNo)
+void	TestLhNorm(RATES *Rates)
+{
+	double X, P, SD;
+	STABLEDIST *SDist;
+	
+	SDist = Rates->FatTailRates->SDList[0];
+
+	SD = 0.2;
+
+	SetStableDist(SDist, FAT_TAIL_NORMAL_VAL, SD);
+	
+	for(X = -5;X < 5; X+=0.001)
+	{
+		P = StableDistPDF(SDist, X);
+		printf("%f\t%f\n", X, exp(P));
+	}
+	exit(0);
+}
+
+
+void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 {
 	int Pos;
 	PRIORS *P;
 
+	TestLhNorm(Rates);
+
 	Pos = SiteNo * 2;
 		
 	P = Rates->Prios[Pos];
-	Rates->Rates[Pos] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
+	if(Opt->FatTailNormal == FALSE)
+		Rates->Rates[Pos] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
+	else
+		Rates->Rates[Pos] = FAT_TAIL_NORMAL_VAL;
 	Pos++;
 
 	P = Rates->Prios[Pos];
@@ -876,8 +923,8 @@ void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	do
 	{
-		for(Index=0;Index<Trees->NoOfSites;Index++)
-			SetRandFatTail(Rates, Index);
+		for(Index=0;Index<Rates->FatTailRates->NoSD;Index++)
+			SetRandFatTail(Opt, Rates, Index);
 
 		Lh = Likelihood(Rates, Trees, Opt);
 	} while(Lh == ERRLH);

@@ -240,8 +240,14 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	
 	fprintf(Str, "Seed                             %lu\n", Opt->Seed);
 
+	if(Opt->UseGeoData == TRUE)
+		fprintf(Str, "Geo Data:                    True\n");
+
+	if(Opt->FatTailNormal == TRUE)
+		fprintf(Str, "Fat Tail Normal:             True\n");
+
 	if(Opt->MakeUM == TRUE)
-		fprintf(Str, "Make UM                      True\n");
+		fprintf(Str, "Make UM :                    True\n");
 
 	if(Opt->Analsis == ANALML)
 	{
@@ -1186,7 +1192,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->ScaleTrees		=	-1;
 
-	Ret->UseGeoData		=	TRUE;
+//	Ret->UseGeoData		=	TRUE;
+	Ret->UseGeoData		=	FALSE;
+	Ret->FatTailNormal	=	FALSE;
 
 	Ret->RJLocalScalarPriors = (PRIORS**)malloc(sizeof(PRIORS*) * NO_RJ_LOCAL_SCALAR);
 	if(Ret->RJLocalScalarPriors == NULL)
@@ -3495,6 +3503,36 @@ void	SetRJLocalScalar(OPTIONS *Opt, char **Passed, int Tokes)
 	Opt->UseRJLocalScalar[Type]	= TRUE;
 }
 
+void	SetGeoData(OPTIONS *Opt)
+{
+	if(Opt->ModelType != MT_FATTAIL)
+	{
+		printf("Geo Data can only be used with Fat Tail models.\n");
+		return;
+	}
+
+	if(Opt->UseGeoData == FALSE)
+		Opt->UseGeoData = TRUE;
+	else
+		Opt->UseGeoData = FALSE;
+
+	return;
+}
+
+void	SetFatTailNormal(OPTIONS *Opt)
+{
+	if(Opt->ModelType != MT_FATTAIL)
+	{
+		printf("Fat Tail Normal can only be used with Fat Tail models.\n");
+		return;
+	}
+
+	if(Opt->FatTailNormal == FALSE)
+		Opt->FatTailNormal = TRUE;
+	else
+		Opt->FatTailNormal = FALSE;
+}
+
 void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	long long TBurnIn;
@@ -4151,9 +4189,8 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CSTONES)
-	{
 		SetSteppingstone(Opt, Passed, Tokes);
-	}
+	
 
 	if(Command == CSHEDULE)
 	{
@@ -4164,19 +4201,23 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CRJDUMMY)
-	{
 		SetRJDummy(Opt, Passed, Tokes);
-	}
-
+	
+	
 	if(Command == CSCALETREES)
-	{
 		SetScaleTree(Opt, Passed, Tokes);
-	}
+	
 
 	if(Command == CRJLOCALSCALAR)
-	{
 		SetRJLocalScalar(Opt, Passed, Tokes);
-	}
+	
+
+	if(Command == CGEODATA)
+		SetGeoData(Opt);
+	
+
+	if(Command == CFATTAILNORMAL)
+		SetFatTailNormal(Opt);
 
 	return FALSE;
 }
