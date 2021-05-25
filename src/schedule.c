@@ -64,28 +64,7 @@ void	BlankSchedule(SCHEDULE*	Shed)
 	}
 }
 
-void	ScaleSchedVect(SCHEDULE * Sched)
-{
-	double	SF=0;
-	int		Index=0;
 
-	for(Index=0;Index<Sched->NoOfOpts;Index++)
-		SF += Sched->OptFreq[Index];
-
-	SF = 1 / SF;
-
-	for(Index=0;Index<Sched->NoOfOpts;Index++)
-		Sched->OptFreq[Index] *= SF;
-
-	SF = 0;
-	for(Index=0;Index<Sched->NoOfOpts;Index++)
-	{
-		Sched->OptFreq[Index] = Sched->OptFreq[Index] + SF;
-		SF = Sched->OptFreq[Index];
-	}
-
-}
-/*
 void		ScaleVect(double *Vect, int VectSize)
 {
 	double	SF=0;
@@ -93,7 +72,6 @@ void		ScaleVect(double *Vect, int VectSize)
 
 	for(Index=0;Index<VectSize;Index++)
 		SF += Vect[Index];
-
 
 	SF = 1 / SF;
 
@@ -107,7 +85,7 @@ void		ScaleVect(double *Vect, int VectSize)
 		SF = Vect[Index];
 	}
 }
-*/
+
 int		MultiTree(OPTIONS *Opt)
 {
 	if(Opt->UseEqualTrees == TRUE)
@@ -234,9 +212,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 
 	Rates = 0;
 	if(Opt->DataType == CONTINUOUS)
-	{
 		Rates = Opt->Trees->NoOfSites;
-	}
 	else
 		for(Index=0;Index<Opt->NoOfRates;Index++)
 			if(Opt->ResTypes[Index] == RESNONE)
@@ -262,8 +238,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	if(Opt->LoadModels == TRUE)
 		Shed->OptFreq[0] = 0.3;
 	
-
-	ScaleSchedVect(Shed);
+	ScaleVect(Shed->OptFreq, Shed->NoOfOpts);	
 }
 
 void	PrintShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
@@ -355,7 +330,6 @@ SCHEDULE*	AllocSchedule()
 	Ret->LambdaAT		= NULL;
 	Ret->OUAT			= NULL;
 
-	
 	return Ret;
 }
 

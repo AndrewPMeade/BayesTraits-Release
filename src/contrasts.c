@@ -1299,7 +1299,8 @@ double CaclRegContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		CaclRegBeta(Opt, Trees, Rates);
 	
 	CR->RegAlpha = CalcRegAlpha(Tree, CR, Trees->NoOfSites);
-		
+	
+	
 	CR->RegSigma = CaclRegSigma(Tree, CR->RegBeta, Trees->NoOfSites);
 		
 	Ret = CalcRegLh(Opt, Trees, Rates, CR->RegAlpha, CR->RegBeta);
@@ -1323,6 +1324,7 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 //	TransContNodeOU(Trees->Tree[Rates->TreeNo]->Root, 0.5, TRUE);
 //	TransContNodeLambda(Trees->Tree[Rates->TreeNo]->Root, 0.5, TRUE);
 //	SaveTrees("DTest.trees", Trees); exit(0);
+
 
 	if(NeedToReSetBL(Opt) == TRUE)
 	{
@@ -1552,9 +1554,9 @@ void	MapConValsToRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 
 	if(Opt->Model == M_CONTRAST_REG)
 	{
-	//	Rates->Rates[0] = ConR->RegAlpha;
+		Rates->Rates[0] = ConR->RegAlpha;
 		if(Opt->TestCorrel == TRUE)
-			memcpy((void*)&Rates->Rates[0], ConR->RegBeta, sizeof(double) * (NoSites-1));
+			memcpy((void*)&Rates->Rates[1], ConR->RegBeta, sizeof(double) * (NoSites-1));
 		return;
 	}
 }
@@ -1570,11 +1572,10 @@ void	MapRatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 	
 	if(Opt->Model == M_CONTRAST_REG)
 	{
-		// Reg Alpha will be set to ML values from Beta's
-		ConR->RegAlpha = 0;
+		ConR->RegAlpha = Rates->Rates[0];
 
 		if(Opt->TestCorrel == TRUE)
-			memcpy(ConR->RegBeta, (void*)&Rates->Rates[0], sizeof(double) * (NoSites-1));
+			memcpy(ConR->RegBeta, (void*)&Rates->Rates[1], sizeof(double) * (NoSites-1));
 		else
 		{
 			for(x=0;x<NoSites-1;x++)

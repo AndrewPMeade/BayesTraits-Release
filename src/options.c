@@ -691,7 +691,7 @@ char**	ContrastRegRateNames(OPTIONS *Opt)
 	char	*Buffer;
 	int		Index, Pos;
 	
-	Opt->NoOfRates = (Opt->Trees->NoOfSites - 1);
+	Opt->NoOfRates = Opt->Trees->NoOfSites;
 	 
 	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
@@ -699,9 +699,12 @@ char**	ContrastRegRateNames(OPTIONS *Opt)
 		MallocErr();
 	
 	Pos = 0;
+	sprintf(Buffer, "Alpha");
+	Ret[Pos++] = StrMake(Buffer);
+
 	for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
 	{
-		sprintf(Buffer, "Beta-%d", Index+1);
+		sprintf(Buffer, "Beta-%d", Index);
 		Ret[Pos++] = StrMake(Buffer);
 	}
 
@@ -722,14 +725,14 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 		case M_CONTINUOUS_REG:
 			return RetModelRateName(Opt);
 
-		case M_CONTRAST:
-			return ContrastFullRateNames(Opt);
-
 		case M_CONTRAST_CORREL:
 			return ContrastRateNames(Opt);
 
 		case M_CONTRAST_REG:
 			return ContrastRegRateNames(Opt);
+
+		case M_CONTRAST:
+			return ContrastFullRateNames(Opt);
 	}
 
 	return NULL;

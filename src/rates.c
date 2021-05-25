@@ -57,8 +57,8 @@ int		FindNoConRates(OPTIONS *Opt)
 
 		case M_CONTRAST_REG:
 			if(Opt->TestCorrel == FALSE)
-				return 0;
-			return Opt->Trees->NoOfSites - 1; 
+				return 1;
+			return Opt->Trees->NoOfSites; 
 		break;
 
 		case M_CONTRAST:
@@ -2684,7 +2684,8 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 		case STREEMOVE:
 			Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoOfTrees;
 		break;
-		
+
+
 		case SGAMMA:
 			Rates->Gamma =  ChangeRate(Rates, Rates->Gamma, Opt->RateDev);
 		break;
