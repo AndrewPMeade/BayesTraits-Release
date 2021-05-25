@@ -39,6 +39,8 @@ void	PrintOptRes(FILE* Str, OPTIONS *Opt)
 	int		Index;
 	char*	FRateName;
 
+	if((Opt->AnalyticalP == TRUE) || (Opt->UseRModel == TRUE) || (Opt->NOSPerSite == TRUE))
+		return;
 
 	fprintf(Str, "Restrictions:\n");
 	for(Index=0;Index<Opt->NoOfRates;Index++)
@@ -400,13 +402,14 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			fprintf(Str, "Using R Model\n");
 			if(Opt->RModelP != -1)
 				fprintf(Str, "R Model Rates fixed to:          %f", Opt->RModelP);
+				
 		}
 	}
 
 	PrintEstData(Str, Opt);
 
 	if(Opt->AnalyticalP == TRUE)
-		fprintf(Str, "Analytical P:                       True\n");
+		fprintf(Str, "Analytical P:                    True\n");
 	
 	PrintOptRes(Str, Opt);
 	if(Opt->Analsis == ANALMCMC)
@@ -2475,6 +2478,7 @@ void	SetNOSPerSiteOpt(OPTIONS *Opt)
 	{
 		Opt->NOSPerSite = TRUE;
 		Opt->AnalyticalP = TRUE;
+		RestrictAll(Opt, Opt->RateName[0]);
 	}
 	else
 	{
