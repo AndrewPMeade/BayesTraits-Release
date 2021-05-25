@@ -11,7 +11,7 @@ ANALSIS		GetAnalsis(TREES *Trees);
 void		GetOptions(OPTIONS *Opt);
 
 void		PrintOptions(FILE* Str, OPTIONS *Opt);
-void		FreeOptions(OPTIONS *Opt);
+void		FreeOptions(OPTIONS *Opt, int NoSites);
 void		GetOptionsArry(OPTIONS *Opt, int Size, char** OptStr);
 
 #endif

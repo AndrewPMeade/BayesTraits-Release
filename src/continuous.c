@@ -119,10 +119,10 @@ NODE	TaxaToNode(TREES* Trees, TREE *Tree, TAXA *Taxa)
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		if(Tree->NodeList[NIndex].Tip == TRUE)
+		if(Tree->NodeList[NIndex]->Tip == TRUE)
 		{
-			if(strcmp(Tree->NodeList[NIndex].Taxa->Name, Taxa->Name)==0)
-				return &Tree->NodeList[NIndex];
+			if(strcmp(Tree->NodeList[NIndex]->Taxa->Name, Taxa->Name)==0)
+				return Tree->NodeList[NIndex];
 		}
 	}
 
@@ -142,7 +142,7 @@ double	GetTinyBL(TREES *Trees)
 	{
 		for(NIndex=0;NIndex<Trees->Tree[TIndex].NoNodes;NIndex++)
 		{
-			Node = &Trees->Tree[TIndex].NodeList[NIndex];
+			Node = Trees->Tree[TIndex].NodeList[NIndex];
 			if((Node != Trees->Tree[TIndex].Root) &&
 				(Node->Length != 0))
 			{
@@ -172,7 +172,7 @@ void	CheckZeroTaxaBL(TREES *Trees)
 	{
 		for(NIndex=0;NIndex<Trees->Tree[TIndex].NoNodes;NIndex++)
 		{
-			Node = &Trees->Tree[TIndex].NodeList[NIndex];
+			Node = Trees->Tree[TIndex].NodeList[NIndex];
 
 			if((Node->Tip == TRUE) && (Node != Trees->Tree[TIndex].Root))
 			{
@@ -203,7 +203,7 @@ double	FindCoVar(TREES* Trees, TREE *Tree, int T1, int T2)
 	Ret = 0;
 
     for(Index=0;Index<Tree->NoNodes;Index++)
-		Tree->NodeList[Index].Visited = FALSE;
+		Tree->NodeList[Index]->Visited = FALSE;
 
 	N1 = TaxaToNode(Trees, Tree, &Trees->Taxa[T1]);
 	N2 = TaxaToNode(Trees, Tree, &Trees->Taxa[T2]);
@@ -1424,7 +1424,7 @@ void	TreeBLToPower(TREES *Trees, TREE *Tree, double Power)
 
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
-		N = &Tree->NodeList[Index];
+		N = Tree->NodeList[Index];
 		if(N != Tree->Root)
 			N->Length = pow(N->Length, Power);
 	}
@@ -1494,6 +1494,8 @@ void		FreeTempConVars(TEMPCONVAR* TempCon)
 	FreeMatrix(TempCon->XT);
 	FreeMatrix(TempCon->TempV1);
 	FreeMatrix(TempCon->TempV2);
+
+	free(TempCon);
 }
 
 TEMPCONVAR* AllocTempConVars(OPTIONS *Opt, TREES* Trees)

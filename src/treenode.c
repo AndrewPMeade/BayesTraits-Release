@@ -111,7 +111,7 @@ void	FreePartitions(TREES *Trees)
 
 		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 		{
-			N = &Tree->NodeList[NIndex];
+			N = Tree->NodeList[NIndex];
 			if(N->Part != NULL)
 				free(N->Part);
 			N->Part = NULL;
@@ -133,7 +133,7 @@ void	SetPartitions(TREES *Trees)
 
 		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 		{
-			N = &Tree->NodeList[NIndex];
+			N = Tree->NodeList[NIndex];
 			if(N->Tip == FALSE)
 			{
 				if(N->Part != NULL)
@@ -177,7 +177,7 @@ NODE	FindNode(RECNODE RNode, TREE *Tree, int *Depth, int NoOfNodes)
 
 	for(NIndex=0;NIndex<NoOfNodes;NIndex++)
 	{
-		TempNode = &Tree->NodeList[NIndex];
+		TempNode = Tree->NodeList[NIndex];
 		
 		if(IsPartEqual(TempNode->Part, TempNode->PSize, RNode->TaxaID, RNode->NoOfTaxa) == TRUE)
 		{

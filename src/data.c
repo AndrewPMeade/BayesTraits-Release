@@ -45,7 +45,7 @@ void	PrintDataDesc(TREES* Trees)
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N = &Tree->NodeList[NIndex];
+		N = Tree->NodeList[NIndex];
 			
 		if(N->Tip == TRUE)
 		{
@@ -738,7 +738,7 @@ void	SetTreeAsData(OPTIONS *Opt, TREES *Trees, int TreeNo)
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N = &Tree->NodeList[NIndex];
+		N = Tree->NodeList[NIndex];
 
 		if(N->Tip == TRUE)
 		{

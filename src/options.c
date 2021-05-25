@@ -14,7 +14,7 @@
 #define	RATEOUTPUTLEN	33
 #define	RIGHTINDENT		4
 
-void	FreeRecNodes(OPTIONS *Opt);
+void	FreeRecNodes(OPTIONS *Opt, int NoSites);
 
 char*	FormatRateName(char* RateName)
 {
@@ -457,7 +457,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	fflush(stdout);
 }
 
-void	FreeOptions(OPTIONS *Opt)
+void	FreeOptions(OPTIONS *Opt, int NoSites)
 {
 	int		Index;
 	
@@ -508,7 +508,7 @@ void	FreeOptions(OPTIONS *Opt)
 	free(Opt->ResNo);
 	free(Opt->ResConst);
 
-	FreeRecNodes(Opt);
+	FreeRecNodes(Opt, NoSites);
 
 	free(Opt);
 }
@@ -1665,23 +1665,12 @@ TAXA*	GetTaxaFromNameNo(char *ID, TREES* Trees)
 	return NULL;
 }					  
 
-int	CheckConFState(char *State, int No)
-{
-	if(strcmp(State, ESTDATAPOINT) == 0)
-		return TRUE;
-
-	if(IsValidDouble(State) == FALSE)
-	{
-		
-	}
-}
-
 char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char *argv[])
 {
 	int		Index;
 	char	**Ret;
 
-	if(Opt->DataType == DISCRETE)
+	if(Opt->DataType == DISCRETE) 
 		return NULL;
 
 	Ret = (char**)malloc(sizeof(char*) * Opt->Trees->NoOfSites);
@@ -2566,9 +2555,9 @@ void	FlattenRecNode(OPTIONS *Opt)
 		Opt->RecNodeList[Index] = RNode;
 }
 
-void	FreeRecNodes(OPTIONS *Opt)
+void	FreeRecNodes(OPTIONS *Opt, int NoSites)
 {
-	int	Index;
+	int	Index, CIndex;
 	RECNODE	R;
 
 	if(Opt->RecNodeList != NULL)
@@ -2580,6 +2569,12 @@ void	FreeRecNodes(OPTIONS *Opt)
 	{
 		R = Opt->RecNodeList[Index];
 
+		if(R->ConData != NULL)
+		{
+			for(CIndex=0;CIndex<NoSites;CIndex++)
+				free(R->ConData[CIndex]);
+			free(R->ConData);
+		}
 
 		free(R->TreeNodes);
 		free(R->Name);
@@ -3044,7 +3039,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		if(Tokes > 1)
 		{
 			FreePartitions(Opt->Trees);
-			FreeRecNodes(Opt);
+			FreeRecNodes(Opt, Opt->Trees->NoOfSites);
 			ExcludeTaxa(Opt, Tokes-1, &Passed[1]);
 			SetPartitions(Opt->Trees);
 		}

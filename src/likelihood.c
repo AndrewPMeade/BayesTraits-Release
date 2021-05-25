@@ -482,7 +482,9 @@ void	FreeInvInfo(INVINFO* InvInfo)
 	FreeMatrix(InvInfo->TempA);
 	free(InvInfo->TempVect1);
 
-
+	free(InvInfo->TempVect2);
+	free(InvInfo->TempVect3);
+	free(InvInfo->TempVect4);
 
 
 	free(InvInfo->val);
@@ -1041,7 +1043,7 @@ void	PrintTipData(TREES* Trees, int TreeNo)
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N = &Tree->NodeList[NIndex];
+		N = Tree->NodeList[NIndex];
 		if(N->Tip==TRUE)
 		{
 			printf("%d\t", N->TipID);
@@ -1107,7 +1109,7 @@ void	SetGammaBlank(RATES* Rates, OPTIONS* Opt)
 	
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N = &Tree->NodeList[NIndex];
+		N = Tree->NodeList[NIndex];
 
 		if(N->Tip == FALSE)
 		{
@@ -1163,7 +1165,7 @@ void	ProcessGamma(RATES *Rates, TREES* Trees)
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N = &Tree->NodeList[NIndex];
+		N = Tree->NodeList[NIndex];
 
 		if(N->Tip == FALSE)
 		{
@@ -1192,7 +1194,7 @@ void	FinishUpGamma(RATES* Rates, OPTIONS* Opt, TREES* Trees)
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N = &Tree->NodeList[NIndex];
+		N = Tree->NodeList[NIndex];
 		
 		if(N->Tip == FALSE)
 		{
@@ -1246,7 +1248,7 @@ void SetDiscEstData(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N = &Tree->NodeList[NIndex];
+		N = Tree->NodeList[NIndex];
 		if(N->Tip == TRUE)
 		{
 			if(N->Taxa->EstData == TRUE)

@@ -14,4 +14,6 @@ void	CalcZ(TREES* Trees, TREE *Tree, OPTIONS *Opt);
 double	MLFindAlphaReg(TREES* Trees, TREE *Tree, double *Data);
 
 MATRIX*	FindRegVar(TREES *Trees, RATES* Rates, int AlphaZero);
+
+void		FreeTempConVars(TEMPCONVAR* TempCon);
 #endif

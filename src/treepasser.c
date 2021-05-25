@@ -312,7 +312,7 @@ void	GetTreeName(NTREE *Tree, char** Passed)
 	strcpy(Tree->Tag, Passed[Index]);
 }
 
-NNODE	AllocNode()
+NNODE	AllocNodeI()
 {
 	NNODE	Ret;
 	
@@ -343,7 +343,7 @@ NNODE	AddDescendant(NNODE N)
 	int		Index;
 	NNODE*	NewList;
 
-	Ret = AllocNode();
+	Ret = AllocNodeI();
 	Ret->Ans = N;
 
 	if(N->NoOfNodes == 0)
@@ -526,7 +526,7 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 
 					Pos = 0;
 
-					Trees->Trees[NoOfTrees].Root = AllocNode();
+					Trees->Trees[NoOfTrees].Root = AllocNodeI();
 
 					CheckBrackets(Passed[Tokes-1], NoOfTrees);
 					PassTree(Trees->Trees[NoOfTrees].Root, Passed[Tokes-1], &Pos);
@@ -786,13 +786,11 @@ int	FindNoOfTaxa(NNODE N)
 
 	if(N->Tip == TRUE)
 		return 1;
-	else
-	{
-		Ret = 0;
-		for(Index=0;Index<N->NoOfNodes;Index++)
-			Ret += FindNoOfTaxa(N->NodeList[Index]);
-	}
-
+	
+	Ret = 0;
+	for(Index=0;Index<N->NoOfNodes;Index++)
+		Ret += FindNoOfTaxa(N->NodeList[Index]);
+	
 	return Ret;
 }
 
@@ -804,12 +802,11 @@ void	SetPartitionTaxa(NNODE N, int* List, int *No)
 	{
 		List[(*No)] = N->TaxaID;
 		(*No)++;
+		return;
 	}
-	else
-	{
-		for(Index=0;Index<N->NoOfNodes;Index++)
-			SetPartitionTaxa(N->NodeList[Index], List, No);
-	}
+
+	for(Index=0;Index<N->NoOfNodes;Index++)
+		SetPartitionTaxa(N->NodeList[Index], List, No);
 }
 
 int	TaxaIDComp(int *P1, int *P2)
@@ -864,6 +861,7 @@ PARTITION* GetPartition(NNODE N)
 	Ret->TaxaNo	= (int*)malloc(sizeof(int) * Ret->No);
 	if(Ret->TaxaNo == NULL)
 		MallocErr();
+	memset(Ret->TaxaNo, 0, sizeof(int)*Ret->No);
 
 	No = 0;
 	SetPartitionTaxa(N, Ret->TaxaNo, &No);

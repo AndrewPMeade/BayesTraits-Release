@@ -94,7 +94,7 @@ void	BlankVisited(TREES* Trees, TREE* Tree)
 {
 	int	NIndex;
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
-		Tree->NodeList[NIndex].Visited = FALSE;
+		Tree->NodeList[NIndex]->Visited = FALSE;
 }
 
 void	SetUpTrace(NODE N, TREE *Tree)

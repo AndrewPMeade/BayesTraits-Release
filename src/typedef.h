@@ -458,10 +458,12 @@ typedef struct
 
 typedef	struct
 {
-	NODE		NodeList;
+	int			NoNodes;
+	NODE		*NodeList;
+
 	NODE		Root;
 
-	int			NoNodes;
+	
 	CONVAR*		ConVars;
 } TREE;
 

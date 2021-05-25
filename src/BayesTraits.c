@@ -102,6 +102,7 @@ int main(int argc, char** argv)
 {
 	TREES*		Trees;
 	OPTIONS*	Opt; 
+	int			NoSites;
 
 	SetSeed();
 
@@ -137,8 +138,9 @@ int main(int argc, char** argv)
 	if(Opt->Analsis == ANALML)
 		FindML(Opt, Trees);
 
+	NoSites = Trees->NoOfSites;
 	FreeTrees(Trees, Opt);
-	FreeOptions(Opt);
+	FreeOptions(Opt, NoSites);
 
 	return 0;
 }
