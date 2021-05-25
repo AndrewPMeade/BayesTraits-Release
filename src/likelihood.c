@@ -1264,10 +1264,10 @@ double	LhPraxisCon(PRAXSTATE* PState, double *List)
 	if(PState->Opt->EstKappa == TRUE)
 	{
 		PState->Rates->Kappa = List[Index];
-		if(PState->Rates->Kappa > 3)
-			PState->Rates->Kappa = 3;
-		if(PState->Rates->Kappa < 0.0000001)
-			PState->Rates->Kappa = 0.0000001;
+		if(PState->Rates->Kappa > MAX_KAPPA)
+			PState->Rates->Kappa = MAX_KAPPA;
+		if(PState->Rates->Kappa < MIN_KAPPA)
+			PState->Rates->Kappa = MIN_KAPPA;
 
 		Index++;
 	}
@@ -1275,10 +1275,10 @@ double	LhPraxisCon(PRAXSTATE* PState, double *List)
 	if(PState->Opt->EstDelta == TRUE)
 	{
 		PState->Rates->Delta = List[Index];
-		if(PState->Rates->Delta > 3)
-			PState->Rates->Delta = 3;
-		if(PState->Rates->Delta < 0.0000001)
-			PState->Rates->Delta = 0.0000001;
+		if(PState->Rates->Delta > MAX_DELTA)
+			PState->Rates->Delta = MAX_DELTA;
+		if(PState->Rates->Delta < MIN_DELTA)
+			PState->Rates->Delta = MIN_DELTA;
 
 		Index++;
 	}
@@ -1286,10 +1286,10 @@ double	LhPraxisCon(PRAXSTATE* PState, double *List)
 	if(PState->Opt->EstLambda == TRUE)
 	{
 		PState->Rates->Lambda = List[Index];
-		if(PState->Rates->Lambda > 1)
-			PState->Rates->Lambda = 1;
-		if(PState->Rates->Lambda < 0.0000001)
-			PState->Rates->Lambda = 0.0000001;
+		if(PState->Rates->Lambda > MAX_LAMBDA)
+			PState->Rates->Lambda = MAX_LAMBDA;
+		if(PState->Rates->Lambda < MIN_LAMBDA)
+			PState->Rates->Lambda = MIN_LAMBDA;
 		
 		Index++;
 	}

@@ -41,6 +41,14 @@
 
 #define	LOGFILEBUFFERSIZE	65536
 
+#define MIN_DELTA	1E-07
+#define MAX_DELTA	3
+
+#define MIN_LAMBDA	1E-07
+#define MAX_LAMBDA	1
+
+#define MIN_KAPPA	1E-07
+#define MAX_KAPPA	3
 
 typedef enum
 {
