@@ -8,6 +8,7 @@
 #include "data.h"
 #include "AutoTune.h"
 #include "rates.h"
+#include "VarRates.h"
 
 void	UpDateShedAcc(int Acc, SCHEDULE* Shed)
 {
@@ -64,18 +65,20 @@ void	BlankSchedule(SCHEDULE*	Shed)
 	}
 }
 
-void	ScaleSchedVect(SCHEDULE * Sched)
+//void	ScaleSchedVect(SCHEDULE * Sched)
+void	NormaliseVector(double *Vect, int Size)
 {
-	double	SF=0;
-	int		Index=0;
+	double	SF;
+	int		Index;
 
-	for(Index=0;Index<Sched->NoOfOpts;Index++)
-		SF += Sched->OptFreq[Index];
+	SF = 0;
+	for(Index=0;Index<Size;Index++)
+		SF += Vect[Index];
 
 	SF = 1 / SF;
 
-	for(Index=0;Index<Sched->NoOfOpts;Index++)
-		Sched->OptFreq[Index] *= SF;
+	for(Index=0;Index<Size;Index++)
+		Vect[Index] *= SF;
 }
 /*
 void		ScaleVect(double *Vect, int VectSize)
@@ -111,6 +114,45 @@ int		MultiTree(OPTIONS *Opt)
 	return TRUE;
 }
 
+void	SetVarRatesShed(OPTIONS *Opt, SCHEDULE *Shed)
+{
+	int Index, Max, No;
+
+	Max = NO_RJ_LOCAL_SCALAR + 2;
+
+	Shed->FreqVarRatesOp	= (double*)malloc(sizeof(double) * Max);
+	Shed->VarRatesOp		= (RJ_VARRATE_TYPE*)malloc(sizeof(RJ_VARRATE_TYPE) * Max);
+
+	if(Shed->FreqVarRatesOp == NULL || Shed->VarRatesOp == NULL)
+		MallocErr();
+
+	No = 0;
+
+	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
+	{
+		if(Opt->UseRJLocalScalar[Index] == TRUE)
+		{
+			Shed->VarRatesOp[No] = (RJ_VARRATE_TYPE)Index;
+			Shed->FreqVarRatesOp[No] = 0.1;
+			No++;
+		}
+	}
+	
+	if(Opt->UseVarRates == TRUE)
+	{
+		Shed->VarRatesOp[No] = VR_NODE;
+		Shed->FreqVarRatesOp[No] = 0.1;
+		No++;
+
+		Shed->VarRatesOp[No] = VR_NODE;
+		Shed->FreqVarRatesOp[No] = 0.1;
+		No++;
+	}
+	
+	Shed->NoVarRatesOp = No;
+
+	NormaliseVector(Shed->FreqVarRatesOp, Shed->NoVarRatesOp);
+}
 
 void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 {
@@ -189,45 +231,27 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Left = Left - Shed->OptFreq[SFATTAILANS];
 	}
 
-/*
-	if(Opt->SoloTreeMove == TRUE)
-	{
-		Shed->OptFreq[9] = 0.2;
-		Left = Left - Shed->OptFreq[9];
-	}
-*/
-
 	if(MultiTree(Opt) == TRUE)
 		Shed->OptFreq[STREEMOVE] = 0.1;
 	else
 		Shed->OptFreq[STREEMOVE] = 0.0;
 	
 
-	if(Opt->UseVarRates == TRUE)
+	if(UseNonParametricMethods(Opt) == TRUE)
 	{
-/*
-		SPPADDREMOVE=10,
-		SPPMOVE=11,
-		SPPCHANGESCALE=12,
-		SPPHYPERPRIOR=13,
-*/
-		Shed->OptFreq[10] = 0;
-		Shed->OptFreq[11] = 0;
-		Shed->OptFreq[12] = 0;
-		Shed->OptFreq[13] = 0;
+		Shed->OptFreq[SPPADDREMOVE] = 0.5;
+		Shed->OptFreq[SPPMOVE] = 0.1;
+		Shed->OptFreq[SPPCHANGESCALE] = 0.4;
 
-		Shed->OptFreq[10] = 0.5;
-		Shed->OptFreq[11] = 0.05;
-		Shed->OptFreq[12] = 0.4;
-//		Shed->OptFreq[13] = 0.05;
+		Left = Left - (Shed->OptFreq[SPPADDREMOVE] + Shed->OptFreq[SPPMOVE] + Shed->OptFreq[SPPCHANGESCALE]);
 
-		Left = Left - (Shed->OptFreq[10] + Shed->OptFreq[11] + Shed->OptFreq[12] + Shed->OptFreq[13]);
+		SetVarRatesShed(Opt, Shed);
 	}
 
 	if(Opt->Model == M_DESCHET)
 	{
-		Shed->OptFreq[14] = 0.4;
-		Left = Left - Shed->OptFreq[14];
+		Shed->OptFreq[SHETERO] = 0.4;
+		Left = Left - Shed->OptFreq[SHETERO];
 	}
 
 	Rates = 0;
@@ -266,7 +290,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Shed->OptFreq[SRJDUMMYCHANGEBETA] = 0.5;
 	}
 
-	ScaleSchedVect(Shed);
+	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 }
 
 void	PrintShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
@@ -359,6 +383,10 @@ SCHEDULE*	AllocSchedule()
 	Ret->OUAT			= NULL;
 
 	Ret->RJDummyBetaAT	=	NULL;
+	
+	Ret->NoVarRatesOp	= 0;
+	Ret->FreqVarRatesOp = NULL;
+	Ret->VarRatesOp		= NULL;
 	
 	return Ret;
 }
@@ -493,6 +521,13 @@ void		FreeeSchedule(SCHEDULE* Sched)
 
 	if(Sched->RJDummyBetaAT != NULL)
 		FreeAutoTune(Sched->RJDummyBetaAT);
+
+
+	if(Sched->VarRatesOp != NULL)
+		free(Sched->VarRatesOp);
+
+	if(Sched->FreqVarRatesOp != NULL)
+		free(Sched->FreqVarRatesOp);
 
 	free(Sched);
 }

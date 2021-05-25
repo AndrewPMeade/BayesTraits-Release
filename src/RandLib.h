@@ -67,6 +67,7 @@ int				RandInProportion(RANDSTATES* RS, double *List, int No);
 
 int				RandPoisson(RANDSTATES* RS, double ExpectedValue);
 double			NegExp(RANDSTATES* RS, double ExpectedValue);
+double			RandExp(RANDSTATES* RS, double Mean);
 double			RandNormal(RANDSTATES* RS, double Mean, double Std);
 void			DirichletRandomVariable (RANDSTATES* RS, double *alp, double *z, int n);
 void			FindPriod(void);

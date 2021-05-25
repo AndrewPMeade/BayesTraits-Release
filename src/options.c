@@ -14,6 +14,7 @@
 #include "part.h"
 #include "rates.h"
 #include "stones.h"
+#include "RJLocalScalar.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHT_INDENT	4
@@ -109,7 +110,7 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 	if(Opt->UseRJMCMC == TRUE)
 	{
 		fprintf(Str, "    RJ Prior                     ");
-		PrintPriorVals(Opt->RJPrior, Str);
+		PrintPriorVals(Str, Opt->RJPrior);
 	//	fprintf(Str, "\n");
 	}
 
@@ -123,7 +124,7 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 
 		if((Opt->ResTypes[Index] == RESNONE) && (Opt->UseRJMCMC == FALSE))
 		{
-			PrintPriorVals(P, Str);
+			PrintPriorVals(Str, P);
 		}
 		else
 		{
@@ -135,14 +136,14 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 	{
 		fprintf(Str, "        Gamma                    ");
 	
-		PrintPriorVals(Opt->PriorGamma, Str);
+		PrintPriorVals(Str, Opt->PriorGamma);
 		fprintf(Str, "\n");
 	}
 
 	if(Opt->EstOU == TRUE)
 	{
 		fprintf(Str, "    OU                           ");
-		PrintPriorVals(Opt->PriorOU, Str);
+		PrintPriorVals(Str, Opt->PriorOU);
 		fprintf(Str, "\n");
 	}
 
@@ -375,7 +376,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		{
 			if(Opt->UseRJLocalScalar[Index] == TRUE)
 			{
-				fprintf(Str, "RJ Local Scalar %s prior ", RJ_LOCAL_SCALAR_NAMES[Index]);
+				fprintf(Str, "RJ Local Scalar:                 %s prior ", RJ_LOCAL_SCALAR_NAMES[Index]);
 				PrintPriorVals(Str, Opt->RJLocalScalarPriors[Index]);
 			}
 		}
@@ -870,8 +871,8 @@ void	SetFatTailPrior(OPTIONS *Opt)
 
 	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 	{
-		Opt->Priors[Pos++] = CreatUniPrior(0.2, 2.0);
-		Opt->Priors[Pos++] = CreatUniPrior(0.0, 1.0);
+		Opt->Priors[Pos++] = CreateUniformPrior(0.2, 2.0);
+		Opt->Priors[Pos++] = CreateUniformPrior(0.0, 1.0);
 	}
 }
 
@@ -890,9 +891,9 @@ void	AllocPrios(OPTIONS *Opt)
 		for(Index=0;Index<Opt->NoOfRates;Index++)
 		{
 			if(Opt->ModelType == DISCRETE)
-				Opt->Priors[Index] = CreatUniPrior(0, 100);
+				Opt->Priors[Index] = CreateUniformPrior(0, 100);
 			else
-				Opt->Priors[Index] = CreatUniPrior(-100, 100);
+				Opt->Priors[Index] = CreateUniformPrior(-100, 100);
 		
 			Opt->Priors[Index]->RateName = StrMake(Opt->RateName[Index]);
 
@@ -901,14 +902,14 @@ void	AllocPrios(OPTIONS *Opt)
 		}
 	}
 
-	Opt->RJPrior = CreatUniPrior(0, 100);
+	Opt->RJPrior = CreateUniformPrior(0, 100);
 
-	Opt->PriorDelta = CreatUniPrior(MIN_DELTA, MAX_DELTA);
-	Opt->PriorKappa = CreatUniPrior(MIN_KAPPA, MAX_KAPPA);
-	Opt->PriorLambda= CreatUniPrior(MIN_LAMBDA, MAX_LAMBDA);
+	Opt->PriorDelta = CreateUniformPrior(MIN_DELTA, MAX_DELTA);
+	Opt->PriorKappa = CreateUniformPrior(MIN_KAPPA, MAX_KAPPA);
+	Opt->PriorLambda= CreateUniformPrior(MIN_LAMBDA, MAX_LAMBDA);
 
 //	Opt->PriorOU	= CreatUniPrior(MIN_OU, MAX_OU);
-	Opt->PriorOU	= CreatExpPrior(1.0);
+	Opt->PriorOU	= CreateExpPrior(1.0);
 }
 
 void	SetAllRateDevs(OPTIONS *Opt, double Dev)
@@ -1672,22 +1673,7 @@ void	UnRestictAll(OPTIONS *Opt)
 	}
 }
 
-PRIORDIST	StrToPriorDist(char* Str)
-{
-	int			Index;
 
-	MakeLower(Str);
-	
-	Index = 0;
-	do
-	{
-		if(strcmp(Str, DISTNAMES[Index])==0)
-			return (PRIORDIST)(BETA+Index);
-		Index++;
-	} while(DISTNAMES[Index][0] != '\0');
-
-	return (PRIORDIST)-1;
-}
 
 int	SetPriorNo(OPTIONS *Opt, PRIORS *P, int Tokes, char *argv[])
 {
@@ -2730,7 +2716,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 
 		if(Opt->Analsis == ANALMCMC)
 		{
-			Opt->PriorGamma = CreatUniPrior(0, 100);
+			Opt->PriorGamma = CreateUniformPrior(0, 100);
 			Opt->PriorGamma->RateNo = -1;
 		}
 		
@@ -3447,16 +3433,57 @@ void	SetScaleTree(OPTIONS *Opt, char **Passed, int Tokes)
 	Opt->ScaleTrees = S;
 }
 
-void	SetRJLocalScalar(OPTIONS *Opt, char **Passed, int Tokes)
+
+int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 {
+	if(Tokes != 4 && Tokes != 5)
+	{
+		printf("RJ Local Scalar take a scalar names (kappa, lambda, delta, OU) and a prior.\n");
+		return FALSE;
+	}
+
 	if(Opt->ModelType != MT_CONTRAST || Opt->Analsis == ANALML)
 	{
 		printf("RJ Local Scalar is only valid with MCMC and a contrast model.\n");
-		return;
+		return FALSE;
 	}
 
-	
+	if(Opt->Trees->NoOfTrees != 1)
+	{
+		printf("RJ Local Scalar is only valid with a single tree.\n");
+		return FALSE;
+	}
 
+	if(NameToRJLocalType(Passed[1]) == -1)
+	{
+		printf("invalid scaler name, valid scalars are (kappa, lambda, delta, OU).\n");
+		return FALSE;
+	}
+
+
+
+	return TRUE;
+}
+
+void	SetRJLocalScalar(OPTIONS *Opt, char **Passed, int Tokes)
+{
+	PRIORS *P;
+	RJ_VARRATE_TYPE	Type;
+
+	if(ValidRJLocalScalarModel(Opt, Passed, Tokes) == FALSE)
+		return;
+
+	P = CreatePrior(Tokes-2, &Passed[2]);
+	if(P == NULL)
+		return;
+
+	Type = NameToRJLocalType(Passed[1]);
+
+	if(Opt->RJLocalScalarPriors[Type] != NULL)
+		FreePrior(Opt->RJLocalScalarPriors[Type]);
+
+	Opt->RJLocalScalarPriors[Type] = P;
+	Opt->UseRJLocalScalar[Type]	= TRUE;
 }
 
 void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
@@ -4205,4 +4232,4 @@ void	CheckOptions(OPTIONS *Opt)
 			exit(0);
 		}	
 	}
-}
+} 

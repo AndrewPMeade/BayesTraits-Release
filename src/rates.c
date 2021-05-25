@@ -16,7 +16,7 @@
 #include "matrix.h"
 #include "randdists.h"
 #include "contrasts.h"
-#include "phyloplasty.h"
+#include "VarRates.h"
 #include "BigLh.h"
 #include "ml.h"
 #include "schedule.h"
@@ -509,9 +509,9 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 		for(Index=0;Index<Rates->NoEstData;Index++)
 			Rates->EstData[Index] = 0;
 	}
-	
-	if(Opt->UseVarRates == TRUE)
-		Rates->Plasty = CreatPlasty(Rates, Trees, Opt);
+
+	if(UseNonParametricMethods(Opt) == TRUE)
+		Rates->Plasty = CreatVarRates(Rates, Trees, Opt);
 	
 	if(Opt->ModelType == MT_CONTRAST)
 		Rates->Contrast = CreatContrastRates(Opt, Rates);
@@ -2152,12 +2152,10 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	}
 
 	if(Opt->ModelType == MT_CONTRAST)
-	{
 		CopyContrastRates(Opt, A, B, Opt->Trees->NoOfSites);
-	}
-
-	if(Opt->UseVarRates == TRUE)
-		PlastyCopy(A, B);
+	
+	if(UseNonParametricMethods(Opt) == TRUE)
+		VarRatesCopy(A, B);
 
 	A->VarDataSite = B->VarDataSite;
 
@@ -2738,19 +2736,19 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case SPPADDREMOVE:
-			PPAddRemove(Rates, Opt->Trees, Opt, It);
+			VarRatesAddRemove(Rates, Opt->Trees, Opt, Shed, It);
 		break;
 
 		case SPPMOVE:
-			PPMoveNode(Rates, Opt->Trees, Opt);
+			VarRatesMoveNode(Rates, Opt->Trees, Opt);
 		break;
 		
 		case SPPCHANGESCALE:
-			PPChangeScale(Rates, Opt->Trees, Opt);
+			ChangeVarRatesScale(Rates, Opt->Trees, Opt);
 		break;
 
 		case SPPHYPERPRIOR:
-			ChangePPHyperPrior(Rates, Opt);
+			ChangeVarRatesHyperPrior(Rates, Opt);
 		break;
 
 		case SHETERO:
@@ -2823,7 +2821,7 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 		free(Rates->EstDescData);
 
 	if(Rates->Plasty != NULL)
-		FreePlasty(Rates->Plasty);
+		FreeVarRates(Rates->Plasty);
 		
 #ifdef BIG_LH
 	mpfr_clear(Rates->HMeanSum);

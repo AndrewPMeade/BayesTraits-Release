@@ -545,3 +545,15 @@ double			RandUniDouble(RANDSTATES* RS, double Min, double Max)
 	Ret += Min;
 	return Ret;
 }
+
+double			RandExp(RANDSTATES* RS, double Mean)
+{
+	double Ret;
+
+	Mean = 1.0 / Mean;
+
+	Ret = log(1.0-RandDouble(RS));
+	Ret = Ret / (-Mean);
+
+	return Ret;	
+}

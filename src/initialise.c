@@ -18,7 +18,7 @@
 #include "genlib.h"
 #include "continuous.h"
 #include "initialise.h"
-#include "phyloplasty.h"
+#include "VarRates.h"
 #include "BigLh.h"
 #include "ptrees.h"
 #include "threaded.h"

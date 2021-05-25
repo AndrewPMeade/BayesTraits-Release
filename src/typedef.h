@@ -87,9 +87,6 @@
 #define PPMAXSCALE	10
 #define	PPSCALEDEV	100
 
-/* Only scale the branch lengths */
-//#define	PPBLO
-
 /*	Modify the prior cost adding a VarRates scalar */
 #define PPPRIORSCALE 1
 
@@ -105,6 +102,12 @@
 /* Use uniform or gamma value priors*/
 //#define PPUNIFORM
 #define PPGAMMA
+
+// Minimum number of taxa to transform a node. 
+#define MIN_TAXA_VR_TRANS	5
+
+// No kappa, lambda, delta, OU. 
+#define	NO_RJ_LOCAL_SCALAR	4
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000
@@ -163,23 +166,27 @@
 
 #define	NORM_MEAN_BL	0.1
 
-#define	NO_RJ_LOCAL_SCALAR	4
+
+
+#define NO_PRIOR_DIST 5
 
 static char    *RJ_LOCAL_SCALAR_NAMES[] =
 {
-	"Kappa",
-	"Lambda",
-	"Detla", 
-	"OU"
+	"kappa",
+	"lambda",
+	"detla", 
+	"ou"
 };
 
-typedef enum RJ_LOCAL_SCALAR_TYPE
+typedef enum 
 {
-	KAPPA,
-	LAMBDA, 
-	DELTA,
-	OU
-};
+	VR_KAPPA,
+	VR_LAMBDA, 
+	VR_DELTA,
+	VR_OU,
+	VR_NODE,
+	VR_BL,
+} RJ_VARRATE_TYPE;
 
 typedef enum
 {
@@ -420,7 +427,6 @@ static char    *DISTNAMES[] =
 	""
 };
 
-
 static int	DISTPRAMS[] =
 {
 	2,
@@ -433,11 +439,11 @@ static int	DISTPRAMS[] =
 
 typedef enum
 {
-	BETA=0,
-	GAMMA=1,
-	UNIFORM=2,
-	CHI=3,
-	EXP=4
+	BETA,
+	GAMMA,
+	UNIFORM,
+	CHI,
+	EXP
 } PRIORDIST;
 
 typedef enum
@@ -490,12 +496,6 @@ typedef enum
 	PIEMP,
 	PINONE,
 } PITYPES;
-
-typedef enum
-{
-	PPNODE,
-	PPBRANCH
-} PLASTYTYPE;
 
 typedef enum
 {
@@ -864,10 +864,10 @@ typedef struct
 
 typedef struct
 {
-	NODE		Node;
-	double		Scale;
-	PLASTYTYPE	Type;
-	long long	NodeID;
+	NODE			Node;
+	double			Scale;
+	RJ_VARRATE_TYPE	Type;
+	long long		NodeID;
 } PLASTYNODE;
 
 typedef struct
@@ -1172,7 +1172,6 @@ typedef struct
 
 	STABLEDIST**	SDList;
 
-
 } FATTAILRATES;
 
 typedef struct
@@ -1368,6 +1367,11 @@ typedef struct
 	int			*PTried;
 	int			*PAcc;
 	int			PNo;
+
+	int			NoVarRatesOp;
+	double		*FreqVarRatesOp;
+	RJ_VARRATE_TYPE	*VarRatesOp;
+
 
 	AUTOTUNE	*KappaAT;
 	AUTOTUNE	*DeltaAT;

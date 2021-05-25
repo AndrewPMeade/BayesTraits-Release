@@ -9,7 +9,9 @@
 #include "RandLib.h"
 #include "revjump.h"
 #include "likelihood.h"
-#include "phyloplasty.h"
+#include "VarRates.h"
+#include "randdists.h"
+#include "RandLib.h"
 
 extern double beta(double a, double b);
 extern double incbet(double aa, double bb, double xx );
@@ -118,7 +120,33 @@ PRIORS*	AllocBlankPrior(int NoP)
 	return Ret;
 }
 
-PRIORS*	CreatUniPrior(double Min, double Max)
+PRIORS*		CreateBetaPrior(double Mean, double Var)
+{
+	PRIORS* Ret;
+
+	Ret = AllocBlankPrior(2);
+	
+	Ret->Dist			= BETA;
+	Ret->DistVals[0]	= Mean;
+	Ret->DistVals[1]	= Var;
+	
+	return Ret;
+}
+
+PRIORS*		CreateGammaPrior(double Mean, double Var)
+{
+	PRIORS* Ret;
+
+	Ret = AllocBlankPrior(2);
+	
+	Ret->Dist			= BETA;
+	Ret->DistVals[0]	= Mean;
+	Ret->DistVals[1]	= Var;
+	
+	return Ret;
+}
+
+PRIORS*		CreateUniformPrior(double Min, double Max)
 {
 	PRIORS* Ret;
 
@@ -131,7 +159,20 @@ PRIORS*	CreatUniPrior(double Min, double Max)
 	return Ret;
 }
 
-PRIORS*		CreatExpPrior(double Mean)
+PRIORS*		CreateChiPrior(double Mean, double Var)
+{
+	PRIORS* Ret;
+
+	Ret = AllocBlankPrior(2);
+	
+//	Ret->Dist			= CHI;
+	Ret->DistVals[0]	= Mean;
+	Ret->DistVals[1]	= Var;
+	
+	return Ret;
+}
+
+PRIORS*		CreateExpPrior(double Mean)
 {
 	PRIORS* Ret;
 
@@ -434,6 +475,17 @@ double	FindChiP(double Z, double DF, double Width)
 	return P2 - P1;
 }
 
+double	LhChiP(double Rate, double Mean, double Sig, double Width)
+{
+	double Z, Ret;
+
+	Z = ChiToZ(Rate, Mean, Sig);
+	Ret = FindChiP(Z, 1, Width);
+
+	return log(Ret);
+}
+
+/*
 double	CalcChiPriors(RATES* NRates, RATES* CRates, OPTIONS* Opt)
 {
 	PRIORS	*Prior;
@@ -475,7 +527,7 @@ double	CalcChiPriors(RATES* NRates, RATES* CRates, OPTIONS* Opt)
 
     return NRates->LhPrior - CRates->LhPrior;
 }
-
+*/
 
 double	LnExpP(double x, double Mean, double CatSize)
 {
@@ -538,6 +590,10 @@ double	CaclPriorCost(double Val, PRIORS *Prior, int NoCats)
 
 		case EXP:
 			Ret = LnExpP(Val, Prior->DistVals[0], (double)1/(double)NoCats);
+		break;
+
+		case CHI:
+			Ret = LhChiP(Val, Prior->DistVals[0], Prior->DistVals[1], (double)1.0 / NoCats);
 		break;
 	}
 
@@ -677,8 +733,8 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	if(Opt->RJDummy == TRUE)
 		CalcP += CalcRJDummyPriors(Opt, Rates);
 
-	if(Opt->UseVarRates == TRUE)
-		CalcP += CalcPPPriors(Rates, Opt);
+	if(UseNonParametricMethods(Opt) == TRUE)
+		CalcP += CalcVarRatesPriors(Rates, Opt);
 	
 	if((CalcP == ERRLH) || (IsNum(CalcP) == FALSE))
 	{
@@ -791,4 +847,132 @@ void	CopyRatePriors(PRIORS**APriosList, PRIORS **BPriosList, int NoOfPriors)
 
 	for(PIndex=0;PIndex<NoOfPriors;PIndex++)
 		CopyPrior(APriosList[PIndex], BPriosList[PIndex]);
+}
+
+
+PRIORDIST	StrToPriorDist(char* Str)
+{
+	int			Index;
+
+	MakeLower(Str);
+
+	for(Index=0;Index<NO_PRIOR_DIST;Index++)
+	{
+		if(strcmp(Str, DISTNAMES[Index])==0)
+			return (PRIORDIST)(Index);
+	}
+
+	return (PRIORDIST)-1;
+}
+
+int			CheckPriorDistVals(int Tokes, char **Passed)
+{
+	int Index;
+	double P;
+
+	for(Index=0;Index<Tokes;Index++)
+	{
+		if(IsValidDouble(Passed[Index]) == FALSE)
+		{
+			printf("Cannot convert %s to a valid prior parameter.\n", Passed[Index]);
+			return FALSE;
+		}
+
+		P = atof(Passed[Index]);
+		if(P < 0)
+		{
+			printf("Prior parameters values must be greater than 0, value %f is invalid.\n", P);
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+double*		MakePriorParam(int Tokes, char **Passed)
+{
+	double *Ret;
+	int Index;
+
+	Ret = (double*)malloc(sizeof(double) * Tokes);
+	if(Ret == NULL)
+		MallocErr();
+
+	for(Index=0;Index<Tokes;Index++)
+		Ret[Index] = atof(Passed[Index]);
+
+	return Ret;
+}
+
+
+PRIORS*		CreatePrior(int Tokes, char **Passed)
+{
+	PRIORDIST	PD;
+	double		*PVal;
+	PRIORS		*Ret;
+
+
+	if(Tokes != 2 && Tokes != 3)
+	{
+		printf("Prior requires a distribution name, (beta, gamma, uniform, chi, exp) and distribution  parameters.\n");
+		return NULL;
+	}
+
+	if(StrToPriorDist(Passed[0]) == -1)
+	{
+		printf("Invalid prior distribution name,. valid names are beta, gamma, uniform, chi, exp.\n");
+		return NULL;
+	}
+
+	PD = StrToPriorDist(Passed[0]);
+
+	if(Tokes -1 != DISTPRAMS[PD])
+	{
+		printf("Prior %s requires %d parameters.\n", DISTNAMES[PD]);
+		return NULL;
+	}
+
+	if(CheckPriorDistVals(Tokes-1, &Passed[1]) == FALSE)
+		return NULL;
+
+	PVal = MakePriorParam(Tokes-1, &Passed[1]);
+
+	if(PD == BETA)
+		Ret = CreateBetaPrior(PVal[0], PVal[1]);
+
+	if(PD == GAMMA)
+		Ret = CreateGammaPrior(PVal[0], PVal[1]);
+
+	if(PD == UNIFORM)
+		Ret = CreateUniformPrior(PVal[0], PVal[1]);
+
+	if(PD == CHI)
+		Ret = CreateChiPrior(PVal[0], PVal[1]);
+
+	if(PD == EXP)
+		Ret = CreateExpPrior(PVal[0]);
+
+	free(PVal);
+
+	return Ret;
+}
+
+double		RandFromPrior(RANDSTATES *RS, PRIORS* Prior)
+{
+	double Ret;
+
+	if(Prior->Dist == UNIFORM)
+	{
+		Ret = RandUniDouble(RS, Prior->DistVals[0], Prior->DistVals[1]);
+		return Ret;
+	}
+
+	if(Prior->Dist == EXP)
+	{
+		Ret = RandExp(RS, Prior->DistVals[0]);
+		return Ret;
+	}
+
+	printf("Currently only exponential or uniform distributions are supported.\n");
+	exit(0);
 }

@@ -167,7 +167,6 @@ void	RecTransContNodeLambda(NODE N, double Lambda,  double PathLen)
 		return;
 	}
 
-
 	N->Length = N->Length * Lambda;
 
 	TLen = N->Length + PathLen;
@@ -194,9 +193,9 @@ void	TransContNodeLambda(NODE N, double Lambda, int Norm)
 	ScaleSubTree(N, Scale);
 }
 
-int		NeedToReSetBL(OPTIONS *Opt)
+int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates)
 {
-	if(Opt->UseVarRates == TRUE)
+	if(Rates->Plasty != NULL)
 		return TRUE;
 
 	if(Opt->UseKappa  == TRUE)
@@ -211,6 +210,8 @@ int		NeedToReSetBL(OPTIONS *Opt)
 	if(Opt->UseLambda == TRUE)
 		return TRUE;
 	
+
+
 	return FALSE;
 }
 
@@ -219,13 +220,12 @@ void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 	TREE *Tree;
 	NODE Root;
 	
-	if(NeedToReSetBL(Opt) == FALSE)
+	if(NeedToReSetBL(Opt, Rates) == FALSE)
 		return;
 
 	Tree = Trees->Tree[Rates->TreeNo];
 	Root = Tree->Root;
 	
-
 	if(Opt->UseKappa == TRUE)
 	{
 		if(Opt->EstKappa == TRUE)

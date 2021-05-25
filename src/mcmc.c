@@ -16,7 +16,7 @@
 #include "data.h"
 #include "gamma.h"
 #include "ml.h"
-#include "phyloplasty.h"
+#include "VarRates.h"
 #include "threaded.h"
 #include "schedule.h"
 #include "modelfile.h"
@@ -426,7 +426,7 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 	RATES*		CRates;
 	RATES*		NRates;
 	long long	Itters;
-	double		Heat, StartT, EndT;
+	double		StartT, EndT;
 	SCHEDULE*	Shed;
 	FILE*		ShedFile;
 	FILE*		SaveModelF;
@@ -460,8 +460,8 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 	if(Opt->ModelType == MT_FATTAIL)
 		InitFatTailRates(Opt, Trees, CRates);
 
-	if(Opt->UseVarRates == TRUE)
-		InitPPFiles(Opt, Trees, CRates);
+	if(UseNonParametricMethods(Opt) == TRUE)
+		InitVarRatesFiles(Opt, Trees, CRates);
 
 	if(Opt->ModelType == MT_FATTAIL)
 		InitFattailFile(Opt, Trees);
@@ -578,8 +578,8 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 				if(Opt->UseSchedule == TRUE)
 					PrintShed(Opt, Shed, ShedFile);
 
-				if(Opt->UseVarRates == TRUE)
-					PrintPPOutput(Opt, Trees, CRates, Itters);
+				if(UseNonParametricMethods(Opt) == TRUE)
+					PrintVarRatesOutput(Opt, Trees, CRates, Itters);
 
 				if(Opt->ModelType == MT_FATTAIL)
 					OutputFatTail(Itters, Opt, Trees, CRates);

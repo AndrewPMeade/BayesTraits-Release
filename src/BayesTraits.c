@@ -212,17 +212,18 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // ./Seq/Cropped_Primate_Tree.trees ./Seq/Cropped_Primate_Tree_Data.txt < in.txt > sout.txt
 // ./Seq/BM_Trim_Hard.trees ./Seq/BM_Trim.txt < in.txt > sout.txt
 
+// ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
+
 int main(int argc, char** argv)
 {
 	TREES*		Trees;
 	OPTIONS*	Opt; 
-	int			NoSites;
 	char		*TreeFN, *DataFN; 
+	int			NoSites;
 
 	DISPLAY_INFO;
 
 	//btdebug_init();
-	NoSites = 0;
 
 	if(argc == 2)
 	{

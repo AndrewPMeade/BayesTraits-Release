@@ -24,6 +24,18 @@ void		CopyPrior(PRIORS *A, PRIORS *B);
 
 double		LnExpP(double x, double Mean, double CatSize);
 
-PRIORS*		CreatUniPrior(double Min, double Max);
-PRIORS*		CreatExpPrior(double Mean);
+
+PRIORS*		CreateBetaPrior(double Mean, double Var);
+PRIORS*		CreateGammaPrior(double Mean, double Var);
+PRIORS*		CreateUniformPrior(double Min, double Max);
+PRIORS*		CreateChiPrior(double Mean, double Var);
+PRIORS*		CreateExpPrior(double Mean);
+
+
+PRIORDIST	StrToPriorDist(char* Str);
+
+PRIORS*		CreatePrior(int Tokes, char **Passed);
+
+double		RandFromPrior(RANDSTATES *RS, PRIORS* Prior);
+
 #endif

@@ -9,7 +9,7 @@
 #include "continuous.h"
 #include "praxis.h"
 #include "RandLib.h"
-#include "phyloplasty.h"
+#include "VarRates.h"
 #include "threaded.h"
 #include "trees.h"
 #include "part.h"
@@ -1404,15 +1404,14 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 //	SaveTrees("DTest.trees", Trees); exit(0);
 //	TransContNodeLambda(Trees->Tree[Rates->TreeNo]->Root, 0.5, TRUE);
 
-	if(NeedToReSetBL(Opt) == TRUE)
+	if(NeedToReSetBL(Opt, Rates) == TRUE)
 	{
 		ReSetBranchLength(Trees->Tree[Rates->TreeNo]);
 	
-		Rates->OU = 0;
 		TransformContrastTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
-		if(Opt->UseVarRates == TRUE)
-			Plasty(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
+		if(Rates->Plasty != NULL)
+			VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 		
 	//	SaveTrees("DTest.trees", Trees); exit(0);
 	}

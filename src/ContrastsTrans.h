@@ -12,6 +12,6 @@ void	TransContNodeKappa(NODE N, double Kappa, int Norm);
 void	TransContNodeOU(NODE N, double OU, int Norm);
 void	TransContNodeLambda(NODE N, double Lambda, int Norm);
 
-int		NeedToReSetBL(OPTIONS *Opt);
+int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates);
 
 #endif
