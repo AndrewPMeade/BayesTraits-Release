@@ -18,7 +18,7 @@ void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* She
 void	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt);
 
 
-void	VarRatesCopy(RATES *R1, RATES *R2);
+void	VarRatesCopy(TREES *Trees, RATES *R1, RATES *R2);
 void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise);
 
 void	InitVarRatesFiles(OPTIONS *Opt, TREES *Trees, RATES *Rates);

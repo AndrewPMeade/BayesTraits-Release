@@ -40,6 +40,7 @@
 #include "RJLocalScalar.h"
 #include "Priors.h"
 #include "TransformTree.h"
+#include "Part.h"
 
 #include <gsl/gsl_cdf.h>
 
@@ -111,7 +112,13 @@ char* VarRatesTypeToStr(TRANSFORM_TYPE Type)
 	return NULL;
 }
 
+NODE	GetVRNode(TREES *Trees, int TreeNo, VAR_RATES_NODE *VR_Node)
+{
+	if(VR_Node->NodeList[TreeNo] == NULL)
+		VR_Node->NodeList[TreeNo] = PartGetMRCA(Trees->Tree[TreeNo], VR_Node->Part);
 
+	return VR_Node->NodeList[TreeNo];
+}
 
 double	RandGamma(double Shape, double Scale)
 {
@@ -128,11 +135,11 @@ int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type, OPTIONS *Opt)
 	
 	if(N == NULL)
 		return FALSE;
-
-	Part = N->Part;
-
+	
 	if(N->Length == 0)
 		return FALSE;
+
+	Part = N->Part;
 
 	if(Type == VR_BL || Type == VR_NODE)
 	{
@@ -174,6 +181,12 @@ VARRATES*	CreatVarRates(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	return Ret;
 }
 
+void		FreeVarRatesNode(VAR_RATES_NODE* VarRatesNode)
+{
+	free(VarRatesNode->NodeList);
+	free(VarRatesNode);
+}
+
 void	FreeVarRates(VARRATES* Plasty)
 {
 	int Index;
@@ -181,7 +194,7 @@ void	FreeVarRates(VARRATES* Plasty)
 	if(Plasty->NodeList != NULL)
 	{
 		for(Index=0;Index<Plasty->NoNodes;Index++)
-			free(Plasty->NodeList[Index]);
+			FreeVarRatesNode(Plasty->NodeList[Index]);
 		
 		free(Plasty->NodeList);
 	}
@@ -191,27 +204,43 @@ void	FreeVarRates(VARRATES* Plasty)
 }
 
 
-VAR_RATES_NODE*	CreateVarRatesNode(long long It, NODE N)
+void			BlankNodeList(NODE *NList, int NoTrees)
+{
+	int TIndex;
+
+	for(TIndex=0;TIndex<NoTrees;TIndex++)
+		NList[TIndex] = NULL;
+}
+
+VAR_RATES_NODE*	AllocVarRatesNode(int NoTrees)
+{
+	VAR_RATES_NODE	*Ret;
+
+	Ret = (VAR_RATES_NODE*)SMalloc(sizeof(VAR_RATES_NODE));
+	Ret->NodeList = (NODE*)SMalloc(sizeof(NODE) * NoTrees);
+
+	
+	BlankNodeList(Ret->NodeList, NoTrees);
+
+	return Ret;
+}
+
+
+VAR_RATES_NODE*	CreateVarRatesNode(long long It, NODE N, int NoTrees)
 {
 	VAR_RATES_NODE	*Ret;
 	
-	Ret = (VAR_RATES_NODE*)malloc(sizeof(VAR_RATES_NODE));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = AllocVarRatesNode(NoTrees);
 
 	Ret->NodeID = It;
 
 	Ret->Node = N;
+	Ret->Part = N->Part;
 
 	Ret->Scale = -1;
 	Ret->Type = VR_BL;
 
 	return Ret;
-}
-
-void		FreeVarRatesNode(VAR_RATES_NODE* VarRatesNode)
-{
-	free(VarRatesNode);
 }
 
 TRANSFORM_TYPE	GetVarRatesType(RANDSTATES *RS, SCHEDULE *Shed)
@@ -248,16 +277,17 @@ void	SetVRScalar(OPTIONS *Opt, RATES *Rates, VAR_RATES_NODE *PNode)
 	PNode->Scale = RandFromPrior(Rates->RNG, Prior);
 }
 
-int		CountPlasyID(VAR_RATES_NODE *PNode, VARRATES *Plasty)
+int		CountPlasyID(VAR_RATES_NODE *VRNode, VARRATES *VarRates)
 {
 	int Ret, Index;
 
 	Ret = 0;
-	for(Index=0;Index<Plasty->NoNodes;Index++)
+	for(Index=0;Index<VarRates->NoNodes;Index++)
 #ifdef VARRATES_ONE_OP_PER_NODE
-		if(Plasty->NodeList[Index]->Node->ID == PNode->Node->ID)
+		if(VRNode->Part->PartID == VarRates->NodeList[Index]->Part->PartID )
 #else
-		if(PNode->Node->ID == Plasty->NodeList[Index]->Node->ID && PNode->Type == Plasty->NodeList[Index]->Type)
+		if( VRNode->Part->PartID == VarRates->NodeList[Index]->Part->PartID && 
+			VRNode->Type == VarRates->NodeList[Index]->Type)
 #endif
 			Ret++;
 
@@ -295,8 +325,6 @@ void	CheckPlasyNodes(VARRATES *VarRates)
 	}
 }
 
-
-
 void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, TRANSFORM_TYPE Type, NODE N, long long It)
 {
 	VAR_RATES_NODE	*PNode;
@@ -304,9 +332,13 @@ void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, TRANSFORM_TYPE Ty
 
 	VarRates = Rates->VarRates;
 
-	PNode = CreateVarRatesNode(It, N);
+	PNode = CreateVarRatesNode(It, N, Trees->NoTrees);
 
 	PNode->Type = Type;
+
+	PNode->Part = N->Part;
+
+//	PNode->NodeList[Rates->TreeNo] = N;
 
 	if(PNode->Type == VR_BL || PNode->Type == VR_NODE)
 		SetVRNodeBLRates(PNode, Rates->RS);
@@ -319,11 +351,25 @@ void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, TRANSFORM_TYPE Ty
 	Rates->LnJacobion = 0;
 }
 
-void	VarRatesDelNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
+int GetVRPosFromNode(VARRATES* VarRates, VAR_RATES_NODE *VRNode)
+{
+	int Index;
+
+	for(Index=0;Index<VarRates->NoNodes;Index++)
+	{
+		if(VarRates->NodeList[Index] == VRNode)
+			return Index;
+	}
+
+	return -1;
+}
+
+void	VarRatesDelNode(RATES *Rates, TREES *Trees, OPTIONS *Opt,  VAR_RATES_NODE *VRNode)
 {
 	VARRATES	*VarRates;
 	VAR_RATES_NODE	**NList;
 	int			Index;
+	int			No;
 	
 	VarRates = Rates->VarRates;
 	
@@ -336,7 +382,8 @@ void	VarRatesDelNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
 		return;
 	}
 	
-	FreeVarRatesNode(VarRates->NodeList[No]);
+	No = GetVRPosFromNode(VarRates, VRNode);
+	FreeVarRatesNode(VRNode);
 	VarRates->NodeList[No] = NULL;
 
 	NList = (VAR_RATES_NODE**)SMalloc(sizeof(VAR_RATES_NODE*) * (VarRates->NoNodes - 1));
@@ -456,7 +503,7 @@ int		IsVarRateTypeRate(TRANSFORM_TYPE Type)
 	return FALSE;
 }
 
-
+/*
 int GetPlastyNode(int ID, VARRATES *VarRates, TRANSFORM_TYPE Type)
 {
 	int Index;
@@ -475,31 +522,41 @@ int GetPlastyNode(int ID, VARRATES *VarRates, TRANSFORM_TYPE Type)
 	}
 
 	return -1;
+}*/
+
+VAR_RATES_NODE* NodeHasVRSclar(TREES *Trees, NODE N, VARRATES *VarRates, TRANSFORM_TYPE Type, int TreeNo)
+{
+	NODE VNode;
+	int Index;
+
+	for(Index=0;Index<VarRates->NoNodes;Index++)
+	{
+		VNode = GetVRNode(Trees, TreeNo, VarRates->NodeList[Index]);
+		if(VNode == N && Type == VarRates->NodeList[Index]->Type)
+			return VarRates->NodeList[Index];
+	}
+
+	return NULL;
 }
 
-int		ValidMoveNode(VARRATES *VarRates, NODE N, TRANSFORM_TYPE Type, OPTIONS *Opt)
-{
-	int ID;
 
+int		ValidMoveNode(VARRATES *VarRates, NODE N, TRANSFORM_TYPE Type, OPTIONS *Opt, int TreeNo)
+{
 	if(N == NULL)
 		return FALSE;
 	
 	if(IsValidVarRatesNode(N, Type, Opt) == FALSE)
 		return FALSE;
 	
-	ID = GetPlastyNode(N->ID, VarRates, Type);
-
-	if(ID == -1)
+	if(NodeHasVRSclar(Opt->Trees, N, VarRates, Type, TreeNo) == NULL)
 		return TRUE;
 
 	return FALSE;
 }
 
-void	MakeTNodeList(OPTIONS *Opt, VARRATES *Plasty, TRANSFORM_TYPE Type, NODE N, NODE* List, int *Size)
+void	MakeTNodeList(OPTIONS *Opt, int TreeNo, VARRATES *Plasty, TRANSFORM_TYPE Type, NODE N, NODE* List, int *Size)
 {
-//	int Index;
-
-	if(ValidMoveNode(Plasty, N, Type, Opt) == TRUE)
+	if(ValidMoveNode(Plasty, N, Type, Opt, TreeNo) == TRUE)
 	{
 		List[*Size] = N;
 		(*Size)++;
@@ -508,8 +565,6 @@ void	MakeTNodeList(OPTIONS *Opt, VARRATES *Plasty, TRANSFORM_TYPE Type, NODE N, 
 	if(N->Tip == TRUE)
 		return;
 
-//	for(Index=0;Index<N->NoNodes;Index++)
-//		MakeTNodeList(Opt, Plasty,Type, N->NodeList[Index], List, Size);
 }
 
 int		CompVarRatesNodeSize(int S1, int S2)
@@ -521,8 +576,8 @@ int		CompVarRatesNodeType(VAR_RATES_NODE *VR1, VAR_RATES_NODE *VR2)
 {
 	int Size1, Size2;
 	
-	Size1 = VR1->Node->Part->NoTaxa;
-	Size2 = VR2->Node->Part->NoTaxa;
+	Size1 = VR1->Part->NoTaxa;
+	Size2 = VR2->Part->NoTaxa;
 
 	if((VR1->Type == VR_BL || VR1->Type == VR_NODE) && (VR2->Type == VR_BL || VR2->Type == VR_NODE))
 		return CompVarRatesNodeSize(Size1, Size2);
@@ -546,46 +601,8 @@ int		CompVarRatesNode(const void *Vr1, const void *Vr2)
 	if((*VR1)->Type != (*VR2)->Type)
 		return CompVarRatesNodeType((*VR1), (*VR2));
 
-	return CompVarRatesNodeSize((*VR1)->Node->Part->NoTaxa, (*VR2)->Node->Part->NoTaxa);
+	return CompVarRatesNodeSize((*VR1)->Part->NoTaxa, (*VR2)->Part->NoTaxa);
 }
-
-/*
-void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
-{
-	VARRATES	*VarRates;
-	VAR_RATES_NODE	*PNode;
-	NODE		N;
-	int			No;
-	int			Index;
-
-	VarRates = Rates->VarRates;
-
-	No = RandUSLong(Rates->RS) % VarRates->NoNodes;
-	PNode = VarRates->NodeList[No];
-
-	N = PNode->Node;
-	 
-	VarRates->NoTempList = 0;
-	if(ValidMoveNode(VarRates, N->Ans, PNode->Type) == TRUE)
-		VarRates->TempList[VarRates->NoTempList++] = N->Ans;
-
-	if(N->Tip == FALSE)
-	{
-		for(Index=0;Index<N->NoNodes;Index++)
-			MakeTNodeList(Opt, VarRates, PNode->Type, N->NodeList[Index], VarRates->TempList, &VarRates->NoTempList);
-	}
-
-	if(VarRates->NoTempList == 0)
-		return;
-	
-	No = RandUSLong(Rates->RS) % VarRates->NoTempList;
-	PNode->Node = VarRates->TempList[No];
-
-	qsort(VarRates->NodeList, VarRates->NoNodes, sizeof(VAR_RATES_NODE*), CompVarRatesNode);
-
-	return;
-}
-*/
 
 void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
@@ -594,30 +611,37 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	NODE		N;
 	int			No;
 	int			Index;
+	int			TreeNo;
 
 	VarRates = Rates->VarRates;
+	TreeNo = Rates->TreeNo;
 
 	No = RandUSLong(Rates->RS) % VarRates->NoNodes;
 	PNode = VarRates->NodeList[No];
 
-	N = PNode->Node;
+
+	N = PNode->NodeList[TreeNo];
 
 	VarRates->NoTempList = 0;
-	if(ValidMoveNode(VarRates, N->Ans, PNode->Type, Opt) == TRUE)
+	if(ValidMoveNode(VarRates, N->Ans, PNode->Type, Opt, TreeNo) == TRUE)
 		VarRates->TempList[VarRates->NoTempList++] = N->Ans;
 
 	if(N->Tip == FALSE)
 	{
 		for(Index=0;Index<N->NoNodes;Index++)
-			MakeTNodeList(Opt, VarRates, PNode->Type, N->NodeList[Index], VarRates->TempList, &VarRates->NoTempList);
+			MakeTNodeList(Opt, TreeNo, VarRates, PNode->Type, N->NodeList[Index], VarRates->TempList, &VarRates->NoTempList);
 	}
 	
 	if(VarRates->NoTempList == 0)
 		return;
 	
 	No = RandUSLong(Rates->RS) % VarRates->NoTempList;
-	PNode->Node = VarRates->TempList[No];
 
+	PNode->Part = VarRates->TempList[No]->Part;
+	BlankNodeList(PNode->NodeList, Trees->NoTrees);
+
+	PNode->NodeList[TreeNo] = VarRates->TempList[No];
+	
 	qsort(VarRates->NodeList, VarRates->NoNodes, sizeof(VAR_RATES_NODE*), CompVarRatesNode);
 	
 	if(N->Tip == TRUE)
@@ -679,7 +703,7 @@ void	DumpVarRatesInfo(VARRATES *VarRates)
 void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed, long long It)
 {
 	VARRATES	*VarRates;
-	int			PNodeID;
+	VAR_RATES_NODE	*VRNode;
 	NODE		N;
 	TRANSFORM_TYPE		Type;
 	
@@ -688,34 +712,37 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	VarRates = Rates->VarRates;
 	
 	N = GetVarRatesNode(Opt, Rates, Trees, Type);
+	
+	VRNode = NodeHasVRSclar(Trees, N, VarRates, Type, Rates->TreeNo);
 
-	PNodeID = GetPlastyNode(N->ID, VarRates, Type);
-
-	if(PNodeID == -1)
+	if(VRNode == NULL)
 		VarRatesAddNode(Rates, Trees, Opt, Type, N, It);
 	else
-		VarRatesDelNode(Rates, Trees, Opt, PNodeID);	
+		VarRatesDelNode(Rates, Trees, Opt, VRNode);	
 
 	qsort(VarRates->NodeList, VarRates->NoNodes, sizeof(VAR_RATES_NODE*), CompVarRatesNode);
 	
 	CheckPlasyNodes(VarRates);
 }
 
-VAR_RATES_NODE *CloneVarRatesNode(VAR_RATES_NODE *N2)
+VAR_RATES_NODE *CloneVarRatesNode(VAR_RATES_NODE *VR_Node, int NoTrees)
 {
 	VAR_RATES_NODE *Ret;
 
-	Ret = (VAR_RATES_NODE*)SMalloc(sizeof(VAR_RATES_NODE));
+	Ret = AllocVarRatesNode(NoTrees);
 
-	Ret->Node = N2->Node;
-	Ret->Scale= N2->Scale;
-	Ret->Type = N2->Type;
-	Ret->NodeID = N2->NodeID;
+	memcpy(Ret->NodeList, VR_Node->NodeList, sizeof(NODE) * NoTrees);
+		
+	Ret->Node = VR_Node->Node;
+	Ret->Scale= VR_Node->Scale;
+	Ret->Type = VR_Node->Type;
+	Ret->NodeID = VR_Node->NodeID;
+	Ret->Part = VR_Node->Part;
 
 	return Ret;
 }
 
-void	BlankPlasty(VARRATES *P)
+void	EmptyPlasty(VARRATES *P)
 {
 	int Index;
 
@@ -730,32 +757,32 @@ void	BlankPlasty(VARRATES *P)
 	P->NoNodes = 0;
 }
 
-void	VarRatesCopy(RATES *R1, RATES *R2)
+void	VarRatesCopy(TREES *Trees, RATES *R1, RATES *R2)
 {
 	VAR_RATES_NODE	**NList;
-	VARRATES	*P1, *P2;
+	VARRATES	*VR1, *VR2;
 	int			Index;
 
-	P1 = R1->VarRates;
-	P2 = R2->VarRates;
+	VR1 = R1->VarRates;
+	VR2 = R2->VarRates;
 
-	if(P2->NoNodes == 0)
+	if(VR2->NoNodes == 0)
 	{
-		BlankPlasty(P1);
+		EmptyPlasty(VR1);
 		return;
 	}
 
-	NList = (VAR_RATES_NODE**)SMalloc(sizeof(VAR_RATES_NODE*) * P2->NoNodes);
+	NList = (VAR_RATES_NODE**)SMalloc(sizeof(VAR_RATES_NODE*) * VR2->NoNodes);
 
-	for(Index=0;Index<P2->NoNodes;Index++)
-		NList[Index] = CloneVarRatesNode(P2->NodeList[Index]);
+	for(Index=0;Index<VR2->NoNodes;Index++)
+		NList[Index] = CloneVarRatesNode(VR2->NodeList[Index], Trees->NoTrees);
 
-	BlankPlasty(P1);
+	EmptyPlasty(VR1);
 
-	P1->NodeList = NList;
-	P1->NoNodes = P2->NoNodes;
+	VR1->NodeList = NList;
+	VR1->NoNodes = VR2->NoNodes;
 
-	P1->Alpha = P2->Alpha;
+	VR1->Alpha = VR2->Alpha;
 }
 
 void	ScaleNode(NODE N,  double Scale)
@@ -836,6 +863,8 @@ void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 	TREE *Tree;
 	VARRATES *VarRates;
 	double SumBL, Scale;
+	VAR_RATES_NODE *VR_Node;
+	NODE Node;
 
 //	return;
 
@@ -847,7 +876,13 @@ void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 		SumBL = SumNodeBL(Tree->Root);
 
 	for(Index=0;Index<VarRates->NoNodes;Index++)
-		VarRatesNode(Trees, Tree, VarRates->NodeList[Index]->Node, VarRates->NodeList[Index]->Scale, VarRates->NodeList[Index]->Type);
+	{
+		VR_Node = VarRates->NodeList[Index];
+
+		Node = GetVRNode(Trees, TNo, VR_Node);
+	
+		VarRatesNode(Trees, Tree, Node, VR_Node->Scale, VR_Node->Type);
+	}
 
 	if(Normalise == FALSE)
 		return;
@@ -855,7 +890,6 @@ void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 	Scale = SumBL / SumNodeBL(Tree->Root);
 	ScaleSubTree(Tree->Root, Scale);
 }
-
 
 void	RecPrintPPNodes(FILE *Out, NODE N)
 {
@@ -872,7 +906,7 @@ void	RecPrintPPNodes(FILE *Out, NODE N)
 }
 
 
-void	VarRatesLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	VarRatesLogFileHeaderSingleTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE	*T;
 	int		Index;
@@ -893,7 +927,7 @@ void	VarRatesLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		N = T->NodeList[Index];
 		No = 0;
 		CTaxaBelow(N, &No);
-		fprintf(Opt->VarRatesLog, "%d\t%f\t%d\t", N->ID, N->Length, No);
+		fprintf(Opt->VarRatesLog, "%zu\t%f\t%d\t", N->Part->PartID, N->Length, No);
 		RecPrintPPNodes(Opt->VarRatesLog, N);
 		fprintf(Opt->VarRatesLog, "\n");
 	}
@@ -906,11 +940,62 @@ void	VarRatesLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	fflush(Opt->VarRatesLog);
 }
 
+void	VarRatesLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	PART		*Part;	
+	int			Index;
+	VARRATES	*VarRates;
+	FILE		*Str;
+
+
+	Str = Opt->VarRatesLog;
+	VarRates = Rates->VarRates;
+
+
+	fprintf(Str, "No Parts:\t%zu\n", Trees->NoParts);
+	fprintf(Str, "PartID\tFrequency\tProbability\tNoTaxa\tTaxa\n", Trees->NoParts);
+
+	for(Index=0;Index<Trees->NoParts;Index++)
+	{
+		Part = Trees->PartList[Index];
+		PrintPart(Str, Trees, Part);
+		fprintf(Str, "\n");
+	}
+
+	fprintf(Str, "It\tLh\tLh + Prior\tTree No\tNo Pram\tAlpha\tSigma^2\tAlpha Scale Prior\t");
+	fprintf(Str, "Part ID\tScaler\tCreat It\tNode / Branch\t");
+	fprintf(Str, "\n");
+	
+/*
+	fprintf(Opt->VarRatesLog, "%d\n", Trees->NoTaxa);
+	for(Index=0;Index<Trees->NoTaxa;Index++)
+		fprintf(Opt->VarRatesLog, "%d\t%s\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
+
+	fprintf(Opt->VarRatesLog, "%d\n", T->NoNodes);
+	for(Index=0;Index<T->NoNodes;Index++)
+	{
+		N = T->NodeList[Index];
+		No = 0;
+		CTaxaBelow(N, &No);
+		fprintf(Opt->VarRatesLog, "%d\t%f\t%d\t", N->ID, N->Length, No);
+		RecPrintPPNodes(Opt->VarRatesLog, N);
+		fprintf(Opt->VarRatesLog, "\n");
+	}
+
+
+	fprintf(Opt->VarRatesLog, "\n");
+	*/
+}
+
 void	IntiVarRatesLogFile(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	Opt->VarRatesLog = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_VAR_RATES);
 
-	VarRatesLogFileHeader(Opt, Trees, Rates);
+	if(Trees->NoTrees == 1)
+		VarRatesLogFileHeaderSingleTree(Opt, Trees, Rates);
+	else
+		VarRatesLogFileHeader(Opt, Trees, Rates);
+
 
 	fflush(Opt->VarRatesLog);
 }
@@ -976,7 +1061,10 @@ void	LogVarRatesResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 
 	Out = Opt->VarRatesLog;
 
-	fprintf(Out, "%lld\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, VarRates->NoNodes);
+	if(Trees->NoTrees == 1)
+		fprintf(Out, "%lld\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, VarRates->NoNodes);
+	else
+		fprintf(Out, "%lld\t%f\t%f\t%d\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, Rates->TreeNo, VarRates->NoNodes);
 
 	if(Opt->Model == M_CONTRAST_CORREL)
 	{
@@ -1005,7 +1093,7 @@ void	LogVarRatesResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 		PNode = VarRates->NodeList[Index];
 		N = PNode->Node;
 
-		fprintf(Out, "%d\t", N->ID);
+		fprintf(Out, "%zu\t", PNode->Part->PartID);
 		fprintf(Out, "%f\t", PNode->Scale);
 		fprintf(Out, "%llu\t", PNode->NodeID);
 
@@ -1139,7 +1227,7 @@ VAR_RATES_NODE*	CreateTextPNode(NODE N, double Scale, long long CIt, TRANSFORM_T
 {
 	VAR_RATES_NODE*	Ret;
 	
-	Ret = CreateVarRatesNode(CIt, N);
+	Ret = CreateVarRatesNode(CIt, N, 1);
 
 	Ret->Scale = Scale;
 	Ret->Type = Type;

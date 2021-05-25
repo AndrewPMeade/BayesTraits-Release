@@ -145,8 +145,10 @@ void btlin_copylowDMATRIX(DMATRIX* dm)
   }
 }
 
-void btlin_makeSymmetricDMATRIX(char uplo, DMATRIX* dm) {
-  int i,l,u,n,col,dim,colxnr;
+void btlin_makeSymmetricDMATRIX(char uplo, DMATRIX* dm)
+{
+//	int col;
+  int i,l,u,n,dim,colxnr;
   double *a = dm->m;
   n = dm->nrows;
   dim = n*n;

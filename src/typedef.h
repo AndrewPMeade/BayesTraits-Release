@@ -674,6 +674,10 @@ typedef struct
 {
 	int NoTaxa;
 	int *Taxa;
+
+	int		Freq;
+	double	Prob;
+	size_t	PartID;
 } PART;
 
 struct INODE
@@ -966,17 +970,23 @@ typedef struct
 	int max_nchildren;
 #endif
 	
+	PART	**PartList;
+	size_t	NoParts;
 } TREES;
 
 typedef struct
 {
-	NODE			Node;
+//	NODE			Node;
 	double			Scale;
 	TRANSFORM_TYPE	Type;
 	long long		NodeID;
 
 	int				Fixed;
 	int				UserSupplied;
+
+	PART			*Part;
+	NODE			*NodeList;
+
 } VAR_RATES_NODE;
 
 typedef struct

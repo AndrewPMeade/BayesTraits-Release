@@ -2138,7 +2138,7 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 		CopyContrastRates(Opt, A, B, Opt->Trees->NoSites);
 
 	if(UseNonParametricMethods(Opt) == TRUE)
-		VarRatesCopy(A, B);
+		VarRatesCopy(Opt->Trees, A, B);
 
 	if(A->Hetero != NULL)
 		CopyHetero(A->Hetero, B->Hetero);

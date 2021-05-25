@@ -64,7 +64,6 @@ void	ScaleSubTree(NODE N, double Scale);
 void	ScaleTrees(TREES *Trees, double Scale);
 void	ScaleUserTrees(TREES *Trees, double Scale);
 
-
 NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo);
 
 void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees);
@@ -74,5 +73,7 @@ void	PrintTreeBL(TREE *Tree);
 
 
 void	CheckSingleDescendent(TREES *Trees);
+
+
 
 #endif
