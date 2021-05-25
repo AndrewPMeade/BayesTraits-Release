@@ -141,7 +141,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		//btocl_AllocLhInfo(Trees);
 #endif
 	}
-
+	
 	if(FindNoEstDataPoint(Trees) > 0)
 		Opt->EstData = TRUE;
 	else
@@ -152,7 +152,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 	if(Opt->SaveTrees == TRUE)
 		InitialiseOutputTrees(Opt, Trees);
-
+	
 	SaveUserBrachLengths(Trees);
 }
 

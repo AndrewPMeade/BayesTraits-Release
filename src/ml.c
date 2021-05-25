@@ -382,19 +382,23 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 void	MLTest2(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	double R, Lh;
-	return;
-	R = 1.0;
-	Rates->Lambda = 1.0;
+
+
+	InitContinusTree(Opt, Trees, Rates->TreeNo);
+	Rates->Kappa = .10;
+	Rates->OU = 54;
 	Lh = Likelihood(Rates, Trees, Opt);
-	printf("%f\t%f\n", R, Lh);
+	printf("%f\n", Lh);
 
 	exit(0);
 
-	for(R=0.0001;R<1;R+=0.0001)
+	for(R=0.000;R<100;R++)
 	{
-		Rates->Lambda = R;
+		Rates->OU = R;
 		Lh = Likelihood(Rates, Trees, Opt);
 		printf("%f\t%f\n", R, Lh);
+
+		fflush(stdout);
 	}
 	 
 	exit(0);

@@ -2,7 +2,7 @@
 #define TYPEDEFS_H
 
 
-#pragma warning(disable : 4996)
+//#pragma warning(disable : 4996)
 #include <stdio.h>
 #include <assert.h>
 #include <gsl/gsl_randist.h>
@@ -127,7 +127,7 @@
 #define	NO_RJ_LOCAL_SCALAR	4
 
 // Minimum number of taxa to transform a node (kappa, lamabed ect)
-#define MIN_TAXA_VR_TRANS	5
+//#define MIN_TAXA_VR_TRANS	5
 
 // Minimum number of taxa to Var Rate a ndoe
 #define MIN_TAXA_VR_NODE	0
@@ -296,6 +296,7 @@ typedef enum
 	CCSCHED, 
 	CADDTIMESLICE,
 	CADDPATTERN,
+	CSETMINTAXATRANS,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -371,15 +372,16 @@ static char    *COMMANDSTRINGS[] =
 	"rjdummy",		"rjd",
 	"scaletrees",	"sct", 
 	"rjlocaltransform", "rjlt", 
-	"fattailnormal", "ftn",
-	"addtag",		"at",
-	"localtransform",	"lt",
-	"distdata",			"dd",
-	"nolh",			"nl",
-	"savetrees",	"st",
-	"customschedule", "csched", 
-	"addtimeslice", "ats",
-	"addpattern", "ap",
+	"FatTailNormal", "ftn",
+	"AddTag",		"at",
+	"LocalTransform",	"lt",
+	"DistData",			"dd",
+	"NoLh",			"nl",
+	"SaveTrees",	"st",
+	"CustomSchedule", "csched", 
+	"AddTimeSlice", "ats",
+	"AddPattern", "ap",
+	"SetMinTransTaxaNo", "smttn",
 	""
 };
 
@@ -1220,6 +1222,9 @@ typedef struct
 
 	PATTERN		**PatternList;
 	int			NoPatterns;
+
+	int			MinTransTaxaNo;
+
 } OPTIONS;
 
 typedef struct

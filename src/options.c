@@ -28,15 +28,14 @@
 
 void	FreeRecNodes(OPTIONS *Opt, int NoSites);
 void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type);
+void	AddConAnsStatePrior(OPTIONS *Opt, int SiteNo);
 
 char*	FormatStr(char* RateName)
 {
 	char* Ret, *Temp;
 	int	Index;
 	
-	Temp = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Temp == NULL)
-		MallocErr();
+	Temp = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
 	for(Index=0;Index<RATEOUTPUTLEN;Index++)
 		Temp[Index] = ' ';
@@ -651,13 +650,8 @@ char**	ModelBRateName(OPTIONS* Opt)
 	char*	Buffer;
 	int		No, Index;
 
-	Ret = (char**)malloc(sizeof(char*)*Opt->NoOfRates);
-	if(Ret == NULL)
-		MallocErr();
-
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
+	Ret = (char**)SMalloc(sizeof(char*)*Opt->NoOfRates);
+	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
@@ -709,10 +703,8 @@ char**	ContrastRateNames(OPTIONS *Opt)
 	
 	NOS = Opt->Trees->NoSites;
 	 
-	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
-	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
-	if((Ret == NULL) || (Buffer == NULL))
-		MallocErr();
+	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
 	
 	i = 0;
 	for(Index=0;Index<Opt->Trees->NoSites;Index++)
@@ -955,12 +947,31 @@ void	GetGeoPriors(OPTIONS *Opt)
 	AddPriorToOpt(Opt, Prior);
 }
 
+void	SetAnsStatesEst(OPTIONS *Opt, TREES *Trees)
+{
+	int TIndex, SIndex;
+	TAXA *Taxa;
 
-void	AllocRatePriors(OPTIONS *Opt)
+	if(EstData(Trees) == FALSE)
+		return;
+
+	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
+	{
+		Taxa = Trees->Taxa[TIndex];
+		for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
+			if(Taxa->EstDataP[SIndex] == TRUE)
+				AddConAnsStatePrior(Opt, SIndex+1);
+	}
+}
+
+void	AllocRatePriors(OPTIONS *Opt, TREES *Trees)
 {
 	int		Index;
 	PRIOR	*Prior;
 	
+	if(Opt->ModelType == MT_CONTINUOUS)
+		SetAnsStatesEst(Opt, Trees);
+
 	if(Opt->Model == M_FATTAIL)
 	{
 		SetFatTailPrior(Opt);
@@ -1144,7 +1155,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		
 		Ret->PriorCats	=	100;
 		
-		AllocRatePriors(Ret);
+		AllocRatePriors(Ret, Trees);
 
 		Ret->UseSchedule	= TRUE;
 	}
@@ -1245,6 +1256,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->NoPatterns = 0;
 	Ret->PatternList = NULL;
+
+	Ret->MinTransTaxaNo = 10;
 
 	free(Buffer);
 
@@ -1486,7 +1499,7 @@ COMMANDS	StringToCommand(char *Str)
 		return CCOMMENT;
 	do
 	{
-		if((strcmp(Str, COMMANDSTRINGS[SIndex]) == 0) || (strcmp(Str, COMMANDSTRINGS[SIndex+1]) == 0))
+		if(StrICmp(Str, COMMANDSTRINGS[SIndex]) == 0 || StrICmp(Str, COMMANDSTRINGS[SIndex+1]) == 0)
 			return (COMMANDS)CIndex;
 		
 		SIndex+=2;
@@ -2170,23 +2183,28 @@ void	AddRecNodeCheck(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
 	}
 }
 
-void	SetConAnsStatesPriors(OPTIONS *Opt, TREES *Trees)
+void	AddConAnsStatePrior(OPTIONS *Opt, int SiteNo)
 {
 	char *Buffer;
-	int Index;
 	PRIOR *Prior;
 
 	Buffer = (char*)SMalloc(sizeof(char) * 128);
 
-	for(Index=0;Index<Trees->NoSites;Index++)
-	{
-		sprintf(Buffer, "AncState-%d", Index+1);
-		RemovePriorFormOpt(Buffer, Opt);
-		Prior = CreateUniformPrior(Buffer, -100, 100);
-		AddPriorToOpt(Opt, Prior);
-	}
+	sprintf(Buffer, "AncState-%d", SiteNo);
 
+	RemovePriorFormOpt(Buffer, Opt);
+	Prior = CreateUniformPrior(Buffer, -100, 100);
+	AddPriorToOpt(Opt, Prior);
+	
 	free(Buffer);
+}
+
+void	SetConAnsStatesPriors(OPTIONS *Opt, TREES *Trees)
+{
+	int Index;
+		
+	for(Index=0;Index<Trees->NoSites;Index++)
+		AddConAnsStatePrior(Opt, Index+1);
 }
 
 void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
@@ -3639,7 +3657,7 @@ void	OptAddPattern(OPTIONS *Opt, int Tokes, char **Passed)
 	int Index;
 	TAG *Tag;
 
-	if(Tokes < 2)
+	if(Tokes < 3)
 	{
 		printf("AddPattern takes a pattern name and one or more tags.\n");
 		exit(0);
@@ -3899,6 +3917,33 @@ void	SetMLAlg(OPTIONS *Opt, int Tokes, char **Passed)
 		free(Opt->MLAlg);
 
 	Opt->MLAlg = StrMake(Passed[1]);
+}
+
+void	SetMinTaxaNoTrans(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	int No;
+
+	if(Tokes != 2)
+	{
+		printf("SetMinTransTaxaNo takes a minimum number of taxa to transfom a node using RJ kappa, lambda, delta and OU.\n");
+		exit(1);
+	}
+
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("Cannot Convert %s to a valid integer.\n", Passed[1]);
+		exit(1);
+	}
+
+	No = atoi(Passed[1]);
+
+	if(No < 1)
+	{
+		printf("Number of taxa must be greater than 1.\n");
+		exit(1);
+	}
+
+	Opt->MinTransTaxaNo = No;
 }
 
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
@@ -4366,6 +4411,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CADDPATTERN)
 		OptAddPattern(Opt, Tokes, Passed);
+
+	if(Command == CSETMINTAXATRANS)
+		SetMinTaxaNoTrans(Opt, Tokes, Passed);
 
 	return FALSE;
 }

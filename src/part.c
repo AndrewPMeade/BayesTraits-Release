@@ -242,7 +242,7 @@ PART*	CreatePart(TREES *Trees, int NoTaxa, char **TaxaList)
 
 		if(Taxa == NULL)
 		{
-			printf("Invalid taxa name:\t%s\n", TaxaList[Index]);
+			printf("Invalid taxa name:\t%s\n", TaxaList[Index]); 
 			exit(0);
 		}
 		

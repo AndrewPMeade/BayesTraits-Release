@@ -95,7 +95,7 @@ double	RandGamma(double Shape, double Scale)
 }
 
 
-int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type)
+int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type, OPTIONS *Opt)
 {
 	PART *Part;
 	
@@ -121,7 +121,7 @@ int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type)
 		return TRUE;
 	}
 
-	if(Part->NoTaxa >= MIN_TAXA_VR_TRANS)
+	if(Part->NoTaxa >= Opt->MinTransTaxaNo)
 		return TRUE;
 
 	return FALSE;
@@ -446,14 +446,14 @@ int GetPlastyNode(int ID, VARRATES *VarRates, TRANSFORM_TYPE Type)
 	return -1;
 }
 
-int		ValidMoveNode(VARRATES *VarRates, NODE N, TRANSFORM_TYPE Type)
+int		ValidMoveNode(VARRATES *VarRates, NODE N, TRANSFORM_TYPE Type, OPTIONS *Opt)
 {
 	int ID;
 
 	if(N == NULL)
 		return FALSE;
 	
-	if(IsValidVarRatesNode(N, Type) == FALSE)
+	if(IsValidVarRatesNode(N, Type, Opt) == FALSE)
 		return FALSE;
 	
 	ID = GetPlastyNode(N->ID, VarRates, Type);
@@ -468,7 +468,7 @@ void	MakeTNodeList(OPTIONS *Opt, VARRATES *Plasty, TRANSFORM_TYPE Type, NODE N, 
 {
 //	int Index;
 
-	if(ValidMoveNode(Plasty, N, Type) == TRUE)
+	if(ValidMoveNode(Plasty, N, Type, Opt) == TRUE)
 	{
 		List[*Size] = N;
 		(*Size)++;
@@ -572,7 +572,7 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	N = PNode->Node;
 
 	VarRates->NoTempList = 0;
-	if(ValidMoveNode(VarRates, N->Ans, PNode->Type) == TRUE)
+	if(ValidMoveNode(VarRates, N->Ans, PNode->Type, Opt) == TRUE)
 		VarRates->TempList[VarRates->NoTempList++] = N->Ans;
 
 	if(N->Tip == FALSE)
@@ -599,7 +599,7 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	return;
 }
 
-NODE	GetVarRatesNode(RATES *Rates, TREES *Trees, TRANSFORM_TYPE	Type)
+NODE	GetVarRatesNode(OPTIONS *Opt, RATES *Rates, TREES *Trees, TRANSFORM_TYPE	Type)
 {
 	VARRATES	*VarRates;
 	TREE		*Tree;
@@ -613,7 +613,7 @@ NODE	GetVarRatesNode(RATES *Rates, TREES *Trees, TRANSFORM_TYPE	Type)
 	{
 		Pos = RandUSInt(Rates->RS) % Tree->NoNodes;
 		N = Tree->NodeList[Pos];
-	}while(IsValidVarRatesNode(N, Type) == FALSE); 
+	}while(IsValidVarRatesNode(N, Type, Opt) == FALSE); 
 	
 	return N;
 }
@@ -656,7 +656,7 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 			
 	VarRates = Rates->VarRates;
 	
-	N = GetVarRatesNode(Rates, Trees, Type);
+	N = GetVarRatesNode(Opt, Rates, Trees, Type);
 
 	PNodeID = GetPlastyNode(N->ID, VarRates, Type);
 
@@ -669,7 +669,6 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	
 	CheckPlasyNodes(VarRates);
 }
-
 
 VAR_RATES_NODE *CloneVarRatesNode(VAR_RATES_NODE *N2)
 {
@@ -786,13 +785,13 @@ void	CheckVarRatesData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	{
 		N = VarRates->NodeList[Index]->Node;
 
-		if(N->Part->NoTaxa < MIN_TAXA_VR_TRANS)
+		if(N->Part->NoTaxa < Opt->MinTransTaxaNo)
 		{
 			printf("err.\n");
 			exit(1);
 		}
 
-		if(IsValidVarRatesNode(VarRates->NodeList[Index]->Node, VarRates->NodeList[Index]->Type) == FALSE)
+		if(IsValidVarRatesNode(VarRates->NodeList[Index]->Node, VarRates->NodeList[Index]->Type, Opt) == FALSE)
 		{
 			printf("err2.\n");
 			exit(1);

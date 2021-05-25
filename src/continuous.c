@@ -864,6 +864,8 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 	Transpose(TempCon->X, TempCon->TranX);
 	MatrixMult(TempCon->TranX, CV->TVTTemp, TempCon->NX);
 
+//	PrintMatrix(TempCon->NX, "NX=",stdout);
+
 	Err = InvertMatrix(TempCon->NX->me, TempCon->NX->NoOfCols, CV->TVect1, (int*)CV->TVect3, CV->InvXVX->me);
 	
 	if(Err != FALSE)
@@ -871,8 +873,7 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 		printf("Error inverting sigma matrix, matrix is singular\n");
 		exit(0);
 	}
-
-
+	
 	MatrixByVectMult(CV->InvXVX, CV->TVect2, CV->TVect1);
 	
 	if(Opt->AlphaZero == FALSE)
@@ -1389,7 +1390,7 @@ double FindT(MATRIX *V)
 	return Ret;
 }
 /*
-void	CalcOU(MATRIX *V,  double Alpha)
+void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 {
 	int x,y;
 	double T, T1, T2;
@@ -1431,6 +1432,7 @@ void	CalcOU(MATRIX *V,  double Alpha)
 }
 */
 
+
 double	GetOUSharedPath(TREES *Trees, TREE *Tree, double Shared, int X, int Y)
 {
 	int Index, IDX, IDY;
@@ -1452,17 +1454,18 @@ double	GetOUSharedPath(TREES *Trees, TREE *Tree, double Shared, int X, int Y)
 
 	Ret = (DX - Shared) + (DY - Shared);
 
-//	printf("%d\t%d\t%f\n", X+1, Y+1, Ret);
 	return Ret;
 }
-
+/*
+// Have to be careful. 
+// Function uses both tree BL and V, nothing can be applied beforehand. 
 void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 {
 	int x,y;
 	double RPath, T, T1, T2;
 	double Scale;
-
-	//	PrintMatrix(V, "V=", stdout);exit(0);
+		
+//		PrintMatrix(V, "V=", stdout);exit(0);
 	//	Alpha = 0.1;
 
 	if(Alpha <= MIN_OU)
@@ -1476,7 +1479,6 @@ void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 	{
 		for(y=x;y<V->NoOfRows;y++)
 		{
-
 			RPath = GetOUSharedPath(Trees, Tree, V->me[x][y], x, y);
 			//T1 = exp(-2.0 * Alpha * (T - V->me[x][y]));
 			T1 = exp(-Alpha * RPath);
@@ -1494,6 +1496,56 @@ void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 		
 //	VToTree(V, Tree);
 //	SaveTrees("vtree.trees", Trees);
+	PrintMatrix(V, "V=", stdout);exit(0);
+
+}
+*/
+
+
+double	CalcOUCell(double Alpha, double Scale, double XPath, double YPath, double Shared)
+{
+	double RPath, T1, T2;
+	
+	RPath = (XPath - Shared) + (YPath - Shared);
+	
+	T1 = exp(-Alpha * RPath);
+	T2 = 1.0 - exp(-2.0 * Alpha * Shared);
+
+	T1 = T1 * T2;
+
+	return T1 * Scale;
+}
+
+void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
+{
+	int x,y;
+	double Scale;
+
+	//	PrintMatrix(V, "V=", stdout);exit(0);
+	//	Alpha = 0.1;
+
+	if(Alpha <= MIN_OU)
+		Alpha = MIN_OU;
+
+	Scale = 1.0 / (2.0 * Alpha);
+
+	// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know. 
+	// Off diag must be done first. 
+	for(x=0;x<V->NoOfCols;x++)
+	{
+		for(y=x+1;y<V->NoOfRows;y++)
+		{
+			V->me[x][y] = CalcOUCell(Alpha, Scale, V->me[x][x], V->me[y][y], V->me[x][y]);
+			V->me[y][x] = V->me[x][y];
+		}
+	}
+
+	// do diag
+	for(x=0;x<V->NoOfCols;x++)
+		V->me[x][x] = CalcOUCell(Alpha, Scale, V->me[x][x], V->me[x][x], V->me[x][x]);
+
+	//	VToTree(V, Tree);
+	//	SaveTrees("vtree.trees", Trees);
 //	PrintMatrix(V, "V=", stdout);exit(0);
 }
 
@@ -1789,16 +1841,22 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	if(Opt->InvertV	== TRUE)
 	{
+	//	PrintMatrix(Tree->ConVars->V, "V = ", stdout);
+
 		if(Opt->EstKappa == TRUE)
 			MakeKappaV(Trees, Tree, Rates->Kappa);
 		else
 			CopyMatrix(Tree->ConVars->V, Tree->ConVars->TrueV);
+
 
 		if(Opt->EstOU == TRUE)
 			CalcOU(Trees, Tree, Tree->ConVars->V, Rates->OU);
 
 		if(Opt->FixOU != -1)
 			CalcOU(Trees, Tree, Tree->ConVars->V, Opt->FixOU);
+
+//		PrintMatrix(Tree->ConVars->V, "V = ", stdout);
+
 
 		if(Opt->EstDelta == TRUE)
 			CalcDelta(Tree->ConVars->V, Rates->Delta);
@@ -1912,7 +1970,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	
 	Ret = Ret + Det + Val;
 	
-	if(ValidLh(Rates->Lh, Opt->ModelType) == FALSE)
+	if(ValidLh(Ret, Opt->ModelType) == FALSE)
 		Ret = ERRLH;
 	
 	Rates->Lh = Ret;

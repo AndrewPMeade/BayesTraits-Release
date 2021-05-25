@@ -125,16 +125,15 @@ void	SetFossils(TREES *Trees, OPTIONS *Opt)
 	RECNODE	*RNode;
 	int		Index, TIndex;
 	NODE	N;
-
-	if(Opt->UseCovarion == TRUE)
-	{
-		printf("CV not supported with Fossil, Please contact support if you need this feature\n");
-		exit(1);
-	}
-
-
+	
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
+		if(Opt->UseCovarion == TRUE)
+		{
+			printf("CV not supported with Fossil, Please contact support if you need this feature\n");
+			exit(1);
+		}
+
 		RNode = Opt->RecNodeList[Index];
 		if(RNode->NodeType == FOSSIL)
 		{
@@ -145,7 +144,6 @@ void	SetFossils(TREES *Trees, OPTIONS *Opt)
 				N->FossilMask = MakeFossilMask(RNode, Trees->NoStates, Opt->Model);
 			}
 		}
-
 	}
 }
 

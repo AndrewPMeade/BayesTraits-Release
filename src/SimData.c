@@ -109,9 +109,7 @@ FILE*	OpenSimOutFile(char *BaseFN)
 	FILE *Ret;
 	char *Buffer;
 
-	Buffer = (char*)malloc(sizeof(char) * (strlen(BaseFN)+64));
-	if(Buffer == NULL)
-		MallocErr();
+	Buffer = (char*)SMalloc(sizeof(char) * (strlen(BaseFN)+64));
 
 	sprintf(Buffer, "%s.sim.txt", BaseFN);
 
@@ -121,6 +119,11 @@ FILE*	OpenSimOutFile(char *BaseFN)
 
 	return Ret;
 }
+// ./Seq/CommunalSongSubSet.trees ./Seq/Sim.data.txt < in.txt > sout.txt 
+// ./Seq/CommunalSongSubSet.trees ./Seq/MattingSystem.txt < in.txt > sout.txt
+// ./Seq/BirdTreeSubSet.trees ./Seq/MediumCommunalTerritory.txt < in.txt > sout.txt
+
+// ./Seq/Tobias/MatingSystem.trees ./Seq/Tobias/MatingSystem.txt < ./Seq/Tobias/in.txt > ./Seq/Tobias/sout.txt
 
 void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
@@ -134,15 +137,16 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 //	BuildAllSateDS(Trees);
 
 	OutF = OpenSimOutFile(Opt->LogFN);
-
 	
 	RS = CreateSeededRandStates(Opt->Seed);
 
-//	Rates->Rates[0] = 0.000001;
-//	Rates->Rates[0] = 1.503441;
+	Rates->Rates[0] = 1;
+	Rates->Rates[1] = 10;
+	Rates->Rates[2] = 10;
+	Rates->Rates[3] = 1;
 
-	for(Index=0;Index<Rates->NoOfRates;Index++)
-		Rates->Rates[Index] = 1.0;
+//	for(Index=0;Index<Rates->NoOfRates;Index++)
+//		Rates->Rates[Index] = 1.0;
 
 	Rates->TreeNo = 0;
 

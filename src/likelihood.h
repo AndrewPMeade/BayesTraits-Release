@@ -16,8 +16,11 @@ double		LhPraxis(void* PState, double *List);
 
 int			IsNum(double n);
 
-int			SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt);
+int			SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *InvInfo, double *RateP, double *Pi);
+
 int			SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma);
+int			SetUpAllAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt);
+
 
 void		LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt);
 

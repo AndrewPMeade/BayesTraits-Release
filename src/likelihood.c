@@ -603,13 +603,13 @@ int		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *Inv
 	if(Model == M_DESCINDEP)
 	{
 		if(Trees->UseCovarion == FALSE)
-			return CreateInDEPAMatrix(InvInfo, RateP, Rates, Trees);
+			return CreateInDEPAMatrix(InvInfo, Rates, Trees, RateP);
 		else
-			return CreateInDEPAMatrixCoVar(InvInfo, Rates, Trees);
+			return CreateInDEPAMatrixCoVar(InvInfo, Rates, Trees, RateP);
 	}
 
 	if(Model == M_DESCCV)
-		return CreateDepCVAMatrix(InvInfo, RateP, Rates, Trees);
+		return CreateDepCVAMatrix(InvInfo, Rates, Trees, RateP);
 
 	if(Model == M_DESCHET)
 	{
@@ -635,7 +635,8 @@ int		SetUpAllAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	for(PIndex=0;PIndex<Rates->NoPatterns;PIndex++)
 	{
-		Err = SetUpAMatrix(Opt->Model, Rates, Trees, Trees->NoStates, Opt->UseCovarion, Trees->InvInfo[PIndex], &Rates->FullRates[Pos], Rates->Pis);
+		//SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *InvInfo, double *RateP, double *Pi)
+		Err = SetUpAMatrix(Opt->Model, Rates, Trees, Trees->NoStates, Trees->InvInfo[PIndex], &Rates->FullRates[Pos], Rates->Pis);
 		if(Err != 0)
 			return Err;
 
@@ -897,9 +898,11 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 				Err = SetRPMatrix(Trees, N, Trees->PList[N->ID], Gamma);
 			else
 			{
-				if(Opt->AnalyticalP == FALSE)
+				if(Opt->AnalyticalP == TRUE)
+					Err = SetAnalyticalPMatrix(Trees, N, Trees->PList[N->ID], Rates->FullRates[0], Gamma);
+				else
 				{
-					InvInfo = Trees->InvInfo;
+					InvInfo = Trees->InvInfo[N->PatternNo];
 
 					if(Opt->Model == M_DESCHET)
 					{
@@ -909,15 +912,13 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 
 					Err = SetStdPMatrix(InvInfo, Trees, N, Trees->PList[N->ID], Gamma);
 				}
-				else
-					Err = SetAnalyticalPMatrix(Trees, N, Trees->PList[N->ID], Rates->FullRates[0], Gamma);
 			}
 		}
 
 		if(Err == TRUE)
 			NoErr++;
 	}
-	
+
 	if(NoErr > 0)
 		return TRUE;
 	
