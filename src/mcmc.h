@@ -3,6 +3,11 @@
 
 #include "typedef.h"
 
-void	MCMC(OPTIONS *Opt, TREES *Trees);
-void	LhOverAllModels(OPTIONS *Opt, TREES *Trees);
+#ifdef	 JNIRUN
+	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj);
+#else
+	void	MCMC(OPTIONS *Opt, TREES *Trees);
+#endif
+
+	void	LhOverAllModels(OPTIONS *Opt, TREES *Trees);
 #endif

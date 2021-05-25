@@ -29,8 +29,6 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 	Analsis = GetAnalsis(Trees);
 	CheckDataWithModel(DataFN, Trees, Model);
 
-
-
 	Opt = CreatOptions(Model, Analsis, Trees->NoOfStates, TreeFN, DataFN, Trees->SymbolList, Trees);
 
 	return Opt;
@@ -43,6 +41,18 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	FlattenRecNode(Opt);
 
 	Opt->LogFile		= OpenWrite(Opt->LogFN);
+
+	#ifdef JNIRUN
+		Opt->LogFileRead = OpenRead(Opt->LogFN);
+		Opt->LogFileBuffer = (char*)malloc(sizeof(char) * LOGFILEBUFFERSIZE);
+		if(Opt->LogFileBuffer == NULL)
+			MallocErr();
+		Opt->PassedOut = (char**)malloc(sizeof(char*) * LOGFILEBUFFERSIZE);
+		if(Opt->PassedOut == NULL)
+			MallocErr();
+	#endif
+
+
 	Trees->UseCovarion	= Opt->UseCovarion;
 
 	if(Opt->DataType == CONTINUOUS)

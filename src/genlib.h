@@ -54,7 +54,7 @@ void		FreeNumFile(NUMFILE *NumFile);
 FILE*		OpenWrite(char *FileName);
 FILE*		OpenRead(char *FileName);
 void		MallocErrFull(char* FileName, int LineNo);
-char*		StrMake(char* Str);
+char*		StrMake(const char* Str);
 void		MakeUpper(char* Str);
 void		MakeLower(char* Str);
 void		RemoveChar(char c, char* String);
@@ -76,4 +76,5 @@ void		MakeComplement(char* DNA);
 void 		Swap(void** a, void** b);
 void		PrintFixSize(char *String, int Size, FILE* Str);
 
+void		GotoFileEnd(FILE *File, char *Buffer, int Size);
 #endif

@@ -3,6 +3,8 @@
 #include <string.h>
 #include <math.h>
 
+#include "JBayesTraits_JAnalysis.h"
+
 #include "typedef.h"
 #include "trees.h"
 #include "data.h"
@@ -17,9 +19,88 @@
 #include "genlib.h"
 #include "continuous.h"
 #include "initialise.h"
+#include "rand.h"
 
 #include "./MathLib/dcalc.h"
 #include "./MathLib/mconf.h"
+
+#include <jni.h>
+
+#define	MAXJANALYSIS 128
+			 
+
+int		SetOnce = FALSE;
+/*
+char	*DeadAnalysis[MAXJANALYSIS];
+
+void	InitBTJNI()
+{
+	int i;
+	if(SetOnce == TRUE)
+		return;
+	SetOnce = TRUE;
+
+	for(i=0;i<MAXJANALYSIS;i++)
+		DeadAnalysis[i] = NULL;
+}
+*/
+
+
+
+
+jobjectArray	ProcessLine(JNIEnv *Env, jobject Obj, OPTIONS *Opt)
+{
+	int				Tokes;
+	int				Index;
+	jobjectArray	Ret;
+	jstring			Str;
+	jclass			StrClass;
+
+	StrClass = (*Env)->FindClass(Env, "java/lang/String");
+
+	ReplaceChar(' ', '_', Opt->LogFileBuffer);
+	Tokes = MakeArgv(Opt->LogFileBuffer, Opt->PassedOut, LOGFILEBUFFERSIZE);
+	for(Index=0;Index<Tokes;Index++)
+		ReplaceChar('_', ' ', Opt->PassedOut[Index]);
+
+	Ret = (*Env)->NewObjectArray(Env, Tokes, StrClass, NULL);
+	
+	for(Index=0;Index<Tokes;Index++)
+	{
+		Str = (*Env)->NewStringUTF(Env, Opt->PassedOut[Index]);
+		(*Env)->SetObjectArrayElement(Env, Ret, Index, Str);
+	}
+
+	return Ret;
+}
+
+void	ProcessHeaders(JNIEnv *Env, jobject Obj, OPTIONS *Opt)
+{
+	jobjectArray StrArr;
+	jclass		classID;
+	jmethodID	mID;
+
+	StrArr = ProcessLine(Env, Obj, Opt);
+	
+	classID = (*Env)->GetObjectClass(Env, Obj);
+	mID		= (*Env)->GetMethodID(Env, classID, "SetHeader", "([Ljava/lang/String;)V");
+	(*Env)->CallVoidMethod(Env, Obj, mID, StrArr);	
+}
+
+void	AddResults(JNIEnv *Env, jobject Obj, OPTIONS *Opt)
+{
+	jobjectArray StrArr;
+	jclass		classID;
+	jmethodID	mID;
+
+	StrArr = ProcessLine(Env, Obj, Opt);
+
+	classID = (*Env)->GetObjectClass(Env, Obj);
+	mID		= (*Env)->GetMethodID(Env, classID, "AddResults", "([Ljava/lang/String;)V");
+	(*Env)->CallVoidMethod(Env, Obj, mID, StrArr);	
+	
+}
+
 
 MODEL	GetModelFromNo(int ModelNo)
 {
@@ -47,12 +128,32 @@ ANALSIS	AnalsisFromNo(int AnalisisNo)
 	exit(0);
 }
 
-void JavaProgress(int No)
+
+void	SetProgress(JNIEnv *Env, jobject Obj, int Progress)
 {
-	
+	jclass		classID;
+	jmethodID	mID;
+
+	classID = (*Env)->GetObjectClass(Env, Obj);
+	mID		= (*Env)->GetMethodID(Env, classID, "SetProgress", "(I)V");
+	(*Env)->CallVoidMethod(Env, Obj, mID, Progress);
 }
 
-int mainJNI(int Size, char** RunP)
+void	CheckStop(JNIEnv *Env, jobject Obj, TREES *Trees)
+{
+	jclass		classID;
+	jfieldID	fID;
+	jboolean	Stop;
+
+	classID = (*Env)->GetObjectClass(Env, Obj);
+	fID		= (*Env)->GetFieldID(Env, classID, "Stop", "Z");
+	Stop	= (*Env)->GetBooleanField(Env, Obj, fID);
+
+	if(Stop == JNI_TRUE)
+		Trees->JStop = TRUE;
+}
+
+int mainJNI(JNIEnv *Env, jobject Obj, int Size, char** RunP)
 {
 	TREES*		Trees=NULL;
 	OPTIONS*	Opt=NULL; 
@@ -66,7 +167,13 @@ int mainJNI(int Size, char** RunP)
 	DataFN	= RunP[1];
 	Model	= GetModelFromNo(atoi(RunP[2]));
 	Analysis= AnalsisFromNo(atoi(RunP[3]));
-	SetSeed();
+	
+
+	if(SetOnce == FALSE)
+	{
+		SetSeed();
+		SetOnce = TRUE;
+	}
 
 	Trees  = LoadTrees(TreeFN);
 	LoadData(DataFN, Trees);
@@ -77,10 +184,10 @@ int mainJNI(int Size, char** RunP)
 	PreProcess(Opt, Trees);
 
 	if(Opt->Analsis == ANALMCMC)
-		MCMC(Opt, Trees);
+		MCMC(Opt, Trees, Env, Obj);
 
 	if(Opt->Analsis == ANALML)
-		FindML(Opt, Trees);
+		FindML(Opt, Trees, Env, Obj);
 
 	FreeTrees(Trees, Opt);
 	FreeOptions(Opt);
@@ -88,15 +195,60 @@ int mainJNI(int Size, char** RunP)
 	return 0;
 }
 
-int	main(int argc, char **argv)
+
+/*
+
+#ifdef _MANAGED
+#pragma managed(push, off)
+#endif
+
+*/
+
+JNIEXPORT void JNICALL Java_JBayesTraits_JAnalysis_RunBayesTraits
+/* JNIEXPORT void JNICALL Java_JBayesTraits_JModelRun_RunBayesTraits */
+  (JNIEnv *Env, jobject Obj, jobjectArray Arr)
 {
-	TEXTFILE*	TF;
-	int			Ret;
+	int		Index;
+	int		ArrLen;
+	char**	Commands;
+	jstring strElem;
 
-	TF = LoadTextFile(argv[1], FALSE);
+	ArrLen = (*Env)->GetArrayLength(Env, Arr);
 
-	Ret = mainJNI(TF->NoOfLines, TF->Data);
+	Commands = (char**)malloc(sizeof(char*) * ArrLen);
+	if(Commands == NULL)
+		MallocErr();
+	
+	for(Index=0;Index<ArrLen;Index++) 
+	{
+		strElem = (jstring)(*Env)->GetObjectArrayElement(Env, Arr, Index);
+		if(strElem != NULL) 
+		{
+			const char *strTemp = (*Env)->GetStringUTFChars(Env, strElem, NULL);
+			Commands[Index] = StrMake(strTemp);
+			(*Env)->ReleaseStringChars(Env, strElem, (jchar*)strTemp);
+		//	(*Env)->ReleaseStringUTFChars(Env, strElem, (jchar*)strTemp);
+			(*Env)->DeleteLocalRef(Env, strElem);
+		}
+	}
 
-	FreeTextFile(TF);
-	return Ret;
+	mainJNI(Env, Obj, ArrLen, Commands);
+
+	for(Index=0;Index<ArrLen;Index++)
+		free(Commands[Index]);
+	free(Commands);
 }
+
+/*
+BOOL APIENTRY DllMain( HMODULE hModule,
+                       DWORD  ul_reason_for_call,
+                       LPVOID lpReserved
+					 )
+{
+    return TRUE;
+}
+
+#ifdef _MANAGED
+#pragma managed(pop)
+#endif
+*/

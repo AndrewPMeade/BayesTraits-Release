@@ -4,8 +4,17 @@
 #pragma warning(disable : 4996)
 #include <stdio.h>
 #include "matrix.h"
+//#include <Windows.h>
 
-#define	JNIRUN	TRUE
+//CRITICAL_SECTION CriticalSection; 
+
+
+#define	JNIRUN
+
+#ifdef	 JNIRUN
+	#include <JNI.h>
+#endif
+
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000 
@@ -25,10 +34,13 @@
 #define NOOFOPERATORS	10
 #define ZERORATENO		-1
 
-extern double LhPraxis(double *);
+//extern double LhPraxis(LhPraxisdouble *);
 
 #define GAMMAMAX	10000
 #define GAMMAMIN	0.05
+
+#define	LOGFILEBUFFERSIZE	65536
+
 
 typedef enum
 {
@@ -269,6 +281,12 @@ typedef enum
 
 typedef struct
 {
+	int	K;
+	unsigned long *States;
+} RANDSTATES;
+
+typedef struct
+{
 	int		No;
 	char*	Name;
 	char**	DesDataChar;
@@ -370,13 +388,13 @@ typedef struct
 	double		*TVect3;
 	double		*SVect;
 
+
 	TAXADIST	*TaxaDist;
 	
 	double		LogDetOfV;
 	double		LogDetOfSigma;
 
-	double		*DepVect;	
-
+	double		*DepVect;
 } CONVAR;
 
 typedef	struct
@@ -409,7 +427,34 @@ typedef	struct
 	MATRIX		*Q;
 	MATRIX		*A;
 
+	MATRIX		*TempA;
+	double		*TempVect1;
+	double		*TempVect2;
+	double		*TempVect3;
+	double		*TempVect4;
+
 } INVINFO;
+
+typedef struct
+{
+	/* Used in FindInvV */
+	double	*T1;
+	int		*T2;
+	MATRIX*	TMat;
+	
+	/* FindMLRagVals */
+	MATRIX	*X;
+	MATRIX	*TranX;
+	MATRIX	*NX;
+	double	*Y;
+
+	/* FindRegVar */
+	MATRIX	*XT;
+	MATRIX	*RVX;
+	MATRIX	*TempV1;
+	MATRIX	*TempV2;
+
+} TEMPCONVAR;
 
 typedef struct
 {
@@ -441,6 +486,9 @@ typedef struct
 	int			MaxNOS;
 	int			*NOSList;
 	char		**SiteSymbols;
+	TEMPCONVAR	*TempConVars;
+
+	int			JStop;
 } TREES;
 
 typedef struct
@@ -476,6 +524,7 @@ typedef struct
 	int			Sample;
 	int			BurnIn;
 	int			MLTries;
+
 	int			NoOfRecNodes;
 	
 	RECNODE		RecNode;
@@ -487,6 +536,9 @@ typedef struct
 	char		*TreeFN;
 	char		*DataFN;
 	FILE		*LogFile;
+	FILE		*LogFileRead;
+	char		*LogFileBuffer;
+	char		**PassedOut;
 
 	int			Summary;
 
@@ -624,6 +676,8 @@ typedef struct
 	int		ModelNo;
 
 	int		VarDataSite;
+
+	RANDSTATES*	RandStates;
 } RATES;
 
 typedef struct

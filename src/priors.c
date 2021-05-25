@@ -469,14 +469,14 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	}
 }
 
-void	MutatePriors(PRIORS **PriosList, int NoOfPriors)
+void	MutatePriors(RATES *Rates, PRIORS **PriosList, int NoOfPriors)
 {
 	int PIndex;
 
 	for(PIndex=0;PIndex<NoOfPriors;PIndex++)
 	{
-		PriosList[PIndex]->DistVals[0] = GenRand() * 100;
-		PriosList[PIndex]->DistVals[1] = GenRand() * 100;
+		PriosList[PIndex]->DistVals[0] = GenRandState(Rates->RandStates) * 100;
+		PriosList[PIndex]->DistVals[1] = GenRandState(Rates->RandStates) * 100;
 	}
 }
 
@@ -512,11 +512,11 @@ void	MutatePriorsNormal(PRIORS **PriosList, int NoOfPriors, double Dev)
 	}
 }
 
-double ChangePrior(double Rate, double dev)
+double ChangePrior(RANDSTATES *RandStates, double Rate, double dev)
 {
 	double	Ret;
 
-	Ret = (GenRand() * dev) - (dev / 2.0); 
+	Ret = (GenRandState(RandStates) * dev) - (dev / 2.0); 
 
 	Ret += Rate;
 
@@ -530,7 +530,7 @@ double ChangePrior(double Rate, double dev)
 }
 
 
-void	CopyMutPriors(PRIORS **APriosList, PRIORS **BPriosList, int NoOfPriors, double Dev)
+void	CopyMutPriors(RANDSTATES *RandStates, PRIORS **APriosList, PRIORS **BPriosList, int NoOfPriors, double Dev)
 {
 	int		PIndex;
 	PRIORS *APrios=NULL;
@@ -548,7 +548,7 @@ void	CopyMutPriors(PRIORS **APriosList, PRIORS **BPriosList, int NoOfPriors, dou
 		APrios->RateNo	= BPrios->RateNo;
 
 		for(RIndex=0;RIndex<DISTPRAMS[APrios->Dist];RIndex++)
-			APrios->DistVals[RIndex] = ChangePrior(BPrios->DistVals[RIndex], Dev);
+			APrios->DistVals[RIndex] = ChangePrior(RandStates, BPrios->DistVals[RIndex], Dev);
 	}
 }
 

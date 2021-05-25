@@ -15,7 +15,7 @@ void		MallocErrFull(char* FileName, int LineNo)
 	exit(1);
 }
 
-char*		StrMake(char* Str)
+char*		StrMake(const char* Str)
 {
 	char*	Ret;
 
@@ -855,3 +855,8 @@ void Swap(void** a, void** b)
 	*b = t;
 }
 
+
+void	GotoFileEnd(FILE *File, char *Buffer, int Size)
+{
+	while(fgets(Buffer, Size, File) != NULL);
+}

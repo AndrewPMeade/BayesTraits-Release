@@ -1,6 +1,9 @@
 #ifndef __RANDOM
 #define __RANDOM
 
+#include "typedef.h"
+
+
 unsigned long	RandomLong(void);
 double			RandomReal(void);
 long			RandLong(long Low, long High);
@@ -14,9 +17,14 @@ double			nrand(void);
 unsigned long	GetSeed(void);
 
 /* A good random number genetrater */
-double			GenRand(void);
-int				SmallRand(unsigned int Mag);
-int				IntRand();
+//double			GenRand(void);
+//int				SmallRand(unsigned int Mag);
+//int				IntRand();
 
 void			DirichletRandomVariable(double *alp, double *z, int n);
+
+RANDSTATES*		CreateRandStates(void);
+void			FreeRandStates(RANDSTATES* RandS);
+double			GenRandState(RANDSTATES* RandS);
+
 #endif

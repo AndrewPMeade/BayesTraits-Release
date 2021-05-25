@@ -487,7 +487,15 @@ void	FreeOptions(OPTIONS *Opt)
 	free(Opt->TreeFN);
 	free(Opt->LogFN);
 	fclose(Opt->LogFile);
-	
+
+	if(Opt->LogFileRead != NULL)
+		fclose(Opt->LogFileRead);
+
+	if(Opt->LogFileBuffer != NULL)
+		free(Opt->LogFileBuffer);
+
+	if(Opt->PassedOut != NULL)
+		free(Opt->PassedOut);
 
 	free(Opt->ResTypes);
 	free(Opt->ResNo);
@@ -813,7 +821,10 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		MallocErr();
 	strcpy(Ret->LogFN, &Buffer[0]);
 
-	Ret->LogFile = NULL;
+	Ret->LogFile		= NULL;
+	Ret->LogFileRead	= NULL;
+	Ret->LogFileBuffer	= NULL;
+	Ret->PassedOut		= NULL;		
 
 	if(Ret->Analsis == ANALML)
 	{

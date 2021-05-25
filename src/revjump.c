@@ -239,7 +239,7 @@ int		PickSplitGroup(MAPINFO *MapInfo)
 	return Ret;
 }
 
-int*	MakeSplitMask(MAPINFO *MapInfo, int GroupNo)
+int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
 {
 	int	*Ret=NULL;
 	int	Index;
@@ -255,7 +255,7 @@ int*	MakeSplitMask(MAPINFO *MapInfo, int GroupNo)
 	G0 = G1 = 0;
 	for(Index=0;Index<GSize-1;Index++)
 	{
-		if(GenRand() < 0.5)
+		if(GenRandState(Rates->RandStates) < 0.5)
 		{
 			Ret[Index] = 0;
 			G0++;
@@ -269,7 +269,7 @@ int*	MakeSplitMask(MAPINFO *MapInfo, int GroupNo)
 
 	if((G0 > 0) && (G1 > 0))
 	{
-		if(GenRand() < 0.5)
+		if(GenRandState(Rates->RandStates) < 0.5)
 			Ret[Index] = 0;
 		else
 			Ret[Index] = 1;
@@ -286,12 +286,12 @@ int*	MakeSplitMask(MAPINFO *MapInfo, int GroupNo)
 	return Ret;
 }
 
-double	GenDoubleIn(double Min, double Max)
+double	GenDoubleIn(RANDSTATES*	RandStates, double Min, double Max)
 {
 	double	Diff;
 	
 	Diff = Max - Min;
-	return (GenRand() * Diff) + Min;
+	return (GenRandState(RandStates) * Diff) + Min;
 }
 
 
@@ -324,7 +324,7 @@ void	RJSplit(RATES* Rates, OPTIONS* Opt)
 	SplitID	= MapInfo->GroupID[GroupNo];
 
 	GSize = MapInfo->GroupSize[GroupNo];
-	SplitMask = MakeSplitMask(MapInfo, GroupNo);
+	SplitMask = MakeSplitMask(Rates, MapInfo, GroupNo);
 
 	G0=G1=0;
 	for(Index=0;Index<GSize;Index++)
@@ -345,7 +345,7 @@ void	RJSplit(RATES* Rates, OPTIONS* Opt)
 	OldR = Mue / (double)G0;
 	*/
 
-	Mue = GenDoubleIn(-(G0*OldR), (G1*OldR));
+	Mue = GenDoubleIn(Rates->RandStates, -(G0*OldR), (G1*OldR));
 	NewR = OldR + (Mue / (double)G0);
 	OldR = OldR - (Mue / (double)G1);
 

@@ -3,6 +3,7 @@
 #include <string.h>
 #include <math.h>
 
+
 #include "typedef.h"
 #include "trees.h"
 #include "rates.h"
@@ -17,7 +18,8 @@
 #include "ml.h"
 
 #ifdef	 JNIRUN
-	extern	void JavaProgress(int No);
+//	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
+	#include "BayesTraitsJNI.h"
 #endif
 
 void	PrintPriorHeadder(FILE* Str, OPTIONS *Opt, RATES* Rates)
@@ -145,14 +147,32 @@ void	PrintTest(int Itters, RATES* Rates)
 
 void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	while(Likelihood(Rates, Trees, Opt) == ERRLH)
+	double	*Vec;
+
+	if(Likelihood(Rates, Trees, Opt) != ERRLH)
+		return;
+
+	if(Opt->DataType == CONTINUOUS)
 	{
-		SetUpPrarix(Rates, Trees, Opt);
-		PraxisGo(Opt, Rates, Trees);
+		printf("Err (%s,%d): Could not get inish Lh:\n", __FILE__, __LINE__);
+		exit(0);
 	}
+
+	Vec = (double*)malloc(sizeof(double) * Rates->NoOfRates);
+	if(Vec == NULL)
+		MallocErr();
+
+	FindValidStartSet(Vec, Rates, Trees, Opt);
+	memcpy(Rates->Rates, Vec, sizeof(double) * Rates->NoOfRates);
+
+	free(Vec);
 }
 
-void	MCMC(OPTIONS *Opt, TREES *Trees)
+#ifdef	 JNIRUN
+	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
+#else
+	void	MCMC(OPTIONS *Opt, TREES *Trees)
+#endif
 {
 	RATES*		CRates=NULL;
 	RATES*		NRates=NULL;
@@ -168,7 +188,7 @@ void	MCMC(OPTIONS *Opt, TREES *Trees)
 	if(Opt->UseSchedule == TRUE)
 		ShedFile	= OpenWrite(Opt->ScheduleFile);
 	
-	Shed		= CreatSchedule(Opt);
+	Shed = CreatSchedule(Opt);
 
 	if(Opt->UseSchedule == TRUE)
 		PrintShedHeadder(Opt, Shed, ShedFile);
@@ -192,12 +212,23 @@ void	MCMC(OPTIONS *Opt, TREES *Trees)
 		fflush(stdout);
 	#endif
 
-	PrintOptions(Opt->LogFile, Opt); 
+	PrintOptions(Opt->LogFile, Opt);
+
+	#ifdef JNIRUN
+		fflush(Opt->LogFile);
+		GotoFileEnd(Opt->LogFileRead, Opt->LogFileBuffer, LOGFILEBUFFERSIZE);
+	#endif
+
 	PrintRatesHeadder(Opt->LogFile, Opt);
 	PrintPriorHeadder(Opt->LogFile, Opt, CRates);
 
-	InitMCMC(Opt, Trees, CRates);
+	#ifdef JNIRUN
+		fflush(Opt->LogFile);
+		fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
+		ProcessHeaders(Env, Obj, Opt);
+	#endif
 
+	InitMCMC(Opt, Trees, CRates);
 	
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
@@ -222,7 +253,7 @@ void	MCMC(OPTIONS *Opt, TREES *Trees)
 			Heat = Heat + NRates->LogHRatio;
 		}
 		
-	 	if((log(GenRand()) <= Heat) && (NRates->Lh != ERRLH))
+		if((log(GenRandState(CRates->RandStates)) <= Heat) && (NRates->Lh != ERRLH))
 		{
 			Swap(&NRates, &CRates);
 			Acc++;
@@ -252,13 +283,16 @@ void	MCMC(OPTIONS *Opt, TREES *Trees)
 						PrintShed(Opt, Shed, ShedFile);
 
 					BlankSchedule(Shed);
+					#ifdef JNIRUN
+						fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
+						AddResults(Env, Obj, Opt);
+					#endif
 				}
 
-				#ifdef JNIRUN
-					JavaProgress(Itters);
-				#endif
-
 				Acc=0;
+				#ifdef JNIRUN
+					SetProgress(Env, Obj, Itters);
+				#endif
 			}
 		}
 
@@ -291,6 +325,25 @@ void	MCMC(OPTIONS *Opt, TREES *Trees)
 
 			return;
 		}
+
+		#ifdef JNIRUN
+			if(Itters%100==0)
+			{
+				CheckStop(Env, Obj, Trees);
+				if(Trees->JStop == TRUE)
+				{
+					FreePriors(CRates);
+					FreePriors(NRates);
+
+					FreeRates(CRates);
+					FreeRates(NRates);
+
+					free(Shed);
+
+					return;
+				}
+			}
+		#endif
 	}
 }
 
