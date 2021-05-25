@@ -482,6 +482,17 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 		FreePrior(Opt->RJPrior);
 	}
 
+	if(Opt->PriorDelta != NULL)
+		FreePrior(Opt->PriorDelta);
+
+	if(Opt->PriorLambda!= NULL)
+		FreePrior(Opt->PriorLambda);
+
+	if(Opt->PriorKappa != NULL)
+		FreePrior(Opt->PriorKappa);
+
+	if(Opt->PriorOU != NULL)
+		FreePrior(Opt->PriorOU);
 
 	if(Opt->EstDataSites != NULL)
 		free(Opt->EstDataSites);
@@ -819,39 +830,7 @@ void		AllocRestictions(OPTIONS *Opt)
 	}
 }
 
-PRIORS*	CreatDefPrior(OPTIONS *Opt)
-{
-	PRIORS *P;
 
-	P = (PRIORS*)malloc(sizeof(PRIORS));
-	if(P == NULL)
-		MallocErr();
-
-	P->Dist = UNIFORM;
-	P->DistVals = (double*)malloc(sizeof(double) * 2);
-	if(P->DistVals == NULL)
-		MallocErr();
-
-	if(Opt->DataType == DISCRETE)
-	{
-		P->DistVals[0] = 0;
-		P->DistVals[1] = 100;
-	}
-	else
-	{
-		P->DistVals[0] = -100;
-		P->DistVals[1] = 100;
-	} 
-	
-	P->RateNo = -1;
-
-	P->HP		= NULL;
-	P->UseHP	= FALSE;
-	P->OffSet	= 0;
-	P->RateName	= NULL;
-
-	return P;
-}
 
 void	AllocPrios(OPTIONS *Opt)
 {
@@ -863,14 +842,25 @@ void	AllocPrios(OPTIONS *Opt)
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
-		Opt->Priors[Index] = CreatDefPrior(Opt);
+		if(Opt->ModelType == DISCRETE)
+			Opt->Priors[Index] = CreatUniPrior(0, 100);
+		else
+			Opt->Priors[Index] = CreatUniPrior(-100, 100);
+		
 		Opt->Priors[Index]->RateName = StrMake(Opt->RateName[Index]);
 
 		if((Opt->Model == M_CONTRAST_FULL) && (Index >= Opt->Trees->NoOfSites))
 			Opt->Priors[Index]->DistVals[0] = 0;
 	}
 
-	Opt->RJPrior = CreatDefPrior(Opt);
+	Opt->RJPrior = CreatUniPrior(0, 100);
+
+	Opt->PriorDelta = CreatUniPrior(MIN_DELTA, MAX_DELTA);
+	Opt->PriorKappa = CreatUniPrior(MIN_KAPPA, MAX_KAPPA);
+	Opt->PriorLambda= CreatUniPrior(MIN_LAMBDA, MAX_LAMBDA);
+
+	Opt->PriorOU	= CreatUniPrior(MIN_OU, MAX_OU);
+//	Opt->PriorOU	= CreatExpPrior(10.0);
 }
 
 void	SetAllRateDevs(OPTIONS *Opt, double Dev)
@@ -989,12 +979,18 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->AutoTuneDD		= FALSE;
 	Ret->RateDevPerParm	= TRUE;
 
+	Ret->PriorGamma		=	NULL;
+	Ret->PriorKappa		=	NULL;
+	Ret->PriorLambda	=	NULL;
+	Ret->PriorDelta		=	NULL;
+	Ret->PriorOU		=	NULL;
+	Ret->Priors			=	NULL;
+	Ret->PriorCats		=	-1;
+	
 	if(Ret->Analsis == ANALML)
 	{
 		Ret->Itters		=	-1;
 		Ret->Sample		=	-1;
-		Ret->Priors		=	NULL;
-		Ret->PriorCats	=	-1;
 		Ret->RateDev	=	-1;
 		Ret->BurnIn		=	-1;
 		Ret->RJPrior		=	NULL;
@@ -1020,6 +1016,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		Ret->RateDev	=	1;
 		Ret->AutoTuneRD	=	TRUE;
 		Ret->EstDataDev	=	.05;
+		
 		AllocPrios(Ret);
 
 		Ret->UseSchedule	= TRUE;
@@ -1071,10 +1068,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->InvertV		=	FALSE;
 
-	Ret->PriorGamma		=	NULL;
-	Ret->PriorKappa		=	NULL;
-	Ret->PriorLambda	=	NULL;
-	Ret->PriorDelta		=	NULL;
+
 
 	Ret->UseRJMCMC		=	FALSE;
 	Ret->CapRJRatesNo	=	-1;
@@ -2545,7 +2539,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 
 		if(Opt->Analsis == ANALMCMC)
 		{
-			Opt->PriorGamma = CreatDefPrior(Opt);
+			Opt->PriorGamma = CreatUniPrior(0, 100);
 			Opt->PriorGamma->RateNo = -1;
 		}
 		

@@ -145,11 +145,13 @@ double		AutoTuneNextRD(AUTOTUNE *AutoTune, RANDSTATES *RS, double RD, double Acc
 {
 	double Ret;
 	double R2, Slope, Int;
+	double	OldRate;
 	
 //	return 0.548;
 //	return 1;
 	
 //	return RandDouble(RS) * 2;
+	
 
 //	if(AutoTuneValid(AutoTune, Acc) == TRUE)
 		AddAutoTune(AutoTune, RD, Acc);

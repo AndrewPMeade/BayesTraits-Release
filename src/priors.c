@@ -38,13 +38,25 @@ void	FreePriors(RATES *Rates)
 
 	free(Rates->Prios);
 
-	if(Rates->GammaPrior != NULL)
-		FreePrior(Rates->GammaPrior);
+	if(Rates->PriorGamma != NULL)
+		FreePrior(Rates->PriorGamma);
+
+	if(Rates->PriorOU != NULL)
+		FreePrior(Rates->PriorOU);
+
+	if(Rates->PriorDelta != NULL)
+		FreePrior(Rates->PriorDelta);
+
+	if(Rates->PriorKappa != NULL)
+		FreePrior(Rates->PriorKappa);
+
+	if(Rates->PriorLambda != NULL)
+		FreePrior(Rates->PriorLambda);
 }
 
 PRIORS*			CreatPrior(PRIORS* P, int RateNo)
 {
-	PRIORS* Ret=NULL;
+	PRIORS* Ret;
 	int		NoOfDistVals;
 	
 	Ret = (PRIORS*) malloc(sizeof(PRIORS));
@@ -81,6 +93,83 @@ PRIORS*			CreatPrior(PRIORS* P, int RateNo)
 	return Ret;
 }
 
+PRIORS*	AllocBlankPrior(int NoP)
+{
+	PRIORS* Ret;
+
+	Ret = (PRIORS*)malloc(sizeof(PRIORS));
+	if(Ret == NULL)
+		MallocErr();
+
+//	Ret->Dist = UNIFORM;
+	Ret->DistVals = (double*)malloc(sizeof(double) * NoP);
+	if(Ret->DistVals == NULL)
+		MallocErr();
+	
+	Ret->RateNo		= -1;
+	Ret->HP			= NULL;
+	Ret->UseHP		= FALSE;
+	Ret->OffSet		= 0;
+	Ret->RateName	= NULL;
+
+	return Ret;
+}
+
+PRIORS*	CreatUniPrior(double Min, double Max)
+{
+	PRIORS* Ret;
+
+	Ret = AllocBlankPrior(2);
+	
+	Ret->Dist			= UNIFORM;
+	Ret->DistVals[0]	= Min;
+	Ret->DistVals[1]	= Max;
+	
+	return Ret;
+}
+
+PRIORS*		CreatExpPrior(double Mean)
+{
+	PRIORS* Ret;
+
+	Ret = AllocBlankPrior(2);
+	
+	Ret->Dist			= EXP;
+	Ret->DistVals[0]	= Mean;
+		
+	return Ret;
+}
+
+void		CreatTreeTransformPriors(OPTIONS *Opt, RATES *Rates)
+{
+	if(Opt->UseGamma == TRUE)
+		Rates->PriorGamma = CreatPrior(Opt->PriorGamma, -1);
+	else
+		Rates->PriorGamma = NULL;
+
+	if(Opt->EstKappa == TRUE)
+		Rates->PriorKappa = CreatPrior(Opt->PriorKappa, -1);
+	else
+		Rates->PriorKappa = NULL;
+
+
+	if(Opt->EstDelta == TRUE)
+		Rates->PriorDelta = CreatPrior(Opt->PriorDelta, -1);
+	else
+		Rates->PriorDelta = NULL;
+
+
+	if(Opt->EstLambda == TRUE)
+		Rates->PriorLambda = CreatPrior(Opt->PriorLambda, -1);
+	else
+		Rates->PriorLambda = NULL;
+
+	if(Opt->EstOU == TRUE)
+		Rates->PriorOU = CreatPrior(Opt->PriorOU, -1);
+	else
+		Rates->PriorOU = NULL;
+}
+
 void		CreatPriors(OPTIONS *Opt, RATES* Rates)
 {
 	PRIORS**	Ret=NULL;
@@ -88,11 +177,8 @@ void		CreatPriors(OPTIONS *Opt, RATES* Rates)
 	int			Index;
 	int			RIndex;
 
-	if(Opt->UseGamma == TRUE)
-		Rates->GammaPrior = CreatPrior(Opt->PriorGamma, -1);
-	else
-		Rates->GammaPrior = NULL;
-
+	CreatTreeTransformPriors(Opt, Rates);
+	
 	if(Opt->UseRJMCMC == TRUE)
 	{
 		Ret = (PRIORS**)malloc(sizeof(PRIORS*));
@@ -121,6 +207,7 @@ void		CreatPriors(OPTIONS *Opt, RATES* Rates)
 	{
 		Rates->Prios = NULL;
 	}
+
 	Ret = (PRIORS**)malloc(sizeof(PRIORS*)*NoOfPriors);
 	if(Ret==NULL)
 		MallocErr();
@@ -388,9 +475,13 @@ double	CalcChiPriors(RATES* NRates, RATES* CRates, OPTIONS* Opt)
 
 double	LnExpP(double x, double Mean, double CatSize)
 {
-	double	Ret=0;
-
+	double	Ret;
+		
 	Ret = igam(1.0, (x+CatSize)/Mean) - igam(1.0, x/Mean);
+
+//	Mean = 1.0 / Mean;
+//	Ret = Mean * exp(-(Mean * x));
+
 	return log(Ret);
 }
 
@@ -419,6 +510,60 @@ double	LnGamaP(double Rate, double Mean, double Var, double CatSize)
 */
 	return log(P1 - P2);
 }	
+
+double	CaclPriorCost(double Val, PRIORS *Prior, int NoCats)
+{
+	double Ret;
+
+	switch(Prior->Dist)
+	{
+		case BETA:
+			Ret = log(RateToBetaLh(Val, NoCats, Prior->DistVals));
+		break;
+
+		case GAMMA:
+			Ret = LnGamaP(Val, Prior->DistVals[0], Prior->DistVals[1], (double)1/(double)NoCats);
+		break;
+
+		case UNIFORM:
+			if((Val < Prior->DistVals[0]) || (Val > Prior->DistVals[1]))
+				Ret = ERRLH;
+			else
+				Ret = log((double)1/(Prior->DistVals[1] - Prior->DistVals[0]));
+		break;
+
+		case EXP:
+			Ret = LnExpP(Val, Prior->DistVals[0], (double)1/(double)NoCats);
+		break;
+	}
+
+	return Ret;
+}
+
+
+double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
+{
+	double Ret;
+
+	Ret = 0;
+
+	if(Opt->EstKappa == TRUE)
+		Ret += CaclPriorCost(Rates->Kappa, Rates->PriorKappa, Opt->PriorCats);
+
+	if(Opt->EstLambda == TRUE)
+		Ret += CaclPriorCost(Rates->Lambda, Rates->PriorLambda, Opt->PriorCats);
+
+	if(Opt->EstDelta == TRUE)
+		Ret += CaclPriorCost(Rates->Delta, Rates->PriorDelta, Opt->PriorCats);
+
+	if(Opt->EstOU == TRUE)
+		Ret += CaclPriorCost(Rates->OU, Rates->PriorOU, Opt->PriorCats);
+
+	if(Opt->EstGamma == TRUE)
+		Ret += CaclPriorCost(Rates->Gamma, Rates->PriorGamma, Opt->PriorCats);
+	
+	return Ret;
+}
 
 void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 {
@@ -454,29 +599,9 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 			Rate = Rates->Rates[PIndex];
 		}
 
-		switch(Prior->Dist)
-		{
-			case BETA:
-				NLh = log(RateToBetaLh(Rate, Opt->PriorCats, Prior->DistVals));
-			break;
+		NLh = CaclPriorCost(Rate, Prior, Opt->PriorCats);
 
-			case GAMMA:
-				NLh = LnGamaP(Rate, Prior->DistVals[0], Prior->DistVals[1], (double)1/(double)Opt->PriorCats);
-			break;
-
-			case UNIFORM:
-				if((Rate < Prior->DistVals[0]) || (Rate > Prior->DistVals[1]))
-					NLh = ERRLH;
-				else
-					NLh = log((double)1/(Prior->DistVals[1] - Prior->DistVals[0]));
-			break;
-
-			case EXP:
-				NLh = LnExpP(Rate, Prior->DistVals[0], (double)1/(double)Opt->PriorCats);
-			break;
-		}
-
-		if(IsNum(NLh) == FALSE)
+		if((NLh == ERRLH) || (IsNum(NLh) == FALSE))
 		{
 			Rates->LhPrior = ERRLH;
 			return;
@@ -484,6 +609,15 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 
 		Rates->LhPrior += NLh;
 	}
+
+	NLh = CalcTreeTransPrior(Rates, Opt);
+	if((NLh == ERRLH) || (IsNum(NLh) == FALSE))
+	{
+		Rates->LhPrior = ERRLH;
+		return;
+	}
+
+	Rates->LhPrior += NLh;
 }
 
 void	MutatePriors(RATES *Rates, PRIORS **PriosList, int NoOfPriors)

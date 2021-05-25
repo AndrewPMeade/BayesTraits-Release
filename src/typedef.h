@@ -158,7 +158,7 @@
 #define MAX_KAPPA	3
 
 #define MIN_OU		1E-07
-#define MAX_OU		20
+#define MAX_OU		200
 
 #define	NORM_MEAN_BL	0.1
 
@@ -919,6 +919,7 @@ typedef struct
 	PRIORS		*PriorDelta;
 	PRIORS		*PriorLambda;
 	PRIORS		*PriorGamma;
+	PRIORS		*PriorOU;
 
 	char		*SaveTrees;
 
@@ -1043,7 +1044,12 @@ typedef struct
 	double	LnHastings;
 	double	LnJacobion;
 
-	PRIORS	**Prios;
+	PRIORS		**Prios;
+	PRIORS		*PriorKappa;
+	PRIORS		*PriorDelta;
+	PRIORS		*PriorLambda;
+	PRIORS		*PriorGamma;
+	PRIORS		*PriorOU;
 
 	double	*Means;
 
@@ -1065,8 +1071,7 @@ typedef struct
 	int		GammaCats;
 	double	Gamma;
 	double	LastGamma;
-	PRIORS	*GammaPrior;
-	
+		
 	int		HMeanCount;
 
 #ifndef BIG_LH

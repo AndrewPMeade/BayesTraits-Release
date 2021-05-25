@@ -47,8 +47,8 @@ int		StonesStarted(STONES *Stones, int Itter)
 	if(Stones == NULL)
 		return FALSE;
 
-//	if(Itter > Stones->ItStart )
-//		return TRUE;
+	if(Itter > Stones->ItStart)
+		return TRUE;
 
 	return FALSE;
 }

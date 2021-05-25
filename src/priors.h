@@ -24,5 +24,6 @@ void		CopyPrior(PRIORS *A, PRIORS *B);
 
 double		LnExpP(double x, double Mean, double CatSize);
 
-
+PRIORS*		CreatUniPrior(double Min, double Max);
+PRIORS*		CreatExpPrior(double Mean);
 #endif

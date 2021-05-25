@@ -3,7 +3,7 @@
 
 #include "typedef.h"
 
-void	FlattenRecNode(OPTIONS *Opt);
+void		FlattenRecNode(OPTIONS *Opt);
 
 OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char *DataFN, char *SymbolList, TREES* Trees);
 MODEL		GetModel(TREES *Trees);

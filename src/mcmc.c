@@ -353,10 +353,13 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 
 	for(Index=0;Index<Rates->NoOfRates;Index++)
 	{
-		P = Rates->Prios[Index];
+		if(Opt->UseRJMCMC == FALSE)
+		{
+			P = Rates->Prios[Index];
 
-		if(P->Dist == UNIFORM)
-			Rates->Rates[Index] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
+			if(P->Dist == UNIFORM)
+				Rates->Rates[Index] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
+		}
 	}
 }
 
@@ -483,10 +486,8 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 			Heat = NRates->Lh - CRates->Lh;
 						
 			if(Opt->Stones != NULL)
-			{
 				Heat = GetStoneHeat(Opt->Stones, Itters, Heat);
-			}
-
+			
 	//		printf("LH:\t%f\t%f\t%f\n", Heat, NRates->Lh , CRates->Lh);
 			Heat += NRates->LhPrior - CRates->LhPrior;
 			Heat += NRates->LnHastings;

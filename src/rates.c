@@ -674,7 +674,9 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->NoOfRJRates	= -1;
 	Ret->TreeNo			= 0;
 	Ret->Prios			= NULL;
+	Ret->PriorGamma		= NULL;
 	Ret->Rates			= NULL;
+
 	Ret->Pis			= NULL;
 	Ret->FullRates		= NULL;
 	Ret->Means			= NULL;
@@ -688,7 +690,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->GammaCats		= 1;
 	Ret->GammaMults		= NULL;
 	Ret->LastGamma		= -1;
-	Ret->GammaPrior		= NULL;
+	
 	
 	Ret->Lh				= 0;
 
@@ -2098,7 +2100,7 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 		A->LastGamma= B->LastGamma;
 		memcpy(A->GammaMults, B->GammaMults, sizeof(double) * A->GammaCats);
 
-		CopyPrior(A->GammaPrior, B->GammaPrior);
+		CopyPrior(A->PriorGamma, B->PriorGamma);
 	}
 
 	if(B->UseEstData == TRUE)
@@ -2753,6 +2755,18 @@ void	FreeRates(RATES *Rates)
 
 	if(Rates->ModelFile != NULL)
 		FreeModelFile(Rates->ModelFile);
+
+	if(Rates->PriorDelta != NULL)
+		FreePrior(Rates->PriorDelta);
+
+	if(Rates->PriorKappa != NULL)
+		FreePrior(Rates->PriorKappa);
+
+	if(Rates->PriorOU != NULL)
+		FreePrior(Rates->PriorOU);
+
+	if(Rates->PriorLambda != NULL)
+		FreePrior(Rates->PriorLambda);
 
 	free(Rates);
 }
