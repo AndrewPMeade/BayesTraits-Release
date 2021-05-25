@@ -505,8 +505,7 @@ void	CalcAllNodeTransfroms(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 		Rates->LocalTransforms[0]->TagList[0]->NodeList[0] = Node;
 		Rates->LocalTransforms[0]->Scale = 1.0;
-
-	
+			
 		ILh = Likelihood(Rates, Trees, Opt);
 
 		MLTree(Opt, Trees, Rates);

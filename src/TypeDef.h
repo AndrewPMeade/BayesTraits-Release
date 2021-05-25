@@ -328,6 +328,7 @@ typedef enum
 	CPISANCSTATES,
 	CRJZERO,
 	CLANDSCAPE,
+	CRATESCALARS, 
 	CUNKNOWN,
 } COMMANDS;
 
@@ -415,6 +416,7 @@ static char    *COMMANDSTRINGS[] =
 	"PisAncStates",		"pas",
 	"RJZero",			"rjz",
 	"Landscape",		"LS",
+	"RateScalars",		"rs", 
 	""
 };
 
@@ -1286,6 +1288,8 @@ typedef struct
 	int			UsePisInAncStates;
 		
 	int			RJZero;
+
+	double		*RateScalars;
 
 } OPTIONS;
 

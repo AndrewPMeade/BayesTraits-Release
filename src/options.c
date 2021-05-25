@@ -721,6 +721,10 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	if(Opt->PatternList != NULL)
 		free(Opt->PatternList);
 
+
+	if(Opt->RateScalars != NULL)
+		free(Opt->RateScalars);
+
 	free(Opt);
 }
 
@@ -964,6 +968,19 @@ void	SetOptRateNamesFixed(OPTIONS *Opt, int NoRates, char *Rates[])
 		Opt->RateName[Index] = StrMake(Rates[Index]);
 }
 
+double*	AllocDefRateScalars(int NoPram)
+{
+	double *Ret;
+	int Index;
+
+	Ret = (double*)SMalloc(sizeof(double) * NoPram);
+
+	for(Index=0;Index<NoPram;Index++)
+		Ret[Index] = 1.0;
+
+	return Ret;
+}
+
 void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 {
 	int		Index, Inner, Outter;
@@ -1003,6 +1020,8 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 			}
 		}
 	}
+
+	Opt->RateScalars = AllocDefRateScalars(Opt->NoOfRates);
 }
 
 void		AllocRestictions(OPTIONS *Opt)
@@ -1211,6 +1230,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->DefNoRates	= -1;
 	Ret->DefRateNames= NULL;
 
+	Ret->RateScalars = NULL;
+
 	SetOptRates(Ret, NOS, SymbolList);
 
 	SetDefRates(Ret);
@@ -1235,6 +1256,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->MLTol			=	-1;
 	Ret->MLMaxEVals		=	-1;
 	Ret->MLAlg			=	NULL;
+
 
 
 	Ret->NoAllPriors	= 0;
@@ -2510,7 +2532,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CPRECISION) ||
 			(Command == CNOSPERSITE)|| 
 			(Command == CSYMMETRICAL) ||
-			(Command == CADDPATTERN)
+			(Command == CADDPATTERN) ||
+			Command == CRATESCALARS
 			)
 		{
 			printf("Command %s (%s) is not valid with the current model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -4016,6 +4039,42 @@ void	SetLandscape(OPTIONS *Opt, int Tokes, char **Passed)
 	Opt->SaveTrees = TRUE;
 }
 
+void	SetRateScalars(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	int Index;
+	double Val;
+
+	if(Tokes == 1)
+	{
+		for(Index=0;Index<Opt->NoOfRates;Index++)
+			Opt->RateScalars[Index] = 1.0;
+		return;
+	}
+
+	if(Tokes - 1 != Opt->NoOfRates)
+	{
+		printf("RateScalars takes takes %d rate scalars.\n", Opt->NoOfRates);
+		exit(1);
+	}
+
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+	{
+		if(IsValidDouble(Passed[Index+1]) == FALSE)
+		{
+			printf("Cannot convert %s to a valid rate.\n", Passed[Index+1]);
+			exit(1);
+		}
+
+		Val = atof(Passed[Index+1]);
+		if(Val < 0.0)
+		{
+			printf("Rates sclars (%s) must be > 0.\n", Passed[Index+1]);
+			exit(1);
+		}
+
+		Opt->RateScalars[Index] = Val;
+	}
+}
 
 void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
 {
@@ -4711,6 +4770,8 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CLANDSCAPE)
 		SetLandscape(Opt, Tokes, Passed);
 	
+	if(Command == CRATESCALARS)
+		SetRateScalars(Opt, Tokes, Passed);
 
 	return FALSE;
 }

@@ -291,6 +291,8 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 
 			if(Rates->FullRates[Index] > Opt->RateMax)
 				Rates->FullRates[Index] = Opt->RateMax;
+
+			Rates->FullRates[Index] = Rates->FullRates[Index] * Opt->RateScalars[Index];
 		}
 	}
 
