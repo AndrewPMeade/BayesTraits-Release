@@ -267,9 +267,8 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	TVect = MLMapClonePVect(Ret);
 
-// 1 seem to work better than 4. 
 	if(Ret->NoP > 1)
-		PState = IntiPraxis(LhPraxis, TVect, Ret->NoP, 0, 1, 1, 5000);
+		PState = IntiPraxis(LhPraxis, TVect, Ret->NoP, 0, 1, 4, 50000);
 	else
 		PState = IntiPraxis(LhPraxis, TVect, Ret->NoP, 0, 1, 1, 250);
 
@@ -278,12 +277,15 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	PState->Rates	= Rates;
 	PState->Pt		= (void*)Ret;
 
+
 	Lh = praxis(PState);
 
 	memcpy(Ret->PVal, TVect, sizeof(double) * Ret->NoP);
 
 	Lh = LikelihoodML(Ret, Opt, Trees, Rates);
 	
+
+
 	FreePracxStates(PState);
 
 	free(TVect);

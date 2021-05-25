@@ -985,7 +985,7 @@ void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 	P = Rates->Prios[Pos];
 	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 100);
 
-	
+//	Rates->Rates[Pos] = 500.0;
 }
 
 

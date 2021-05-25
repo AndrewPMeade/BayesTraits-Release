@@ -810,10 +810,8 @@ void	InitVarRatesTreeFile(OPTIONS *Opt, TREES *Trees)
 	char	*Buffer;
 	int		Index;
 	
-	Buffer = (char*)malloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
-	if(Buffer == NULL)
-		MallocErr();
-		
+	Buffer = (char*)SMalloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
+			
 	sprintf(Buffer, "%s.VarRates.trees", Opt->LogFN);
 	Opt->PPTree = OpenWrite(Buffer);
 	free(Buffer);
@@ -823,8 +821,8 @@ void	InitVarRatesTreeFile(OPTIONS *Opt, TREES *Trees)
 	fprintf(Opt->PPTree, "\t\tTranslate\n");
 
 	for(Index=0;Index<Trees->NoOfTaxa-1;Index++)
-		fprintf(Opt->PPTree, "\t\t%d\t%s,\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
-	fprintf(Opt->PPTree, "\t\t%d\t%s\n\t\t;\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
+		fprintf(Opt->PPTree, "\t\t%d\t%s,\n", Trees->Taxa[Index]->No+1, Trees->Taxa[Index]->Name);
+	fprintf(Opt->PPTree, "\t\t%d\t%s\n\t\t;\n", Trees->Taxa[Index]->No+1, Trees->Taxa[Index]->Name);
 
 	fflush(Opt->PPTree);
 }
@@ -982,7 +980,7 @@ void	PrintPPNode(FILE *Out, NODE N)
 
 	if(N->Tip == TRUE)
 	{
-		fprintf(Out, "%d:%f", N->Taxa->No, N->Length);
+		fprintf(Out, "%d:%f", N->Taxa->No+1, N->Length);
 		return;
 	}
 
@@ -1076,7 +1074,10 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 		Sigma = Rates->Contrast->GlobalVar;
 		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->RegAlpha, Sigma, VarRates->Alpha);
 	}
-	
+
+	if(Opt->ModelType == MT_FATTAIL || Opt->ModelType == MT_DISCRETE)
+		fprintf(Out, "NA\tNA\tNA\t");
+		
 //	fprintf(Out, "\n");
 	for(Index=0;Index<VarRates->NoNodes;Index++)
 	{
@@ -1160,8 +1161,11 @@ double	CaclVRPrior(VAR_RATES_NODE *PNode, double Alpha, double Beta, int *Err)
 	
 	if(*Err == TRUE)
 		return 0.0;
-	
-	Ret = PPSGammaPDF(PNode->Scale, Alpha, Beta);
+
+//	if(PNode->Type == VR_DELTA)
+//		Ret = 1.0 / MAX_VR_DELTA;
+//	else
+		Ret = PPSGammaPDF(PNode->Scale, Alpha, Beta);
 
 	return Ret;
 }

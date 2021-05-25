@@ -4,7 +4,7 @@
 void	InitQuadDoubleLh(OPTIONS *Opt, TREES *Trees);
 void	FreeQuadLh(OPTIONS *Opt, TREES *Trees);
 
-void	NodeLhQuadDouble(NODE N, TREES *Trees, int SiteNo);
+void	NodeLhQuadDouble(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo);
 
 void	FossilDepLhQuadDobule(NODE N, int SiteNo, int s00, int s01, int s10, int s11);
 

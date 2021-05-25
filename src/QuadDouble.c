@@ -11,7 +11,7 @@
 void	InitQuadDoubleLh(OPTIONS *Opt, TREES *Trees) {}
 void	FreeQuadLh(OPTIONS *Opt, TREES *Trees) {}
 
-void	NodeLhQuadDouble(NODE N, TREES *Trees, int SiteNo) {}
+void	NodeLhQuadDouble(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo) {}
 		
 
 double	CombineQuadDoubleLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS) {return -1;}
@@ -75,7 +75,7 @@ void	FreeQuadLh(OPTIONS *Opt, TREES *Trees)
 	}
 }
 
-void	NodeLhQuadDouble(NODE N, TREES *Trees, int SiteNo)
+void	NodeLhQuadDouble(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 {
 	int		Inner, Outter, NIndex;
 	QDOUBLE	Lh;

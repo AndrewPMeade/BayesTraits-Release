@@ -8,9 +8,6 @@ void		FreePriors(RATES* Rates);
 void		FreePrior(PRIORS* P);
 
 
-double		RateToBetaLh(double Rate, int NoOfCats, double* Prams);
-
-void		CopyPriors(PRIORS **APriosList, PRIORS **BPriosList, int NoOfPriors);
 void		MutatePriors(RATES *Rates, PRIORS **PriosList, int NoOfPriors);
 /* void		MutatePriors(PRIORS **PriosList, int NoOfPriors); */
 void		MutatePriorsNormal(RATES *Rates, PRIORS **PriosList, int NoOfPriors, double Dev);

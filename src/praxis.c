@@ -275,7 +275,8 @@ PRAXSTATE*	IntiPraxis(double(*_fun)(void*, double*), double *_x, int _n, int pr,
 	PState = AllocPraxState();
 
 	 /* init global extern variables and parameters */
-	PState->macheps = EPSILON; 
+//	PState->macheps = EPSILON; 
+	PState->macheps = EPSILON * EPSILON * EPSILON * EPSILON; 
 	PState->h		= PState->step;
 	PState->t		= PState->tol;
 

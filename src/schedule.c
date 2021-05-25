@@ -242,6 +242,8 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Shed->OptFreq[SRATES] = 0;
 	else
 		Shed->OptFreq[SRATES] = 0.5;
+
+//	Shed->OptFreq[SRATES] = 0.0;
 	
 #ifdef CONTRAST_ML_PARAM
 	if(Opt->ModelType == MT_CONTRAST)
@@ -706,5 +708,7 @@ void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 	
 	for(Index=0;Index<Shed->NoFullATList;Index++)
 		AutoTuneUpDate(Shed->FullATList[Index], RS);
+
+//	Shed->FullATList[1]->CDev = 132640.854585;
 }
 

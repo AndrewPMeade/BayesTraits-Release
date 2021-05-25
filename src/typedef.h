@@ -115,7 +115,7 @@
 #define	NO_RJ_LOCAL_SCALAR	4
 
 #define MINRATE 1.0e-16
-#define MAXRATE	1000
+#define MAXRATE	100
 /*	#define MAXRATE	100 */
 #define MINBL	0.0000001
 
@@ -413,8 +413,14 @@ static char    *DEPCVPRAMS[] =
 	"q34",
 	"q42",
 	"q43",
-	"qDI",
-	"qID",
+	"qDI00",
+	"qDI01",
+	"qDI10",
+	"qDI11",
+	"qID00",
+	"qID01",
+	"qID10",
+	"qID11",
 	""
 };
 

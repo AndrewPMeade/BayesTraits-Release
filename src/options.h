@@ -1,8 +1,7 @@
-#if !defined (OPTIONSHEADDER)
-#define OPTIONSHEADDER
+#ifndef OPTIONS_H
+#define OPTIONS_H
 
 #include "typedef.h"
-
 
 OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char *DataFN, char *SymbolList, TREES* Trees);
 void		FreeOptions(OPTIONS *Opt, int NoSites);

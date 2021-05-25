@@ -62,8 +62,6 @@ double NLOptBT(double *X, PRAXSTATE *PState)
 	int		Index;
 	double	Lh;
 
-	NoOpt = 0;
-
 	Rates = PState->Rates;	
 
 	memcpy(Rates->Rates, X, Rates->NoOfRates);

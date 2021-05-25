@@ -762,7 +762,7 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	PRIORS	*Prior;
 	int		PIndex, Err;
 	double	TLh;
-	double	Rate;
+	double	Rate, VarRatesPLh;
 	int		NoPRates;
 	double	CalcP;
 
@@ -807,9 +807,16 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 		CalcP += CalcRJDummyPriors(Opt, Rates);
 
 	if(UseNonParametricMethods(Opt) == TRUE)
-		CalcP += CalcVarRatesPriors(Rates, Opt, &Err);
+	{
+		VarRatesPLh = CalcVarRatesPriors(Rates, Opt, &Err);
+
+		if(VarRatesPLh == ERRLH || CalcP == ERRLH)
+			CalcP = ERRLH;
+		else
+			CalcP += CalcVarRatesPriors(Rates, Opt, &Err);
+	}
 	
-	if((CalcP == ERRLH) || (IsNum(CalcP) == FALSE) || (Err == TRUE))
+	if(CalcP == ERRLH || IsNum(CalcP) == FALSE || Err == TRUE)
 	{
 		Rates->LhPrior = ERRLH;
 		return;

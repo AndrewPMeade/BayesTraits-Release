@@ -6,7 +6,7 @@
 int				UseNonParametricMethods(OPTIONS *Opt);
 
 TRANSFORM_TYPE	StrToVarRatesType(char *Str);
-char*			 VarRatesTypeToStr(TRANSFORM_TYPE Type);
+char*			VarRatesTypeToStr(TRANSFORM_TYPE Type);
 
 VARRATES*	CreatVarRates(RATES *Rates, TREES *Trees, OPTIONS *Opt);
 void		FreeVarRates(VARRATES* Plasty);

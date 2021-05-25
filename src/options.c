@@ -886,7 +886,7 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 
 	if(Opt->Model == M_DESCCV)
 	{
-		Opt->NoOfRates = 14;
+		Opt->NoOfRates = 20;
 		Opt->RateName = DEPCVPRAMS;
 	}
 
@@ -955,7 +955,8 @@ void	SetFatTailPrior(OPTIONS *Opt)
 void	GetGeoPriors(OPTIONS *Opt)
 {
 	Opt->Priors[0] = CreateUniformPrior(0.2, 2.0);
-	Opt->Priors[1] = CreateInvGammaPrior(2.0, 0.130435);
+//	Opt->Priors[1] = CreateInvGammaPrior(2.0, 0.130435);
+	Opt->Priors[1] = CreateUniformPrior(0.0, 1000000.0);
 }
 
 

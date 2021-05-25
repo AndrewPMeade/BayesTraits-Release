@@ -344,7 +344,8 @@ int	CreateDepCVAMatrix(INVINFO *InvInfo, double *R, RATES* Rates, TREES* Trees)
 {
 	double Alpha1, Beta1, Alpha2, Beta2;
 	double q12,q13,q21,q24,q31,q34,q42,q43;
-	double 	qDI,qID;
+	double 	qDI00, qDI01, qDI10, qDI11;
+	double 	qID00, qID01, qID10, qID11;
 	MATRIX *A;
 
 	A = InvInfo->A;
@@ -364,10 +365,17 @@ int	CreateDepCVAMatrix(INVINFO *InvInfo, double *R, RATES* Rates, TREES* Trees)
 	q34		= R[9];
 	q42		= R[10];
 	q43		= R[11];
+	
+	qDI00	= R[12];
+	qDI01	= R[13];
+	qDI10	= R[14];
+	qDI11	= R[15];
 
-	qDI		= R[12];
-	qID		= R[13];
-
+	qID00	= R[16];
+	qID01	= R[17];
+	qID10	= R[18];
+	qID11	= R[19];
+	
 	A->me[0][1] = Alpha2;
 	A->me[0][2] = Alpha1;
 
@@ -392,15 +400,15 @@ int	CreateDepCVAMatrix(INVINFO *InvInfo, double *R, RATES* Rates, TREES* Trees)
 	A->me[7][5] = q42;
 	A->me[7][6] = q43;
 
-	A->me[4][0] = qDI;
-	A->me[5][1] = qDI;
-	A->me[6][2] = qDI;
-	A->me[7][3] = qDI;
+	A->me[4][0] = qDI00;
+	A->me[5][1] = qDI01;
+	A->me[6][2] = qDI10;
+	A->me[7][3] = qDI11;
 
-	A->me[0][4] = qID;
-	A->me[1][5] = qID;
-	A->me[2][6] = qID;
-	A->me[3][7] = qID;
+	A->me[0][4] = qID00;
+	A->me[1][5] = qID01;
+	A->me[2][6] = qID10;
+	A->me[3][7] = qID11;
 
 	SetADiag(A);
 

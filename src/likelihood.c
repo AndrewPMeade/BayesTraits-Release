@@ -819,10 +819,10 @@ void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Tr
 		for(NIndex=0;NIndex<Tree->NoFNodes[GroupNo];NIndex++)
 		{
 			#ifdef BIG_LH
-				LhBigLh(Tree->FNodes[GroupNo][NIndex], Trees, Opt->Precision, SiteNo);
+				LhBigLh(Tree->FNodes[GroupNo][NIndex], Opt, Trees, Opt->Precision, SiteNo);
 			#else
 				#ifdef QUAD_DOUBLE
-					NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo);
+					NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
 				#else
 					SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo, FALSE);	
 				#endif
@@ -838,10 +838,10 @@ void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Tr
 	for(NIndex=0;NIndex<Tree->NoFNodes[GroupNo];NIndex++)
 	{
 		#ifdef BIG_LH
-			LhBigLh(Tree->FNodes[GroupNo][NIndex], Trees, Opt->Precision, SiteNo);
+			LhBigLh(Tree->FNodes[GroupNo][NIndex], Opt, Trees, Opt->Precision, SiteNo);
 		#else
 			#ifdef QUAD_DOUBLE
-				NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo);
+				NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
 			#else
 				SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo, FALSE);
 			#endif
