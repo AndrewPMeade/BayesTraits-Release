@@ -183,6 +183,12 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Left = Left - Shed->OptFreq[SGAMMA];
 	}
 
+	if(Opt->Model == M_FATTAIL)
+	{
+		Shed->OptFreq[SFATTAILANS] = Left * 0.9;
+		Left = Left - Shed->OptFreq[SFATTAILANS];
+	}
+
 /*
 	if(Opt->SoloTreeMove == TRUE)
 	{
@@ -445,6 +451,7 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 		Opt->RJDummyBetaDev= RandDouble(RS);
 	}
 	
+
 	return Ret;
 }
 

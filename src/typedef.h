@@ -7,6 +7,7 @@
 
 #include "matrix.h"
 #include "RandLib.h"
+#include "StableDist.h"
 
 //#define	JNIRUN
 //#define THREADED
@@ -234,6 +235,7 @@ typedef enum
 	CADDERR,
 	CSHEDULE, 
 	CRJDUMMY,
+	CSCALETREES,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -309,6 +311,7 @@ static char    *COMMANDSTRINGS[] =
 	"adderr",		"er",
 	"schedule",		"sh", 
 	"rjdummy",		"rjd",
+	"scaletrees",	"st", 
 	""
 };
 
@@ -522,12 +525,11 @@ typedef struct
 typedef struct
 {
 	double	*Ans;
-	double	Lh;
-
+//	double	Lh;
 
 	double	Data, Cont, Err, Var, v;
 	
-} FATTAILN;
+} FATTAILNODE;
 
 typedef struct
 {
@@ -579,7 +581,7 @@ struct INODE
 	int			FossilState;
 
 	CONDATA		*ConData;
-	FATTAILN	*FatTailData;
+	FATTAILNODE	*FatTailNode;
 };
 
 typedef struct INODE*	NODE;
@@ -617,6 +619,11 @@ struct RNODE
 
 typedef struct RNODE*	RECNODE;
 
+typedef struct 
+{
+	double	*AnsVect;
+
+} FATTAILTREE;
 
 typedef struct
 {
@@ -665,21 +672,23 @@ typedef struct
 
 typedef	struct
 {
-	int			NoNodes;
-	NODE		*NodeList;
-	NODE		Root;
+	int				NoNodes;
+	NODE			*NodeList;
+	NODE			Root;
 
-	NODE		**FNodes;
-	int			*NoFNodes;
-	int			NoFGroups;
+	NODE			**FNodes;
+	int				*NoFNodes;
+	int				NoFGroups;
 
-	int			NoPNodes;
-	NODE		*PNodes;
+	int				NoPNodes;
+	NODE			*PNodes;
 
-	int			NoContrast;
+	int				NoContrast;
 
-	CONVAR*		ConVars;
+	CONVAR*			ConVars;
 	
+	FATTAILTREE*	FatTailTree;
+
 // information needed to traverse the tree and accumulate partial results
 #ifdef BTOCL
     int* groups;
@@ -969,6 +978,7 @@ typedef struct
 	FILE		*LogFileRead;
 	FILE		*PPTree;
 	FILE		*PPLog;
+	FILE		*LogFatTail;
 	char		*LogFileBuffer;
 	char		**PassedOut;
 
@@ -1080,6 +1090,7 @@ typedef struct
 
 	double		RJDummyBetaDev;
 
+	double		ScaleTrees;
 } OPTIONS;
 
 typedef struct
@@ -1114,6 +1125,31 @@ typedef struct
 	int			NoMaxDummy;
 	double		*DummyBeta;
 } RJDUMMY;
+
+typedef struct
+{
+	double		*Alpha;
+	double		*Scale;
+
+	double		*AnsVect;
+
+	double		*SiteLh;
+
+	double		*SiteMin;
+	double		*SiteMax;
+	double		*SiteSD;
+
+	double		*SliceX;
+	double		*SliceY;
+
+	int			NoSlices;
+	double		*SliceMin;
+	double		*SliceMax;
+
+	STABLEDIST**	SDList;
+
+
+} FATTAILRATES;
 
 typedef struct
 {
@@ -1201,6 +1237,7 @@ typedef struct
 	CONTRASTR		*Contrast;
 	HETERO			*Hetero;
 	RJDUMMY			*RJDummy;
+	FATTAILRATES	*FatTailRates;
 } RATES;
 
 typedef struct
@@ -1217,7 +1254,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NOOFOPERATORS	21
+#define NOOFOPERATORS	22
 
 static char    *SHEDOP[] =
 {
@@ -1241,7 +1278,8 @@ static char    *SHEDOP[] =
 	"Gamma",
 	"RJ Dummy Add / Remove",
 	"RJ Dummy Move Node",
-	"RJ Dummy Change Beta"
+	"RJ Dummy Change Beta",
+	"Fat Tail Ans"
 };
 
 typedef enum
@@ -1266,7 +1304,8 @@ typedef enum
 	SGAMMA,
 	SRJDUMMY, 
 	SRJDUMMYMOVE,
-	SRJDUMMYCHANGEBETA
+	SRJDUMMYCHANGEBETA,
+	SFATTAILANS
 } OPERATORS;
 
 typedef struct 

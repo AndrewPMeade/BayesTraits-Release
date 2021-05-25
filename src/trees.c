@@ -19,6 +19,7 @@
 #include "RandLib.h"
 #include "QuadDouble.h"
 #include "contrasts.h"
+#include "FatTail.h"
 
 #ifdef BTOCL
 #include "btocl_discrete.h"
@@ -158,6 +159,9 @@ void	FreeTree(TREE* Tree, int NoOfSites, int NoOfTaxa)
 
 		if(N->Partial != NULL)
 			free(N->Partial);
+
+		if(N->FatTailNode != NULL)
+			free(N->FatTailNode);
 		
 		if(N->GammaPartial != NULL)
 			free(N->GammaPartial);
@@ -168,6 +172,9 @@ void	FreeTree(TREE* Tree, int NoOfSites, int NoOfTaxa)
 	}
 
 	free(Tree->NodeList);
+
+	if(Tree->FatTailTree != NULL)
+		FreeFatTailTree(Tree->FatTailTree);
 
 	if(Tree->ConVars!= NULL)
 		FreeConVar(Tree->ConVars, NoOfTaxa);
@@ -445,7 +452,7 @@ void	MakeNewTree(TREE *Tree, NTREE *PTree)
 		Node->UserLength	= NNode->Length;
 		Node->Tip			= NNode->Tip;
 		Node->ConData		= NULL;
-		Node->FatTailData	= NULL;
+		Node->FatTailNode	= NULL;
 	
 
 		Node->Part = NULL;
@@ -575,6 +582,8 @@ int		FindMaxPoly(TREES *Trees)
 
 	Ret->NoPNodes	= -1;
 	Ret->PNodes		= NULL;
+
+	Ret->FatTailTree= NULL;
 
 	Ret->NoContrast	= -1;
 
@@ -2457,4 +2466,12 @@ void	ScaleSubTree(NODE N, double Scale)
 
 	for(Index=0;Index<N->NoNodes;Index++)
 		RecScaleSubTree(N->NodeList[Index], Scale);
+}
+
+void	ScaleTrees(TREES *Trees, double Scale)
+{
+	int Index;
+
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
+		RecScaleSubTree(Trees->Tree[Index]->Root, Scale);
 }

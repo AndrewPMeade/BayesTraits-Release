@@ -16,7 +16,7 @@
 #include "stones.h"
 
 #define	RATEOUTPUTLEN	33
-#define	RIGHTINDENT		4
+#define	RIGHT_INDENT	4
 
 void	FreeRecNodes(OPTIONS *Opt, int NoSites);
 
@@ -33,8 +33,8 @@ char*	FormatRateName(char* RateName)
 		Ret[Index] = ' ';
 	Ret[RATEOUTPUTLEN] = '\0';
 
-	sprintf(&Ret[RIGHTINDENT], "%s", RateName);
-	Ret[RIGHTINDENT+strlen(RateName)] = ' ';
+	sprintf(&Ret[RIGHT_INDENT], "%s", RateName);
+	Ret[RIGHT_INDENT+strlen(RateName)] = ' ';
 	
 	return Ret;
 }
@@ -407,6 +407,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 
 	PrintEstData(Str, Opt);
 
+	if(Opt->ScaleTrees != -1)
+		fprintf(Str, "Scale Tree:                      %f\n", Opt->ScaleTrees);
+
 	if(Opt->AnalyticalP == TRUE)
 		fprintf(Str, "Analytical P:                    True\n");
 	
@@ -732,7 +735,7 @@ char**	FatTailRateNames(OPTIONS *Opt)
 		sprintf(Buffer, "Alpha-%d", Index+1);
 		Ret[Pos++] = StrMake(Buffer);
 
-		sprintf(Buffer, "Beta-%d", Index+1);
+		sprintf(Buffer, "Scale-%d", Index+1);
 		Ret[Pos++] = StrMake(Buffer);
 	}
 
@@ -849,7 +852,18 @@ void		AllocRestictions(OPTIONS *Opt)
 	}
 }
 
+void	SetFatTailPrior(OPTIONS *Opt)
+{
+	int Index, Pos;
 
+	Pos = 0;
+
+	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	{
+		Opt->Priors[Pos++] = CreatUniPrior(0.2, 2.0);
+		Opt->Priors[Pos++] = CreatUniPrior(0.0, 10.0);
+	}
+}
 
 void	AllocPrios(OPTIONS *Opt)
 {
@@ -859,17 +873,22 @@ void	AllocPrios(OPTIONS *Opt)
 	if(Opt->Priors == NULL)
 		MallocErr();
 
-	for(Index=0;Index<Opt->NoOfRates;Index++)
+	if(Opt->Model == M_FATTAIL)
+		SetFatTailPrior(Opt);
+	else
 	{
-		if(Opt->ModelType == DISCRETE)
-			Opt->Priors[Index] = CreatUniPrior(0, 100);
-		else
-			Opt->Priors[Index] = CreatUniPrior(-100, 100);
+		for(Index=0;Index<Opt->NoOfRates;Index++)
+		{
+			if(Opt->ModelType == DISCRETE)
+				Opt->Priors[Index] = CreatUniPrior(0, 100);
+			else
+				Opt->Priors[Index] = CreatUniPrior(-100, 100);
 		
-		Opt->Priors[Index]->RateName = StrMake(Opt->RateName[Index]);
+			Opt->Priors[Index]->RateName = StrMake(Opt->RateName[Index]);
 
-		if((Opt->Model == M_CONTRAST) && (Index >= Opt->Trees->NoOfSites))
-			Opt->Priors[Index]->DistVals[0] = 0;
+			if((Opt->Model == M_CONTRAST) && (Index >= Opt->Trees->NoOfSites))
+				Opt->Priors[Index]->DistVals[0] = 0;
+		}
 	}
 
 	Opt->RJPrior = CreatUniPrior(0, 100);
@@ -954,6 +973,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->PPTree		= NULL;
 	Ret->PPLog		= NULL;
 
+	Ret->LogFatTail	= NULL;
 	
 	Ret->UseRModel	= FALSE;
 	Ret->RModelP	= -1;
@@ -1144,6 +1164,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->RJDummyLog		=	NULL;
 
 	Ret->RJDummyBetaDev =	0.1;
+
+	Ret->ScaleTrees		=	-1;
 
 	free(Buffer);
 	return Ret; 
@@ -3376,6 +3398,32 @@ void	SetRJDummy(OPTIONS *Opt, char **Passed, int Tokes)
 		Opt->RJDummy = TRUE;
 }
 
+void	SetScaleTree(OPTIONS *Opt, char **Passed, int Tokes)
+{
+	double S;
+
+	if(Tokes != 2)
+	{
+		printf("Scale Tree take a scale to change the tree length by.\n");
+		return;
+	}
+
+	if(IsValidDouble(Passed[1]) == FALSE)
+	{
+		printf("Could not convert %s to a valid scalar.\n", Passed[1]);
+		return;
+	}
+
+	S = atof(Passed[1]);
+	if(S <= 0.0)
+	{
+		printf("Scalar has to be greater than zero.\n");
+		return;
+	}
+
+	Opt->ScaleTrees = S;
+}
+
 void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	long long TBurnIn;
@@ -4047,6 +4095,11 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CRJDUMMY)
 	{
 		SetRJDummy(Opt, Passed, Tokes);
+	}
+
+	if(Command == CSCALETREES)
+	{
+		SetScaleTree(Opt, Passed, Tokes);
 	}
 
 	return FALSE;

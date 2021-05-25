@@ -1,4 +1,4 @@
-#if !defined (LOADTREES)
+#if !defined LOADTREES
 #define LOADTREES
 
 #include "typedef.h"
@@ -25,7 +25,6 @@ void	SaveTrees(char	*FileName, TREES* Trees);
 
 void	SetFossiles(TREES *Trees, OPTIONS *Opt);
 
-char*	TipIDToTaxaName(int TID, TAXA* Taxa);
 void	SetMinBL(TREES *Trees);
 void	SetNOSPerSite(OPTIONS *Opt);
 
@@ -64,6 +63,7 @@ void	RecSetDistToRoot(NODE N);
 void	RecScaleSubTree(NODE N, double Scale);
 double	SumNodeBL(NODE N);
 void	ScaleSubTree(NODE N, double Scale);
+void	ScaleTrees(TREES *Trees, double Scale);
 
 void	SetTaxaIndex(TREES *Trees);
 #endif

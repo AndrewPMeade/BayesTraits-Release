@@ -208,6 +208,10 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // ./Seq/Yunes.trees ./Seq/Yunes.txt < in.txt > sout.txt
 
 // ./Seq/FatTail/3Taxa.trees ./Seq/FatTail/3Taxa.txt < in.txt. > sout.txt
+
+// ./Seq/Cropped_Primate_Tree.trees ./Seq/Cropped_Primate_Tree_Data.txt < in.txt > sout.txt
+// ./Seq/BM_Trim_Hard.trees ./Seq/BM_Trim.txt < in.txt > sout.txt
+
 int main(int argc, char** argv)
 {
 	TREES*		Trees;

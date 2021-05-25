@@ -23,6 +23,7 @@
 #include "stones.h"
 #include "RJDummy.h"
 #include "contrasts.h"
+#include "FatTail.h"
 
 
 #ifdef	 JNIRUN
@@ -437,6 +438,9 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->UseVarRates == TRUE)
 		InitPPFiles(Opt, Trees, CRates);
 
+	if(Opt->ModelType == MT_FATTAIL)
+		InitFattailFile(Opt, Trees);
+
 	if(Opt->RJDummy == TRUE)
 		InitRJDummyFile(Opt);
 	
@@ -560,6 +564,9 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				if(Opt->UseVarRates == TRUE)
 					PrintPPOutput(Opt, Trees, CRates, Itters);
 
+				if(Opt->ModelType == MT_FATTAIL)
+					OutputFatTail(Itters, Opt, Trees, CRates);
+
 				if(Opt->RJDummy == TRUE)
 					PrintRJDummy(Itters, Opt, Trees, CRates);
 
@@ -589,8 +596,8 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				if( (Opt->UseEqualTrees == FALSE) || 
 					(CRates->TreeNo == Trees->NoOfTrees - 1))
 				{	
-					FreeRates(CRates);
-					FreeRates(NRates);
+					FreeRates(CRates, Trees);
+					FreeRates(NRates, Trees);
 
 					FreeeSchedule(Shed);
 

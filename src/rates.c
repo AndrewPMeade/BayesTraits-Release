@@ -24,6 +24,7 @@
 #include "SimData.h"
 #include "RJDummy.h"
 #include "ContrastRegOutput.h"
+#include "FatTail.h"
 
 //double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 //void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -62,6 +63,10 @@ int		FindNoConRates(OPTIONS *Opt)
 		break;
 
 		case M_CONTRAST:
+			return Opt->Trees->NoOfSites * 2;
+		break;
+
+		case M_FATTAIL:
 			return Opt->Trees->NoOfSites * 2;
 		break;
 
@@ -127,7 +132,15 @@ double	FindRateVal(int Pos, RATES *Rates, OPTIONS *Opt)
 
 void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 {
-	int	Index;
+	int	Index, NoSites;
+
+	NoSites = Opt->Trees->NoOfSites;
+
+	if(Opt->Model == M_FATTAIL)
+	{
+		MapRatesToFatTailRate(NoSites, Rates, Rates->FatTailRates);
+		return;
+	}
 
 	if(Opt->ModelType == MT_CONTRAST)
 	{
@@ -142,10 +155,8 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 
 //		memcpy(Rates->Beta, Rates->Rates, sizeof(double) * Rates->NoOfRates);
 		for(Index=1;Index<Rates->NoOfRates;Index++)
-		{
 			Rates->Beta[Index - 1] = Rates->Rates[Index];
-		}
-		
+
 		return;
 	}
 	
@@ -162,6 +173,9 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 			Rates->Beta[Index - Opt->Trees->NoOfSites] = Rates->Rates[Index];
 		return;
 	}
+
+
+	
 }
 
 int		FindRatePos(int Rate, OPTIONS *Opt)
@@ -423,7 +437,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 
 		for(Index=0;Index<Rates->NoOfRates;Index++)
 			Rates->Rates[Index] = 0;
-
+		
 		if(Opt->ModelType == MT_CONTRAST)
 		{
 			Rates->Means = NULL;
@@ -506,6 +520,12 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	{
 		Rates->ModelFile = LoadModelFile(Opt->LoadModelsFN, Opt, Opt->Trees, Rates);
 		ChangeModelFile(Rates, Rates->RS);
+	}
+
+	if(Opt->Model == M_FATTAIL)
+	{
+		Rates->FatTailRates = CreateFatTailRates(Opt, Trees);
+		MapFatTailRateToRates(Trees->NoOfSites, Rates, Rates->FatTailRates);
 	}
 }
 
@@ -627,7 +647,7 @@ void	 MutateHetero(RATES *Rates)
 
 RATES*	CreatRates(OPTIONS *Opt)
 {
-	RATES*	Ret=NULL;
+	RATES*	Ret;
 	int		Index;
 
 	Ret = (RATES*)malloc(sizeof(RATES));
@@ -694,6 +714,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->Contrast		=	NULL;
 	Ret->RJDummy		=	NULL;
+	Ret->FatTailRates	=	NULL;
 	
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	
@@ -807,7 +828,9 @@ RATES*	CreatRates(OPTIONS *Opt)
 		ChangeModelFile(Ret, Ret->RS);
 	}
 
-	SimData(Opt, Opt->Trees, Ret);
+
+
+//	SimData(Opt, Opt->Trees, Ret);
 
 	return Ret;
 }
@@ -900,6 +923,21 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 	Ret = (char**)malloc(sizeof(char*) * NoP);
 	if((Buffer == NULL) || (Ret == NULL))
 		MallocErr();
+
+	if(Opt->Model == M_FATTAIL)
+	{
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		{
+			sprintf(Buffer, "Alpha %d", Index+1);
+			Ret[PIndex++] = StrMake(Buffer);
+
+			sprintf(Buffer, "Scale %d", Index+1);
+			Ret[PIndex++] = StrMake(Buffer);
+		}
+
+		free(Buffer);
+		return Ret;
+	}
 
 	if(Opt->Model == M_CONTRAST_CORREL)
 	{
@@ -1154,6 +1192,13 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 			for(y=x+1;y<Opt->Trees->NoOfSites;y++)
 				fprintf(Str, "R Trait %d %d\t", x+1, y+1);
 	}		
+
+	if(Opt->Model == M_FATTAIL)
+	{
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+			fprintf(Str, "Alpha %d\tScale %d\t", Index+1, Index+1);
+	}
+
 
 	if(Opt->UseVarData == TRUE)
 		fprintf(Str, "Var Data Site\t");
@@ -1643,6 +1688,12 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
  		PrintRegVarCoVar(Str, Rates, Opt);
 	}
 
+	if(Opt->Model == M_FATTAIL)
+	{
+		for(Index=0;Index<Trees->NoOfSites;Index++)
+			fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[Index], Rates->FatTailRates->Scale[Index]);
+	}
+
 	if(Opt->UseVarData == TRUE)
 		fprintf(Str, "%d\t", Rates->VarDataSite);
 
@@ -2115,6 +2166,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 
 	if(Opt->RJDummy == TRUE)
 		RJDummyCopy(A, B);
+
+	if(Opt->ModelType == MT_FATTAIL)
+		CopyFatTailRates(Opt->Trees, A->FatTailRates, B->FatTailRates);
 } 
 
 double ChangeRatesTest(RATES *Rates, double RateV, double dev)
@@ -2602,6 +2656,12 @@ void	ChangeRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 	}
 	else
 	{
+		if(Opt->Model == M_FATTAIL)
+		{
+			MutateFatTailRates(Opt, Opt->Trees, Rates, Shed);
+			return;
+		}
+
 		if(Opt->ModelType == MT_CONTRAST)
 			MutateContrastRates(Opt, Opt->Trees, Rates, Shed);
 		else
@@ -2717,12 +2777,19 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 			RJDummyChange(Opt, Opt->Trees, Rates);
 		break;
 
+		case SFATTAILANS:
+			SliceSampleFatTail(Opt, Opt->Trees, Rates);
+		break;
+
 	}
 }
 
-void	FreeRates(RATES *Rates)
+void	FreeRates(RATES *Rates, TREES *Trees)
 {
 	FreePriors(Rates);
+
+	if(Rates->FatTailRates != NULL)
+		FreeFatTailRates(Rates->FatTailRates, Trees->NoOfSites);
 
 	if(Rates->Contrast != NULL)
 		FreeContrastRates(Rates);

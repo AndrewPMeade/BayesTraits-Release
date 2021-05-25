@@ -452,7 +452,7 @@ void	InitML(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	printf("Sec:\t%f\n", EndT - StartT);
 
-	FreeRates(Rates);
+	FreeRates(Rates, Trees);
 
 	if(Opt->Summary == TRUE)
 	{

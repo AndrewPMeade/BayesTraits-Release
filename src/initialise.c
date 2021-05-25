@@ -56,6 +56,9 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	int		Index;
 	int		ID;
 
+	if(Opt->ScaleTrees != -1.0)
+		ScaleTrees(Trees, Opt->ScaleTrees);
+
 	if(Opt->Model == M_CONTRAST_REG)
 	{
 		if(Opt->TestCorrel == FALSE)
@@ -147,11 +150,11 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 	}
 
-	if(Opt->SaveTrees != NULL)
-		SaveTrees(Opt->SaveTrees, Opt->Trees);
-
 	if(FindNoEstDataPoint(Opt, Trees) > 0)
 		Opt->AutoTuneDD	= TRUE;
 	else
 		Opt->AutoTuneDD = FALSE;
+		
+	if(Opt->SaveTrees != NULL)
+		SaveTrees(Opt->SaveTrees, Opt->Trees);
 }

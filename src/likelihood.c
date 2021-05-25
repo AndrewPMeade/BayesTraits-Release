@@ -21,6 +21,7 @@
 #include "linalg.h"
 #include "modelfile.h"
 #include "QuadDouble.h"
+#include "FatTail.h"
 
 #ifdef BTOCL
 	#include "btocl_discrete.h"
@@ -1146,11 +1147,16 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	else
 		MapModelFile(Opt, Rates);
 
+	if(Opt->Model == M_FATTAIL)
+		return CalcTreeStableLh(Opt, Trees, Rates);
+
 	if(Opt->ModelType == MT_CONTRAST)
 		return CalcContrastLh(Opt, Trees, Rates);
 	
 	if(Opt->ModelType == MT_CONTINUOUS)
 		return LHRandWalk(Opt, Trees, Rates);
+
+	
 
 	Tree = Trees->Tree[Rates->TreeNo];
 
