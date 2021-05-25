@@ -163,6 +163,24 @@
 
 #define	NORM_MEAN_BL	0.1
 
+#define	NO_RJ_LOCAL_SCALAR	4
+
+static char    *RJ_LOCAL_SCALAR_NAMES[] =
+{
+	"Kappa",
+	"Lambda",
+	"Detla", 
+	"OU"
+};
+
+typedef enum RJ_LOCAL_SCALAR_TYPE
+{
+	KAPPA,
+	LAMBDA, 
+	DELTA,
+	OU
+};
+
 typedef enum
 {
 	CRUN,
@@ -236,6 +254,7 @@ typedef enum
 	CSHEDULE, 
 	CRJDUMMY,
 	CSCALETREES,
+	CRJLOCALSCALAR,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -312,6 +331,7 @@ static char    *COMMANDSTRINGS[] =
 	"schedule",		"sh", 
 	"rjdummy",		"rjd",
 	"scaletrees",	"st", 
+	"rjlocalscalar", "rjls", 
 	""
 };
 
@@ -1091,6 +1111,10 @@ typedef struct
 	double		RJDummyBetaDev;
 
 	double		ScaleTrees;
+
+	int			UseRJLocalScalar[NO_RJ_LOCAL_SCALAR];
+	PRIORS		**RJLocalScalarPriors;
+
 } OPTIONS;
 
 typedef struct

@@ -76,7 +76,7 @@ void	PrintOptRes(FILE* Str, OPTIONS *Opt)
 	}
 }
 
-void	PrintPriorVals(PRIORS	*P, FILE* Str)
+void	PrintPriorVals(FILE *Str, PRIORS *P)
 {
 	int		VIndex;
 
@@ -110,7 +110,7 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 	{
 		fprintf(Str, "    RJ Prior                     ");
 		PrintPriorVals(Opt->RJPrior, Str);
-		fprintf(Str, "\n");
+	//	fprintf(Str, "\n");
 	}
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
@@ -369,6 +369,16 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	
 		if(Opt->UseVarRates == TRUE)
 			fprintf(Str, "Using VarRates:                  True\n");
+
+
+		for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
+		{
+			if(Opt->UseRJLocalScalar[Index] == TRUE)
+			{
+				fprintf(Str, "RJ Local Scalar %s prior ", RJ_LOCAL_SCALAR_NAMES[Index]);
+				PrintPriorVals(Str, Opt->RJLocalScalarPriors[Index]);
+			}
+		}
 	}
 	else
 	{
@@ -937,6 +947,7 @@ MODEL_TYPE	GetModelType(MODEL Model)
 OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char *DataFN, char *SymbolList, TREES* Trees)
 {
 	OPTIONS *Ret;
+	int		Index;
 	char	*Buffer;
 
 		
@@ -1167,7 +1178,18 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->ScaleTrees		=	-1;
 
+	Ret->RJLocalScalarPriors = (PRIORS**)malloc(sizeof(PRIORS*) * NO_RJ_LOCAL_SCALAR);
+	if(Ret->RJLocalScalarPriors == NULL)
+		MallocErr();
+
+	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
+	{
+		Ret->UseRJLocalScalar[Index] = FALSE;
+		Ret->RJLocalScalarPriors[Index] = NULL;
+	}
+
 	free(Buffer);
+
 	return Ret; 
 }
 
@@ -2365,7 +2387,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CDEPSITE)   ||
 			(Command == CDATADEV)	||
 			(Command == CRJDUMMY)	||
-			(Command == CVARRATES)	
+			(Command == CVARRATES)	||
+			(Command == CRJLOCALSCALAR)
 			)
 		{
 			printf("Command %s (%s) is not valid with Discrete data\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -3424,6 +3447,18 @@ void	SetScaleTree(OPTIONS *Opt, char **Passed, int Tokes)
 	Opt->ScaleTrees = S;
 }
 
+void	SetRJLocalScalar(OPTIONS *Opt, char **Passed, int Tokes)
+{
+	if(Opt->ModelType != MT_CONTRAST || Opt->Analsis == ANALML)
+	{
+		printf("RJ Local Scalar is only valid with MCMC and a contrast model.\n");
+		return;
+	}
+
+	
+
+}
+
 void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	long long TBurnIn;
@@ -4100,6 +4135,11 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CSCALETREES)
 	{
 		SetScaleTree(Opt, Passed, Tokes);
+	}
+
+	if(Command == CRJLOCALSCALAR)
+	{
+		SetRJLocalScalar(Opt, Passed, Tokes);
 	}
 
 	return FALSE;
