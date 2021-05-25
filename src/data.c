@@ -9,6 +9,7 @@
 #include "part.h"
 #include "options.h"
 #include "Geo.h"
+#include "FatTail.h"
 
 
 void	PrintTaxaData(OPTIONS *Opt, TREES* Trees)
@@ -493,6 +494,9 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 		
 	if(GetModelType(Model) == MT_DISCRETE)
 		SetMinBL(Trees);
+
+	if(GetModelType(Model) == MT_FATTAIL)
+		CheckFatTailBL(Trees);
 }
 
 void	PreProcessDataWithModel(TREES *Trees, MODEL Model)

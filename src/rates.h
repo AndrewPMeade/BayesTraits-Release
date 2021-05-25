@@ -36,7 +36,6 @@ void		FindRSquared(RATES* Rates, OPTIONS *Opt, double *R2, double *SSE, double *
 int			FindNoEstDataPoint(OPTIONS *Opt, TREES *Trees);
 
 void		PrintAutoTune(FILE* Str, OPTIONS *Opt, SCHEDULE* Shed);
-int			FindNoConRats(OPTIONS *Opt);
 //void		PrintAutoTuneHeader(FILE* Str, OPTIONS *Opt);
 
 int			FindNoConRates(OPTIONS *Opt);

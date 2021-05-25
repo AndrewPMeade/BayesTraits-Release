@@ -6,6 +6,8 @@
 void			InitFatTailTrees(OPTIONS *Opt, TREES *Trees);
 void			FreeFatTailTrees(OPTIONS *Opt, TREES *Trees);
 
+void			CheckFatTailBL(TREES *Trees);
+
 void			MapRatesToFatTailRate(RATES *Rates, FATTAILRATES *FatTailRates);
 void			MapFatTailRateToRates(RATES *Rates, FATTAILRATES *FatTailRates);
 

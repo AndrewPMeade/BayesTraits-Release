@@ -1765,9 +1765,6 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	if(Rates->UseEstData == TRUE)
 		CalcZ(Trees, Tree, Opt);
 
-	PrintMatrix(CV->V, "V=", stdout);
-	exit(0);
-
 #ifdef MATHMAT
 
 	printf("(* **************** Start Tree %d *********************** *)\n", Rates->TreeNo);

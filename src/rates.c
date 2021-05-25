@@ -1093,8 +1093,6 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 	PrintLocalTransformHeadder(Str, Opt);
 
-//	if(Opt->
-
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
 }
@@ -1215,6 +1213,8 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 
 	PrintEstDataHeader(Str, Opt);
 
+	PrintLocalTransformHeadder(Str, Opt);
+
 	for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
 	{
 		if((Opt->Trees->NoOfSites == 1) && (Opt->NOSPerSite == FALSE))
@@ -1234,9 +1234,7 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 			else
 				PrintRecNodeHeadder(Str, Opt, RNode->Name, SiteIndex);
 		}
-	}
-
-	
+	}	
 
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
@@ -1922,9 +1920,11 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 		fprintf(Str, "%f\t", Rates->Gamma);
 
 	PrintRateLocalTransform(Str, Rates);
-
+	
 	for(Index=0;Index<Rates->NoEstData;Index++)
 		fprintf(Str, "%c\t", Opt->Trees->SymbolList[Rates->EstDescData[Index]]);
+
+	PrintLocalTransformNo(Str, Rates, Opt);
 
 	PrintNodeRec(Str, Opt->Trees->Tree[Rates->TreeNo]->Root, Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
 
@@ -2488,7 +2488,7 @@ void	ChangeRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 	}
 	else
 	{
-		if(Opt->Model == M_FATTAIL)
+		if(Opt->ModelType == MT_FATTAIL)
 		{
 			MutateFatTailRates(Opt, Opt->Trees, Rates, Shed);
 			return;

@@ -401,8 +401,11 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	SetDefMCMCParameters(Opt, Trees, Rates);
 
-	if(Opt->ModelType == M_FATTAIL)
+	if(Opt->ModelType == MT_FATTAIL)
+	{
 		InitFatTailRates(Opt, Trees, Rates);
+		return;
+	}
 
 	if(Opt->MCMCMLStart == TRUE)
 	{
@@ -584,9 +587,6 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 
 	Shed = CreatSchedule(Opt, CRates->RS);
-
-//	if(CRates->ModelFile != NULL)
-//		TestModelFile(Opt, Trees, CRates);
 	
 	SetRatesToPriors(Opt, CRates);
 	SetRatesToPriors(Opt, NRates);
@@ -677,8 +677,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		if(Opt->NodeData == TRUE)
 			SetTreeAsData(Opt, Trees, NRates->TreeNo);
 
-		if(Shed->Op != SFATTAILANS && Opt->Model != M_GEO)
-			if(Shed->Op != SFATTAILANS && Opt->Model != M_GEO)
+		if(!(Shed->Op == SFATTAILANS && Opt->Model == M_GEO))
 			NRates->Lh = Likelihood(NRates, Trees, Opt);
 	
 		if(NRates->Lh == ERRLH)

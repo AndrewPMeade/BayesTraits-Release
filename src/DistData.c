@@ -114,14 +114,17 @@ void		ProcDistDataFile(TREES *Trees, DIST_DATA *DistData, TEXTFILE *TF)
 	{
 		strcpy(Buffer, TF->Data[Index]);
 		Tokes = MakeArgv(Buffer, Passed, TF->MaxLine + 1);
-		if(Tokes != Trees->NoOfSites + 2)
+		if(Tokes != Trees->NoOfSites + 2 && Tokes > 0)
 		{
 			printf("Dist Data file (%s) Line %d, expecting %d tokens found %d.\n", DistData->FName, Index, Trees->NoOfSites+2, Tokes);
 			exit(0);
 		}
 
-		DTaxa = MakeDistDataTaxa(Trees, Passed, TF->MaxLine);
-		DistData->DistDataTaxa[DistData->NoTaxa++] = DTaxa;
+		if(Tokes > 0)
+		{
+			DTaxa = MakeDistDataTaxa(Trees, Passed, TF->MaxLine);
+			DistData->DistDataTaxa[DistData->NoTaxa++] = DTaxa;
+		}
 	}
 
 	free(Buffer);
@@ -144,7 +147,7 @@ DIST_DATA*	LoadDistData(TREES *Trees, char *FName)
 	TF = LoadTextFile(FName, FALSE);
 	
 	Ret->NoTaxa = 0;
-	Ret->DistDataTaxa = (DIST_DATA_TAXA**)malloc(sizeof(DIST_DATA_TAXA*) * TF->NoOfLines);
+	Ret->DistDataTaxa = (DIST_DATA_TAXA**)SMalloc(sizeof(DIST_DATA_TAXA*) * TF->NoOfLines);
 
 	ProcDistDataFile(Trees, Ret, TF);
 

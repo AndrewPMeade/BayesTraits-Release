@@ -1100,8 +1100,11 @@ double CaclRegSigma(TREE *Tree, double *Beta, int NoSites)
 				Uy = N->ConData->Contrast[CIndex]->Cont[0] / sqrt(Var);
 				
 				Ux = 0;
-				for(SIndex=0;SIndex<NoSites;SIndex++)
-					Ux += (N->ConData->Contrast[CIndex]->Cont[SIndex+1] / sqrt(Var)) * Beta[SIndex];
+//				for(SIndex=0;SIndex<NoSites;SIndex++)
+//					Ux += (N->ConData->Contrast[CIndex]->Cont[SIndex+1] / sqrt(Var)) * Beta[SIndex];
+
+				for(SIndex=1;SIndex<NoSites;SIndex++)
+					Ux += (N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(Var)) * Beta[SIndex-1];
 
 				Con = Uy - Ux;
 

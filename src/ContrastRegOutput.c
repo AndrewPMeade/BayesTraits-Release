@@ -77,40 +77,24 @@ REG_CON_POST*	CreatRegConPost(TREES *Trees, RATES *Rates)
 	CR					=	Rates->Contrast;
 	Tree				=	Trees->Tree[Rates->TreeNo];
 
-	Ret					=	(REG_CON_POST*)malloc(sizeof(REG_CON_POST));
-	if(Ret == NULL)
-		MallocErr();
-
+	Ret					=	(REG_CON_POST*)SMalloc(sizeof(REG_CON_POST));
+	
 	Ret->NoContrasts	=	Tree->NoContrast;
 	Ret->NoSites		=	Trees->NoOfSites;
 
-	Ret->Predicated		= (double*)malloc(sizeof(double) * Ret->NoContrasts);
-	Ret->Residuals		= (double*)malloc(sizeof(double) * Ret->NoContrasts);
-	Ret->Contrasts		= (double**)malloc(sizeof(double*) * Ret->NoContrasts);
+	Ret->Predicated		= (double*)SMalloc(sizeof(double) * Ret->NoContrasts);
+	Ret->Residuals		= (double*)SMalloc(sizeof(double) * Ret->NoContrasts);
+	Ret->Contrasts		= (double**)SMalloc(sizeof(double*) * Ret->NoContrasts);
 
-	if((Ret->Predicated == NULL) || (Ret->Contrasts == NULL) || (Ret->Residuals == NULL))
-		MallocErr();
 
-	Ret->SSE	= (double*)malloc(sizeof(double) * (Ret->NoSites-1));
-	Ret->R2		= (double*)malloc(sizeof(double) * (Ret->NoSites-1));
-	Ret->SSRes	= (double*)malloc(sizeof(double) * (Ret->NoSites-1));
-	Ret->SSTotal= (double*)malloc(sizeof(double) * (Ret->NoSites-1));
-	Ret->SE		= (double*)malloc(sizeof(double) * (Ret->NoSites-1));
-
-	if(	(Ret->SSE == NULL) ||
-		(Ret->R2 == NULL) ||
-		(Ret->SSRes == NULL) ||
-		(Ret->SSTotal == NULL) ||
-		(Ret->SE == NULL))
-		MallocErr();
+	Ret->SSE	= (double*)SMalloc(sizeof(double) * (Ret->NoSites-1));
+	Ret->R2		= (double*)SMalloc(sizeof(double) * (Ret->NoSites-1));
+	Ret->SSRes	= (double*)SMalloc(sizeof(double) * (Ret->NoSites-1));
+	Ret->SSTotal= (double*)SMalloc(sizeof(double) * (Ret->NoSites-1));
+	Ret->SE		= (double*)SMalloc(sizeof(double) * (Ret->NoSites-1));
 
 	for(Index=0;Index<Ret->NoContrasts;Index++)
-	{
-		Ret->Contrasts[Index] = (double*)malloc(sizeof(double) * Ret->NoSites);
-
-		if(Ret->Contrasts[Index] == NULL)
-			MallocErr();
-	}
+		Ret->Contrasts[Index] = (double*)SMalloc(sizeof(double) * Ret->NoSites);
 
 	SetRegConPost(Tree, Ret);
 	SetRegConPostPreRes(Rates->Contrast->RegBeta, Ret);
@@ -125,7 +109,7 @@ void			FreeRegConPost(REG_CON_POST* RegConPost)
 	free(RegConPost->Predicated);
 	free(RegConPost->Residuals);
 	
-	for(Index=0;Index<RegConPost->NoSites;Index++)
+	for(Index=0;Index<RegConPost->NoContrasts;Index++)
 		free(RegConPost->Contrasts[Index]);
 
 	free(RegConPost->Contrasts);
@@ -347,8 +331,6 @@ void	CalcMSE(REG_CON_POST*	RegConPost)
 	RegConPost->MSE = Ret;
 }
 
-
-
 void	CalcSEMultiReg(REG_CON_POST*	RegConPost)
 {
 	int Index;
@@ -390,7 +372,6 @@ void	ProcRegConPost(REG_CON_POST *RegConPost, int TestCorrel)
 }
 
 
-
 void	OutputConReg(FILE *Str, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Index;
@@ -414,7 +395,9 @@ void	OutputConReg(FILE *Str, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	for(Index=0;Index<Trees->NoOfSites-1;Index++)
 		fprintf(Str, "%0.12f\t", RegConPost->SE[Index]);
 
-//	PrintRegConPost(RegConPost);
-//	exit(0);
+	PrintRegConPost(RegConPost);
+	exit(0);
+
+
 	FreeRegConPost(RegConPost);
 }

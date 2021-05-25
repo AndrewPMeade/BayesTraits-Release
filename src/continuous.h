@@ -1,4 +1,4 @@
-#if !defined (CONTINUOUSHEADDER)
+#ifndef CONTINUOUSHEADDER
 #define CONTINUOUSHEADDER
 
 void	InitContinus(OPTIONS *Opt, TREES* Trees);

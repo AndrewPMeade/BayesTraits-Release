@@ -166,10 +166,12 @@ FATTAILRATES*	CreateFatTailRates(OPTIONS *Opt, TREES *Trees)
 		if(Opt->FatTailNormal == FALSE)
 			Ret->Alpha[Index] = 0.5;
 		else
-			Ret->Alpha[Index] = 2.0;
+			Ret->Alpha[Index] = FAT_TAIL_NORMAL_VAL;
 
 		Ret->Scale[Index] = 0.5;
 	}
+
+	
 
 	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 		GetSiteInfo(Index, Trees, Ret);
@@ -744,9 +746,7 @@ void	AllSliceSampleFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 int	GetMutateFatTailRatesPos(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE* Shed)
 {
 	int Pos;
-
-
-
+	
 	if(Opt->FatTailNormal == FALSE)
 		return RandUSInt(Rates->RS) % Shed->NoParm;
 
@@ -981,7 +981,9 @@ void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 	Pos++;
 
 	P = Rates->Prios[Pos];
-	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 10);
+	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 100);
+
+	
 }
 
 
@@ -996,7 +998,11 @@ void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		for(Index=0;Index<Rates->FatTailRates->NoSD;Index++)
 			SetRandFatTail(Opt, Rates, Index);
 
+		MapRatesToFatTailRate(Rates, Rates->FatTailRates);
+
 	} while(ValidMCMCParameters(Opt, Trees, Rates) == ERRLH);
+
+
 
 	return;
 }
@@ -1034,4 +1040,29 @@ void	FatTailTest(int argc, char **argv)
 	}
 	
 	exit(0);
+}
+
+void CheckFatTailBL(TREES *Trees)
+{
+	int TIndex, NIndex;
+	TREE *Tree;
+	NODE N;
+
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	{
+		Tree = Trees->Tree[TIndex];
+
+		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
+		{
+			N = Tree->NodeList[NIndex];
+			if(N->Ans != NULL)
+			{
+				if(N->Length < 1.00E-06)
+				{
+					printf("Branch length (%f) too short for fat tail model, in tree %d. Please resolve as a hard polytomy", N->Length, TIndex+1);
+					exit(1);
+				}
+			}
+		}
+	}
 }

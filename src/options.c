@@ -2392,7 +2392,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CNODEDATA)  ||
 			(Command == CDEPSITE)   ||
 			(Command == CRJDUMMY)	||
-			(Command == CVARRATES)	||
+		//	(Command == CVARRATES)	||
 			(Command == CRJLOCALTRANSFORM) ||
 			(Command == CDISTDATA)
 			)
@@ -2428,7 +2428,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CLOADMODELS)	||
 			(Command == CSHEDULE)		||
 			(Command == CRJDUMMY)		||
-			(Command == CVARRATES)
+			(Command == CVARRATES)		||
+			(Command == CDISTDATA)
 			)
 		{
 			printf("Command %s (%s) is not valid with the ML model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
