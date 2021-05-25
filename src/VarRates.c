@@ -50,6 +50,9 @@ int		UseNonParametricMethods(OPTIONS *Opt)
 {
 	int Index;
 
+	if(Opt->UseVarRates == TRUE)
+		return TRUE;
+
 	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
 		if(Opt->UseRJLocalScalar[Index] == TRUE)
 			return TRUE;
@@ -59,25 +62,27 @@ int		UseNonParametricMethods(OPTIONS *Opt)
 
 TRANSFORM_TYPE	StrToVarRatesType(char *Str)
 {
-	if(stricmp("Node", Str) == 0)
+	MakeLower(Str);
+
+	if(strcmp("node", Str) == 0)
 		return VR_NODE;
 
-	if(stricmp("Branch", Str) == 0)
+	if(strcmp("branch", Str) == 0)
 		return VR_BL;
 
-	if(stricmp("Kappa", Str) == 0)
+	if(strcmp("kappa", Str) == 0)
 		return VR_KAPPA;
 
-	if(stricmp("Lambda", Str) == 0)
+	if(strcmp("lambda", Str) == 0)
 		return VR_LAMBDA;
 
-	if(stricmp("Delta", Str) == 0)
+	if(strcmp("delta", Str) == 0)
 		return VR_DELTA;
 
-	if(stricmp("OU", Str) == 0)
+	if(strcmp("ou", Str) == 0)
 		return VR_OU;
 
-	
+
 	printf("uknown varaible rate type %s\n", Str); 
 	exit(0);
 }

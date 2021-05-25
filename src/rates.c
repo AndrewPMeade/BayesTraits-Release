@@ -1055,12 +1055,12 @@ void	PrintLocalRateHeader(FILE *Str, OPTIONS *Opt)
 
 void	PrintLocalTransformHeadder(FILE *Str, OPTIONS *Opt)
 {
-	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
+	if(Opt->UseVarRates == TRUE)
+	{
 		fprintf(Str, "No RJ Local Branch\t");
-	
-	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
 		fprintf(Str, "No RJ Local Node\t");
-	
+	}
+
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
 		fprintf(Str, "No RJ Local Kappa\t");
 
@@ -1604,12 +1604,11 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 
 void	PrintLocalTransformNo(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
-
-	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
+	if(Opt->UseVarRates == TRUE)
+	{
 		fprintf(Str, "%d\t", GetNoTransformType(VR_BL, Rates));
-
-	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_NODE, Rates));
+	}
 
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_KAPPA, Rates));

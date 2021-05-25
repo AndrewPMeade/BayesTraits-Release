@@ -48,7 +48,6 @@
 #include "RandDists.h"
 #include "Part.h"
 #include "CBlasWrapper.h"
-#include "VarRates.h"
 
 #ifdef BTOCL
 	#include "btocl_continuous.h"
@@ -2259,7 +2258,7 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 		Opt->EstKappa == TRUE ||
 		Opt->EstLambda== TRUE ||
 		Opt->EstOU == TRUE ||
-		UseNonParametricMethods(Opt) == TRUE)
+		Opt->UseVarRates == TRUE)
 		Opt->InvertV = TRUE;
 
 	if(Opt->Analsis == ANALMCMC)

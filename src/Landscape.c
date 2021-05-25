@@ -182,10 +182,11 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 //		SetBetaNode(Node, Landscape->NodeList[Index]->Beta);
 
-//		for(NIndex=0;NIndex<Node->NoNodes;NIndex++)
-//			SetBetaNode(Node->NodeList[NIndex], Landscape->NodeList[Index]->Beta);
+		for(NIndex=0;NIndex<Node->NoNodes;NIndex++)
+			SetBetaNode(Node->NodeList[NIndex], Landscape->NodeList[Index]->Beta);
 
-		Node->LandscapeBeta = Landscape->NodeList[Index]->Beta;
+
+//		Node->LandscapeBeta = Landscape->NodeList[Index]->Beta;
 	}
 
 	PropLandscapeBeta(Trees, Tree->Root, 0.0);
