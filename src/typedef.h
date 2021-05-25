@@ -43,7 +43,7 @@
 #define PPALPHASCLAE 0.1
 
 /* Use uniform or gamma value priors*/
-//#define PPUNIFORM
+#define PPUNIFORM
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000
@@ -62,6 +62,9 @@
 #define ERRLH -999999
 
 #define ZERORATENO		-1
+
+/* Use to set V to idenity for testing */
+//#define IDMATRIX
 
 //extern double LhPraxis(LhPraxisdouble *);
 

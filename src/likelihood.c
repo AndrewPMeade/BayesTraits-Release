@@ -89,6 +89,9 @@ int	PreCalc(TREES *Trees, RATES *Rates)
 
 	CopyMatrix(InvInfo->Q, InvInfo->A);
 
+//	PrintMathematicaMatrix(InvInfo->Q, "QMat", stdout);
+//	fflush(stdout);
+
 	if(DB == TRUE)
 	{
 		PrintMatrix(InvInfo->A, "A Matrix", stdout);		

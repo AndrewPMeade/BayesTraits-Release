@@ -1100,7 +1100,6 @@ void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
 	int		Index;
 	RECNODE	RNode;
 
-	/* Add Rec Taxa */
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
 		RNode = Opt->RecNodeList[Index];

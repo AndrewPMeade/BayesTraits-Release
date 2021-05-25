@@ -37,8 +37,6 @@ void	InitEstData(OPTIONS *Opt, TREES *Trees)
 	{
 		Taxa = &Trees->Taxa[TIndex];
 
-		if(Taxa->No == 76)
-			printf("Print\t%s\t%d\n", Taxa->Name, Taxa->No);
 
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 		{
@@ -276,7 +274,7 @@ void	CalcPVarCoVar(TREES* Trees, TREE *Tree)
 		}
 	}
 
-	#if defined (IDMATRIX)
+	#ifdef IDMATRIX
 		SetIdentityMatrix(Tree->ConVars->V); 
 	#endif
 	
@@ -1577,9 +1575,10 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 	if(Opt->Model == CONTINUOUSREG)
 		RemoveDependantData(Opt, Trees);
 
-	Trees->TempConVars = AllocTempConVars(Opt, Trees);
 
 	AddRecNodes(Opt, Trees);
+
+	Trees->TempConVars = AllocTempConVars(Opt, Trees);
 
 	InitEstData(Opt, Trees);
 

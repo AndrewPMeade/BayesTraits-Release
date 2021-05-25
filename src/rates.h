@@ -26,7 +26,7 @@ void		BlankSchedule(SCHEDULE*	Shed);
 
 char		RJModelType(int *ModelStr);
 
-double		FindRSquared(RATES* Rates, OPTIONS *Opt);
+void		FindRSquared(RATES* Rates, OPTIONS *Opt, double *R2, double *SSE, double *SST);
 #endif
 
 

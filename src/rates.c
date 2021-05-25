@@ -742,7 +742,7 @@ void	PrintRatesHeadderCon(FILE* Str, OPTIONS *Opt)
 		}
 
 		fprintf(Str, "Var\t");
-		fprintf(Str, "R^2\t");
+		fprintf(Str, "R^2\tSSE\tSST\t");
 
 		if(Opt->Analsis == ANALML)
 			fprintf(Str, "Error Ratio\t");
@@ -1031,7 +1031,7 @@ double	FindERatio(RATES* Rates, OPTIONS *Opt)
 }
 
 
-double	FindRSquared(RATES* Rates, OPTIONS *Opt)
+void FindRSquared(RATES* Rates, OPTIONS *Opt, double *R2, double *SSE, double *SST)
 {
 	TREES	*Trees;
 	TREE	*Tree;
@@ -1041,7 +1041,6 @@ double	FindRSquared(RATES* Rates, OPTIONS *Opt)
 	double	*YP;
 	double	*TempV;
 	int		Index;
-	double	Ret;
 	double	MeanY;
 	double	MeanYP;
 	double	T,B1,B2;
@@ -1084,14 +1083,15 @@ double	FindRSquared(RATES* Rates, OPTIONS *Opt)
 	VectByMatrixMult(YP, Tree->ConVars->InvV, TempV);
 	B2 = VectByVectMult(YP, TempV, Trees->NoOfTaxa);
 
-	Ret = T / (B1 * B2);
+	(*R2) = T / (B1 * B2);
 	
-	
+	(*SSE) = (1-(*R2)) * B1;
+
+	(*SST) = B1;
+
  	free(Y);
 	free(YP);
 	free(TempV);
-
-	return Ret;
 }
 
 
@@ -1128,7 +1128,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	CONVAR	*ConVar;
 	int		MinNodes, MaxNodes;
 	TAXA	*Taxa;
-	double	HMean;
+	double	HMean, R2, SSE, SST;
 	TREES	*Trees;
 
 	Trees = Opt->Trees;
@@ -1191,7 +1191,8 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 		fprintf(Str, "%f\t", ConVar->Sigma->me[0][0]);
 
-		fprintf(Str, "%f\t", FindRSquared(Rates, Opt));
+		FindRSquared(Rates, Opt, &R2, &SSE, &SST);
+		fprintf(Str, "%f\t%f\t%f\t", R2, SSE, SST);
 	
 		if(Opt->Analsis == ANALML)
 			fprintf(Str, "%f\t", FindERatio(Rates, Opt));
@@ -1244,7 +1245,6 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->UsePhyloPlasty == TRUE)
 		fprintf(Str, "%d\t", Rates->Plasty->NoNodes);
-	
 }
 
 void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OPTIONS *Opt)

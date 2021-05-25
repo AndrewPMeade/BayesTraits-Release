@@ -1660,7 +1660,7 @@ int	CheckConFState(char *State, int No)
 	}
 }
 
-char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
+char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char *argv[])
 {
 	int		Index;
 	char	**Ret;
@@ -1672,16 +1672,16 @@ char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	if(Ret == NULL)
 		MallocErr();
 
-	if(NodeType != FOSSIL)
-	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			Ret[Index] = StrMake(ESTDATAPOINT); 
-	}
 
 	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 	{
-		
+		if(NodeType != FOSSIL)
+			Ret[Index] = StrMake(ESTDATAPOINT); 
+		else
+			Ret[Index] = StrMake(argv[Index]);
 	}
+
+	return Ret;
 }
 
 void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
@@ -1720,6 +1720,12 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 		}
 	}
 
+	if(Opt->DataType == CONTINUOUS)		
+	{
+		ConFState = SetConFState(Opt, NodeType, &argv[Index]);
+		if(NodeType == FOSSIL)
+			Index += Opt->Trees->NoOfSites;
+	}
 	
 	if(ValidTaxaList(argv, Index, Tokes, Opt) == FALSE)
 		return;
@@ -1730,6 +1736,8 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 
 	RNode->TaxaID	= NULL;
 	RNode->ConData	= NULL;
+	if(Opt->DataType == CONTINUOUS)		
+		RNode->ConData	= ConFState;
 
 	RNode->Name = (char*)malloc(sizeof(char)*strlen(argv[1])+1);
 	if(RNode->Name == NULL)

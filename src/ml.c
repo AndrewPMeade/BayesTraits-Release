@@ -123,20 +123,21 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	int		i;
 
 
-	Rates->Rates[0] = 0.833651;
+	Rates->Rates[0] = 0;
 
 	printf("\n");
-	d = 0.0001;
-	for(i=0;i<1000;i++)
+	d = 0.000001;
+	for(i=0;i<1001;i++)
 	{		
-		Rates->Rates[1] = d;
-		printf("%d\t%f\t%f\t", i, Rates->Rates[0], Rates->Rates[1]);
+		Rates->Rates[0] = d;
+		printf("%d\t%f\t", i, Rates->Rates[0]);
 		Rates->Lh = Likelihood(Rates, Trees, Opt);
 		printf("%f\n", Rates->Lh);
 		fflush(stdout);
-		d += 0.1;
+		d += 0.01;
 	}
 
+	exit(0);
 	return;
 }
 #ifdef	 JNIRUN
@@ -213,6 +214,8 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		
 		BLh = ERRLH;
 
+//		Test(Opt, Trees, Rates);
+
 		if(Opt->Model == CONTRASTM)
 			CalcContrastLh(Opt, Trees, Rates);
 		else
@@ -221,6 +224,7 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 			{		
 				for(OIndex=0;OIndex<Opt->MLTries;OIndex++)
 				{
+					
 					CLh = PraxisGo(Opt, Rates, Trees);
 				
 					if((CLh < BLh) || (BLh == ERRLH))

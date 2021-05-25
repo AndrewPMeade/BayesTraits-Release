@@ -100,8 +100,8 @@ int main(int argc, char** argv)
 // ./Seq/Zuzana/Chiroptera.trees ./Seq/Zuzana/Chiroptera_BrW.txt  < ./Seq/Zuzana/in.txt > sout.txt
 int main(int argc, char** argv)
 {
-	TREES*		Trees=NULL;
-	OPTIONS*	Opt=NULL; 
+	TREES*		Trees;
+	OPTIONS*	Opt; 
 
 	SetSeed();
 
