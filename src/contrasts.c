@@ -1426,6 +1426,8 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	CalcContrast(Trees, Rates);	
 #endif	
 
+	PrintContrast(Rates, Trees);exit(0);
+
 	if(Opt->Model == M_CONTRAST)
 		Rates->Lh = CaclStdContrastLh(Opt, Trees, Rates);
 

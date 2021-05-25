@@ -323,7 +323,8 @@ static char		*MODELNAMES[] =
 	"Independent Contrasts: Correlation",
 	"Independent Contrasts: Regression",
 	"Discrete: Covarion", 
-	"Discrete: Heterogeneous"
+	"Discrete: Heterogeneous",
+	"Fat Tail:"
 };
 
 static char    *DEPPRAMS[] =
@@ -434,14 +435,16 @@ typedef enum
 	M_CONTRAST_CORREL,
 	M_CONTRAST_REG,
 	M_DESCCV,
-	M_DESCHET
+	M_DESCHET,
+	M_FATTAIL
 } MODEL;
 
 typedef enum
 {
 	MT_DISCRETE,
 	MT_CONTINUOUS,
-	MT_CONTRAST
+	MT_CONTRAST,
+	MT_FATTAIL
 } MODEL_TYPE;
 
 typedef enum
@@ -517,6 +520,16 @@ typedef struct
 
 typedef struct
 {
+	double	*Ans;
+	double	Lh;
+
+
+	double	Data, Cont, Err, Var, v;
+	
+} FATTAILN;
+
+typedef struct
+{
 	int NoTaxa;
 	int *Taxa;
 } PART;
@@ -565,6 +578,7 @@ struct INODE
 	int			FossilState;
 
 	CONDATA		*ConData;
+	FATTAILN	*FatTailData;
 };
 
 typedef struct INODE*	NODE;

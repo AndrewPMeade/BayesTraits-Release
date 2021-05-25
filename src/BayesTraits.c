@@ -201,11 +201,13 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // ./Seq/FritzMammalianSupertree.trees ./Seq/JustBM.txt < in.txt > sout.txt
 // ./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
 
+// ./Seq/Mammal-1.trees ./Seq/MammalBrainBodyGt.txt < in.txt > sout.txt
 
 // ./Seq/testree.trees ./Seq/MamBrainBody.txt < in.txt > sout.txt
 
 // ./Seq/Yunes.trees ./Seq/Yunes.txt < in.txt > sout.txt
 
+// ./Seq/FatTail/3Taxa.trees ./Seq/FatTail/3Taxa.txt < in.txt. > sout.txt
 int main(int argc, char** argv)
 {
 	TREES*		Trees;

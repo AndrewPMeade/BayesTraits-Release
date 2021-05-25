@@ -24,6 +24,7 @@
 #include "threaded.h"
 #include "QuadDouble.h"
 #include "contrasts.h"
+#include "FatTail.h"
 
 #ifdef BTOCL
 #include "btocl_discrete.h"
@@ -37,11 +38,16 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 
 
 	Model	= GetModel(Trees);
-	Analsis = GetAnalsis(Trees);
+	
+	if(Model == M_FATTAIL)
+		Analsis = ANALMCMC;
+	else
+		Analsis = GetAnalsis(Trees);
+
 	CheckDataWithModel(DataFN, Trees, Model);
 
 	Opt = CreatOptions(Model, Analsis, Trees->NoOfStates, TreeFN, DataFN, Trees->SymbolList, Trees);
-
+	
 	return Opt;
 }
 
@@ -98,6 +104,9 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 	if(Opt->ModelType == MT_CONTRAST)
 		InitContrastAll(Opt, Trees);
+
+	if(Opt->ModelType == MT_FATTAIL)
+		InitFatTailTrees(Opt, Trees);
 
 	if(Opt->ModelType == MT_DISCRETE)
 	{

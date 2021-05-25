@@ -441,10 +441,12 @@ void	MakeNewTree(TREE *Tree, NTREE *PTree)
 		Node = Tree->NodeList[Index];
 		NNode= PTree->NodeList[Index];
 
-		Node->Length	= NNode->Length;
-		Node->UserLength= NNode->Length;
-		Node->Tip		= NNode->Tip;
-		Node->ConData	= NULL;
+		Node->Length		= NNode->Length;
+		Node->UserLength	= NNode->Length;
+		Node->Tip			= NNode->Tip;
+		Node->ConData		= NULL;
+		Node->FatTailData	= NULL;
+	
 
 		Node->Part = NULL;
 	//	Node->PSize= 0;

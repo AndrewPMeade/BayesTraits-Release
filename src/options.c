@@ -713,6 +713,33 @@ char**	ContrastRegRateNames(OPTIONS *Opt)
 	return Ret;
 }
 
+char**	FatTailRateNames(OPTIONS *Opt)
+{
+	char	**Ret;
+	char	*Buffer;
+	int		Index, Pos;
+	
+	Opt->NoOfRates = Opt->Trees->NoOfSites * 2;
+	 
+	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
+	if((Ret == NULL) || (Buffer == NULL))
+		MallocErr();
+	
+	Pos = 0;
+	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	{
+		sprintf(Buffer, "Alpha-%d", Index+1);
+		Ret[Pos++] = StrMake(Buffer);
+
+		sprintf(Buffer, "Beta-%d", Index+1);
+		Ret[Pos++] = StrMake(Buffer);
+	}
+
+	free(Buffer);
+	return Ret;
+}
+
 char**	CreatContinusRateName(OPTIONS* Opt)
 {
 	switch(Opt->Model)
@@ -734,6 +761,9 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 
 		case M_CONTRAST_REG:
 			return ContrastRegRateNames(Opt);
+
+		case M_FATTAIL:
+			return FatTailRateNames(Opt);
 	}
 
 	return NULL;
@@ -744,7 +774,8 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 	int		Inner;
 	int		Outter;
 	int		Index;
-	
+
+
 	if(Opt->DataType == CONTINUOUS)
 	{
 		Opt->RateName	= CreatContinusRateName(Opt);
@@ -875,6 +906,7 @@ MODEL_TYPE	GetModelType(MODEL Model)
 		case	M_CONTRAST:			return MT_CONTRAST; break;
 		case	M_DESCCV:			return MT_DISCRETE; break;
 		case	M_DESCHET:			return MT_DISCRETE; break;
+		case	M_FATTAIL:			return MT_FATTAIL; break;
 	}
 
 	printf("Unkown model type (%s::%d)\n", __FILE__, __LINE__);
@@ -892,7 +924,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	if((Model == M_DESCDEP) || (Model == M_DESCINDEP) || (Model == M_DESCCV) || (Model == M_DESCHET))
 		SquashDep(Trees);
 
-	if((GetModelType(Model) == MT_CONTINUOUS) || (GetModelType(Model) == MT_CONTRAST))
+	if(	(GetModelType(Model) == MT_CONTINUOUS)	|| 
+		(GetModelType(Model) == MT_CONTRAST)	||
+		(GetModelType(Model) == MT_FATTAIL))
 		RemoveConMissingData(Trees);
 
 	Ret = (OPTIONS*)malloc(sizeof(OPTIONS));
@@ -939,7 +973,10 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	if(Ret->ModelType == MT_DISCRETE);
 		Ret->DataType = DISCRETE;
 
-	if((Ret->ModelType == MT_CONTINUOUS) || (Ret->ModelType == MT_CONTRAST))
+	if(	(Ret->ModelType == MT_CONTINUOUS)	|| 
+		(Ret->ModelType == MT_CONTRAST)		||
+		(Ret->ModelType	== MT_FATTAIL)
+		) 
 	{
 		Ret->TestCorrel = TRUE;
 		Ret->DataType	= CONTINUOUS;
@@ -1142,10 +1179,15 @@ void	PrintModelChoic(TREES *Trees)
 	}
 
 	if((Trees->NoOfSites == 2) && (Trees->NoOfStates == 2))
+	{
 		printf("10)	Discrete: Covarion\n");
-#ifndef PUBLIC_BUILD
-	printf("9)	Discrete: Heterogeneous \n");
-#endif
+	#ifndef PUBLIC_BUILD
+		printf("9)	Discrete: Heterogeneous \n");
+	#endif
+	}
+
+	if(Trees->ValidCData == TRUE)
+		printf("12) Fat Tail\n");
 }
 
 int		GetModelInt()
@@ -1255,7 +1297,10 @@ MODEL	IntToModel(int No)
 	if(No == 11)
 		return M_DESCHET;
 
-	printf("Unkown model\n");
+	if(No == 12)
+		return M_FATTAIL;
+
+	printf("Unknown model\n");
 	exit(0);
 }
 
@@ -1305,6 +1350,8 @@ ANALSIS	GetAnalsis(TREES *Trees)
 	int		Comment;
 
 	Comment = FALSE;
+
+	
 
 	for(;;)
 	{
