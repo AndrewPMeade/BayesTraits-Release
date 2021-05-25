@@ -772,7 +772,7 @@ void	RemoveConMissingData(TREES* Trees)
 {
 	int		Index;
 
-	FreeParts(Trees);
+	FreeTreeParts(Trees);
 
 	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
@@ -985,7 +985,7 @@ void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
 		AddNewRecNode(Trees, RNode);
 	}
 
-	FreeParts(Trees);
+	FreeTreeParts(Trees);
 	SetParts(Trees);
 
 	SetTreesDistToRoot(Trees);

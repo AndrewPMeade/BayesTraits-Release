@@ -1384,7 +1384,7 @@ void	PrintModelChoic(TREES *Trees)
 		}
 	}
 
-	if((Trees->NoSites == 2) && (Trees->NoStates == 2))
+	if(Trees->NoSites == 2 && Trees->NoStates == 2)
 	{
 		printf("10)\tDiscrete: Covarion\n");
 		if(Trees->NoTrees == 1)
@@ -1405,9 +1405,7 @@ int		GetModelInt()
 
 	Ret = -1;
 
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
+	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
 	if(fgets(Buffer, BUFFERSIZE, stdin) == NULL)
 	{
@@ -2538,7 +2536,6 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			Command ==	CREVJUMP	||
 			Command == CMCMCMLSTART	||
 			Command == CCAPRJRATES	||
-			Command == CVARRATES	||
 			Command == CSAVEMODELS	||
 			Command == CLOADMODELS	||
 			Command == CSHEDULE		||
@@ -3948,12 +3945,6 @@ void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
 
 void	SetVarRatesOpt(OPTIONS *Opt)
 {
-	if(Opt->Trees->NoTrees > 1)
-	{
-		printf("VarRates can only be used on a single tree.\n");
-		exit(1);
-	}
-
 	if(Opt->UseVarRates == TRUE)
 	{
 		RemovePriorFormOpt("VRNode", Opt);
@@ -4391,7 +4382,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	{
 		if(Tokes > 1)
 		{
-			FreeParts(Opt->Trees);
+			FreeTreeParts(Opt->Trees);
 			FreeRecNodes(Opt, Opt->Trees->NoSites);
 			ExcludeTaxa(Opt, Tokes-1, &Passed[1]);
 			SetParts(Opt->Trees);

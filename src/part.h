@@ -5,9 +5,10 @@
 
 
 void	SetParts(TREES *Trees);
-void	FreeParts(TREES *Trees);
+void	FreeTreeParts(TREES *Trees);
 
 void	FreePart(PART *Part);
+
 PART*	CreatPart(int NoTaxa);
 
 void	GetPartDiff(PART *Ans, PART *Cur, PART *Diff);
@@ -23,6 +24,9 @@ int		TaxaInPart(int TaxaIndex, PART *P);
 int		PartEqual(PART *A, PART *B);
 
 int		PartSubSet(PART *A, PART *B);
+
+void	PrintPart(FILE *Str, TREES *Trees, PART *Part);
+void	PrintParts(FILE *Str, TREES *Trees);
 
 
 #endif

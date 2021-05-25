@@ -222,6 +222,8 @@ void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 {
 	int	Index;
 
+	FreeTreeParts(Trees);
+
 	if(Opt->ModelType == MT_CONTRAST)
 		FreeAllContrast(Opt, Trees);
 
@@ -242,8 +244,6 @@ void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 
 	FreeData(Opt);
 	free(Trees->Taxa);
-
-	FreeParts(Trees);
 
 	for(Index=0;Index<Trees->NoTrees;Index++)
 		FreeTree(Trees->Tree[Index], Trees->NoSites, Trees->NoTaxa);
@@ -734,6 +734,9 @@ TREES*	LoadTrees(char* FileName)
 	Ret->PMean				= NULL;
 	Ret->PSD				= NULL;
 	Ret->TempConVars		= NULL;
+	
+	Ret->PartList			= NULL;
+	Ret->NoParts			= 0;
 
 	PTrees = LoadNTrees(FileName, &Err);
 
@@ -2051,26 +2054,6 @@ NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo)
 	return NULL;
 }
 
-NODE	FastGetMRCA(TREE *Tree, PART *Part)
-{
-	NODE Node;
-
-	Node = GetTreeTaxaNode(Tree, Part->Taxa[0]);
-
-	if(Part->NoTaxa == 1)
-		return Node;
-
-	while(Node->Ans != NULL)
-	{
-		if(PartSubSet(Node->Part, Part) == TRUE)
-			return Node;
-		
-		Node = Node->Ans;
-	}
-
-	return NULL;
-}
-
 void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees)
 {
 	Opt->OutTrees = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_TREES);
@@ -2136,3 +2119,57 @@ void	CheckSingleDescendent(TREES *Trees)
 	for(Index=0;Index<Trees->NoTrees;Index++)
 		CheckTreeSingleDescendent(Trees, Index);
 }
+/*
+#define	NO_NODE_TO_TEST 100000
+#include <omp.h>
+
+void	TimeTestMRCA(OPTIONS *Opt, TREES *Trees)
+{
+	RANDSTATES *RS;
+	TREE *Tree;
+	int Index;
+	NODE SNode, DNode, DNodeS;
+	double Start, Stop;
+
+	RS = CreateSeededRandStates(1977);
+	Tree = Trees->Tree[0];
+
+	Start = omp_get_wtime();	
+	
+
+	for(Index=0;Index<NO_NODE_TO_TEST;Index++)
+//	for(Index=0;;Index++)
+//	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		SNode = Tree->NodeList[RandUSInt(RS) % Tree->NoNodes];
+//		SNode = Tree->NodeList[Index];
+
+		DNodeS = PartGetMRCA(Tree, SNode->Part);
+		DNode = FastGetMRCA(Tree, SNode->Part);
+
+		if(DNode != DNodeS )
+		{
+			printf("Err\n");
+			exit(0);
+		}
+
+		if(DNode != SNode)
+		{
+			printf("Err\n");
+			exit(0);
+		}
+		if(Index % 10000 == 0)
+		{
+			printf("%d\n", Index);
+			fflush(stdout);
+		}
+		
+	}
+
+	Stop = omp_get_wtime();	
+	
+	printf("Time in S:\t%f\n", Stop-Start);
+
+	exit(0);
+}
+*/

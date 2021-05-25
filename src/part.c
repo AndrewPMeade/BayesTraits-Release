@@ -55,6 +55,10 @@ PART*	CreatPart(int NoTaxa)
 	Part->NoTaxa = NoTaxa;
 	Part->Taxa = (int*)SMalloc(sizeof(int) * NoTaxa);
 	
+	Part->PartID = -1;
+	Part->Freq = 0;
+	Part->Prob = 0.0;
+
 	return Part;
 }
 
@@ -183,33 +187,108 @@ void	SetTreePart(NODE N)
 	SetIntPart(N);
 }
 
-void	FreeParts(TREES *Trees)
+size_t	GetMaxNoParts(TREES *Trees)
 {
-	int TIndex, NIndex;
-	TREE *T;
+	size_t Ret;
+	int TIndex;
+
+	Ret = 0;
 
 	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-	{
-		T = Trees->Tree[TIndex];
-
+		Ret += Trees->Tree[TIndex]->NoNodes;
 	
-		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
+	return Ret;
+}
+
+void	FreeTreeParts(TREES *Trees)
+{
+	size_t Index;
+
+	if(Trees->PartList == NULL)
+		return;
+
+	for(Index=0;Index<Trees->NoParts;Index++)
+		FreePart(Trees->PartList[Index]);
+
+	free(Trees->PartList);
+	Trees->PartList = NULL;
+	Trees->NoParts = 0;
+}
+
+PART*	PartInList(size_t NoParts, PART **PList, PART *Part)
+{
+	size_t Index;
+
+	for(Index=0;Index<NoParts;Index++)
+	{
+		if(PartEqual(Part, PList[Index]) == TRUE)
+			return PList[Index];
+	}
+
+	return NULL;
+}
+
+void	ProcessTreeParts(size_t *NoParts, PART **PList, TREE *Tree)
+{
+	int NIndex;
+	NODE N;
+	PART *ListP;
+
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
+	{
+		N = Tree->NodeList[NIndex];
+
+		ListP = PartInList(*NoParts, PList, N->Part);
+		if(ListP != NULL)
+			FreePart(N->Part);
+		else
 		{
-			FreePart(T->NodeList[NIndex]->Part);
-			T->NodeList[NIndex]->Part = NULL;
+			ListP = N->Part;
+			PList[*NoParts] = ListP;
+			(*NoParts)++;
 		}
+		
+		ListP->Freq++;
+		N->Part = ListP;
 	}
 }
+
+void	SetPartInfo(TREES *Trees)
+{
+	int TIndex;
+	size_t MaxNodes, PIndex;
+	
+
+	MaxNodes = GetMaxNoParts(Trees);
+	Trees->PartList = (PART**)SMalloc(sizeof(PART*) * MaxNodes);
+
+	Trees->NoParts = 0;
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
+		ProcessTreeParts(&Trees->NoParts, Trees->PartList, Trees->Tree[TIndex]);
+
+	for(PIndex=0;PIndex<Trees->NoParts;PIndex++)
+	{
+		Trees->PartList[PIndex]->PartID = PIndex;
+		Trees->PartList[PIndex]->Prob = Trees->PartList[PIndex]->Freq / (double)Trees->NoTrees;
+	}
+}
+
 
 void	SetParts(TREES *Trees)
 {
 	int TIndex;
 
+	FreeTreeParts(Trees);
+
 	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 		SetTreePart(Trees->Tree[TIndex]->Root);
+
+	SetPartInfo(Trees);
+
+//	PrintParts(stdout, Trees);
+//	exit(0);
+
 }
-
-
 
 void	GetPartDiff(PART *Ans, PART *Cur, PART *Diff)
 {
@@ -230,12 +309,25 @@ void	PrintPart(FILE *Str, TREES *Trees, PART *Part)
 	int Index, ID;
 	TAXA *T;
 
-	fprintf(Str, "Part:\t%d\t", Part->NoTaxa);
+	fprintf(Str, "%zu\t%d\t%f\t", Part->PartID, Part->Freq, Part->Prob);
+	fprintf(Str, "\t%d\t", Part->NoTaxa);
+	
 	for(Index=0;Index<Part->NoTaxa;Index++)
 	{
 		ID = Part->Taxa[Index];
 		T = Trees->Taxa[ID];
 		fprintf(Str, "%s\t", T->Name);
+	}
+}
+
+void	PrintParts(FILE *Str, TREES *Trees)
+{
+	int PIndex;
+
+	for(PIndex=0;PIndex<Trees->NoParts;PIndex++)
+	{
+		PrintPart(Str, Trees, Trees->PartList[PIndex]);
+		fprintf(Str, "\n");
 	}
 }
 
@@ -287,7 +379,7 @@ PART*	CreatePart(TREES *Trees, int NoTaxa, char **TaxaList)
 
 	return Ret;
 }
-
+/*
 NODE	PartGetMRCA(TREE *Tree, PART *Part)
 {
 	NODE Ret, N;
@@ -306,4 +398,25 @@ NODE	PartGetMRCA(TREE *Tree, PART *Part)
 	}
 
 	return Ret;
+}
+*/
+
+NODE	PartGetMRCA(TREE *Tree, PART *Part)
+{
+	NODE Node;
+
+	Node = GetTreeTaxaNode(Tree, Part->Taxa[0]);
+
+	if(Part->NoTaxa == 1)
+		return Node;
+
+	while(Node != NULL)
+	{
+		if(PartSubSet(Node->Part, Part) == TRUE)
+			return Node;
+
+		Node = Node->Ans;
+	}
+
+	return NULL;
 }

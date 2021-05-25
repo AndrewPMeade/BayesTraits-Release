@@ -64,9 +64,7 @@ void	ScaleSubTree(NODE N, double Scale);
 void	ScaleTrees(TREES *Trees, double Scale);
 void	ScaleUserTrees(TREES *Trees, double Scale);
 
-
 NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo);
-NODE	FastGetMRCA(TREE *Tree, PART *Part);
 
 void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees);
 void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Out);
@@ -75,5 +73,7 @@ void	PrintTreeBL(TREE *Tree);
 
 
 void	CheckSingleDescendent(TREES *Trees);
+
+
 
 #endif
