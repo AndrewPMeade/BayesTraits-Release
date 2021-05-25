@@ -240,7 +240,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	if(UseNonParametricMethods(Opt) == TRUE)
 	{
 		Shed->OptFreq[SPPADDREMOVE] = 0.5;
-		Shed->OptFreq[SPPMOVE] = 0.1;
+		Shed->OptFreq[SPPMOVE] = 0.05;
 		Shed->OptFreq[SPPCHANGESCALE] = 0.4;
 
 		Left = Left - (Shed->OptFreq[SPPADDREMOVE] + Shed->OptFreq[SPPMOVE] + Shed->OptFreq[SPPCHANGESCALE]);

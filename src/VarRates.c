@@ -96,6 +96,7 @@ int		IsValidVarRatesNode(NODE N, RJ_VARRATE_TYPE	Type)
 {
 	PART *Part;
 
+
 	if(N == NULL)
 		return FALSE;
 
@@ -462,7 +463,6 @@ void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 		Node->Scale = ChangePlastyRate(Rates->RS, Node->Scale, Opt->VarRatesScaleDev);
 }
 
-
 int		NodeScaled(int NID, PLASTY *Plasty)
 {
 	int	Index;
@@ -493,7 +493,7 @@ int GetPlastyNode(int ID, PLASTY *Plasty, RJ_VARRATE_TYPE Type)
 	{
 		if(	Plasty->NodeList[Index]->Node->ID == ID && 
 			Plasty->NodeList[Index]->Type == Type)
-			return Index;
+		return Index;
 	}
 
 	return -1;
@@ -530,8 +530,8 @@ void	MakeTNodeList(OPTIONS *Opt, PLASTY *Plasty, RJ_VARRATE_TYPE Type, NODE N, N
 	if(N->Tip == TRUE)
 		return;
 
-	for(Index=0;Index<N->NoNodes;Index++)
-		MakeTNodeList(Opt, Plasty,Type, N->NodeList[Index], List, Size);
+//	for(Index=0;Index<N->NoNodes;Index++)
+//		MakeTNodeList(Opt, Plasty,Type, N->NodeList[Index], List, Size);
 }
 
 void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
@@ -1017,7 +1017,8 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 
 	if(Opt->Model == M_CONTRAST_REG)
 	{
-		fprintf(Out, "%f\t-1\t%f\t", Rates->Contrast->RegAlpha, P->Alpha);
+		Sigma = Rates->Contrast->GlobalVar;
+		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->RegAlpha, Sigma, P->Alpha);
 	}
 	
 //	fprintf(Out, "\n");
