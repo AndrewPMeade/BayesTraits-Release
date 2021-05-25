@@ -681,6 +681,18 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 		Opt->RateName	= DEPPRAMS;
 	}
 
+	if(Opt->Model == DESCCV)
+	{
+		Opt->NoOfRates = 14;
+		Opt->RateName = DEPCVPRAMS;
+	}
+
+	if(Opt->Model == DESCHET)
+	{
+		Opt->NoOfRates = 12;
+		Opt->RateName = DEPHETROPRAMS;
+	}
+
 	if(Opt->Model == MULTISTATE)
 	{
 		Opt->NoOfRates	= (NOS * NOS) - NOS;
@@ -788,7 +800,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	OPTIONS *Ret=NULL;
 	char	Buffer[1024];
 
-	if((Model == DESCDEP) || (Model == DESCINDEP))
+	
+	if((Model == DESCDEP) || (Model == DESCINDEP) || (Model == DESCCV) || (Model == DESCHET))
 		SquashDep(Trees);
 
 	if( (Model == CONTINUOUSRR)  || 
@@ -836,7 +849,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	if((Ret->Model == MULTISTATE) ||
 		(Ret->Model == DESCINDEP) ||
-		(Ret->Model == DESCDEP))
+		(Ret->Model == DESCDEP) ||
+		(Ret->Model == DESCCV) ||
+		(Ret->Model == DESCHET))
 		Ret->DataType = DISCRETE;
 
 	if( (Ret->Model == CONTINUOUSRR) || 
@@ -991,16 +1006,19 @@ MODEL	GetModel(TREES *Trees)
 			printf("1)	MultiState.\n");
 			printf("2)	Discrete: Independent\n");
 			printf("3)	Discrete: Dependant\n");
+			printf("4)	Discrete: Covarion\n");
+			printf("5)	Discrete: Heterogeneous \n");
+
 
 			if(Trees->ValidCData == TRUE)
 			{
-				printf("4)	Continuous: Random Walk (Model A)\n");
-				printf("5)	Continuous: Directional (Model B)\n");
+				printf("6)	Continuous: Random Walk (Model A)\n");
+				printf("7)	Continuous: Directional (Model B)\n");
 
 				if(Trees->NoOfSites > 1)
-					printf("6)	Continuous: Regression\n");
+					printf("8)	Continuous: Regression\n");
 
-				printf("7)	Independent contrast\n");
+				printf("9)	Independent contrast\n");
 			}
 		}
 
@@ -1037,16 +1055,36 @@ MODEL	GetModel(TREES *Trees)
 					break;
 
 					case 4:
+						if((Trees->NoOfSites != 2) || (Trees->NoOfStates > 2))
+						{
+							printf("Descete analisis requiers two two stat characters\n");
+							printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
+							break;
+						}
+						return DESCCV;
+					break;
+							
+					case 5:
+						if((Trees->NoOfSites != 2) || (Trees->NoOfStates > 2) || (Trees->NoOfTrees != 1))
+						{
+							printf("Descete Heterogeneous  analisis requiers two two stat characters and only tree\n");
+							printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
+							break;
+						}
+						return DESCHET;
+					break;
+	
+					case 6:
 						if(Trees->ValidCData == TRUE)
 							return CONTINUOUSRR;
 					break;
 
-					case 5:
+					case 7:
 						if(Trees->ValidCData == TRUE)
 							return CONTINUOUSDIR;
 					break;
 
-					case 6:
+					case 8:
 						if(Trees->ValidCData == TRUE)
 						{
 							if(Trees->NoOfSites > 1)
@@ -1057,7 +1095,7 @@ MODEL	GetModel(TREES *Trees)
 					break;
 
 
-					case 7:
+					case 9:
 						if(Trees->ValidCData == TRUE)
 							return CONTRASTM;
 					break;

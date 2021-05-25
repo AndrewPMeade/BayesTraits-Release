@@ -121,7 +121,8 @@ int main(int argc, char** argv)
 //	./Seq/PrimatesCon.trees ./Seq/PrimatesMS.txt < in.txt > sout.txt
 //	./Seq/stu.trees ./Seq/stu.txt < in.txt > sout.txt
 
-
+//	./Seq/BirdDiscRJ/Sub.trees ./Seq/BirdDiscRJ/Sub.txt < ./Seq/BirdDiscRJ/Sub.in.txt > ./Seq/BirdDiscRJ/Sub.out.txt
+//	./Seq/Ficus3genesReSampled.rooted.trees ./Seq/Ficus3genesReSampled.rooted.txt < in.txt > sout.txt
 int main(int argc, char** argv)
 {
 	TREES*		Trees;

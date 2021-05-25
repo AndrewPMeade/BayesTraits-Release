@@ -23,7 +23,6 @@
 	#define	DEF_PRE	256
 #endif
 
-
 #ifdef	THREADED
 	#include <omp.h>
 	#define MIN_NODES_PER_PROC	2
@@ -260,6 +259,8 @@ static char		*MODELNAMES[] =
 	"Multistates",
 	"Discete Independant",
 	"Discete Dependent",
+	"Discrete Covarion", 
+	"Discrete Heterogeneous", 
 	"Continuous Random Walk",
 	"Continuous Directional",
 	"Continuous Regression",
@@ -288,6 +289,43 @@ static char    *INDEPPRAMS[] =
 	""
 };
 
+static char    *DEPCVPRAMS[] =
+{
+	"alpha1",
+	"beta1",
+	"alpha2",
+	"beta2",
+	"q12",
+	"q13",
+	"q21",
+	"q24",
+	"q31",
+	"q34",
+	"q42",
+	"q43",
+	"qDI",
+	"qID",
+	""
+};
+
+static char    *DEPHETROPRAMS[] =
+{
+	"alpha1",
+	"beta1",
+	"alpha2",
+	"beta2",
+	"q12",
+	"q13",
+	"q21",
+	"q24",
+	"q31",
+	"q34",
+	"q42",
+	"q43",
+	""
+};
+
+
 static char    *DISTNAMES[] =
 {
 	"beta",
@@ -308,11 +346,6 @@ static int	DISTPRAMS[] =
 	1
 };
 
-typedef enum
-{
-	DISCRETE,
-	CONTINUOUS
-} DATATYPE;
 
 typedef enum
 {
@@ -325,9 +358,18 @@ typedef enum
 
 typedef enum
 {
+	DISCRETE,
+	CONTINUOUS
+} DATATYPE;
+
+
+typedef enum
+{
 	MULTISTATE,
 	DESCINDEP,
 	DESCDEP,
+	DESCCV,
+	DESCHET,
 	CONTINUOUSRR,
 	CONTINUOUSDIR,
 	CONTINUOUSREG,
@@ -558,8 +600,6 @@ typedef struct
 
 } TEMPCONVAR;
 
-
-
 typedef struct
 {
 	int			NoOfTrees;
@@ -773,6 +813,14 @@ typedef struct
 	int			Cores;
 } OPTIONS;
 
+typedef struct
+{
+	int			NoModels;
+	INVINFO**	ModelInv;
+	
+	int			MListSize;
+	int			*MList;
+} HETERO;
 
 typedef struct
 {
@@ -856,6 +904,7 @@ typedef struct
 
 	PLASTY			*Plasty;
 	CONTRASTR		*Contrast;
+	HETERO			*Hetero;
 } RATES;
 
 typedef struct
@@ -872,7 +921,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NOOFOPERATORS	14
+#define NOOFOPERATORS	15
 
 static char    *SHEDOP[] =
 {
@@ -889,7 +938,8 @@ static char    *SHEDOP[] =
 	"PP Add / Remove",
 	"PP Move",
 	"PP Change Scale",
-	"PP Hyper Prior"
+	"PP Hyper Prior",
+	"Change Hetero"
 };
 
 typedef enum
@@ -908,6 +958,7 @@ typedef enum
 	SPPMOVE=11,
 	SPPCHANGESCALE=12,
 	SPPHYPERPRIOR=13,
+	SHETERO=14
 } OPERATORS;
 
 typedef struct

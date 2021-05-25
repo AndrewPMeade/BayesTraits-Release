@@ -25,6 +25,8 @@ void	SetIdentityMatrix(MATRIX *M);
 void	Transpose(MATRIX *T, MATRIX *TransT);
 void	ScaleMatrix(MATRIX *M, double Scalar);
 
+void	FillMatrix(MATRIX *M, double Value);
+
 void	PrintMathematicaMatrix(MATRIX *Matrix, char* Headder, FILE*	Str);
 void	PrintMathematicaVect(double* Vect, int N, char* Banna, FILE *Str);
 

@@ -6,7 +6,7 @@
 TREES*	LoadTrees(char* FileName);
 
 void	FreeTrees(TREES* Trees, OPTIONS *Opt);
-void	AllocPartial(TREES* Trees, int Gamma);
+void	AllocPartial(OPTIONS *Opt, TREES* Trees, int Gamma);
 TAXA*	GetTaxaFromID(int ID, TAXA **Taxa, int NoOfTaxa);
 TAXA*	GetTaxaFromName(char *Name, TAXA **Taxa, int NoOfTaxa);
 
@@ -28,7 +28,7 @@ void	SetMinBL(TREES *Trees);
 void	SetNOSPerSite(OPTIONS *Opt);
 
 void	AddNewRecNode(TREES* Trees, RECNODE RecNode);
-void	SetNodeTipData(NODE N, TREE* Tree, TREES *Trees);
+void	SetNodeTipData(OPTIONS *Opt, NODE N, TREE* Tree, TREES *Trees);
 
 void	MakeUM(TREES* Trees);
 

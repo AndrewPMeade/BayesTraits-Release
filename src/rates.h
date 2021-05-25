@@ -13,6 +13,7 @@ void		CopyRates(RATES *A, RATES *B, OPTIONS *Opt);
 int			FindNoOfRates(OPTIONS *Opt);
 int			FindRatePos(int Rate, OPTIONS *Opt);
 void		MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It);
+void		MutateHetero(RATES *Rates);
 void		FreeRates(RATES *Rates);
 
 

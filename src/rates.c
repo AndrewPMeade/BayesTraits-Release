@@ -503,6 +503,80 @@ void	InitHMean(RATES* Rates, OPTIONS *Opt)
 #endif
 }
 
+INVINFO**	CreatInvInfo(int NOS,  int NoM)
+{
+	int	 Index;
+	INVINFO** Ret;
+
+	Ret = (INVINFO**)malloc(sizeof(INVINFO**) * NoM);
+	if(Ret == NULL)
+		MallocErr();
+
+	for(Index=0;Index<NoM;Index++)
+		Ret[Index] = AllocInvInfo(NOS);
+
+	return Ret;
+}
+
+void	FreeHetero(HETERO* Hetero)
+{
+	int Index;
+
+	for(Index=0;Index<Hetero->NoModels;Index++)
+		FreeInvInfo(Hetero->ModelInv[Index]);
+
+	free(Hetero->ModelInv);
+	free(Hetero->MList);
+	free(Hetero);
+}
+
+HETERO*	CreatHetero(OPTIONS *Opt, RATES* Rates)
+{
+	HETERO *Ret;
+	TREES *Trees;
+	int		Index;
+
+	Trees = Opt->Trees;
+
+	Ret = (HETERO*)malloc(sizeof(HETERO));
+	if(Ret == NULL)
+		MallocErr();
+
+	Ret->NoModels = 2;
+	Ret->ModelInv = CreatInvInfo(Trees->NoOfStates, Ret->NoModels);
+	
+	Ret->MListSize = Trees->MaxNodes;
+
+	Ret->MList = (int*)malloc(sizeof(int) * Ret->MListSize);
+	if(Ret->MList == NULL)
+		MallocErr();
+	
+	for(Index=0;Index<Ret->MListSize;Index++)
+		Ret->MList[Index] = RandUSInt(Rates->RS) % Ret->NoModels;
+
+	return Ret;
+}
+
+void	CopyHetero(HETERO *A, HETERO *B)
+{
+	memcpy(A->MList, B->MList, sizeof(int) * A->MListSize);
+}
+
+void	 MutateHetero(RATES *Rates)
+{
+	int No, New;
+	HETERO *Hetero;
+
+	Hetero = Rates->Hetero;
+	No = RandUSInt(Rates->RS) % Hetero->MListSize;
+
+	do
+	{
+		New = RandUSInt(Rates->RS) % Hetero->NoModels;
+	}while(New == Hetero->MList[No]);
+
+	Hetero->MList[No] = New;
+}
 
 RATES*	CreatRates(OPTIONS *Opt)
 {
@@ -656,6 +730,11 @@ RATES*	CreatRates(OPTIONS *Opt)
 		}
 	}
 
+	if(Opt->Model == DESCHET)
+		Ret->Hetero = CreatHetero(Opt, Ret);
+	else
+		Ret->Hetero = NULL;
+
 	MapRates(Ret, Opt);
 
 	if(Opt->UseModelFile == TRUE)
@@ -663,6 +742,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 		Ret->FixedModels = LoadModelFile(Ret, Opt);
 		SetFixedModel(Ret, Opt);	
 	}
+	
 	
 	return Ret;
 }
@@ -838,6 +918,20 @@ void	PrintRecNodeHeadder(FILE* Str, OPTIONS *Opt, char* Name, int SiteNo)
 		fprintf(Str, "%s - P(0,1)\t", Name);
 		fprintf(Str, "%s - P(1,0)\t", Name);
 		fprintf(Str, "%s - P(1,1)\t", Name);
+		return;
+	}
+
+	if(Opt->Model == DESCCV)
+	{
+		fprintf(Str, "%s - I P(0,0)\t", Name);
+		fprintf(Str, "%s - I P(0,1)\t", Name);
+		fprintf(Str, "%s - I P(1,0)\t", Name);
+		fprintf(Str, "%s - I P(1,1)\t", Name);
+		fprintf(Str, "%s - D P(0,0)\t", Name);
+		fprintf(Str, "%s - D P(0,1)\t", Name);
+		fprintf(Str, "%s - D P(1,0)\t", Name);
+		fprintf(Str, "%s - D P(1,1)\t", Name);
+
 		return;
 	}
 
@@ -1339,9 +1433,7 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OP
 				(Node->Partial[0][2]/Tot > 1) ||
 				(Node->Partial[0][3]/Tot > 1))
 				printf("Err\n");
-
 			
-
 			if(Opt->UseCovarion == FALSE)
 			{
 				fprintf(Str, "%f\t", (Node->Partial[0][0])/Tot);
@@ -1356,6 +1448,12 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OP
 				fprintf(Str, "%f\t", (Node->Partial[0][2] + Node->Partial[0][6])/Tot);
 				fprintf(Str, "%f\t", (Node->Partial[0][3] + Node->Partial[0][7])/Tot);
 			}
+		}
+
+		if(Opt->Model == DESCCV)
+		{
+			for(Index=0;Index<NOS;Index++)
+				fprintf(Str, "%f\t", Node->Partial[0][Index] / Tot);
 		}
 
 		if(Opt->Model == MULTISTATE)
@@ -1478,14 +1576,10 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	for(Index=0;Index<Rates->NoEstData;Index++)
 		fprintf(Str, "%c\t", Opt->Trees->SymbolList[Rates->EstDescData[Index]]);
 
-
-	// TODO Phoneim remove. 
-#ifndef PHONEIM_RUN
 	PrintNodeRec(Str, Opt->Trees->Tree[Rates->TreeNo]->Root, Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
 
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 		PrintNodeRec(Str, Opt->RecNodeList[Index]->TreeNodes[Rates->TreeNo], Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
-#endif
 }
 
 void	CopyRJRtaes(RATES *A, RATES *B, OPTIONS *Opt)
@@ -1495,8 +1589,6 @@ void	CopyRJRtaes(RATES *A, RATES *B, OPTIONS *Opt)
 	memcpy(A->Rates, B->Rates, sizeof(double)*B->NoOfRJRates);
 	memcpy(A->MappingVect, B->MappingVect, sizeof(int)*B->NoOfRates);
 }
-
-
 
 void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 {
@@ -1570,6 +1662,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 		PlastyCopy(A, B);
 
 	A->VarDataSite = B->VarDataSite;
+
+	if(A->Hetero != NULL)
+		CopyHetero(A->Hetero, B->Hetero);
 } 
 
 
@@ -1986,6 +2081,10 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 		case(SPPHYPERPRIOR):
 			ChangePPHyperPrior(Rates, Opt);
 		break;
+
+		case(SHETERO):
+			MutateHetero(Rates);
+		break;
 	}
 
 	Shed->Tryed[Shed->Op]++;
@@ -2031,6 +2130,10 @@ void	FreeRates(RATES *Rates)
 #endif
 
 	FreeRandStates(Rates->RS);
+
+	if(Rates->Hetero != NULL)
+		FreeHetero(Rates->Hetero);
+
 	free(Rates);
 }
 
@@ -2283,6 +2386,12 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 //		Shed->OptFreq[13] = 0.05;
 
 		Left = Left - (Shed->OptFreq[10] + Shed->OptFreq[11] + Shed->OptFreq[12] + Shed->OptFreq[13]);
+	}
+
+	if(Opt->Model == DESCHET)
+	{
+		Shed->OptFreq[14] = 0.4;
+		Left = Left - Shed->OptFreq[14];
 	}
 
 	Rates = 0;

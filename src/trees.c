@@ -798,7 +798,15 @@ int		SiteHadUnKnownState(char *StatList)
 	return FALSE;
 }
 
-void	SetNodeTipData(NODE N, TREE* Tree, TREES *Trees)
+void	SetDescCVTipData(int SiteNo, NODE N)
+{
+	N->Partial[SiteNo][4] = N->Partial[SiteNo][0];
+	N->Partial[SiteNo][5] = N->Partial[SiteNo][1];
+	N->Partial[SiteNo][6] = N->Partial[SiteNo][2];
+	N->Partial[SiteNo][7] = N->Partial[SiteNo][3];
+}
+
+void	SetNodeTipData(OPTIONS *Opt, NODE N, TREE* Tree, TREES *Trees)
 {
 	int		SiteIndex;
 	int		StateIndex;
@@ -832,6 +840,10 @@ void	SetNodeTipData(NODE N, TREE* Tree, TREES *Trees)
 				N->Partial[SiteIndex][StateIndex] = 1;
 		}
 
+		/* Copy for the Dep CV model */
+		if(Opt->Model == DESCCV)
+			SetDescCVTipData(SiteIndex, N);
+
 		/* Copy the sites for the covarion mode */
 		if(Trees->UseCovarion == TRUE)
 		{
@@ -840,17 +852,16 @@ void	SetNodeTipData(NODE N, TREE* Tree, TREES *Trees)
 		}
 	}
 }
-void	SetTipData(TREE *Tree, TREES *Trees)
+void	SetTipData(OPTIONS *Opt, TREE *Tree, TREES *Trees)
 {
 	int		NIndex;
 	NODE	N;
 	
-
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = Tree->NodeList[NIndex];
 		if(N->Tip == TRUE)
-			SetNodeTipData(N, Tree, Trees);
+			SetNodeTipData(Opt, N, Tree, Trees);
 	}
 }
 
@@ -997,7 +1008,7 @@ void	AllocNodePartial(NODE N, TREES *Trees, int Gamma)
 
 }
 
-void	AllocPartial(TREES* Trees, int Gamma)
+void	AllocPartial(OPTIONS *Opt, TREES* Trees, int Gamma)
 {
 	int		TIndex;
 	int		NIndex;
@@ -1012,7 +1023,7 @@ void	AllocPartial(TREES* Trees, int Gamma)
 			AllocNodePartial(N, Trees, Gamma);
 		}
 
-		SetTipData(Trees->Tree[TIndex], Trees);
+		SetTipData(Opt, Trees->Tree[TIndex], Trees);
 	}
 }
 

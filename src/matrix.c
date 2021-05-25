@@ -371,3 +371,13 @@ double*	FlattenMatix(MATRIX *M)
 
 	return Ret;
 }
+
+void	FillMatrix(MATRIX *M, double Value)
+{
+	int x,y;
+
+	for(x=0;x<M->NoOfRows;x++)
+		for(y=0;y<M->NoOfCols;y++)
+			M->me[x][y] = Value;
+	
+}

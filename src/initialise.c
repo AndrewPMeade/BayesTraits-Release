@@ -71,6 +71,9 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		if(Opt->UseCovarion == TRUE)
 			Trees->NoOfStates = Trees->NoOfStates * 2;
 
+		if(Opt->Model == DESCCV)
+			Trees->NoOfStates = Trees->NoOfStates * 2;
+
 		if((Opt->UseKappa == TRUE) && (Opt->FixKappa != -1))
 		{
 			for(Index=0;Index<Trees->NoOfTrees;Index++)
@@ -80,7 +83,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 			Opt->UseKappa = FALSE;
 		}
 
-		AllocPartial(Trees, Opt->UseGamma);
+		AllocPartial(Opt, Trees, Opt->UseGamma);
 		AllocLHInfo(Trees, Opt);
 
 		SetFossiles(Trees, Opt);
