@@ -547,7 +547,7 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 	TStart = GetSeconds();
 
-//	CalcAllNodeTransfroms(Opt, Trees, Rates); return;
+	CalcAllNodeTransfroms(Opt, Trees, Rates); return;
 //	MLTestF(Opt, Trees, Rates);
 
 

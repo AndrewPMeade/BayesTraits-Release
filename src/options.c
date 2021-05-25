@@ -1404,6 +1404,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->RJZero			   = TRUE;
 	
 	Ret->UseRJLandscapeRateGroup	 = FALSE;
+	Ret->NoLandscapeRateGroup = -1;
 
 	free(Buffer);
 
@@ -4094,6 +4095,8 @@ void	SetRJLandscapeRateGroup(OPTIONS *Opt, int Tokes, char **Passed)
 		Opt->UseRJLandscapeRateGroup = TRUE;
 		Prior = CreateNormalPrior("RJ_Landscape_Rate_Group", 0, 2.0);
 		AddPriorToOpt(Opt, Prior);
+
+		Opt->NoLandscapeRateGroup = atoi(Passed[1]);
 	}
 	else
 		Opt->UseRJLandscapeRateGroup = FALSE;

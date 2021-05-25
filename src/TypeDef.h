@@ -1314,6 +1314,7 @@ typedef struct
 	double		*RateScalars;
 
 	int			UseRJLandscapeRateGroup;
+	int			NoLandscapeRateGroup;
 
 } OPTIONS;
 
@@ -1507,7 +1508,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NO_SCHEDULE_OPT	29
+#define NO_SCHEDULE_OPT	30
 
 static char    *SHEDOP[] =
 {
@@ -1539,7 +1540,8 @@ static char    *SHEDOP[] =
 	"Time Slice - Time",
 	"Time Slice - Scale",
 	"Global Rate",
-	"LandRate-Move"
+	"LandRate-Move", 
+	"LandRate-Change"
 };
 
 typedef enum
@@ -1572,7 +1574,8 @@ typedef enum
 	S_TIME_SLICE_TIME,
 	S_TIME_SLICE_SCALE,
 	S_GLOBAL_RATE, 
-	S_LAND_RATE_MOVE
+	S_LAND_RATE_MOVE,
+	S_LAND_RATE_CHANGE
 } OPERATORS;
 
 typedef struct
@@ -1620,6 +1623,8 @@ typedef struct
 	AUTOTUNE	*CurrentAT;
 
 	AUTOTUNE	*GlobalRateAT;
+
+	AUTOTUNE	*LandscapeRateChangeAT;
 
 
 	int				NoCShed;

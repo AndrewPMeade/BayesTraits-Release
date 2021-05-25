@@ -41,6 +41,7 @@
 #include "RandLib.h"
 #include "Prob.h"
 #include "LocalTransform.h"
+#include "LandscapeRJGroups.h"
 
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
@@ -1026,6 +1027,14 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 		if(PLh == ERRLH)
 			return;
 
+		Ret += PLh;
+	}
+
+	if(Opt->UseRJLandscapeRateGroup == TRUE)
+	{
+		PLh = CalcPriorLandRateGoup(Rates);
+		if(PLh == ERRLH)
+			return;
 		Ret += PLh;
 	}
 

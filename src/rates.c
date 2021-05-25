@@ -60,6 +60,7 @@
 #include "TimeSlices.h"
 #include "Landscape.h"
 #include "LandscapeRJGroups.h"
+#include "Part.h"
 
 void	SetRegBetaZero(int NoSites, RATES *Rates)
 {
@@ -831,8 +832,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 	
 	SetRatesLocalRates(Ret, Opt);
 
-	if(Opt->UseRJLandscapeRateGroup == TRUE)
-		Ret->LandscapeRateGroups = CreateLandRateGroups(Ret, Opt->Trees->Tree[0]->NoNodes-1);
 	
 	if(Opt->UseDistData == TRUE)
 		Ret->DistDataRates = CreateDistDataRates(Opt->DistData, Ret->RS);
@@ -844,6 +843,11 @@ RATES*	CreatRates(OPTIONS *Opt)
 			SetDiscretisedPriors(Ret, Opt);
 	}
 
+	if(Opt->UseRJLandscapeRateGroup == TRUE)
+	{
+		Ret->LandscapeRateGroups = CreateLandRateGroups(Ret, Opt->Trees->Tree[0]->NoNodes-1);
+//		SetNoFixedGroups(Ret, Ret->LandscapeRateGroups, Opt->NoLandscapeRateGroup);
+	}
 
 	if(Opt->UseGamma == TRUE)
 	{
@@ -2859,6 +2863,10 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		case S_LAND_RATE_MOVE:
 			if(It > 100000)
 				SwapRateGroupParam(Rates);
+		break;
+
+		case S_LAND_RATE_CHANGE:
+				ChangeLandRateGoup(Rates, Shed);
 		break;
 	}
 }

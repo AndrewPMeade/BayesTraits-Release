@@ -54,4 +54,7 @@ void		FreeMultiMatrixLinMem(MATRIX **MList, int NoMat);
 MATRIX_INVERT*	CreatMatInvertInfo(int N);
 void			FreeMatInvertInfo(MATRIX_INVERT *MatInv);
 int				Matrix_Invert(MATRIX *Mat, MATRIX_INVERT *Info);
+
+int**	AllocIntMatMem(int NoOfRows, int NoOfCols);
+void	FreeIntMatMem(int** Mat);
 #endif

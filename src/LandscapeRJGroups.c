@@ -8,6 +8,7 @@
 #include "TypeDef.h"
 #include "GenLib.h"
 #include "LandscapeRJGroups.h"
+#include "Priors.h"
 
 void FreeRateGroup(RATE_GROUP *RateGroup)
 {
@@ -39,10 +40,20 @@ LAND_RATE_GROUPS*	AllocLandRateGroup(int NoRates)
 	return Ret;
 }
 
+void	EmptyLandRateGroup(LAND_RATE_GROUPS* LandRGroup)
+{
+	int Index;
+
+	for(Index=0;Index<LandRGroup->NoRates;Index++)
+		LandRGroup->RateGroupList[Index]->NoRates = 0;
+}
+
 void	SetOneGroup(LAND_RATE_GROUPS* LandRateGroups, double RateValue)
 {
 	RATE_GROUP* RateG;
 	int Index;
+
+	EmptyLandRateGroup(LandRateGroups);
 
 	LandRateGroups->NoGroups = 1;
 
@@ -89,15 +100,18 @@ RATE_GROUP*	GetRateGroup(LAND_RATE_GROUPS* LandRGroup, int PNo, int *Pos)
 }
 
 
-void	FixedBetaDiscretised(LAND_RATE_GROUPS* LandRGroup, RANDSTATES *RS)
+void	FixedBetaDiscretised(RATES *Rates, LAND_RATE_GROUPS* LandRGroup, RANDSTATES *RS, int NoGroup)
 {
-	int NoGroup, Index, GNo;
+	int Index, GNo;
 	double CDF_P, X, P, Sig;
 	RATE_GROUP*	RateG;
+	PRIOR *Prior;
 
+	EmptyLandRateGroup(LandRGroup);
+	
+	Prior = GetPriorFromName("RJ_Landscape_Rate_Group", Rates->Priors, Rates->NoPriors);
+	Sig = Prior->DistVals[1];
 
-	Sig = sqrt(2.0);
-	NoGroup = 11;
 	LandRGroup->NoGroups = NoGroup;
 
 	for(Index=0;Index<NoGroup;Index++)
@@ -115,7 +129,7 @@ void	FixedBetaDiscretised(LAND_RATE_GROUPS* LandRGroup, RANDSTATES *RS)
 	{
 		GNo = RandUSInt(RS) % LandRGroup->NoGroups;
 
-		GNo = 5;
+		GNo = NoGroup / 2;
 		
 		RateG = LandRGroup->RateGroupList[GNo];
 
@@ -123,11 +137,68 @@ void	FixedBetaDiscretised(LAND_RATE_GROUPS* LandRGroup, RANDSTATES *RS)
 	}
 }
 
+void	SetOwnGroup(RATES *Rates, LAND_RATE_GROUPS* LandRGroup)
+{
+	int Index, GNo;
+	RATE_GROUP*	RateG;
+
+	EmptyLandRateGroup(LandRGroup);
+
+
+	for(Index=0;Index<LandRGroup->NoRates;Index++)
+	{
+		if(Index == 1)
+		{
+			GNo = 1;
+			RateG = LandRGroup->RateGroupList[GNo];
+			RateG->PramList[RateG->NoRates++] = Index;
+		}
+		else
+		{
+			GNo = 0;
+			RateG = LandRGroup->RateGroupList[GNo];
+			RateG->PramList[RateG->NoRates++] = Index;
+		}
+	}
+}
+
+void SetNoFixedGroups(RATES *Rates, LAND_RATE_GROUPS* LandRGroup, int NoGroup)
+{
+	int Index, GNo;
+	RATE_GROUP*	RateG;
+	PRIOR *Prior;
+	
+	EmptyLandRateGroup(LandRGroup);
+
+	LandRGroup->NoGroups = NoGroup;
+	
+
+	for(Index=0;Index<LandRGroup->NoRates;Index++)
+	{
+		GNo = RandUSInt(Rates->RS) % LandRGroup->NoGroups;
+		RateG = LandRGroup->RateGroupList[GNo];
+		RateG->PramList[RateG->NoRates++] = Index;
+	}
+	
+	RateG = LandRGroup->RateGroupList[0];
+	RateG->Rate = 0.0;
+
+	Prior = GetPriorFromName("RJ_Landscape_Rate_Group", Rates->Priors, Rates->NoPriors);
+		
+	for(Index=1;Index<LandRGroup->NoGroups;Index++)
+	{ 
+		RateG = LandRGroup->RateGroupList[Index];
+		RateG->Rate = RandFromPrior(Rates->RNG, Prior);
+	}
+
+	SetOwnGroup(Rates, LandRGroup);
+}
+
 LAND_RATE_GROUPS*	CreateLandRateGroups(RATES *Rates, int NoRates)
 {
 	LAND_RATE_GROUPS* Ret;
 	int Index;
-
+	
 	Ret = AllocLandRateGroup(NoRates);
 
 	Ret->NoRates = NoRates;
@@ -136,14 +207,12 @@ LAND_RATE_GROUPS*	CreateLandRateGroups(RATES *Rates, int NoRates)
 		Ret->RateGroupList[Index] = AllocRateGroup(NoRates);
 
 	Ret->NoGroups = 1;
+	SetOneGroup(Ret, 0.0);
 
-	SetOneGroup(Ret, 1.0);
-
-	FixedBetaDiscretised(Ret, Rates->RS);
-
-//	PrintLandRateGroups(stdout, Ret);
-//	exit(0);
-
+	FixedBetaDiscretised(Rates, Ret, Rates->RS, 11);
+	
+//	SetNoFixedGroups(Rates, Ret, 2);
+	
 	return Ret;
 }
 
@@ -194,6 +263,15 @@ void	MapLandRateGroups(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	for(GIndex=0;GIndex<LandRateGroups->NoGroups;GIndex++)
 		MapLandRateGroup(Tree, LandRateGroups->RateGroupList[GIndex]);
+
+
+//	return;
+
+	// remove betas from the tips
+	for(GIndex=0;GIndex<Tree->NoNodes;GIndex++)
+		if(Tree->NodeList[GIndex]->Tip == TRUE)
+			Tree->NodeList[GIndex]->LandscapeBeta  = 0;
+
 }
 
 void	RemovePramFromGroup(RATE_GROUP *RGroup, int Pos)
@@ -222,11 +300,11 @@ void	SwapRateGroupParam(RATES *Rates)
 
 	RemovePramFromGroup(RGOld, Pos);
 	
-	do
-	{
+//	do
+//	{
 		Pos = RandUSInt(Rates->RS) % LandRateGroups->NoGroups;
 		RGNew = LandRateGroups->RateGroupList[Pos];
-	}while(RGOld == RGNew);
+//	}while(RGOld == RGNew);
 
 	AddPramToGroup(RGNew, Rate);
 }
@@ -271,6 +349,7 @@ void	InishLandRateGroupsOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	TREE *Tree;
 	LAND_RATE_GROUPS *LandRateG;
 	NODE N;
+
 
 	LandRateG = Rates->LandscapeRateGroups;
 
@@ -327,9 +406,61 @@ void	OutputLandRateGroupsOutput(long long Itter, OPTIONS *Opt, TREES *Trees, RAT
 		RateG = LandRateG->RateGroupList[GIndex];
 		fprintf(Out, "%d\t%f\t%d\t", GIndex, RateG->Rate, RateG->NoRates);
 		PrintRateGroupPramList(Out, RateG);
-
 	}
 
 	fprintf(Out, "\n");	
 	fflush(Out);
+}
+
+double CalcPriorLandRateGoup(RATES *Rates)
+{
+	double Ret, BetaPrior;
+	PRIOR *Prior;
+	RATE_GROUP	*RateG;
+	int Index;
+	LAND_RATE_GROUPS* LandRateGroups;
+	
+	LandRateGroups = Rates->LandscapeRateGroups;
+
+	Prior = GetPriorFromName("RJ_Landscape_Rate_Group", Rates->Priors, Rates->NoPriors);
+
+	Ret = 0;
+	for(Index=0;Index<LandRateGroups->NoGroups;Index++)
+	{
+		RateG = LandRateGroups->RateGroupList[Index];
+		BetaPrior = CalcLhPriorP(RateG->Rate, Prior);
+
+		if(BetaPrior == ERRLH)
+			return ERRLH;
+
+		if(RateG->Rate != 0)
+			Ret += BetaPrior * RateG->NoRates;
+	//		Ret += BetaPrior;
+	}
+
+	return Ret;
+}
+
+void ChangeLandRateGoup(RATES *Rates,  SCHEDULE* Shed)
+{
+	LAND_RATE_GROUPS* LandRateGroups;
+	RATE_GROUP	*RateG;
+	int RateGNo;
+	double Dev;
+
+	Shed->CurrentAT = Shed->LandscapeRateChangeAT; 
+
+	Dev = Shed->CurrentAT->CDev;
+
+	LandRateGroups = Rates->LandscapeRateGroups;
+
+	if(LandRateGroups->NoGroups < 2)
+		return;
+
+	RateGNo = RandUSInt(Rates->RS) % (LandRateGroups->NoGroups - 1);
+	RateGNo += 1;
+
+	RateG = LandRateGroups->RateGroupList[RateGNo];
+
+	RateG->Rate += RandNormal(Rates->RS, 0, Dev);
 }
