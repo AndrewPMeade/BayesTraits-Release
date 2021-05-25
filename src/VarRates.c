@@ -669,6 +669,11 @@ void	ScaleNode(NODE N, PLASTYNODE *P)
 void	VarRatesNode(TREE *Tree, NODE N, PLASTYNODE *P)
 {
 
+	int Norm;
+
+//	Norm = FALSE;
+	Norm = TRUE;
+
 	if(P->Type == VR_BL)
 		N->Length = N->Length * P->Scale;
 
@@ -676,21 +681,21 @@ void	VarRatesNode(TREE *Tree, NODE N, PLASTYNODE *P)
 		ScaleNode(N, P);
 
 	if(P->Type == VR_KAPPA)
-		TransContNodeKappa(N, P->Scale, FALSE);
+		TransContNodeKappa(N, P->Scale, Norm);
 
 	if(P->Type == VR_LAMBDA)
 	{
 		SetTreeDistToRoot(Tree);
-		TransContNodeLambda(N, P->Scale, FALSE);
+		TransContNodeLambda(N, P->Scale, Norm);
 	}
 
 	if(P->Type == VR_DELTA)
-		TransContNodeDelta(N, P->Scale, FALSE);
+		TransContNodeDelta(N, P->Scale, Norm);
 
 	if(P->Type == VR_OU)
 	{
-	//	SetTreeDistToRoot(Tree);
-		TransContNodeOU(N, P->Scale, FALSE);
+		SetTreeDistToRoot(Tree);
+		TransContNodeOU(N, P->Scale, Norm);
 	}
 }
 

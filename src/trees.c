@@ -2416,7 +2416,8 @@ void	RecGetSumBL(NODE N, double *SumBL)
 {
 	int Index;
 
-	*SumBL += N->Length;
+	if(N->Length >= 0)
+		*SumBL += N->Length;
 
 	if(N->Tip == TRUE)
 		return;
@@ -2432,7 +2433,7 @@ double	SumNodeBL(NODE N)
 	Ret = 0;
 	RecGetSumBL(N, &Ret);
 
-	Ret = Ret - N->Length;
+//	Ret = Ret - N->Length;
 
 	return Ret;
 }
@@ -2460,8 +2461,11 @@ void	ScaleSubTree(NODE N, double Scale)
 		exit(0);
 	}
 
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecScaleSubTree(N->NodeList[Index], Scale);
+
+	RecScaleSubTree(N, Scale);
+
+//	for(Index=0;Index<N->NoNodes;Index++)
+//		RecScaleSubTree(N->NodeList[Index], Scale);
 }
 
 void	ScaleTrees(TREES *Trees, double Scale)
@@ -2470,4 +2474,5 @@ void	ScaleTrees(TREES *Trees, double Scale)
 
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 		RecScaleSubTree(Trees->Tree[Index]->Root, Scale);
+
 }

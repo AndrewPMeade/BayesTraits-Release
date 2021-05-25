@@ -38,8 +38,9 @@ void	TransContNodeDelta(NODE N, double Delta, int Norm)
 	if(Norm == TRUE)
 		SumBL = SumNodeBL(N);
 
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecTransContNodeDelta(N->NodeList[Index], Delta, 0);
+//	for(Index=0;Index<N->NoNodes;Index++)
+//		RecTransContNodeDelta(N->NodeList[Index], Delta, 0);
+	RecTransContNodeDelta(N, Delta, 0);
 
 	if(Norm == FALSE)
 		return;
@@ -74,19 +75,12 @@ void	TransContNodeKappa(NODE N, double Kappa, int Norm)
 
 	for(Index=0;Index<N->NoNodes;Index++)
 		RecTransContNodeKappa(N->NodeList[Index], Kappa, 0);
-
-	
+		
 	if(Norm == FALSE)
 		return;
 
 	Scale = SumBL / SumNodeBL(N);
 	ScaleSubTree(N, Scale);
-}
-
-
-void	SetContTrans(TREE *Tree, double Kappa, double Lambda, double Delta, double OU)
-{
-	
 }
 
 
