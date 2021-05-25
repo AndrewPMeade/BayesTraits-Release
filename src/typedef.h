@@ -1326,6 +1326,8 @@ typedef struct
 	LOCAL_TRANSFORM	**LocalTransforms;
 
 	DIST_DATE_RATES	*DistDataRates;
+
+	int				AutoAccept;
 } RATES;
 
 typedef struct

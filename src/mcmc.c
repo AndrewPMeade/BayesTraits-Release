@@ -427,6 +427,9 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 {
 	double Heat;
 
+	if(NRates->AutoAccept == TRUE)
+		return TRUE;
+
 	if(Shed->Op == SFATTAILANS && Opt->Model == M_FATTAIL)
 		return TRUE;
 	
@@ -485,8 +488,6 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	long		FP;
 #endif
 	
-	
-
 	ShedFile	= NULL;
 	SaveModelF	= NULL;
 			

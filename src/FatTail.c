@@ -686,10 +686,8 @@ void	NodeSliceSampleFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATE
 		NLh = AnsStateLh(NAns, SiteNo, N, FTR->SDList[SiteNo]);
 
 		if(log(RandDouble(Rates->RS)) < (NLh - CLh))
-		{
-		//	printf("New:\t%f\tOld\t%f\tDiffer\t%f\t%f\t%f\n", NLh, CLh, NLh - CLh, NAns, CAns);fflush(stdout);
 			Changed = TRUE;
-		}
+
 	} while(Changed == FALSE);
 
 	N->FatTailNode->Ans[SiteNo] = NAns;
@@ -727,6 +725,8 @@ void	AllSliceSampleFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
 
 	Rates->Lh = Likelihood(Rates, Trees, Opt);
+
+	Rates->AutoAccept = TRUE;
 }
 
 int	GetMutateFatTailRatesPos(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE* Shed)

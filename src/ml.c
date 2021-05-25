@@ -39,20 +39,12 @@ ML_MAP*	AllocMLMap(void)
 {
 	ML_MAP*	Ret;
 
-	Ret = (ML_MAP*)malloc(sizeof(ML_MAP));
-	if(Ret == NULL)
-		MallocErr();
-
-	Ret->PVal = (double*)malloc(sizeof(double) * MAX_ML_FREE_P);
-	Ret->PMin = (double*)malloc(sizeof(double) * MAX_ML_FREE_P);
-	Ret->PMax = (double*)malloc(sizeof(double) * MAX_ML_FREE_P);
-	Ret->PDef = (double*)malloc(sizeof(double) * MAX_ML_FREE_P);
-
-	if( Ret->PVal == NULL ||
-		Ret->PMin == NULL ||
-		Ret->PMax == NULL ||
-		Ret->PDef == NULL)
-		MallocErr();
+	Ret = (ML_MAP*)SMalloc(sizeof(ML_MAP));
+	
+	Ret->PVal = (double*)SMalloc(sizeof(double) * MAX_ML_FREE_P);
+	Ret->PMin = (double*)SMalloc(sizeof(double) * MAX_ML_FREE_P);
+	Ret->PMax = (double*)SMalloc(sizeof(double) * MAX_ML_FREE_P);
+	Ret->PDef = (double*)SMalloc(sizeof(double) * MAX_ML_FREE_P);
 
 	Ret->NoP = 0;
 
@@ -299,7 +291,7 @@ void	MLTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	double Rate, Lh;
 
-	for(Rate=0;Rate<100;Rate+=0.01)
+	for(Rate=0;Rate<1000;Rate+=0.01)
 	{
 		Rates->Rates[0] = Rate;
 		Lh = Likelihood(Rates, Trees, Opt);

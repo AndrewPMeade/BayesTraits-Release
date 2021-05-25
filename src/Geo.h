@@ -18,6 +18,8 @@ void	CorrectIntGeoNodes(TREE *Tree);
 void	GeoTest(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void	GeoUpDateAnsStates (OPTIONS *Opt, TREES *Trees, RATES *Rates);
+
 
 void	LoadGeoData(char *Str, OPTIONS *Opt, TREES *Trees, RATES *CRates);
 #endif

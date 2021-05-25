@@ -243,20 +243,46 @@ void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 	
 	CLh = GeoCalcAnsStateLh(X, Y, Z, N, SD);
 
-//	if(CLh > 0)
-//		printf("Err\n");
-		
 	GetRandXYZPoint(RS, X, Y, Z, &RX, &RY, &RZ, 2000);
-//	GetRandXYZPoint(RS, X, Y, Z, &RX, &RY, &RZ, 100);
 		
 	NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
 	
 	XYZToNode(N, RX, RY, RZ);
 
 	Rates->Lh = Rates->Lh + (NLh - CLh);
-	
-//	printf("%f\t%f\t%f\n", CLh, NLh, (NLh - CLh));
 }
+
+
+void	GeoForceUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
+{
+	FATTAILRATES *FTR;
+	double NLh, CLh, X, Y, Z, RX, RY, RZ;
+	STABLEDIST *SD;
+	int Changed;
+
+
+	FTR = Rates->FatTailRates;
+	SD = FTR->SDList[0];
+
+	NodeToXYZ(N, &X, &Y, &Z);
+
+	CLh = GeoCalcAnsStateLh(X, Y, Z, N, SD);
+	Changed = FALSE;
+	do
+	{
+		GetRandXYZPoint(RS, X, Y, Z, &RX, &RY, &RZ, 2000);
+		NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
+
+		if(log(RandDouble(Rates->RS)) < (NLh - CLh))
+			Changed = TRUE;
+
+	} while(Changed == FALSE);
+
+	XYZToNode(N, RX, RY, RZ);
+
+	Rates->Lh = Rates->Lh + (NLh - CLh);
+}
+
 /* // Serial
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
@@ -302,16 +328,51 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
 	
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
+	{
+		N = Tree->NodeList[NIndex];
+		if(N->Tip == FALSE)
+			GeoForceUpDateNode(N, Rates, Rates->RS);
+	}
+			
+	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
+	
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+
+	Rates->AutoAccept = TRUE;
+}
+
+void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int NIndex;
+
+	TREE *Tree;
+	FATTAILRATES *FTR;
+	NODE N;
+
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	FTR = Rates->FatTailRates;
+
+	MapRatesToFatTailRate(Rates, FTR);
+
+	FatTailSetAnsSates(Tree, Trees->NoOfSites, FTR);
+
+	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
+
 	do
 	{
 		NIndex = RandUSInt(Rates->RS) % Tree->NoNodes;
 		N = Tree->NodeList[NIndex];
 	} while(N->Tip == TRUE);
-		
+
 	GeoUpDateNode(N, Rates, Rates->RS);
-		
+
 	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
+
+//	Rates->AutoAccept = TRUE;
 }
+
 /*
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
@@ -449,21 +510,6 @@ void	SetLoadGeoData(char **AnsState, TREES *Trees, TREE *Tree)
 		}
 	}
 }
-
-/*
-void	LoadGeoDataTest(OPTIONS *Opt, TREES *Trees, RATES *CRates, RATES *NRates)
-{
-	int Index;
-
-	
-	for(Index=0;Index<10000;Index++)
-	{
-		CopyRates(NRates, CRates, Opt);
-		GeoUpDateAllAnsStates(Opt, Trees, NRates);
-	}
-
-	exit(0);
-}*/
 
 
 void	LoadGeoDataTest(OPTIONS *Opt, TREES *Trees, RATES *CRates)

@@ -753,6 +753,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->NoPriors		=	0;
 	Ret->Priors			=	NULL;
+	Ret->AutoAccept		=	FALSE;
 	
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
@@ -2010,11 +2011,8 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 
 	if(Opt->UseRJMCMC == FALSE)
 	{
-		if(A->Rates!=NULL)
-		{
-			for(Index=0;Index<A->NoOfRates;Index++)
-				A->Rates[Index] = B->Rates[Index];
-		}
+		if(A->Rates != NULL)
+			memcpy(A->Rates, B->Rates, sizeof(double) * A->NoOfRates);
 	}
 	else
 		CopyRJRtaes(A, B, Opt);
@@ -2620,6 +2618,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 	Shed->Op = PickACat(Rates, Shed->OptFreq, Shed->NoOfOpts);
 
 	Shed->CurrentAT = NULL;
+	Rates->AutoAccept = FALSE;
 	
 	switch(Shed->Op)
 	{
@@ -2710,7 +2709,8 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 				AllSliceSampleFatTail(Opt, Opt->Trees, Rates);
 			}
 			else
-				GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
+			//	GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
+				GeoUpDateAnsStates(Opt, Opt->Trees, Rates);
 		break;
 
 		case SLOCALRATES:
@@ -2829,7 +2829,7 @@ void	UpDataSummary(SUMMARY *Summary, RATES* Rates, OPTIONS *Opt)
 {
 	int		Index;
 	double	Pct;
-	double	*RootP=NULL;
+	double	*RootP;
 
 	RootP = Opt->Trees->Tree[Rates->TreeNo]->Root->Partial[0];
 

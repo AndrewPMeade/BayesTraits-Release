@@ -725,12 +725,11 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	double	PLh, Ret;
 		
 	Ret = 0;
+	PLh = 0;
 
 	Rates->LhPrior = ERRLH;
 
-	if(Opt->LoadModels == TRUE)
-		PLh  = 0;
-	else
+	if(Opt->LoadModels == FALSE)
 		PLh = CalcRatePrior(Rates, Opt);
 
 	if(PLh == ERRLH)
