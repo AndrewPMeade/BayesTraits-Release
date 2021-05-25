@@ -722,15 +722,13 @@ char**	ContrastRegRateNames(OPTIONS *Opt)
 	char	*Buffer;
 	int		Index, Pos;
 		 
-	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
-	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
-	if((Ret == NULL) || (Buffer == NULL))
-		MallocErr();
+	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
 	
 	Pos = 0;
 	for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
 	{
-		sprintf(Buffer, "Beta-%d", Index+1);
+		sprintf(Buffer, "Beta-%d", Index);
 		Ret[Pos++] = StrMake(Buffer);
 	}
 
@@ -925,7 +923,7 @@ void	GetGeoPriors(OPTIONS *Opt)
 }
 
 
-void	AllocRatePrios(OPTIONS *Opt)
+void	AllocRatePriors(OPTIONS *Opt)
 {
 	int		Index;
 	PRIOR	*Prior;
@@ -1081,7 +1079,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		
 		Ret->PriorCats	=	100;
 		
-		AllocRatePrios(Ret);
+		AllocRatePriors(Ret);
 
 		Ret->UseSchedule	= TRUE;
 	}

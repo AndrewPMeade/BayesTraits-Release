@@ -577,9 +577,36 @@ NODE	GetVarRatesNode(RATES *Rates, TREES *Trees, TRANSFORM_TYPE	Type)
 	return N;
 }
 
+int		CompVarRatesNode(const void *Vr1, const void *Vr2)
+{
+	VAR_RATES_NODE **VR1, **VR2;
+
+	VR1 = (VAR_RATES_NODE**)Vr1;
+	VR2 = (VAR_RATES_NODE**)Vr2;
+
+
+	if((*VR1)->Node->Part->NoTaxa >= (*VR2)->Node->Part->NoTaxa)
+		return -1;
+
+	if((*VR1)->Node->Part->NoTaxa < (*VR2)->Node->Part->NoTaxa)
+		return 1;
+
+	return 0;
+}
+
+void	DumpVRNodes(VARRATES	*VarRates)
+{
+	int Index;
+
+	for(Index=0;Index<VarRates->NoNodes;Index++)
+		printf("%d\t%d\n", Index, VarRates->NodeList[Index]->Node->Part->NoTaxa);
+
+	exit(0);
+}
+
 void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed, long long It)
 {
-	VARRATES *	VarRates;
+	VARRATES	*VarRates;
 	int			PNodeID;
 	NODE		N;
 	TRANSFORM_TYPE		Type;
@@ -596,7 +623,9 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 		VarRatesAddNode(Rates, Trees, Opt, Type, N, It);
 	else
 		VarRatesDelNode(Rates, Trees, Opt, PNodeID);	
-
+	
+	qsort(VarRates->NodeList, VarRates->NoNodes, sizeof(VAR_RATES_NODE*), CompVarRatesNode);
+	
 //	CheckPlasyNodes(Plasty);
 }
 
