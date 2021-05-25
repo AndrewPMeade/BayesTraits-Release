@@ -14,7 +14,7 @@
 void	TestGenRand(OPTIONS *Opt, TREES *Trees, RATES* Rates);
 
 extern double gamma(double x);
-extern double ndtr(a);
+extern double ndtr(double a);
 
 double	CalcNormalHasting(double x, double SD)
 {
@@ -207,7 +207,7 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, int It)
 	PNode->Scale = RandGamma(PPALPHA, PPBETA);
 #endif
 
-	Plasty->NodeList = (PLASTYNODE**) AddToList(&Plasty->NoNodes, Plasty->NodeList, (void*)PNode);
+	Plasty->NodeList = (PLASTYNODE**) AddToList(&Plasty->NoNodes, (void**)Plasty->NodeList, (void*)PNode);
 
 	Rates->LnHastings = 0;
 	Rates->LogJacobion = 0;

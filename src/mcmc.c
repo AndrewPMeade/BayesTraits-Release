@@ -282,7 +282,7 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		
 		if((log(GenRandState(CRates->RandStates)) <= Heat) && (NRates->Lh != ERRLH))
 		{
-			Swap(&NRates, &CRates);
+			Swap((void**)&NRates, (void**)&CRates);
 			Acc++;
 			Shed->Accepted[Shed->Op]++;	
 		}

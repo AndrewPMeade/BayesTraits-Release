@@ -45,7 +45,7 @@ double genbet(double aa,double bb)
 #define minlog 1.0E-37
 static double olda = -1.0E37;
 static double oldb = -1.0E37;
-static double genbet,a,alpha,b,beta,delta,gamma,k1,k2,r,s,t,u1,u2,v,w,y,z;
+static double genbet,a,alpha,b,beta,delta,rdgamma,k1,k2,r,s,t,u1,u2,v,w,y,z;
 static long qsame;
 
     qsame = olda == aa && oldb == bb;
@@ -68,7 +68,7 @@ S20:
     b = max(aa,bb);
     alpha = a+b;
     beta = sqrt((alpha-2.0)/(2.0*a*b-alpha));
-    gamma = a+1.0/beta;
+    rdgamma = a+1.0/beta;
 S30:
     u1 = ranf();
 /*
@@ -90,7 +90,7 @@ S55:
     w = infnty;
 S60:
     z = pow(u1,2.0)*u2;
-    r = gamma*v-1.38629436111989;
+    r = rdgamma*v-1.38629436111989;
     s = a+r-w;
 /*
      Step 2
