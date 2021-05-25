@@ -674,9 +674,14 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->NoOfRJRates	= -1;
 	Ret->TreeNo			= 0;
 	Ret->Prios			= NULL;
-	Ret->PriorGamma		= NULL;
 	Ret->Rates			= NULL;
 
+	Ret->PriorGamma		= NULL;
+	Ret->PriorDelta		= NULL;
+	Ret->PriorKappa		= NULL;
+	Ret->PriorLambda	= NULL;
+	Ret->PriorOU		= NULL;
+	
 	Ret->Pis			= NULL;
 	Ret->FullRates		= NULL;
 	Ret->Means			= NULL;
@@ -1087,7 +1092,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 			fprintf(Str, "Alpha %d\t", Index+1);
 
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			fprintf(Str, "Sigma %d\t", Index+1);
+			fprintf(Str, "Sigma^2 %d\t", Index+1);
 
 		for(x=0;x<NOS;x++)
 		{
@@ -1102,7 +1107,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 			fprintf(Str, "Alpha %d\t", Index+1);
 
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			fprintf(Str, "Sigma %d\t", Index+1);
+			fprintf(Str, "Sigma^2 %d\t", Index+1);
 	}
 
 	if(Opt->Model == M_CONTRAST_REG)
@@ -1116,14 +1121,14 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 		{
-			fprintf(Str, "Alpha Trait %d\t", Index+1);
+			fprintf(Str, "Alpha %d\t", Index+1);
 		}
 	}
 	
 	if(Opt->Model == M_CONTINUOUSDIR)
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			fprintf(Str, "Beta Trait %d\t", Index+1);
+			fprintf(Str, "Beta %d\t", Index+1);
 	}
 
 	if(Opt->Model == M_CONTINUOUSREG)
@@ -1132,7 +1137,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 		for(Index=1;Index<Opt->NoOfRates;Index++)
 		{
-			fprintf(Str, "Beta Trait %d\t", Index+1);
+			fprintf(Str, "Beta %d\t", Index+1);
 		}
 
 		fprintf(Str, "Var\t");
@@ -1147,7 +1152,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 	if((Opt->Model == M_CONTINUOUSDIR) || (Opt->Model == M_CONTINUOUSRR))
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			fprintf(Str, "Trait %d Var\t", Index+1);
+			fprintf(Str, "Sigma^2 %d \t", Index+1);
 
 		for(x=0;x<Opt->Trees->NoOfSites;x++)
 			for(y=x+1;y<Opt->Trees->NoOfSites;y++)

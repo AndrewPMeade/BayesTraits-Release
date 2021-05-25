@@ -1175,6 +1175,8 @@ void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
 		AddNewRecNode(Trees, RNode);
 	}
 
+	SetTaxaIndex(Trees);
+
 	FreeParts(Trees);
 	SetParts(Trees);
 

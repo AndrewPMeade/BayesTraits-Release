@@ -281,10 +281,10 @@ void	RecCalcContrast(NODE N, int NoSites)
 #ifndef CLIK_P
 	for(Index=0;Index<N->NoNodes;Index++)
 	{
-#ifdef THREADED
-		if(N->NodeList[Index]->Visited == FALSE)
-#endif
-			RecCalcContrast(N->NodeList[Index], NoSites);
+	#ifdef THREADED
+			if(N->NodeList[Index]->Visited == FALSE)
+	#endif
+				RecCalcContrast(N->NodeList[Index], NoSites);
 	}
 
 #else 
@@ -1320,7 +1320,7 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 //	TransContNodeDelta(Trees->Tree[Rates->TreeNo]->Root, 2, TRUE);
 //	TransContNodeKappa(Trees->Tree[Rates->TreeNo]->Root, 0.1, TRUE);
-//	TransContNodeOU(Trees->Tree[Rates->TreeNo]->Root, 0.900, TRUE);
+//	TransContNodeOU(Trees->Tree[Rates->TreeNo]->Root, 0.5, TRUE);
 //	TransContNodeLambda(Trees->Tree[Rates->TreeNo]->Root, 0.5, TRUE);
 //	SaveTrees("DTest.trees", Trees); exit(0);
 
@@ -1332,6 +1332,8 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 		if(Opt->UseVarRates == TRUE)
 			Plasty(Opt, Trees, Rates, NORM_TRANSFORMS);
+
+		
 	}
 
 #ifdef THREADED

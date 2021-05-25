@@ -266,7 +266,6 @@ void	RecCalcV(TREES* Trees, TREE *Tree, NODE N, PART *DiffPart)
 		
 	GetPartDiff(N->Ans->Part, N->Part, DiffPart);
 
-	  
 	for(x=0;x<N->Part->NoTaxa;x++)
 	{
 		XPos = N->Part->Taxa[x];

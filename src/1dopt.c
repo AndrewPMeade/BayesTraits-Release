@@ -460,8 +460,8 @@ void	Opt1D(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 	*/
 
 	SetRandConRates(Opt, Rates, Trees, &BestLh, &BestP);
-	Index = 0;
-//	for(Index=0;Index<Opt->MLTries;Index++)
+	
+	for(Index=0;Index<Opt->MLTries;Index++)
 	{
 		if(Index > 0)
 			Start = GetRandRates(Opt, Rates);

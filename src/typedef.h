@@ -76,8 +76,8 @@
 // Used to test if tree transforms are normalised, so there is no cahnge in tree lenght. 
 #define		NORM_TRANSFORMS		TRUE
 
-/* If defined Sigma in indep contrast is restricted to a given value */
-//#define RES_SIGMA	0.0034
+/* If defined Sigma for "Independent Contrast: Full" usning MCMC is restricted to a value. */
+//#define RES_SIGMA	0.1
 //#define RES_ALPHA	0
 
 /* Cost of Uniform prior */

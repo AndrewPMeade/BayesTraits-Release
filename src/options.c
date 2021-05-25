@@ -859,8 +859,8 @@ void	AllocPrios(OPTIONS *Opt)
 	Opt->PriorKappa = CreatUniPrior(MIN_KAPPA, MAX_KAPPA);
 	Opt->PriorLambda= CreatUniPrior(MIN_LAMBDA, MAX_LAMBDA);
 
-	Opt->PriorOU	= CreatUniPrior(MIN_OU, MAX_OU);
-//	Opt->PriorOU	= CreatExpPrior(10.0);
+//	Opt->PriorOU	= CreatUniPrior(MIN_OU, MAX_OU);
+	Opt->PriorOU	= CreatExpPrior(1.0);
 }
 
 void	SetAllRateDevs(OPTIONS *Opt, double Dev)

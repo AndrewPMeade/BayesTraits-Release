@@ -364,7 +364,8 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	StartT = GetSeconds();	
 
 	Rates = CreatRates(Opt);
-		
+	
+//	Test(Opt, Trees, Rates);
 	#ifndef JNIRUN
 		PrintOptions(stdout, Opt);
 		PrintRatesHeadder(stdout, Opt);

@@ -107,11 +107,11 @@ double CaclFullContrastLhMCMCSite(OPTIONS *Opt, TREES* Trees, RATES* Rates, int 
 	SumLogVar = 0;
 
 #ifdef RES_SIGMA
-	ConRates->EstSigma[SiteNo] = RES_SIGMA;
+	ConRates->Sigma[SiteNo] = RES_SIGMA;
 #endif
 
 #ifdef RES_ALPHA
-	ConRates->EstAlpha[SiteNo] = RES_ALPHA;
+	ConRates->Alpha[SiteNo] = RES_ALPHA;
 #endif
 
 	for(Index=0;Index<T->NoNodes;Index++)
