@@ -84,7 +84,8 @@
 //#define LH_UNDER_FLOW 1.9152E-174 
 #define LH_UNDER_FLOW 9.9296E-153
 
-// #define RATE_CHANGE_ONE
+// Change only one rate at a time
+//#define RATE_CHANGE_ONE
 
 // Used to test if tree transforms are normalised, so there is no cahnge in tree lenght. 
 #define		NORMALISE_TREE_CON_SCALING FALSE
@@ -132,7 +133,7 @@
 #define MIN_TAXA_VR_NODE	0
 
 #define MINRATE 1.0e-16
-#define MAXRATE	100
+#define MAXRATE	1000
 
 /*	#define MAXRATE	100 */
 #define MINBL	0.0000001
@@ -158,19 +159,7 @@
 #define	LOGFILEBUFFERSIZE	65536
 
 #define DISPLAY_INFO	printf("BayesTraits V2.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
-/*
-#define MIN_DELTA	1E-07
-#define MAX_DELTA	3
 
-#define MIN_LAMBDA	1E-07
-#define MAX_LAMBDA	1
-
-#define MIN_KAPPA	1E-07
-#define MAX_KAPPA	3
-
-#define MIN_OU		1E-07
-#define MAX_OU		100
-*/
 
 #define MIN_DELTA	1E-07
 #define MAX_DELTA	3
@@ -903,11 +892,11 @@ typedef struct
 
 typedef struct
 {
-	int			NoOfTrees;
-	int			NoOfTaxa;
-	int			NoOfSites;
+	int			NoTrees;
+	int			NoTaxa;
+	int			NoSites;
 	int			NoUserSites;
-	int			NoOfStates;
+	int			NoStates;
 
 	INVINFO*	InvInfo;
 

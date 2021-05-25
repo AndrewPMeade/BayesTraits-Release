@@ -51,7 +51,7 @@ void	MakeKappaV(TREES* Trees, TREE *Tree, double Kappa)
 	NODE	N;
 	PART	*CPart;
 
-	CPart = CreatPart(Trees->NoOfTaxa);
+	CPart = CreatPart(Trees->NoTaxa);
 
 
 	N = Tree->Root;

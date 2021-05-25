@@ -103,10 +103,12 @@ double NLOptBT(RATES *Rates, OPTIONS *Opt, TREES *Trees, ML_MAP *MLMap)
 
 
 /* Good ones */
-	NLOpt = nlopt_create(NLOPT_LN_BOBYQA, MLMap->NoP);
+//	NLOpt = nlopt_create(NLOPT_LN_BOBYQA, MLMap->NoP);
+
+	// Seems quite good for large MS data sets
 //	NLOpt = nlopt_create(NLOPT_LN_NEWUOA, MLMap->NoP);
 //	NLOpt = nlopt_create(NLOPT_LN_NELDERMEAD, MLMap->NoP);
-//	NLOpt = nlopt_create(NLOPT_LN_PRAXIS, MLMap->NoP);
+	NLOpt = nlopt_create(NLOPT_LN_PRAXIS, MLMap->NoP);
 
 //	NLOpt = nlopt_create(NLOPT_LN_PRAXIS, MLMap->NoP);
 //	NLOpt = nlopt_create(NLOPT_LN_COBYLA, MLMap->NoP);

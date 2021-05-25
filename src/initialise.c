@@ -49,7 +49,7 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 
 	PreProcessDataWithModel(Trees, Model);
 
-	Opt = CreatOptions(Model, Analsis, Trees->NoOfStates, TreeFN, DataFN, Trees->SymbolList, Trees);
+	Opt = CreatOptions(Model, Analsis, Trees->NoStates, TreeFN, DataFN, Trees->SymbolList, Trees);
 	
 	return Opt;
 }
@@ -75,7 +75,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	if(Opt->Stones != NULL)
 		Opt->Stones->ItStart = Opt->Itters + 1;
 	
-	for(Index=0;Index<Trees->NoOfTrees;Index++)
+	for(Index=0;Index<Trees->NoTrees;Index++)
 	{
 		ID = 0;
 		SetNodeIDs(Trees->Tree[Index]);
@@ -111,14 +111,14 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 //		NormaliseTrees(Trees->NormConst, Trees);
 		
 		if(Opt->UseCovarion == TRUE)
-			Trees->NoOfStates = Trees->NoOfStates * 2;
+			Trees->NoStates = Trees->NoStates * 2;
 
 		if(Opt->Model == M_DESCCV)
-			Trees->NoOfStates = Trees->NoOfStates * 2;
+			Trees->NoStates = Trees->NoStates * 2;
 
 		if((Opt->UseKappa == TRUE) && (Opt->FixKappa != -1))
 		{
-			for(Index=0;Index<Trees->NoOfTrees;Index++)
+			for(Index=0;Index<Trees->NoTrees;Index++)
 				TreeBLToPower(Trees, Trees->Tree[Index], Opt->FixKappa);
 
 			Opt->FixKappa = -1;

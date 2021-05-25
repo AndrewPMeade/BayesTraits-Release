@@ -67,7 +67,7 @@ double	CaclStdContrastLhML(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	Ret = 0;
 
-	for(Index=0;Index<Trees->NoOfSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 		Ret += CaclStdContrastLhMLSite(Opt, Trees, Rates, Index);
 
 	return Ret;
@@ -155,7 +155,7 @@ double	CaclStdContrastLhMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	Ret = 0;
 
-	for(Index=0;Index<Trees->NoOfSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 		Ret += CaclStdContrastLhMCMCSite(Opt, Trees, Rates, Index);
 
 	return Ret;

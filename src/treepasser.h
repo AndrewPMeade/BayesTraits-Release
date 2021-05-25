@@ -62,8 +62,8 @@ typedef struct
 
 typedef struct
 {
-	int		NoOfTrees;
-	int		NoOfTaxa;
+	int		NoTrees;
+	int		NoTaxa;
 	NTAXA*	Taxa;
 	NTREE*	Trees;
 

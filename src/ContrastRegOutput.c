@@ -80,7 +80,7 @@ REG_CON_POST*	CreatRegConPost(TREES *Trees, RATES *Rates)
 	Ret					=	(REG_CON_POST*)SMalloc(sizeof(REG_CON_POST));
 	
 	Ret->NoContrasts	=	Tree->NoContrast;
-	Ret->NoSites		=	Trees->NoOfSites;
+	Ret->NoSites		=	Trees->NoSites;
 
 	Ret->Predicated		= (double*)SMalloc(sizeof(double) * Ret->NoContrasts);
 	Ret->Residuals		= (double*)SMalloc(sizeof(double) * Ret->NoContrasts);
@@ -381,7 +381,7 @@ void	OutputConReg(FILE *Str, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	fprintf(Str, "%0.12f\t", Rates->Contrast->RegAlpha);
 
-	for(Index=0;Index<Trees->NoOfSites-1;Index++)
+	for(Index=0;Index<Trees->NoSites-1;Index++)
 		fprintf(Str, "%0.12f\t", Rates->Contrast->RegBeta[Index]);
 
 	RegConPost = CreatRegConPost(Trees, Rates);
@@ -391,7 +391,7 @@ void	OutputConReg(FILE *Str, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	fprintf(Str, "N\\A\t");
 
-	for(Index=0;Index<Trees->NoOfSites-1;Index++)
+	for(Index=0;Index<Trees->NoSites-1;Index++)
 		fprintf(Str, "%0.12f\t", RegConPost->SE[Index]);
 
 //	PrintRegConPost(RegConPost);

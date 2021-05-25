@@ -36,7 +36,7 @@ int		GetParamPerModel(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	else
 	{
 		Ret += Rates->NoOfFullRates;
-		Ret += Trees->NoOfStates;
+		Ret += Trees->NoStates;
 		if(Opt->UseCovarion == TRUE)
 			Ret += 2;
 
@@ -109,7 +109,7 @@ void	SaveModelFile(FILE *MFile, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	else
 	{
 		MFWriteDoubleArr(Rates->FullRates, Rates->NoOfFullRates, MFile);
-		MFWriteDoubleArr(Rates->Pis, Trees->NoOfStates, MFile);
+		MFWriteDoubleArr(Rates->Pis, Trees->NoStates, MFile);
 
 		if(Opt->UseCovarion == TRUE)
 		{
@@ -140,8 +140,8 @@ void		MapDescModelFile(OPTIONS *Opt, RATES *Rates)
 
 	memcpy((void*)Rates->FullRates, (void*)Data, sizeof(double) * Rates->NoOfFullRates);
 	Pos = Rates->NoOfFullRates;
-	memcpy((void*)Rates->Pis, (void*)&Data[Pos], sizeof(double) * Trees->NoOfStates);
-	Pos += Trees->NoOfStates;
+	memcpy((void*)Rates->Pis, (void*)&Data[Pos], sizeof(double) * Trees->NoStates);
+	Pos += Trees->NoStates;
 
 	if(Opt->UseCovarion == TRUE)
 	{

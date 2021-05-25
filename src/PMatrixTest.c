@@ -38,27 +38,27 @@ double*	GetRates(void)
 void	LocPreCalc(INVINFO	*InvInfo)
 {
 	int		Ret;
-	int		NoOfStates;
+	int		NoStates;
 	
 	static int		*iwork=NULL;
 	static double	*work=NULL;
 	static double	*vi=NULL;
 
-	NoOfStates = 4;
+	NoStates = 4;
 
 	if(iwork == NULL)
 	{
-		iwork = (int*)malloc(sizeof(int) * NoOfStates);
-		work = (double*)malloc(sizeof(double) * NoOfStates);
-		vi = (double*)malloc(sizeof(double) * NoOfStates);
+		iwork = (int*)malloc(sizeof(int) * NoStates);
+		work = (double*)malloc(sizeof(double) * NoStates);
+		vi = (double*)malloc(sizeof(double) * NoStates);
 	}
 
 	CopyMatrix(InvInfo->Q, InvInfo->A);
 
-	Ret = EigenRealGeneral(NoOfStates, InvInfo->A->me, InvInfo->val, vi, InvInfo->vec->me, iwork, work);
+	Ret = EigenRealGeneral(NoStates, InvInfo->A->me, InvInfo->val, vi, InvInfo->vec->me, iwork, work);
 
 	CopyMatrix(InvInfo->Q, InvInfo->vec);
-	Ret = InvertMatrix(InvInfo->Q->me, NoOfStates, work, iwork, InvInfo->inv_vec->me);
+	Ret = InvertMatrix(InvInfo->Q->me, NoStates, work, iwork, InvInfo->inv_vec->me);
 
 	if(Ret == ERROR)
 	{

@@ -156,10 +156,10 @@ double	FindAveNodeDepth(RECNODE *RNode, OPTIONS *Opt)
 {
 	double Ret=0;
 
-	Ret = Opt->Trees->NoOfTaxa * Opt->Trees->NoOfTrees;
+	Ret = Opt->Trees->NoTaxa * Opt->Trees->NoTrees;
 	Ret = Ret - RNode->Hits;
-	Ret = Ret / Opt->Trees->NoOfTrees;
-	Ret = Opt->Trees->NoOfTaxa - Ret;
+	Ret = Ret / Opt->Trees->NoTrees;
+	Ret = Opt->Trees->NoTaxa - Ret;
 
 	return Ret;
 }
@@ -195,14 +195,14 @@ void	PrintEstData(FILE *Str, OPTIONS *Opt)
 
 	fprintf(Str, "Estimating values for taxa and Sites\n");
 
-	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
 	{
 		Taxa = Trees->Taxa[TIndex];
 		if(Taxa->EstData == TRUE)
 		{
 			fprintf(Str, "\t");
 			PrintFixSize(Taxa->Name, 20, Str);
-			for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+			for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 			{
 				if(Taxa->EstDataP[SIndex] == TRUE)
 					fprintf(Str, "%d ", SIndex+1);
@@ -356,7 +356,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 
 		if(Opt->Model == M_MULTISTATE)
 		{
-			NOS = Opt->Trees->NoOfStates;
+			NOS = Opt->Trees->NoStates;
 			if(Opt->UseCovarion == TRUE)
 				NOS = NOS / 2;
 			for(Index=0;Index<NOS	-1;Index++)
@@ -472,7 +472,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			
 		
 			if(RNode->NodeType == NODEREC)
-				fprintf(Str, "Node:         %s                    %f\n", RNode->Name, ((double)RNode->Hits / Opt->Trees->NoOfTrees)*100);
+				fprintf(Str, "Node:         %s                    %f\n", RNode->Name, ((double)RNode->Hits / Opt->Trees->NoTrees)*100);
 		
 
 			if(RNode->NodeType == FOSSIL)
@@ -616,7 +616,7 @@ char**	ModelARateName(OPTIONS* Opt)
 	char*	Buffer;
 	int		Index;
 
-	Opt->NoOfRates = Opt->Trees->NoOfSites;
+	Opt->NoOfRates = Opt->Trees->NoSites;
 
 	Ret = (char**)malloc(sizeof(char*)*Opt->NoOfRates);
 	if(Ret == NULL)
@@ -652,14 +652,14 @@ char**	ModelBRateName(OPTIONS* Opt)
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
-		if(Index<Opt->Trees->NoOfSites)
+		if(Index<Opt->Trees->NoSites)
 		{
 			No = Index+1;
 			sprintf(Buffer, "Alpha-%d", No);
 		}
 		else
 		{
-			No = (Index - Opt->Trees->NoOfSites) + 1;
+			No = (Index - Opt->Trees->NoSites) + 1;
 			sprintf(Buffer, "Beta-%d", No);
 		}
 
@@ -703,7 +703,7 @@ char**	ContrastRateNames(OPTIONS *Opt)
 	char	*Buffer;
 	int		Index, NOS, i;
 	
-	NOS = Opt->Trees->NoOfSites;
+	NOS = Opt->Trees->NoSites;
 	 
 	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
@@ -711,7 +711,7 @@ char**	ContrastRateNames(OPTIONS *Opt)
 		MallocErr();
 	
 	i = 0;
-	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 	{
 		sprintf(Buffer, "Alpha-%d", Index+1);
 		Ret[i++] = StrMake(Buffer);
@@ -727,7 +727,7 @@ char**	ContrastFullRateNames(OPTIONS *Opt)
 	char	*Buffer;
 	int		Index, NOS, i;
 	
-	NOS = Opt->Trees->NoOfSites;
+	NOS = Opt->Trees->NoSites;
 	 
 	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
@@ -759,7 +759,7 @@ char**	ContrastRegRateNames(OPTIONS *Opt)
 	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
 	
 	Pos = 0;
-	for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
+	for(Index=1;Index<Opt->Trees->NoSites;Index++)
 	{
 		sprintf(Buffer, "Beta-%d", Index);
 		Ret[Pos++] = StrMake(Buffer);
@@ -779,7 +779,7 @@ char**	FatTailRateNames(OPTIONS *Opt)
 	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
 		
 	Pos = 0;
-	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 	{
 		sprintf(Buffer, "Alpha-%d", Index+1);
 		Ret[Pos++] = StrMake(Buffer);
@@ -933,7 +933,7 @@ void	SetFatTailPrior(OPTIONS *Opt)
 
 	Pos = 0;
 	
-	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 	{
 		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.2, 2.0);
 		AddPriorToOpt(Opt, Prior);
@@ -979,7 +979,7 @@ void	AllocRatePriors(OPTIONS *Opt)
 		else
 			Prior = CreateUniformPrior(Opt->RateName[Index], -100, 100);
 				
-		if(Opt->Model == M_CONTRAST && Index >= Opt->Trees->NoOfSites)
+		if(Opt->Model == M_CONTRAST && Index >= Opt->Trees->NoSites)
 			Prior->DistVals[0] = 0;
 		
 		AddPriorToOpt(Opt, Prior);
@@ -1220,7 +1220,7 @@ void	PrintModelChoic(TREES *Trees)
 {
 	printf("Please select the model of evolution to use.\n");
 	printf("1)	MultiState\n");
-	if((Trees->NoOfSites == 2) && (Trees->NoOfStates == 2))
+	if((Trees->NoSites == 2) && (Trees->NoStates == 2))
 	{
 		printf("2)\tDiscrete: Independent\n");
 		printf("3)\tDiscrete: Dependant\n");
@@ -1231,7 +1231,7 @@ void	PrintModelChoic(TREES *Trees)
 		printf("4)\tContinuous: Random Walk (Model A)\n");
 		printf("5)\tContinuous: Directional (Model B)\n");
 
-		if(Trees->NoOfSites > 1)
+		if(Trees->NoSites > 1)
 			printf("6)\tContinuous: Regression\n");
 
 		if(EstData(Trees) == FALSE)
@@ -1240,16 +1240,16 @@ void	PrintModelChoic(TREES *Trees)
 
 			printf("8)\tIndependent Contrast: Correlation\n");
 
-			if(Trees->NoOfSites > 1)
+			if(Trees->NoSites > 1)
 				printf("9)\tIndependent Contrast: Regression\n");
 		}
 	}
 
-	if((Trees->NoOfSites == 2) && (Trees->NoOfStates == 2))
+	if((Trees->NoSites == 2) && (Trees->NoStates == 2))
 	{
 		printf("10)\tDiscrete: Covarion\n");
 	#ifndef PUBLIC_BUILD
-		if(Trees->NoOfTrees == 1)
+		if(Trees->NoTrees == 1)
 			printf("11)	Discrete: Heterogeneous \n");
 	#endif
 	}
@@ -1257,7 +1257,7 @@ void	PrintModelChoic(TREES *Trees)
 	if(Trees->ValidCData == TRUE)
 		printf("12)\tFat Tail\n");
 	
-	if(Trees->ValidCData == TRUE && Trees->NoOfSites == 2)
+	if(Trees->ValidCData == TRUE && Trees->NoSites == 2)
 		printf("13)\tGeo Data\n");
 }
 
@@ -1297,14 +1297,14 @@ int		ValidModelChoice(TREES *Trees, MODEL Model)
 
 	if((Model == M_DESCINDEP) || (Model == M_DESCINDEP) || (Model == M_DESCCV) || (Model == M_DESCHET))
 	{
-		if((Trees->NoOfSites != 2) || (Trees->NoOfStates != 2))
+		if((Trees->NoSites != 2) || (Trees->NoStates != 2))
 		{
 			printf("Discrete analisis requiers two two state characters\n");
-			printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
+			printf("There are %d states and %d sites in the current data set.\n", Trees->NoStates, Trees->NoSites);
 			return FALSE;
 		}
 
-		if(Model == M_DESCHET && Trees->NoOfTrees != 1)
+		if(Model == M_DESCHET && Trees->NoTrees != 1)
 		{
 			printf("Discrete: Heterogeneous requires a single tree.\n");
 			return FALSE;
@@ -1321,7 +1321,7 @@ int		ValidModelChoice(TREES *Trees, MODEL Model)
 
 	if((Model == M_CONTINUOUS_REG) || (Model == M_CONTRAST_REG))
 	{
-		if(Trees->NoOfSites < 2)
+		if(Trees->NoSites < 2)
 		{
 			printf("Regression, requires two or more sites.\n");
 			return FALSE;
@@ -1907,7 +1907,7 @@ int*	CrateMSFossilStateList(char *List, OPTIONS *Opt, int *No)
 	Ret = (int*)SMalloc(sizeof(int) * *No);
 
 	for(Index=0;Index<*No;Index++)
-		Ret[Index] = MSStateToNo(List[Index], Opt->Trees->SymbolList, Opt->Trees->NoOfStates);
+		Ret[Index] = MSStateToNo(List[Index], Opt->Trees->SymbolList, Opt->Trees->NoStates);
 
 	return Ret;
 }
@@ -1925,7 +1925,7 @@ int		GetTaxaNoFormName(char* Name, TREES* Trees, int *No)
 {
 	int	Index;
 	
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		if(strcmp(Name, Trees->Taxa[Index]->Name) == 0)
 		{
@@ -1953,7 +1953,7 @@ int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 			OK = TRUE;
 			TaxaNo = atoi(List[Index]);
 
-			if(GetTaxaFromID(TaxaNo, Opt->Trees->Taxa, Opt->Trees->NoOfTaxa) == NULL)
+			if(GetTaxaFromID(TaxaNo, Opt->Trees->Taxa, Opt->Trees->NoTaxa) == NULL)
 			{
 				printf("Error: Could not convert %s to a valid taxa number.\n", List[Index]);
 				exit(0);
@@ -1981,7 +1981,7 @@ TAXA*	GetTaxaFromNameNo(char *ID, TREES* Trees)
 //	if(IsValidInt(ID) == TRUE)
 //		return GetTaxaFromID(atoi(ID), Trees->Taxa, Trees->NoOfTaxa);
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 		if(strcmp(ID, Trees->Taxa[Index]->Name) == 0)
 			return Trees->Taxa[Index];
 
@@ -1996,12 +1996,12 @@ char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char *argv[])
 	if(Opt->DataType == DISCRETE) 
 		return NULL;
 
-	Ret = (char**)malloc(sizeof(char*) * Opt->Trees->NoOfSites);
+	Ret = (char**)malloc(sizeof(char*) * Opt->Trees->NoSites);
 	if(Ret == NULL)
 		MallocErr();
 
 
-	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 	{
 		if(NodeType != FOSSIL)
 			Ret[Index] = StrMake(ESTDATAPOINT); 
@@ -2040,14 +2040,14 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 			Index++;
 		}
 		else
-			Index += Opt->Trees->NoOfSites;
+			Index += Opt->Trees->NoSites;
 	}
 
 	if(Opt->DataType == CONTINUOUS)		
 	{
 		ConFState = SetConFState(Opt, NodeType, &argv[Index]);
 		if(NodeType == FOSSIL)
-			Index += Opt->Trees->NoOfSites;
+			Index += Opt->Trees->NoSites;
 	}
 	
 	if(ValidTaxaList(argv, Index, Tokes, Opt) == FALSE)
@@ -2087,7 +2087,7 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 
 	RNode->Part = CreatPart(NoTaxa);
 	
-	RNode->TreeNodes = (NODE*)SMalloc(sizeof(NODE)*Opt->Trees->NoOfTrees);
+	RNode->TreeNodes = (NODE*)SMalloc(sizeof(NODE)*Opt->Trees->NoTrees);
 
 	SetRecNodes(RNode, Opt->Trees);
 
@@ -2101,7 +2101,7 @@ void	SetEvenRoot(TREES *Trees)
 	double	t;
 	NODE	Root;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		Root = Trees->Tree[TIndex]->Root;
 		t = 0;
@@ -2495,7 +2495,7 @@ void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed)
 
 	for(Index=0;Index<Tokes;Index++)
 	{
-		Taxa = GetTaxaFromName(Passed[Index], Opt->Trees->Taxa, Opt->Trees->NoOfTaxa);
+		Taxa = GetTaxaFromName(Passed[Index], Opt->Trees->Taxa, Opt->Trees->NoTaxa);
 
 		if(Taxa == NULL)
 		{
@@ -2840,7 +2840,7 @@ void	SetMSSymmetrical(OPTIONS *Opt)
 	int		x, y, NOS, From, To;
 	char	FromS[4], ToS[4];
 		
-	NOS = Opt->Trees->NoOfStates;
+	NOS = Opt->Trees->NoStates;
 
 	for(x=0;x<NOS;x++)
 	{
@@ -3137,13 +3137,13 @@ void	SetSteppingstone(OPTIONS *Opt, char **Passed, int Tokes)
 
 void	SetRJDummy(OPTIONS *Opt, char **Passed, int Tokes)
 {
-	if(Opt->Trees->NoOfTrees != 1)
+	if(Opt->Trees->NoTrees != 1)
 	{
 		printf("RJ Dummy coding only works on a singel tree.\n");
 		return;
 	}
 
-	if(Opt->Trees->NoOfSites > 2)
+	if(Opt->Trees->NoSites > 2)
 	{
 		printf("RJ Dummy coding does not currently work with multiple regressions.\n");
 		return;
@@ -3196,7 +3196,7 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 		return FALSE;
 	}
 
-	if(Opt->Trees->NoOfTrees != 1)
+	if(Opt->Trees->NoTrees != 1)
 	{
 		printf("RJ Local Scalar is only valid with a single tree.\n");
 		return FALSE;
@@ -3631,7 +3631,7 @@ void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
 
 void	SetVarRatesOpt(OPTIONS *Opt)
 {
-	if(Opt->Trees->NoOfTrees > 1)
+	if(Opt->Trees->NoTrees > 1)
 	{
 		printf("VarRates can only be used on a single tree.\n");
 		exit(1);
@@ -3905,7 +3905,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		if(Tokes > 1)
 		{
 			FreeParts(Opt->Trees);
-			FreeRecNodes(Opt, Opt->Trees->NoOfSites);
+			FreeRecNodes(Opt, Opt->Trees->NoSites);
 			ExcludeTaxa(Opt, Tokes-1, &Passed[1]);
 			SetParts(Opt->Trees);
 		}

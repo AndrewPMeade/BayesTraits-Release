@@ -172,7 +172,7 @@ int main(int argc, char** argv)
 
 	Trees  = LoadTrees(TreeFN);
 
-	if(Trees->NoOfTrees == 0) 
+	if(Trees->NoTrees == 0) 
 	{
 		printf("Could not load any valid trees\n");
 		exit(0);
@@ -207,7 +207,7 @@ int main(int argc, char** argv)
 
 	Finalise(Opt, Trees);
 
-	NoSites = Trees->NoOfSites;
+	NoSites = Trees->NoSites;
 	FreeTrees(Trees, Opt);
 	FreeOptions(Opt, NoSites);
 

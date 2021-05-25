@@ -31,9 +31,9 @@ void	RatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR);
 int			GetNoContrastSites(OPTIONS *Opt, TREES *Trees)
 {
 	if(Opt->RJDummy == TRUE)
-		return GetMaxDummy(Opt, Trees) + Trees->NoOfSites;
+		return GetMaxDummy(Opt, Trees) + Trees->NoSites;
 
-	return Trees->NoOfSites;
+	return Trees->NoSites;
 }
 
 
@@ -97,7 +97,7 @@ void	AllocContrast(NODE N, TREES *Trees, int NoSites)
 
 			if(N->Tip == TRUE)
 			{
-				if(SIndex < Trees->NoOfSites)
+				if(SIndex < Trees->NoSites)
 					Ret->Data[SIndex] = N->Taxa->ConData[SIndex];
 			}
 			
@@ -167,7 +167,7 @@ void	InitContrastAll(OPTIONS *Opt, TREES* Trees)
 
 	NoSites = GetNoContrastSites(Opt, Trees);
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 		InitContrastTree(Opt, Trees, TIndex, NoSites);
 
 //	TransformContrastTreeFixed(Opt, Trees);
@@ -210,7 +210,7 @@ void	FreeAllContrast(OPTIONS *Opt, TREES* Trees)
 {
 	int TIndex;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 		FreeContrast(Opt, Trees, TIndex);
 }
 
@@ -460,7 +460,7 @@ void	PrintContrasts(TREES* Trees, RATES* Rates)
 			printf("\t");
 			C = N->ConData->Contrast[CIndex];
 
-			for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+			for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 				printf("%f\t%f\t%f\t%f\t", C->Cont[SIndex], C->Data[SIndex], C->Err[SIndex], C->Var[SIndex]);
 
 			printf("\n");
@@ -479,9 +479,9 @@ void	CalcContrastP(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	#pragma omp parallel for num_threads(Opt->Cores)
 #endif
 	for(NIndex=0;NIndex<Tree->NoPNodes;NIndex++)
-		RecCalcContrast(Tree->PNodes[NIndex], Trees->NoOfSites);
+		RecCalcContrast(Tree->PNodes[NIndex], Trees->NoSites);
 
-	RecCalcContrast(Tree->Root, Trees->NoOfSites);
+	RecCalcContrast(Tree->Root, Trees->NoSites);
 
 	return;
 
@@ -499,7 +499,7 @@ void	CalcContrastP(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 			#pragma omp parallel for num_threads(Opt->Cores)
 #endif
 			for(NIndex=0;NIndex<Tree->NoFNodes[PIndex];NIndex++)
-				LinCalcContrast(Tree->FNodes[PIndex][NIndex], Trees->NoOfSites);
+				LinCalcContrast(Tree->FNodes[PIndex][NIndex], Trees->NoSites);
 		}
 	}
 
@@ -606,9 +606,9 @@ void	CalcMLContrastSigma(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	Tree = Trees->Tree[Rates->TreeNo];
 
 	Sig = Rates->Contrast->SigmaMat;
-	for(x=0;x<Trees->NoOfSites;x++)
+	for(x=0;x<Trees->NoSites;x++)
 	{
-		for(y=x;y<Trees->NoOfSites;y++)
+		for(y=x;y<Trees->NoSites;y++)
 		{
 			Sig->me[x][y] = CalcContrastCoVar(Tree, x, y);
 			Sig->me[y][x] = Sig->me[x][y];
@@ -617,9 +617,9 @@ void	CalcMLContrastSigma(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	if(Opt->TestCorrel == FALSE)
 	{
-		for(x=0;x<Trees->NoOfSites;x++)
+		for(x=0;x<Trees->NoSites;x++)
 		{
-			for(y=x+1;y<Trees->NoOfSites;y++)
+			for(y=x+1;y<Trees->NoSites;y++)
 			{
 				Sig->me[x][y] = 0;
 				Sig->me[y][x] = 0;
@@ -779,7 +779,7 @@ void	GetConStdMLAlpha(TREES *Trees, RATES *Rates)
 
 	Tree = Trees->Tree[Rates->TreeNo];
 
-	for(Index=0;Index<Trees->NoOfSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 		Rates->Contrast->Alpha[Index] = Tree->Root->ConData->Contrast[0]->Data[Index];
 }
 
@@ -801,7 +801,7 @@ double	CalcAllSiteLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, double AlphaErr)
 	SumLV += log(Tree->Root->ConData->Contrast[0]->Err[0]);
 	
 	N = NoCon + 1;
-	K = Trees->NoOfSites;
+	K = Trees->NoSites;
 	T1 = log(Rates->Contrast->SigmaInvInfo->Det);
 	
 	Ret = N * K * 1.83787706640935 + K * SumLV + N * log(Rates->Contrast->SigmaInvInfo->Det) + GlobalVar;
@@ -1042,7 +1042,7 @@ void	CalcContrastMCMC(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	Rates->Lh = 0;
 
-	for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+	for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 		Rates->Lh += CalcContrastMCMCSiteLh(Opt, Trees, Rates, SIndex);
 }
 
@@ -1269,7 +1269,7 @@ void	CaclRegBeta(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	
 	BSpace = Rates->Contrast->RegSapce;
 
-	SetRegUxMatrix(Tree, BSpace->Ux, Trees->NoOfSites);
+	SetRegUxMatrix(Tree, BSpace->Ux, Trees->NoSites);
 
 	Transpose(BSpace->Ux, BSpace->TUx);
 
@@ -1282,7 +1282,7 @@ void	CaclRegBeta(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 //	PrintMathematicaMatrix(BSpace->Uy, "Uy=", stdout);
 //	printf("Inverse[Transpose[Ux].Ux].(Transpose[Ux].Uy)\n");
 	
-	if(Trees->NoOfSites == 2)
+	if(Trees->NoSites == 2)
 	{
 		if(Opt->TestCorrel == FALSE)
 			BSpace->InvUx->me[0][0] = 1;
@@ -1295,7 +1295,7 @@ void	CaclRegBeta(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 			SetIdentityMatrix(BSpace->InvUx);
 		else
 		{
-			Err = InvertMatrix(BSpace->Prod1->me, Trees->NoOfSites-1, BSpace->TempDVect, BSpace->TempIVect, BSpace->InvUx->me);
+			Err = InvertMatrix(BSpace->Prod1->me, Trees->NoSites-1, BSpace->TempDVect, BSpace->TempIVect, BSpace->InvUx->me);
 
 			if(Err != NO_ERROR)
 			{
@@ -1309,7 +1309,7 @@ void	CaclRegBeta(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	MatrixMult(BSpace->InvUx, BSpace->Prod2, BSpace->Prod3);
 
-	for(Index=0;Index<Trees->NoOfSites-1;Index++)
+	for(Index=0;Index<Trees->NoSites-1;Index++)
 		Rates->Contrast->RegBeta[Index] = BSpace->Prod3->me[0][Index];
 }
 
@@ -1397,7 +1397,7 @@ void	DummCodePreLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	CONTRASTR *CRates;
 	int NoRSize;
 
-	NoRSize = Trees->NoOfSites - 1;
+	NoRSize = Trees->NoSites - 1;
 
 	CRates = Rates->Contrast;
 
@@ -1485,7 +1485,7 @@ void		InitStdContrastRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConRates)
 {
 	int NoSites;
 
-	NoSites = Opt->Trees->NoOfSites;
+	NoSites = Opt->Trees->NoSites;
 	ConRates->SigmaMat = AllocMatrix(NoSites, NoSites);
 	ConRates->SigmaInvInfo = CreatMatInvertInfo(NoSites);
 
@@ -1502,8 +1502,8 @@ void		InitStdContrastRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConRates)
 
 void		InitFullContrastRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConRates)
 {
-	ConRates->Alpha = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
-	ConRates->Sigma = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
+	ConRates->Alpha = (double*)malloc(sizeof(double) * Opt->Trees->NoSites);
+	ConRates->Sigma = (double*)malloc(sizeof(double) * Opt->Trees->NoSites);
 
 	if((ConRates->Alpha == NULL) || (ConRates->Sigma == NULL))
 		MallocErr();
@@ -1521,7 +1521,7 @@ int			GetMaxNoContrasts(TREES *Trees)
 
 	Ret = Trees->Tree[0]->NoContrast;
 
-	for(Index=1;Index<Trees->NoOfTrees;Index++)
+	for(Index=1;Index<Trees->NoTrees;Index++)
 	{
 		if(Trees->Tree[Index]->NoContrast > Ret)
 			Ret = Trees->Tree[Index]->NoContrast;
@@ -1590,13 +1590,13 @@ void		InitRegContrastRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConRates)
 
 	NoContrasts = GetMaxNoContrasts(Opt->Trees);
 	
-	ConRates->RegSapce = InitRegBetaSpace(Opt->Trees->NoOfSites-1, NoContrasts);
+	ConRates->RegSapce = InitRegBetaSpace(Opt->Trees->NoSites-1, NoContrasts);
 
 	if(Opt->Analsis == ANALMCMC)
 	{
 		CalcContrast(Opt->Trees, Rates);	
 		CaclRegBeta(Opt, Opt->Trees, Rates);
-		ConRates->RegAlpha = CalcRegAlpha(Opt->Trees->Tree[0], ConRates, Opt->Trees->NoOfSites);
+		ConRates->RegAlpha = CalcRegAlpha(Opt->Trees->Tree[0], ConRates, Opt->Trees->NoSites);
 	}
 }
 
@@ -1635,7 +1635,7 @@ void	MapConValsToRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 {
 	int NoSites;
 
-	NoSites = Opt->Trees->NoOfSites;
+	NoSites = Opt->Trees->NoSites;
 	
 	if(Opt->Model == M_CONTRAST_CORREL)
 	{
@@ -1676,10 +1676,10 @@ void	MapRatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)
 		ConR->RegAlpha = 0;
 
 		if(Opt->TestCorrel == FALSE)
-			for(Index=0;Index<Opt->Trees->NoOfSites - 1;Index++)
+			for(Index=0;Index<Opt->Trees->NoSites - 1;Index++)
 				Rates->Rates[Index] = 0.0;
 
-		memcpy(ConR->RegBeta, (void*)Rates->Rates, sizeof(double) * (Opt->Trees->NoOfSites - 1));
+		memcpy(ConR->RegBeta, (void*)Rates->Rates, sizeof(double) * (Opt->Trees->NoSites - 1));
 	}
 
 	if(Opt->Model == M_CONTRAST)
@@ -1697,7 +1697,7 @@ CONTRASTR*	CreatContrastRates(OPTIONS *Opt, RATES *Rates)
 
 	Ret = AllocContrastRates(Opt, Rates);
 
-	Ret->NoSites = Opt->Trees->NoOfSites;
+	Ret->NoSites = Opt->Trees->NoSites;
 
 	Rates->Contrast = Ret;
 
@@ -1806,7 +1806,7 @@ void		ConvertDataToZScore(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	TREE	*Tree;
 	NODE	N;
 
-	for(Index=0;Index<Trees->NoOfTrees;Index++)
+	for(Index=0;Index<Trees->NoTrees;Index++)
 	{
 		Tree = Trees->Tree[Index];
 		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
@@ -1815,7 +1815,7 @@ void		ConvertDataToZScore(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 			if(N->Tip == TRUE)
 			{
-				for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+				for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 				{
 					Temp = DataToZScore(N->Taxa->ConData[SIndex], Trees->PMean[SIndex], Trees->PSD[SIndex]);
 					N->ConData->Contrast[0]->Data[SIndex] = Temp;
@@ -1834,23 +1834,23 @@ void		NormaliseReg(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	CalcContrast(Opt->Trees, Rates);	
 	
-	Trees->PMean = (double*)malloc(sizeof(double) * Trees->NoOfSites);
-	Trees->PSD	 = (double*)malloc(sizeof(double) * Trees->NoOfSites);
+	Trees->PMean = (double*)malloc(sizeof(double) * Trees->NoSites);
+	Trees->PSD	 = (double*)malloc(sizeof(double) * Trees->NoSites);
 
 	if((Trees->PMean == NULL) || (Trees->PSD == NULL))
 		MallocErr();
 
 	CR = Rates->Contrast;
 
-	CR->Alpha = (double*)malloc(sizeof(double) * Trees->NoOfSites);
-	CR->Sigma = (double*)malloc(sizeof(double) * Trees->NoOfSites);
+	CR->Alpha = (double*)malloc(sizeof(double) * Trees->NoSites);
+	CR->Sigma = (double*)malloc(sizeof(double) * Trees->NoSites);
 
 	if((CR->Alpha == NULL) || (CR->Sigma == NULL))
 		MallocErr();
 
 	CaclStdContrastLhML(Opt, Trees, Rates);
 
-	for(Index=0;Index<Trees->NoOfSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 	{
 		Trees->PMean[Index] = CR->Alpha[Index];
 		Trees->PSD[Index] = sqrt(CR->Sigma[Index]);

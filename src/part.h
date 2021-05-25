@@ -16,6 +16,7 @@ NODE	FindNode(RECNODE *RNode, TREE *Tree, int *Depth);
 void	GetPartDiff(PART *Ans, PART *Cur, PART *Diff);
 
 void	PrintPart(FILE *Str, TREES *Trees, PART *Part);
+void	PrintPartTaxaOnly(FILE *Str, TREES *Trees, PART *Part);
 
 PART*	CreatePart(TREES *Trees, int NoTaxa, char **TaxaList);
 

@@ -87,7 +87,7 @@ int		MultiTree(OPTIONS *Opt)
 	if(Opt->UseEqualTrees == TRUE)
 		return FALSE;
 
-	if(Opt->Trees->NoOfTrees == 1)
+	if(Opt->Trees->NoTrees == 1)
 		return FALSE;
 
 	return TRUE;
@@ -187,7 +187,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 
 	Rates = 0;
 	if(Opt->DataType == CONTINUOUS)
-		Rates = Opt->Trees->NoOfSites;
+		Rates = Opt->Trees->NoSites;
 	else
 		for(Index=0;Index<Opt->NoOfRates;Index++)
 			if(Opt->ResTypes[Index] == RESNONE)
@@ -382,7 +382,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->ModelType == MT_FATTAIL)
 	{
-		NoS = Opt->Trees->NoOfSites;
+		NoS = Opt->Trees->NoSites;
 		if(Opt->Model == M_GEO)
 		{
 			sprintf(Buffer,"Alpha");
@@ -410,7 +410,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST_CORREL)
 	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 		{
 			sprintf(Buffer,"Alpha %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -422,7 +422,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST_REG)
 	{
-		for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=1;Index<Opt->Trees->NoSites;Index++)
 		{
 			sprintf(Buffer,"Beta %d", Index);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -434,13 +434,13 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST)
 	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 		{
 			sprintf(Buffer,"Alpha %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
 		}
 
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 		{
 			sprintf(Buffer,"Sigma^2 %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -455,7 +455,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		sprintf(Buffer,"Alpha");
 		Ret[PIndex++] = StrMake(Buffer);
 
-		for(Index=1;Index<Opt->Trees->NoOfSites+1;Index++)
+		for(Index=1;Index<Opt->Trees->NoSites+1;Index++)
 		{
 			sprintf(Buffer,"Beta Trait %d",Index);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -464,7 +464,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		return Ret;
 	}
 
-	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 	{
 		sprintf(Buffer,"Alpha Trait %d",Index+1);
 		Ret[PIndex++] = StrMake(Buffer);
@@ -472,7 +472,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTINUOUS_DIR)
 	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 		{
 			sprintf(Buffer,"Beta Trait %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -500,6 +500,9 @@ void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, RANDSTATES *RS)
 	{
 		Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Shed, Shed->RateDevATList[Index]);
+
+		if(Opt->ModelType == MT_DISCRETE)
+			SetMaxDev(Shed->RateDevATList[Index], 5.0);
 	}
 
 	for(Index=0;Index<Shed->NoParm;Index++)

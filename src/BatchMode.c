@@ -106,7 +106,7 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	
 	PreProcessDataWithModel(Trees, Model);
 
-	Opt = CreatOptions(Model, Analsis, Trees->NoOfStates, TreeFN, DataFN, Trees->SymbolList, Trees);
+	Opt = CreatOptions(Model, Analsis, Trees->NoStates, TreeFN, DataFN, Trees->SymbolList, Trees);
 	SetLogFName(Opt, BNo);
 
 	GetOptionsArry(Opt, NoComs-2, &Coms[2]);
@@ -132,7 +132,7 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	if(Opt->Analsis == ANALML)
 		FindML(Opt, Trees);
 
-	NoSites = Trees->NoOfSites;
+	NoSites = Trees->NoSites;
 	FreeTrees(Trees, Opt);
 	FreeOptions(Opt, NoSites);
 	

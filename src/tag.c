@@ -56,11 +56,11 @@ TAG*	CreateTag(TREES *Trees, char *Name, int NoTaxa, char **TaxaNames)
 
 	Ret->Part = CreatePart(Trees, Ret->NoTaxa, Ret->Taxa);
 
-	Ret->NodeList = (NODE*)malloc(sizeof(NODE) * Trees->NoOfTrees);
+	Ret->NodeList = (NODE*)malloc(sizeof(NODE) * Trees->NoTrees);
 	if(Ret->NodeList == NULL)
 		MallocErr();
 
-	for(Index=0;Index<Trees->NoOfTrees;Index++)
+	for(Index=0;Index<Trees->NoTrees;Index++)
 		Ret->NodeList[Index] = PartGetMRCA(Trees->Tree[Index], Ret->Part);		
 	
 	return Ret;

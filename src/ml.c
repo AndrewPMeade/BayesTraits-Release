@@ -423,7 +423,7 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 	TStart = GetSeconds();
 
-	for(Index=0;Index<Trees->NoOfTrees;Index++)
+	for(Index=0;Index<Trees->NoTrees;Index++)
 	{
 		Rates->TreeNo = Index;
 
@@ -451,7 +451,7 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 		
 		if(Opt->ModelType == MT_CONTINUOUS)
 		{
-			FreeConVar(Trees->Tree[Rates->TreeNo]->ConVars, Trees->NoOfTaxa);
+			FreeConVar(Trees->Tree[Rates->TreeNo]->ConVars, Trees->NoTaxa);
 			Trees->Tree[Rates->TreeNo]->ConVars = NULL;
 		}
 	}

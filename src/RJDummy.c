@@ -453,7 +453,7 @@ void		ClearDummyCode(TREES *Trees, RATES *Rates)
 			CD = N->ConData;
 			C = CD->Contrast[0];
 
-			for(X=Trees->NoOfSites;X<Rates->Contrast->NoSites;X++)
+			for(X=Trees->NoSites;X<Rates->Contrast->NoSites;X++)
 				C->Data[X] = 0;
 		}
 	}
@@ -506,12 +506,12 @@ void		MapDummyCodes(TREES *Trees, RATES *Rates)
 
 	ClearDummyCode(Trees, Rates);
 
-	Pos = Trees->NoOfSites;
+	Pos = Trees->NoSites;
 	for(Index=0;Index<RJDummy->NoDummyCode;Index++)
 	{		
 		DC = RJDummy->DummyList[Index];
 
-		SetDummyCodeNode(Trees->NoOfSites, DC, DC->Node, Pos);
+		SetDummyCodeNode(Trees->NoSites, DC, DC->Node, Pos);
 	
 		if(DC->Type == RJDUMMY_INTER_SLOPE)
 			Pos += 2;
@@ -521,7 +521,7 @@ void		MapDummyCodes(TREES *Trees, RATES *Rates)
 
 	Tree = Trees->Tree[Rates->TreeNo];
 
-	ZeroImpliedDummyCode(Trees, Tree, Trees->NoOfSites, Rates->Contrast->NoSites);
+	ZeroImpliedDummyCode(Trees, Tree, Trees->NoSites, Rates->Contrast->NoSites);
 }
 
 

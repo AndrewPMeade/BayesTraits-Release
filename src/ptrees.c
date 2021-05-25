@@ -29,7 +29,7 @@ void	SetPTrees(OPTIONS *Opt, TREES *Trees)
 	int TIndex;
 	TREE *Tree;
 
-	 for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	 for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	 {
 		 Tree = Trees->Tree[TIndex];
 	 	 SetFlatternedNodes(Trees, Tree);
@@ -359,7 +359,7 @@ void	PrintPPartInfo(TREES *Trees, TREE *Tree)
 		printf("\n");
 	}
 
-	Pct = (double)PTaxa / Trees->NoOfTaxa;
+	Pct = (double)PTaxa / Trees->NoTaxa;
 	Pct = Pct * 100;
 
 	printf("No P Taxa\t%f\n", Pct);
@@ -376,7 +376,7 @@ void	FindParallelPoints(TREES *Trees, TREE *Tree, int Cores)
 
 //	Cores = 4;
 //	Cores = 1;
-	OptNSize = Trees->NoOfTaxa / Cores;
+	OptNSize = Trees->NoTaxa / Cores;
 
 	PTInfo = AllocPTInfo(Tree);
 

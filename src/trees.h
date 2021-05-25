@@ -9,14 +9,14 @@ void	ReSetTaxaID(TREES *Trees);
 
 void	FreeTrees(TREES* Trees, OPTIONS *Opt);
 void	AllocPartial(OPTIONS *Opt, TREES* Trees, int Gamma);
-TAXA*	GetTaxaFromID(int ID, TAXA **Taxa, int NoOfTaxa);
-TAXA*	GetTaxaFromName(char *Name, TAXA **Taxa, int NoOfTaxa);
+TAXA*	GetTaxaFromID(int ID, TAXA **Taxa, int NoTaxa);
+TAXA*	GetTaxaFromName(char *Name, TAXA **Taxa, int NoTaxa);
 
 void	CTaxaBelow(NODE N, int *No);
 void	PrintTreesInfo(FILE*	Str, TREES *Trees, DATATYPE DataType);
 
 /* void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates); */
-double	GetStateProbPct(int State, int NoOfStates, double *Part);
+double	GetStateProbPct(int State, int NoStates, double *Part);
 
 int		SymbolToPos(char Symbol, char *List);
 int		SiteHadUnKnownState(char *StatList);

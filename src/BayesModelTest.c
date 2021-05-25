@@ -44,7 +44,7 @@ void	GenDataFormModel(OPTIONS *Opt, TREES *Trees, double *Model, double *Error)
 
 	exit(0);
 */
-	for(NIndex=0;NIndex<Trees->NoOfTaxa;NIndex++)
+	for(NIndex=0;NIndex<Trees->NoTaxa;NIndex++)
 	{
 		Taxa = Trees->Taxa[NIndex];
 		printf("%f\t", Taxa->ConData[0]);
@@ -71,7 +71,7 @@ void	SetData(OPTIONS *Opt, TREES *Trees, RATES *Rates, double *Data)
 	Rates->Rates[0] = Data[0];
 	Rates->Rates[1] = Data[1];	
 	
-	for(NIndex=2;NIndex<Trees->NoOfTaxa;NIndex++)
+	for(NIndex=2;NIndex<Trees->NoTaxa;NIndex++)
 	{
 		Taxa = Trees->Taxa[NIndex];
 		Taxa->Dependant = Data[NIndex];

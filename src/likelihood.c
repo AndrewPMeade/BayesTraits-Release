@@ -151,7 +151,7 @@ void	AllocLHInfo(TREES *Trees, OPTIONS *Opt)
 {
 	int	NOS;
 	
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 
 	Trees->InvInfo = AllocInvInfo(NOS);
 
@@ -316,7 +316,7 @@ void	CheckBigLh(NODE N, int SiteNo, TREES *Trees)
 	int Index, NOS, UnderFlow;
 
 
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 
 	UnderFlow = FALSE;
 	for(Index=0;Index<NOS;Index++)
@@ -342,7 +342,7 @@ void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 
 	CPart = N->Partial[SiteNo];
 
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
+	for(Outter=0;Outter<Trees->NoStates;Outter++)
 	{
 		N->Partial[SiteNo][Outter] = 1;
 
@@ -352,7 +352,7 @@ void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 			Partial = N->NodeList[NIndex]->Partial;
 
 			Lh = 0;
-			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
+			for(Inner=0;Inner<Trees->NoStates;Inner++)
 				Lh += Partial[SiteNo][Inner] * Mat[Outter][Inner];
 
 			N->Partial[SiteNo][Outter] *= Lh;
@@ -608,10 +608,10 @@ void	SetGammaBlank(RATES* Rates, OPTIONS* Opt)
 
 		if(N->Tip == FALSE)
 		{
-			for(SiteIndex=0;SiteIndex<Trees->NoOfSites;SiteIndex++)
+			for(SiteIndex=0;SiteIndex<Trees->NoSites;SiteIndex++)
 			{
 				if(Trees->NOSPerSite == FALSE)
-					NOS = Trees->NoOfStates;
+					NOS = Trees->NoStates;
 				else
 					NOS = Trees->NOSList[SiteIndex];
 							
@@ -646,7 +646,7 @@ void	ProcessGamma(RATES *Rates, TREES* Trees)
 
 	Tree	= Trees->Tree[Rates->TreeNo];
 	Weight	= (double)1 / Rates->GammaCats;
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
@@ -654,7 +654,7 @@ void	ProcessGamma(RATES *Rates, TREES* Trees)
 
 		if(N->Tip == FALSE)
 		{
-			for(SiteIndex=0;SiteIndex<Trees->NoOfSites;SiteIndex++)
+			for(SiteIndex=0;SiteIndex<Trees->NoSites;SiteIndex++)
 			{
 				if(Trees->NOSPerSite == TRUE)
 					NOS = Trees->NOSList[SiteIndex];
@@ -683,10 +683,10 @@ void	FinishUpGamma(RATES* Rates, OPTIONS* Opt, TREES* Trees)
 		
 		if(N->Tip == FALSE)
 		{
-			for(SiteIndex=0;SiteIndex<Trees->NoOfSites;SiteIndex++)
+			for(SiteIndex=0;SiteIndex<Trees->NoSites;SiteIndex++)
 			{
 				if(Trees->NOSPerSite == FALSE)
-					NOS = Trees->NoOfStates;
+					NOS = Trees->NoStates;
 				else
 					NOS = Trees->NOSList[SiteIndex];
 
@@ -741,7 +741,7 @@ void SetDiscEstData(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 				Taxa = N->Taxa;
 				if(Opt->Model == M_MULTISTATE)
 				{
-					for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+					for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 					{
 						if(N->Taxa->EstDataP[SIndex] == TRUE)
 							Taxa->DesDataChar[SIndex][0] = Trees->SymbolList[Rates->EstDescData[MDPos++]];
@@ -777,7 +777,7 @@ int		SetStdPMatrix(INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gam
 
 	ThrNo = GetThreadNo();
 	
-	switch(Trees->NoOfStates)
+	switch(Trees->NoStates)
 	{
 		case 2:
 			ErrVal = Create2SPMat(Len, InvInfo, P, Trees, InvInfo->As[ThrNo], InvInfo->Ets[ThrNo]);
@@ -806,7 +806,7 @@ int		SetAnalyticalPMatrix(TREES *Trees, NODE N, MATRIX *P, double Rate, double G
 	
 	
 
-	ErrVal = CreatFullAP(Len, Rate, Trees->NoOfStates, P);			
+	ErrVal = CreatFullAP(Len, Rate, Trees->NoStates, P);			
 
 	return FALSE;
 }
@@ -927,7 +927,7 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	Tree = Trees->Tree[Rates->TreeNo];
 
 	Ret = 0;
-	for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
+	for(SiteNo=0;SiteNo<Trees->NoSites;SiteNo++)
 	{
 		if(Trees->NOSPerSite == TRUE)
 		{
@@ -936,7 +936,7 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 				Rates->Pis[Index]  = (double)1.0/NOS;
 		}
 		else
-			NOS = Trees->NoOfStates;
+			NOS = Trees->NoStates;
 
 #ifdef BIG_LH
 		Ret += CombineBigLh(Rates, Trees, Opt, SiteNo, NOS);
@@ -1115,7 +1115,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 //		btdebug_exit("partiallh");
 //#else  
 
-		for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
+		for(SiteNo=0;SiteNo<Trees->NoSites;SiteNo++)
 		{
 			SumLhLiner(Rates, Trees, Opt, SiteNo);
 //			Err = SumLh(Rates, Trees, Opt, SiteNo);

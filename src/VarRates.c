@@ -853,8 +853,8 @@ void	VarRatesLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	T = Trees->Tree[0];
 	VarRates = Rates->VarRates;
 
-	fprintf(Opt->VarRatesLog, "%d\n", Trees->NoOfTaxa);
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	fprintf(Opt->VarRatesLog, "%d\n", Trees->NoTaxa);
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 		fprintf(Opt->VarRatesLog, "%d\t%s\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
 
 	fprintf(Opt->VarRatesLog, "%d\n", T->NoNodes);

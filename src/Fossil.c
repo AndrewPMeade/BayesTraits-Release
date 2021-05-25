@@ -138,11 +138,11 @@ void	SetFossils(TREES *Trees, OPTIONS *Opt)
 		RNode = Opt->RecNodeList[Index];
 		if(RNode->NodeType == FOSSIL)
 		{
-			for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+			for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 			{
 				N = RNode->TreeNodes[TIndex];
 							
-				N->FossilMask = MakeFossilMask(RNode, Trees->NoOfStates, Opt->Model);
+				N->FossilMask = MakeFossilMask(RNode, Trees->NoStates, Opt->Model);
 			}
 		}
 
@@ -155,7 +155,7 @@ void	FossilLh(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 	int	Index, NOS;
 	int *Mask;
 	
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 
 	Mask = N->FossilMask;
 

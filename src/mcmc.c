@@ -626,8 +626,8 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				UpDateShedAcc(FALSE, Shed);
 
 			if( (Itters % Opt->Sample) == 0 && 
-				BurntIn == TRUE &&
-				StonesStarted(Opt->Stones, Itters) == FALSE)
+				BurntIn == TRUE
+				&& StonesStarted(Opt->Stones, Itters) == FALSE)
 			{
 				UpDateHMean(Opt, CRates);
 
@@ -678,7 +678,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 
 				if( (Opt->UseEqualTrees == FALSE) || 
-					(CRates->TreeNo == Trees->NoOfTrees - 1))
+					(CRates->TreeNo == Trees->NoTrees - 1))
 				{	
 					EndT = GetSeconds();
 					printf("Sec:\t%f\n", EndT - StartT);

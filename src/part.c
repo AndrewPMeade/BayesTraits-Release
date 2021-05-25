@@ -163,7 +163,7 @@ void	FreeParts(TREES *Trees)
 	int TIndex, NIndex;
 	TREE *T;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		T = Trees->Tree[TIndex];
 
@@ -180,7 +180,7 @@ void	SetParts(TREES *Trees)
 {
 	int TIndex;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 		SetTreePart(Trees->Tree[TIndex]->Root);
 }
 
@@ -206,7 +206,7 @@ void	SetRecNodes(RECNODE *RNode, TREES *Trees)
 	SetRecNodePart(RNode);
 
 	RNode->Hits = 0;
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		Depth = 0;
 		Tree = Trees->Tree[TIndex];
@@ -296,6 +296,20 @@ void	PrintPart(FILE *Str, TREES *Trees, PART *Part)
 	}
 }
 
+void	PrintPartTaxaOnly(FILE *Str, TREES *Trees, PART *Part)
+{
+	int Index, ID;
+	TAXA *T;
+
+	for(Index=0;Index<Part->NoTaxa;Index++)
+	{
+		ID = Part->Taxa[Index];
+		T = Trees->Taxa[ID];
+		fprintf(Str, "%s\t", T->Name);
+	}
+}
+
+
 PART*	CreatePart(TREES *Trees, int NoTaxa, char **TaxaList)
 {
 	PART	*Ret;
@@ -306,7 +320,7 @@ PART*	CreatePart(TREES *Trees, int NoTaxa, char **TaxaList)
 
 	for(Index=0;Index<NoTaxa;Index++)
 	{
-		Taxa = GetTaxaFromName(TaxaList[Index], Trees->Taxa, Trees->NoOfTaxa);
+		Taxa = GetTaxaFromName(TaxaList[Index], Trees->Taxa, Trees->NoTaxa);
 
 		if(Taxa == NULL)
 		{

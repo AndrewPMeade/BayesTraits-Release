@@ -10,5 +10,5 @@ void	FossilDepLhQuadDobule(NODE N, int SiteNo, int s00, int s01, int s10, int s1
 
 
 double	CombineQuadDoubleLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS);
-void	SetQuadDoubleNodeRec(NODE N, int NOS, int NoOfSites, RATES *Rates, OPTIONS *Opt);
+void	SetQuadDoubleNodeRec(NODE N, int NOS, int NoSites, RATES *Rates, OPTIONS *Opt);
 #endif

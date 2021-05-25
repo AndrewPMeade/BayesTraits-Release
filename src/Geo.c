@@ -27,13 +27,13 @@ void	ValidGeoData(TREES *Trees)
 	double Long, Lat;
 	TAXA *T;
 
-	if(Trees->NoOfSites != 2)
+	if(Trees->NoSites != 2)
 	{
 		printf("Geo Data must be long lat\n");
 		exit(1);
 	}
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		T = Trees->Taxa[Index];
 
@@ -78,7 +78,7 @@ void	PreProcessGeoData(TREES *Trees)
 	TAXA *Taxa;
 	double X, Y, Z;
 
-	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
 	{
 		Taxa = Trees->Taxa[TIndex];
 		if(Taxa->Exclude == FALSE)
@@ -100,7 +100,7 @@ void	PreProcessGeoData(TREES *Trees)
 			SetGeoMissingData(Taxa);
 		}
 	}
-	Trees->NoOfSites = 3;
+	Trees->NoSites = 3;
 }
 
 void	LongLatToXYZ(double Long, double Lat, double *X, double *Y, double *Z)
@@ -353,7 +353,7 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	MapRatesToFatTailRate(Rates, FTR);
 
-	FatTailSetAnsSates(Tree, Trees->NoOfSites, FTR);
+	FatTailSetAnsSates(Tree, Trees->NoSites, FTR);
 
 	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
 	
@@ -364,7 +364,7 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			GeoForceUpDateNode(N, Rates, Rates->RS);
 	}
 			
-	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
+	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
 	
 	Rates->Lh = Likelihood(Rates, Trees, Opt);
 
@@ -417,7 +417,7 @@ void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	MapRatesToFatTailRate(Rates, FTR);
 
-	FatTailSetAnsSates(Tree, Trees->NoOfSites, FTR);
+	FatTailSetAnsSates(Tree, Trees->NoSites, FTR);
 
 	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
 
@@ -429,7 +429,7 @@ void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	GeoUpDateNode(N, Rates, Rates->RS);
 
-	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
+	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
 	Rates->CalcLh = FALSE;
 }
 
@@ -617,7 +617,7 @@ void	LoadGeoData(OPTIONS *Opt, TREES *Trees, RATES *CRates, char *Str)
 
 	MapFatTailRateToRates(CRates, FTR);
 
-	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
+	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
 
 	CRates->Lh = Likelihood(CRates, Trees, Opt);
 

@@ -73,10 +73,10 @@ void ProcGeoDistDataTaxa(DIST_DATA_TAXA* DDTaxa, TREES *Trees, char **Passed)
 
 	NoData = NoLong;
 
-	for(Index=0;Index<Trees->NoOfSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 		DDTaxa->NoSites[Index] = NoData;
 	
-	for(Index=0;Index<Trees->NoOfSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 		DDTaxa->Data[Index] = (double*)SMalloc(sizeof(double) * NoData);
 
 	for(Index=0;Index<NoData;Index++)
@@ -98,7 +98,7 @@ DIST_DATA_TAXA*	MakeDistDataTaxa(OPTIONS *Opt, TREES *Trees, char **Passed, size
 
 	Ret = (DIST_DATA_TAXA*)SMalloc(sizeof(DIST_DATA_TAXA));
 	
-	Ret->Taxa = GetTaxaFromName(Passed[0], Trees->Taxa, Trees->NoOfTaxa);
+	Ret->Taxa = GetTaxaFromName(Passed[0], Trees->Taxa, Trees->NoTaxa);
 
 	if(Ret->Taxa == NULL)
 	{
@@ -114,8 +114,8 @@ DIST_DATA_TAXA*	MakeDistDataTaxa(OPTIONS *Opt, TREES *Trees, char **Passed, size
 		exit(1);	
 	}
 
-	Ret->NoSites = (int*)SMalloc(sizeof(int) * Trees->NoOfSites);
-	Ret->Data = (double**)SMalloc(sizeof(double*) * Trees->NoOfSites);
+	Ret->NoSites = (int*)SMalloc(sizeof(int) * Trees->NoSites);
+	Ret->Data = (double**)SMalloc(sizeof(double*) * Trees->NoSites);
 
 	if(Opt->Model == M_GEO)
 	{
@@ -123,13 +123,13 @@ DIST_DATA_TAXA*	MakeDistDataTaxa(OPTIONS *Opt, TREES *Trees, char **Passed, size
 	}
 	else
 	{
-		for(Index=0;Index<Trees->NoOfSites;Index++)
+		for(Index=0;Index<Trees->NoSites;Index++)
 			Ret->Data[Index] = PassDataDist(Passed[0], Passed[Index+2], &Ret->NoSites[Index]);
 	}
 
 	if(Ret->Linked == TRUE)
 	{
-		for(Index=1;Index<Trees->NoOfSites;Index++)
+		for(Index=1;Index<Trees->NoSites;Index++)
 			if(Ret->NoSites[0] != Ret->NoSites[Index])
 			{
 				printf("Dist Data taxa (%s) linked site %d has %d point expecting %d", Passed[0], Index+1, Ret->NoSites[Index], Ret->NoSites[0]);
@@ -147,13 +147,13 @@ int			ValidDistDataLine(OPTIONS *Opt, TREES *Trees, int Tokes)
 
 	if(Opt->Model == M_GEO)
 	{
-		if(Tokes != Trees->NoOfSites + 1)
+		if(Tokes != Trees->NoSites + 1)
 			return FALSE;
 		else
 			return TRUE;
 	}
 
-	if(Tokes != Trees->NoOfSites + 2)
+	if(Tokes != Trees->NoSites + 2)
 		return FALSE;
 
 	return TRUE;
@@ -174,7 +174,7 @@ void		ProcDistDataFile(OPTIONS *Opt, TREES *Trees, DIST_DATA *DistData, TEXTFILE
 		Tokes = MakeArgv(Buffer, Passed, TF->MaxLine + 1);
 		if(ValidDistDataLine(Opt, Trees, Tokes) == FALSE)
 		{
-			printf("Dist Data file (%s) Line %d, expecting %d tokens found %d.\n", DistData->FName, Index, Trees->NoOfSites+2, Tokes);
+			printf("Dist Data file (%s) Line %d, expecting %d tokens found %d.\n", DistData->FName, Index, Trees->NoSites+2, Tokes);
 			exit(0);
 		}
 
@@ -196,7 +196,7 @@ DIST_DATA*	LoadDistData(OPTIONS *Opt, TREES *Trees, char *FName)
 
 	Ret = (DIST_DATA*)SMalloc(sizeof(DIST_DATA));
 
-	Ret->NoSites = Trees->NoOfSites;
+	Ret->NoSites = Trees->NoSites;
 
 	Ret->FName = StrMake(FName);
 

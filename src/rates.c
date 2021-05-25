@@ -153,7 +153,7 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 {
 	int	Index, NoSites;
 
-	NoSites = Opt->Trees->NoOfSites;
+	NoSites = Opt->Trees->NoSites;
 
 	if(Opt->ModelType == MT_FATTAIL)
 	{
@@ -179,7 +179,7 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 		return;
 	}
 	
-	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 		Rates->Means[Index] = Rates->Rates[Index];
 	
 
@@ -189,7 +189,7 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 	if(Opt->Model == M_CONTINUOUS_DIR)
 	{
 		for(;Index<Rates->NoOfRates;Index++)
-			Rates->Beta[Index - Opt->Trees->NoOfSites] = Rates->Rates[Index];
+			Rates->Beta[Index - Opt->Trees->NoSites] = Rates->Rates[Index];
 		return;
 	}
 
@@ -320,15 +320,15 @@ void	FindEmpPis(RATES *Rates, OPTIONS *Opt)
 
 	Trees = Opt->Trees;
 
-	TempPis = (double*)malloc(sizeof(double)*Trees->NoOfStates);
+	TempPis = (double*)malloc(sizeof(double)*Trees->NoStates);
 	if(TempPis == NULL)
 		MallocErr();
-	for(SIndex=0;SIndex<Trees->NoOfStates;SIndex++)
+	for(SIndex=0;SIndex<Trees->NoStates;SIndex++)
 		TempPis[SIndex] = 0;
 
-	for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+	for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 	{
-		for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+		for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
 		{
 			Taxa = Trees->Taxa[TIndex];
 
@@ -344,16 +344,16 @@ void	FindEmpPis(RATES *Rates, OPTIONS *Opt)
 			}
 			else
 			{
-				Weight = (double)1/(double)Trees->NoOfStates;
-				for(SymbolIndex=0;SymbolIndex<Trees->NoOfStates;SymbolIndex++)
+				Weight = (double)1/(double)Trees->NoStates;
+				for(SymbolIndex=0;SymbolIndex<Trees->NoStates;SymbolIndex++)
 					TempPis[SymbolIndex] += Weight;
 			}
 		}
 	}
 
-	Total = (double)Trees->NoOfSites * (double)Trees->NoOfTaxa;
+	Total = (double)Trees->NoSites * (double)Trees->NoTaxa;
 
-	for(SIndex=0;SIndex<Trees->NoOfStates;SIndex++)
+	for(SIndex=0;SIndex<Trees->NoStates;SIndex++)
 		Rates->Pis[SIndex] = TempPis[SIndex] / Total;
 
 	free(TempPis);
@@ -368,15 +368,15 @@ void	SetPiValues(RATES *Rates, OPTIONS *Opt)
 
 	if(Opt->PiTypes == PIUNI)
 	{
-		for(Index=0;Index<Trees->NoOfStates;Index++)
-			Rates->Pis[Index] = (double)1/Trees->NoOfStates;
+		for(Index=0;Index<Trees->NoStates;Index++)
+			Rates->Pis[Index] = (double)1/Trees->NoStates;
 
 		return;
 	}
 
 	if(Opt->PiTypes == PINONE)
 	{
-		for(Index=0;Index<Trees->NoOfStates;Index++)
+		for(Index=0;Index<Trees->NoStates;Index++)
 			Rates->Pis[Index] = 1;
 
 		return;
@@ -414,10 +414,10 @@ int		FindNoEstDataPoint(OPTIONS *Opt, TREES *Trees)
 
 	Ret = 0;
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		Taxa = Trees->Taxa[Index];
-		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+		for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 			if(Taxa->EstDataP[SIndex] == TRUE)
 				Ret++;
 		
@@ -472,14 +472,14 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 			if(Opt->Model == M_CONTINUOUS_REG)
 				Rates->Means = (double*)malloc(sizeof(double));
 			else
-				Rates->Means = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
+				Rates->Means = (double*)malloc(sizeof(double) * Opt->Trees->NoSites);
 			
 			if(Rates->Means == NULL)
 				MallocErr();
 
 			if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_REG))
 			{
-				Rates->Beta = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
+				Rates->Beta = (double*)malloc(sizeof(double) * Opt->Trees->NoSites);
 				if(Rates->Beta== NULL)
 					MallocErr();
 			}
@@ -531,12 +531,12 @@ int		FindNoEstData(TREES *Trees, OPTIONS *Opt)
 	
 	Ret = 0;
 
-	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
 	{
 		Taxa = Trees->Taxa[TIndex];
 		
 		if(Opt->Model == M_MULTISTATE)
-			NOS = Trees->NoOfSites;
+			NOS = Trees->NoSites;
 		else
 			NOS = 2;
 
@@ -602,7 +602,7 @@ HETERO*	CreatHetero(OPTIONS *Opt, RATES* Rates)
 		MallocErr();
 
 	Ret->NoModels = 2;
-	Ret->ModelInv = CreatInvInfo(Trees->NoOfStates, Ret->NoModels);
+	Ret->ModelInv = CreatInvInfo(Trees->NoStates, Ret->NoModels);
 	
 	Ret->MListSize = Trees->MaxNodes;
 
@@ -821,7 +821,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	for(Index=0;Index<Ret->NoOfRates;Index++)
 		Ret->Rates[Index] = 1;
 
-	Ret->Pis = (double*)SMalloc(sizeof(double)*Opt->Trees->NoOfStates);
+	Ret->Pis = (double*)SMalloc(sizeof(double)*Opt->Trees->NoStates);
 
 	SetPiValues(Ret, Opt);
 
@@ -866,7 +866,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 		for(Index=0;Index<Ret->NoEstData;Index++)
 		{
 			if(Opt->Model == M_MULTISTATE)
-				Ret->EstDescData[Index] = RandUSLong(Ret->RS) % Opt->Trees->NoOfStates;
+				Ret->EstDescData[Index] = RandUSLong(Ret->RS) % Opt->Trees->NoStates;
 			else
 				Ret->EstDescData[Index] = RandUSLong(Ret->RS) % 2;
 		}
@@ -888,15 +888,15 @@ RATES*	CreatRates(OPTIONS *Opt)
 	return Ret;
 }
 
-void	PrintConRegVarCoVarHeadder(FILE* Str, int NoOfSites)
+void	PrintConRegVarCoVarHeadder(FILE* Str, int NoSites)
 {
 	int	x;
 
-	NoOfSites++;
+	NoSites++;
 
 	fprintf(Str, "s.e. Alpha\t");
 
-	for(x=1;x<NoOfSites;x++)
+	for(x=1;x<NoSites;x++)
 		fprintf(Str, "s.e. Beta-%d\t", x);
 	
 /*
@@ -917,12 +917,12 @@ void	PrintEstDataHeader(FILE *Str, OPTIONS *Opt)
 	
 	Trees = Opt->Trees;
 
-	NOS = Trees->NoOfSites;
+	NOS = Trees->NoSites;
 
 	if((Opt->Model == M_DESCINDEP) || (Opt->Model == M_DESCDEP))
 		NOS = 2;
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		Taxa = Trees->Taxa[Index];
 		if(Taxa->EstData == TRUE)
@@ -951,9 +951,9 @@ void	PrintConRecNodesHeadder(FILE *Str, OPTIONS *Opt)
 	{
 		RNode = Opt->RecNodeList[Index];
 
-		for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
+		for(SiteIndex=0;SiteIndex<Opt->Trees->NoSites;SiteIndex++)
 		{
-			if(Opt->Trees->NoOfSites == 1)
+			if(Opt->Trees->NoSites == 1)
 				fprintf(Str, "%s Alpha\t", RNode->Name);
 			else
 				fprintf(Str, "%s %d Alpha\t", RNode->Name, SiteIndex + 1);
@@ -1011,17 +1011,17 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 	int		Index, NOS;
 	int		x,y;
 
-	NOS = Opt->Trees->NoOfSites;
+	NOS = Opt->Trees->NoSites;
 
 	if(Opt->LoadModels == TRUE)
 		fprintf(Str, "Model No\t");
 
 	if(Opt->Model == M_CONTRAST_CORREL)
 	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 			fprintf(Str, "Alpha %d\t", Index+1);
 
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 			fprintf(Str, "Sigma^2 %d\t", Index+1);
 
 		for(x=0;x<NOS;x++)
@@ -1033,10 +1033,10 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST)
 	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 			fprintf(Str, "Alpha %d\t", Index+1);
 
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 			fprintf(Str, "Sigma^2 %d\t", Index+1);
 	}
 
@@ -1047,20 +1047,20 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 			fprintf(Str, "No Dummy Codes\t");
 
 		fprintf(Str, "Alpha\t");
-		for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=1;Index<Opt->Trees->NoSites;Index++)
 			fprintf(Str, "Beta %d\t", Index);
 
 		fprintf(Str, "Var\t");
 		fprintf(Str, "R^2\t");
 
 		fprintf(Str, "s.e. Alpha\t");
-		for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=1;Index<Opt->Trees->NoSites;Index++)
 			fprintf(Str, "s.e. Beta-%d\t", Index);
 	}
 
 	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_RR))
 	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 		{
 			fprintf(Str, "Alpha %d\t", Index+1);
 		}
@@ -1068,7 +1068,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 	
 	if(Opt->Model == M_CONTINUOUS_DIR)
 	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 			fprintf(Str, "Beta %d\t", Index+1);
 	}
 
@@ -1087,16 +1087,16 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		if(Opt->Analsis == ANALML)
 			fprintf(Str, "Error Ratio\t");
 
-		PrintConRegVarCoVarHeadder(Str, Opt->Trees->NoOfSites);
+		PrintConRegVarCoVarHeadder(Str, Opt->Trees->NoSites);
 	}
 	
 	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_RR))
 	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoSites;Index++)
 			fprintf(Str, "Sigma^2 %d \t", Index+1);
 
-		for(x=0;x<Opt->Trees->NoOfSites;x++)
-			for(y=x+1;y<Opt->Trees->NoOfSites;y++)
+		for(x=0;x<Opt->Trees->NoSites;x++)
+			for(y=x+1;y<Opt->Trees->NoSites;y++)
 				fprintf(Str, "R Trait %d %d\t", x+1, y+1);
 	}		
 
@@ -1106,7 +1106,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 			fprintf(Str, "Alpha\tScale\t");
 		else
 		{
-			for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+			for(Index=0;Index<Opt->Trees->NoSites;Index++)
 				fprintf(Str, "Alpha %d\tScale %d\t", Index+1, Index+1);
 		}
 	}
@@ -1177,9 +1177,9 @@ void	PrintRecNodeHeadder(FILE* Str, OPTIONS *Opt, char* Name, int SiteNo)
 	}
 
 	if(Opt->UseCovarion == TRUE)
-		NOS = (Opt->Trees->NoOfStates / 2);
+		NOS = (Opt->Trees->NoStates / 2);
 	else
-		NOS = Opt->Trees->NoOfStates;
+		NOS = Opt->Trees->NoStates;
 
 	if(Opt->NOSPerSite == FALSE)
 	{
@@ -1266,9 +1266,9 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 	PrintLocalTransformHeadder(Str, Opt);
 	PrintTimeSliceHeader(Str, Opt->TimeSlices);
 
-	for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
+	for(SiteIndex=0;SiteIndex<Opt->Trees->NoSites;SiteIndex++)
 	{
-		if((Opt->Trees->NoOfSites == 1) && (Opt->NOSPerSite == FALSE))
+		if((Opt->Trees->NoSites == 1) && (Opt->NOSPerSite == FALSE))
 			PrintRecNodeHeadder(Str, Opt, "Root", -1);
 		else
 			PrintRecNodeHeadder(Str, Opt, "Root", SiteIndex);
@@ -1278,9 +1278,9 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 	{
 		RNode = Opt->RecNodeList[Index];
 
-		for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
+		for(SiteIndex=0;SiteIndex<Opt->Trees->NoSites;SiteIndex++)
 		{
-			if(Opt->Trees->NoOfSites == 1)
+			if(Opt->Trees->NoSites == 1)
 				PrintRecNodeHeadder(Str, Opt, RNode->Name, -1);
 			else
 				PrintRecNodeHeadder(Str, Opt, RNode->Name, SiteIndex);
@@ -1375,30 +1375,30 @@ double	FindERatio(RATES* Rates, OPTIONS *Opt)
 	Tree	= Trees->Tree[Rates->TreeNo];
 	CV		= Tree->ConVars;
 	
-	Y		= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-	YP		= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-	TempV	= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
+	Y		= (double*)malloc(sizeof(double) * Trees->NoTaxa);
+	YP		= (double*)malloc(sizeof(double) * Trees->NoTaxa);
+	TempV	= (double*)malloc(sizeof(double) * Trees->NoTaxa);
 
 	if((Y == NULL) || (YP == NULL) || (TempV == NULL))
 		MallocErr();
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		Taxa = Trees->Taxa[Index];
 
 		Y[Index] = Taxa->Dependant;
-		YP[Index] = Taxa->Dependant - FindYEst(CV->Alpha[0], CV->Beta, Taxa->ConData, Trees->NoOfSites);
+		YP[Index] = Taxa->Dependant - FindYEst(CV->Alpha[0], CV->Beta, Taxa->ConData, Trees->NoSites);
 	}
 
 	Mean = MLFindAlphaReg(Trees, Tree, Y);
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 		Y[Index] -= Mean;
 
 	VectByMatrixMult(Y, Tree->ConVars->InvV, TempV);
-	SSy = VectByVectMult(Y, TempV, Trees->NoOfTaxa);
+	SSy = VectByVectMult(Y, TempV, Trees->NoTaxa);
 
 	VectByMatrixMult(YP, Tree->ConVars->InvV, TempV);
-	SSe = VectByVectMult(YP, TempV, Trees->NoOfTaxa);
+	SSe = VectByVectMult(YP, TempV, Trees->NoTaxa);
 
 	Ret = (SSy - SSe) / SSy;
 
@@ -1428,38 +1428,38 @@ void FindRSquared(RATES* Rates, OPTIONS *Opt, double *R2, double *SSE, double *S
 	Tree	= Trees->Tree[Rates->TreeNo];
 	CV		= Tree->ConVars;
 	
-	Y		= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-	YP		= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-	TempV	= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
+	Y		= (double*)malloc(sizeof(double) * Trees->NoTaxa);
+	YP		= (double*)malloc(sizeof(double) * Trees->NoTaxa);
+	TempV	= (double*)malloc(sizeof(double) * Trees->NoTaxa);
 
 	if((Y == NULL) || (YP == NULL) || (TempV == NULL))
 		MallocErr();
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		Taxa = Trees->Taxa[Index];
 
 		Y[Index] = Taxa->Dependant;
-		YP[Index] = FindYEst(CV->Alpha[0], CV->Beta, Taxa->ConData, Trees->NoOfSites);
+		YP[Index] = FindYEst(CV->Alpha[0], CV->Beta, Taxa->ConData, Trees->NoSites);
 	}
 
 	MeanY = MLFindAlphaReg(Trees, Tree, Y);
 	MeanYP= MLFindAlphaReg(Trees, Tree, YP);
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		Y[Index] -= MeanY;
 		YP[Index] -= MeanYP;
 	}
 
 	VectByMatrixMult(Y, Tree->ConVars->InvV, TempV);
-	T = VectByVectMult(YP, TempV, Trees->NoOfTaxa);
+	T = VectByVectMult(YP, TempV, Trees->NoTaxa);
 	T = T * T;
 
 	VectByMatrixMult(Y, Tree->ConVars->InvV, TempV);
-	B1 = VectByVectMult(Y, TempV, Trees->NoOfTaxa);
+	B1 = VectByVectMult(Y, TempV, Trees->NoTaxa);
 
 	VectByMatrixMult(YP, Tree->ConVars->InvV, TempV);
-	B2 = VectByVectMult(YP, TempV, Trees->NoOfTaxa);
+	B2 = VectByVectMult(YP, TempV, Trees->NoTaxa);
 
 	(*R2) = T / (B1 * B2);
 	
@@ -1485,13 +1485,13 @@ void	PrintRegVarCoVar(FILE* Str, RATES *Rates, OPTIONS *Opt)
 
 	if(Opt->AlphaZero == FALSE)
 	{
-		for(Index=0;Index<Trees->NoOfSites+1;Index++)
+		for(Index=0;Index<Trees->NoSites+1;Index++)
 			fprintf(Str, "%f\t", sqrt(Var->me[Index][Index]));
 	}
 	else
 	{
 		fprintf(Str, "0\t");
-		for(Index=0;Index<Trees->NoOfSites;Index++)
+		for(Index=0;Index<Trees->NoSites;Index++)
 			fprintf(Str, "%f\t", sqrt(Var->me[Index][Index]));
 	}
 
@@ -1516,12 +1516,12 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 
 		if(N == NULL)
 		{
-			for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
+			for(SiteIndex=0;SiteIndex<Opt->Trees->NoSites;SiteIndex++)
 				fprintf(Str, "--\t--\t--\t");
 		}
 		else
 		{
-			for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
+			for(SiteIndex=0;SiteIndex<Opt->Trees->NoSites;SiteIndex++)
 			{
 				RecIntNode(N, SiteIndex, &Alpha);
 				fprintf(Str, "%f\t", Alpha);
@@ -1571,7 +1571,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	TREES	*Trees;
 
 	Trees = Opt->Trees;
-	NOS = Trees->NoOfSites;
+	NOS = Trees->NoSites;
 	ConVar = Opt->Trees->Tree[Rates->TreeNo]->ConVars;
 
 	if(Opt->LoadModels == TRUE)
@@ -1579,17 +1579,17 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTINUOUS_RR || Opt->Model == M_CONTINUOUS_DIR)
 	{
-		for(Index=0;Index<Trees->NoOfSites;Index++)
+		for(Index=0;Index<Trees->NoSites;Index++)
 		{
 			fprintf(Str, "%0.12f\t", ConVar->Alpha[Index]);
 			if(Opt->Model == M_CONTINUOUS_DIR)
 				fprintf(Str, "%0.12f\t", ConVar->Beta[Index]);
 		}	
-			for(Index=0;Index<Trees->NoOfSites;Index++)
-				fprintf(Str, "%0.12f\t", TransVarCoVar(Opt->Trees->NoOfTaxa, ConVar->Sigma->me[Index][Index]));
+			for(Index=0;Index<Trees->NoSites;Index++)
+				fprintf(Str, "%0.12f\t", TransVarCoVar(Opt->Trees->NoTaxa, ConVar->Sigma->me[Index][Index]));
 		
-			for(x=0;x<Trees->NoOfSites;x++)
-				for(y=x+1;y<Trees->NoOfSites;y++)
+			for(x=0;x<Trees->NoSites;x++)
+				for(y=x+1;y<Trees->NoSites;y++)
 					fprintf(Str, "%0.12f\t", CalcR(ConVar->Sigma->me[x][y], ConVar->Sigma->me[x][x], ConVar->Sigma->me[y][y]));
 	}
 
@@ -1627,7 +1627,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		fprintf(Str, "%0.12f\t", ConVar->Alpha[0]);
-		for(Index=0;Index<Trees->NoOfSites;Index++)
+		for(Index=0;Index<Trees->NoSites;Index++)
 			fprintf(Str, "%0.12f\t", ConVar->Beta[Index]);
 
 		fprintf(Str, "%0.12f\t", ConVar->Sigma->me[0][0]);
@@ -1647,7 +1647,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 			fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[0], Rates->FatTailRates->Scale[0]);
 		else
 		{
-			for(Index=0;Index<Trees->NoOfSites;Index++)
+			for(Index=0;Index<Trees->NoSites;Index++)
 				fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[Index], Rates->FatTailRates->Scale[Index]);
 		}
 	}
@@ -1686,7 +1686,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		fprintf(Str, "%f\t", ConVar->Sigma->me[0][1] / ConVar->Sigma->me[1][1]);
 		
 		MinNodes = MaxNodes = (int)Opt->Trees->Taxa[0]->ConData[0];
-		for(Index=1;Index<Opt->Trees->NoOfTaxa;Index++)
+		for(Index=1;Index<Opt->Trees->NoTaxa;Index++)
 		{
 			Taxa = Opt->Trees->Taxa[Index];
 			if((int)Taxa->ConData[0] > MaxNodes)
@@ -1744,7 +1744,7 @@ void	PrintNodeRecDep(RATES *Rates, OPTIONS *Opt, FILE *Str, double Total, NODE N
 		}
 }
 
-void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OPTIONS *Opt)
+void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoSites, RATES* Rates, OPTIONS *Opt)
 {
 	double	Tot=0;
 	int		Index;
@@ -1758,7 +1758,7 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OP
 
 	if(Node == NULL)
 	{
-		for(SiteIndex=0;SiteIndex<NoOfSites;SiteIndex++)
+		for(SiteIndex=0;SiteIndex<NoSites;SiteIndex++)
 			for(Index=0;Index<NOS;Index++)
 				fprintf(Str, "--\t");
 		return;
@@ -1772,10 +1772,10 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OP
 	SetQuadDoubleNodeRec(Node, NOS, NoOfSites, Rates, Opt);
 #endif
 
-	for(SiteIndex=0;SiteIndex<NoOfSites;SiteIndex++)
+	for(SiteIndex=0;SiteIndex<NoSites;SiteIndex++)
 	{
 		if(Opt->NOSPerSite == FALSE)
-			NOS = Trees->NoOfStates;
+			NOS = Trees->NoStates;
 		else
 		{
 			NOS = Trees->NOSList[SiteIndex];
@@ -1983,10 +1983,10 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 	PrintLocalTransformNo(Str, Rates, Opt);
 	PrintTimeSliceRates(Str, Opt->TimeSlices, Rates->TimeSlices);
 
-	PrintNodeRec(Str, Opt->Trees->Tree[Rates->TreeNo]->Root, Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
+	PrintNodeRec(Str, Opt->Trees->Tree[Rates->TreeNo]->Root, Opt->Trees->NoStates, Opt->Trees->NoSites, Rates, Opt);
 
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
-		PrintNodeRec(Str, Opt->RecNodeList[Index]->TreeNodes[Rates->TreeNo], Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
+		PrintNodeRec(Str, Opt->RecNodeList[Index]->TreeNodes[Rates->TreeNo], Opt->Trees->NoStates, Opt->Trees->NoSites, Rates, Opt);
 
 }
 
@@ -2066,7 +2066,7 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	}
 
 	if(Opt->ModelType == MT_CONTRAST)
-		CopyContrastRates(Opt, A, B, Opt->Trees->NoOfSites);
+		CopyContrastRates(Opt, A, B, Opt->Trees->NoSites);
 	
 	if(UseNonParametricMethods(Opt) == TRUE)
 		VarRatesCopy(A, B);
@@ -2087,26 +2087,10 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 		CopyTimeSlices(A->TimeSlices, B->TimeSlices);
 } 
 
-double ChangeRatesTest(RATES *Rates, double RateV, double dev)
-{
-	int Index;
-	double Scale;
-
-	for(Index=0;Index<10000;Index++)
-	{
-		Scale = exp(dev * (RandDouble(Rates->RS) - 0.5));
-		
-		printf("%d\t%f\t%f\n", Index, dev, Scale);
-	}
-	exit(0);
-}
-/*
 double ChangeRate(RATES *Rates, double RateV, double dev)
 {
 	int		Exit;
 	double	Ret, Scale;
-
-//	ChangeRatesTest(Rates, 1, dev);
 
 	if(RateV >= MAXRATE)
 		return  MAXRATE;
@@ -2127,16 +2111,13 @@ double ChangeRate(RATES *Rates, double RateV, double dev)
 
 	} while(Exit == FALSE);
 
-
 	// Working ish with 1. 
 	Rates->LnHastings += log(Ret / RateV);
 
-//	Rates->LnHastings += log(Ret/ RateV) / dev;
-
 	return Ret;
 }
-*/
 
+/*
 double ChangeRate(RATES *Rates, double RateV, double dev)
 {
 	int		Exit;
@@ -2166,6 +2147,7 @@ double ChangeRate(RATES *Rates, double RateV, double dev)
 
 	return Ret;
 }
+*/
 
 void	ChangeGammaRates(RATES *Rates, SCHEDULE* Shed)
 {
@@ -2331,11 +2313,11 @@ double*	GetMultVarChanges(RATES *Rates, OPTIONS *Opt, SCHEDULE* Shed)
 	Trees = Opt->Trees;
 	Tree = Trees->Tree[Rates->TreeNo];
 		
-	Ret = (double*)SMalloc(sizeof(double) * Trees->NoOfTaxa);
+	Ret = (double*)SMalloc(sizeof(double) * Trees->NoTaxa);
 
 	genmn(Tree->ConVars->MultiVarNormState, Ret, Tree->ConVars->MultiVarNormTemp);
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 		Ret[Index] = Shed->CurrentAT->CDev * Ret[Index];
 	
 	return Ret;
@@ -2383,7 +2365,7 @@ void	MutateEstRatesDiscrete(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 //	do
 //	{
 		if(Opt->Model == M_MULTISTATE)
-			New = RandUSLong(Rates->RS) % Opt->Trees->NoOfStates;
+			New = RandUSLong(Rates->RS) % Opt->Trees->NoStates;
 		else
 			New = RandUSLong(Rates->RS) % 2;
 //	} while(New == Old);
@@ -2417,11 +2399,11 @@ void	MutateEstRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 			
 	Site	=	Opt->EstDataSites[RandUSLong(Rates->RS) % Opt->NoEstDataSite];
 	RIndex	=	0;
-	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
 	{
 		Taxa = Trees->Taxa[TIndex];
 
-		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+		for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 		{
 			if(Taxa->EstDataP[SIndex] == TRUE)
 			{
@@ -2512,7 +2494,7 @@ void	ChangeConRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 			Rates->Rates[0] = 0;
 		else
 		{
-			for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+			for(Index=0;Index<Opt->Trees->NoSites;Index++)
 				Rates->Rates[Index] = 0;
 		}
 	}
@@ -2521,6 +2503,7 @@ void	ChangeConRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 void	ChangeRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 {
 	int Index, NoOfRates;
+
 
 	if(Opt->LoadModels == TRUE)
 	{
@@ -2538,7 +2521,7 @@ void	ChangeRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 
 #ifdef RATE_CHANGE_ONE
 		Index = RandUSLong(Rates->RS) % NoOfRates;
-		Rates->Rates[Index] = ChangeRates(Rates, Rates->Rates[Index], Shed->CurrentAT->CDev);
+		Rates->Rates[Index] = ChangeRate(Rates, Rates->Rates[Index], Shed->CurrentAT->CDev);
 #else
 		for(Index=0;Index<NoOfRates;Index++)
 			Rates->Rates[Index] = ChangeRate(Rates, Rates->Rates[Index], Shed->CurrentAT->CDev);
@@ -2674,7 +2657,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case S_SOLO_TREE_MOVE:
-			Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoOfTrees;
+			Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoTrees;
 		break;
 
 		case S_VARRATES_ADD_REMOVE:
@@ -2698,7 +2681,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case S_TREE_MOVE:
-			Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoOfTrees;
+			Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoTrees;
 		break;
 		
 		case S_GAMMA_MOVE:
@@ -2758,7 +2741,7 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 		FreeDistDataRates(Rates->DistDataRates);
 
 	if(Rates->FatTailRates != NULL)
-		FreeFatTailRates(Rates->FatTailRates, Trees->NoOfSites);
+		FreeFatTailRates(Rates->FatTailRates, Trees->NoSites);
 
 	if(Rates->Contrast != NULL)
 		FreeContrastRates(Rates);
@@ -2866,9 +2849,9 @@ void	UpDataSummary(SUMMARY *Summary, RATES* Rates, OPTIONS *Opt)
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 		UpDataSummaryNo(&Summary->Rates[Index], Rates->Rates[Index]);
 
-	for(Index=0;Index<Opt->Trees->NoOfStates;Index++)
+	for(Index=0;Index<Opt->Trees->NoStates;Index++)
 	{
-		Pct = GetStateProbPct(Index, Opt->Trees->NoOfStates, RootP);
+		Pct = GetStateProbPct(Index, Opt->Trees->NoStates, RootP);
 		UpDataSummaryNo(&Summary->Root[Index], Pct);
 	}
 }
@@ -2904,10 +2887,10 @@ SUMMARY*	CreatSummary(OPTIONS *Opt)
 		InitSummaryNo(&Ret->Rates[Index]);
 
 
-	Ret->Root = (SUMMARYNO*)malloc(sizeof(SUMMARYNO)*Opt->Trees->NoOfStates);
+	Ret->Root = (SUMMARYNO*)malloc(sizeof(SUMMARYNO)*Opt->Trees->NoStates);
 	if(Ret->Root== NULL)
 		MallocErr();
-	for(Index=0;Index<Opt->Trees->NoOfStates;Index++)
+	for(Index=0;Index<Opt->Trees->NoStates;Index++)
 		InitSummaryNo(&Ret->Root[Index]);
 
 	return Ret;
@@ -2926,7 +2909,7 @@ void	PrintSummaryHeadder(FILE* Str, SUMMARY	*Summary, OPTIONS *Opt)
 	fprintf(Str, "%s - Ave\t%s - Var\t", Opt->RateName[1], Opt->RateName[1]);
 
 	
-	for(Index=0;Index<Opt->Trees->NoOfStates;Index++)
+	for(Index=0;Index<Opt->Trees->NoStates;Index++)
 		fprintf(Str, "%d - Ave\t%d - Var\t", Index, Index);
 
 	fprintf(Str, "\n");
@@ -2936,14 +2919,14 @@ void	PrintSummary(FILE* Str, SUMMARY	*Summary, OPTIONS *Opt)
 {
 	int	Index;
 
-	fprintf(Str, "%s\t%s\t%d\t", Opt->TreeFN, Opt->DataFN, Opt->Trees->NoOfStates);
+	fprintf(Str, "%s\t%s\t%d\t", Opt->TreeFN, Opt->DataFN, Opt->Trees->NoStates);
 
 	fprintf(Str, "%f\t%f\t", GetSummaryAve(&Summary->Lh), GetSummaryVar(&Summary->Lh));
 
 	fprintf(Str, "%f\t%f\t", GetSummaryAve(&Summary->Rates[0]), GetSummaryVar(&Summary->Rates[0]));
 	fprintf(Str, "%f\t%f\t", GetSummaryAve(&Summary->Rates[1]), GetSummaryVar(&Summary->Rates[1]));
 
-	for(Index=0;Index<Opt->Trees->NoOfStates;Index++)
+	for(Index=0;Index<Opt->Trees->NoStates;Index++)
 		fprintf(Str, "%f\t%f\t", GetSummaryAve(&Summary->Root[Index]), GetSummaryVar(&Summary->Root[Index]));
 
 	fprintf(Str, "\n");

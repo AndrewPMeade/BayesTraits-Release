@@ -37,7 +37,7 @@ void	BuildStateDS(int NOS, TREES *Trees)
 	Len = (int)strlen(SymList);
 	Out = OpenRandSimOutFile(NOS);
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		fprintf(Out, "%s\t%c\n", Trees->Taxa[Index]->Name, SymList[Index%NOS]);
 	}
@@ -60,7 +60,7 @@ int		GetRootRates(TREES *Trees, RANDSTATES *RS)
 {
 	int Ret;
 
-	Ret = (int)(RandUSInt(RS) % Trees->NoOfStates);
+	Ret = (int)(RandUSInt(RS) % Trees->NoStates);
 
 	return Ret;
 }
