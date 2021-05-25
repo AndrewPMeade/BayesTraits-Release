@@ -313,6 +313,7 @@ double	RandFromPrior(RANDSTATES *RS, PRIORS *P)
 {
 	double Mean, SD;
 	int Err;
+	double Ret;
 
 	Err = TRUE;	
 
@@ -339,7 +340,12 @@ double	RandFromPrior(RANDSTATES *RS, PRIORS *P)
 		SD = 50;
 	}
 
-	return RandUniDouble(RS, Mean-(2*SD), Mean-(2*SD));
+	do
+	{
+		Ret = RandUniDouble(RS, Mean-(2*SD), Mean+(2*SD));
+	} while(Ret <= 0.0);
+
+	return Ret;
 }
 
 double	RandFromPriorPosition(int Pos, OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -464,24 +470,6 @@ int		ExitMCMC(OPTIONS *Opt, long long Itters)
 	return FALSE;
 }
 
-void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
-{
-	double OU;
-
-
-	NRates->Rates[0] = -0.373331342633;
-	NRates->Rates[1] =	2.614639593935;
-
-	for(OU=0;OU<20;OU+=0.01)
-	{
-		CRates->OU = OU;
-		CRates->Lh = Likelihood(CRates, Trees, Opt);
-		printf("%f\t%f\n", OU, CRates->Lh);
-	}
-
-	exit(0);
-}
-
 void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 {
 	int Index;
@@ -525,7 +513,7 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 {
 	double Heat;
 
-	if(Shed->Op == SFATTAILANS && Opt->UseGeoData == FALSE)
+	if(Shed->Op == SFATTAILANS && Opt->Model == M_FATTAIL)
 		return TRUE;
 	
 	Heat = NRates->Lh - CRates->Lh;
@@ -542,6 +530,26 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 	return FALSE;
 }
 
+void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double Lh, X;
+
+	Rates->Rates[0] = FAT_TAIL_NORMAL_VAL;
+	Rates->Rates[1] = 10.0;
+
+	Lh = Likelihood(Rates, Trees, Opt);
+
+	X = 0.000001;
+	while(X<1000)
+	{
+		Rates->Rates[1] = X;
+		Lh = Likelihood(Rates, Trees, Opt);
+		printf("%f\t%f\n", X, Lh);
+		X += 0.01;
+	}
+
+	exit(0);
+}
 
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
@@ -651,24 +659,17 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 	StoneF = NULL;
 	if(Opt->Stones != NULL)
 		StoneF = CreatStoneOuput(Opt);
-
-
+	
 	GBurntIn = BurntIn = FALSE;
 	if(Opt->BurnIn == 0)
 		BurntIn = TRUE;
 
-// PrintTime(stdout); printf("\n");
+//	MCMCTest(Opt, Trees, CRates);
+
 	fflush(stdout);
 	StartT = GetSeconds();	
 	for(Itters=1;;Itters++)
-	{ /*
-		printf("Itter:\t%llu\t%d\t", Itters, CRates->TreeNo);
-
-		if(BurntIn == TRUE)
-			printf("True\n");
-		else
-			printf("False\n");
-		*/
+	{ 
  		CopyRates(NRates, CRates, Opt);
 
 		MutateRates(Opt, NRates, Shed, Itters);
@@ -676,7 +677,9 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 		if(Opt->NodeData == TRUE)
 			SetTreeAsData(Opt, Trees, NRates->TreeNo);
 
-		NRates->Lh = Likelihood(NRates, Trees, Opt);
+		if(Shed->Op != SFATTAILANS && Opt->Model != M_GEO)
+			if(Shed->Op != SFATTAILANS && Opt->Model != M_GEO)
+			NRates->Lh = Likelihood(NRates, Trees, Opt);
 	
 		if(NRates->Lh == ERRLH)
 			Itters--;
@@ -692,9 +695,9 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 			else
 				UpDateShedAcc(FALSE, Shed);
 
-			if( (Itters % Opt->Sample==0) && 
-				(BurntIn == TRUE) &&
-				(StonesStarted(Opt->Stones, Itters) == FALSE))
+			if( (Itters % Opt->Sample) == 0 && 
+				BurntIn == TRUE &&
+				StonesStarted(Opt->Stones, Itters) == FALSE)
 			{
 				UpDateHMean(Opt, CRates);
 				CRates->Lh = Likelihood(CRates, Trees, Opt);

@@ -71,7 +71,11 @@ int		FindNoConRates(OPTIONS *Opt)
 		break;
 
 		case M_FATTAIL:
-				return Opt->Trees->NoUserSites * 2;
+			return Opt->Trees->NoUserSites * 2;
+		break;
+
+		case M_GEO:
+			return 2;
 		break;
 	}
 
@@ -130,7 +134,7 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 
 	NoSites = Opt->Trees->NoOfSites;
 
-	if(Opt->Model == M_FATTAIL)
+	if(Opt->ModelType == MT_FATTAIL)
 	{
 		MapRatesToFatTailRate(Rates, Rates->FatTailRates);
 		return;
@@ -489,7 +493,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 		ChangeModelFile(Rates, Rates->RS);
 	}
 
-	if(Opt->Model == M_FATTAIL)
+	if(Opt->ModelType == MT_FATTAIL)
 	{
 		Rates->FatTailRates = CreateFatTailRates(Opt, Trees);
 		MapFatTailRateToRates(Rates, Rates->FatTailRates);
@@ -689,8 +693,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->NoEstData		=	0;
 	Ret->EstData		=	NULL;
-//	Ret->NoOfModels		= -1;
-//	Ret->FixedModels	= NULL;
 	Ret->ModelFile		=	NULL;
 	Ret->ModelNo		=	-1;
 
@@ -1053,9 +1055,9 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 				fprintf(Str, "R Trait %d %d\t", x+1, y+1);
 	}		
 
-	if(Opt->Model == M_FATTAIL)
+	if(Opt->ModelType == MT_FATTAIL)
 	{
-		if(Opt->UseGeoData == TRUE)
+		if(Opt->Model == M_GEO)
 			fprintf(Str, "Alpha\tScale\t");
 		else
 		{
@@ -1589,9 +1591,9 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
  		PrintRegVarCoVar(Str, Rates, Opt);
 	}
 
-	if(Opt->Model == M_FATTAIL)
+	if(Opt->ModelType == MT_FATTAIL)
 	{
-		if(Opt->UseGeoData == TRUE)
+		if(Opt->Model == M_GEO)
 			fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[0], Rates->FatTailRates->Scale[0]);
 		else
 		{
@@ -2657,8 +2659,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case SFATTAILANS:
-
-			if(Opt->UseGeoData == FALSE)
+			if(Opt->Model == M_FATTAIL)
 			{
 			//	SliceSampleFatTail(Opt, Opt->Trees, Rates);
 				AllSliceSampleFatTail(Opt, Opt->Trees, Rates);

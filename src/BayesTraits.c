@@ -249,6 +249,10 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/OUTest.trees ./Seq/OUTest.txt < in.txt > sout.txt
 // ./Seq/OUOut.trees ./Seq/OUTest.txt < in.txt > sout.txt
+// ./Seq/CiaraGeoTest/BensonTyrannos.trees ./Seq/CiaraGeoTest/BensonTyrannosCentroidData.txt < in.txt > sout.txt
+
+
+// ./Seq/ChrsOVarRates/Tree.trees ./Seq/ChrsOVarRates/Data.SDM.txt < ./Seq/ChrsOVarRates/in.txt > sout.txt
 
 int main(int argc, char** argv)
 {

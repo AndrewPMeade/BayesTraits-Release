@@ -5,7 +5,8 @@
 
 // Data should be Long / Lat
 
-int		ValidGeoData(TREES *Trees);
+void	ValidGeoData(TREES *Trees);
+void	PreProcessGeoData(TREES *Trees);
 
 void	LongLatToXYZ(double Long, double Lat, double *X, double *Y, double *Z);
 void	XYZToLongLat(double X, double Y, double Z, double *Long, double *Lat);

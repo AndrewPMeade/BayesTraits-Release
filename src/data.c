@@ -7,6 +7,8 @@
 #include "genlib.h"
 #include "trees.h"
 #include "part.h"
+#include "options.h"
+#include "Geo.h"
 
 
 void	PrintTaxaData(OPTIONS *Opt, TREES* Trees)
@@ -467,8 +469,8 @@ void	CheckDescData(TREES* Trees)
 
 void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 {
-	FILE*	ErrFile;
-	char	ErrFileName[1024];
+	if(ValidModelChoice(Trees, Model) == FALSE)
+		exit(1);
 
 	if(Model == M_MULTISTATE)
 	{
@@ -476,25 +478,34 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 
 		if(strlen(Trees->SymbolList) == 1)
 		{
-			sprintf(&ErrFileName[0], "%s.%s", FileName, LOGFILEEXT);
-			ErrFile = OpenWrite(&ErrFileName[0]);
-
-			fprintf(ErrFile, "There has to be more then one state in file %s\n", FileName);
-			fclose(ErrFile);
 			printf("There has to be more then one state in file %s\n", FileName);
 			exit(0);
 		}
 	}
 	else
 	{
-		if((Model == M_DESCDEP) || (Model == M_DESCINDEP))
-		{
+		if(Model == M_DESCDEP || Model == M_DESCINDEP)
 			CheckDescData(Trees);
-		}
 	}
 
-	if((Model == M_DESCDEP) || (Model == M_DESCINDEP) || (Model == M_MULTISTATE))
+	if(Model == M_GEO)
+		ValidGeoData(Trees);
+		
+	if(GetModelType(Model) == MT_DISCRETE)
 		SetMinBL(Trees);
+}
+
+void	PreProcessDataWithModel(TREES *Trees, MODEL Model)
+{
+
+	if(Model == M_DESCDEP || Model == M_DESCINDEP || Model == M_DESCCV || Model == M_DESCHET)
+		SquashDep(Trees);
+
+	if(GetModelType(Model) == MT_CONTINUOUS || GetModelType(Model) == MT_CONTRAST || GetModelType(Model) == MT_FATTAIL)
+		RemoveConMissingData(Trees);
+
+	if(Model == M_GEO)
+		PreProcessGeoData(Trees);
 }
 
 void	LoadData(char* FileName, TREES *Trees)

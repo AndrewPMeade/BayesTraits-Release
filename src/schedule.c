@@ -209,8 +209,8 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	if(Opt->EstGamma == TRUE)
 		Shed->OptFreq[SGAMMA] = 0.1;
 
-	if(Opt->Model == M_FATTAIL)
-		Shed->OptFreq[SFATTAILANS] = 0.5;
+	if(Opt->ModelType == MT_FATTAIL)
+		Shed->OptFreq[SFATTAILANS] = 0.9;
 
 	if(MultiTree(Opt) == TRUE)
 		Shed->OptFreq[STREEMOVE] = 0.1;
@@ -232,9 +232,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 
 	Rates = 0;
 	if(Opt->DataType == CONTINUOUS)
-	{
 		Rates = Opt->Trees->NoOfSites;
-	}
 	else
 		for(Index=0;Index<Opt->NoOfRates;Index++)
 			if(Opt->ResTypes[Index] == RESNONE)
@@ -411,11 +409,21 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		return Ret;
 	}
 
-	if(Opt->Model == M_FATTAIL)
+	if(Opt->ModelType == MT_FATTAIL)
 	{
 		NoS = Opt->Trees->NoOfSites;
-		if(Opt->UseGeoData == TRUE)
-			NoS = 1;
+		if(Opt->Model == M_GEO)
+		{
+			sprintf(Buffer,"Alpha");
+			Ret[0] = StrMake(Buffer);
+
+			sprintf(Buffer,"Scale");
+			Ret[1] = StrMake(Buffer);
+			free(Buffer);
+			return Ret;
+		}
+			
+
 		for(Index=0;Index<NoS;Index++)
 		{
 			sprintf(Buffer,"Alpha %d",Index+1);
@@ -512,10 +520,7 @@ void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, RANDSTATES *RS)
 
 	Shed->NoParm			= FindNoOfAutoCalibRates(Opt);
 	
-	Shed->RateDevATList		= (AUTOTUNE**)malloc(sizeof(AUTOTUNE*) * Shed->NoParm);
-
-	if(Shed->RateDevATList == NULL)
-		MallocErr();
+	Shed->RateDevATList		= (AUTOTUNE**)SMalloc(sizeof(AUTOTUNE*) * Shed->NoParm);
 
 	PNames = GetAutoParamNames(Opt);
 	

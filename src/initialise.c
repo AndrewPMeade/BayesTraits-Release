@@ -39,12 +39,14 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 
 	Model	= GetModel(Trees);
 	
-	if(Model == M_FATTAIL)
+	if(GetModelType(Model) == MT_FATTAIL)
 		Analsis = ANALMCMC;
 	else
 		Analsis = GetAnalsis(Trees);
 
 	CheckDataWithModel(DataFN, Trees, Model);
+
+	PreProcessDataWithModel(Trees, Model);
 
 	Opt = CreatOptions(Model, Analsis, Trees->NoOfStates, TreeFN, DataFN, Trees->SymbolList, Trees);
 	

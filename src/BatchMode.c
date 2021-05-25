@@ -103,10 +103,11 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	Analsis = GetBatchAnalsis(Coms[1]);
 	
 	CheckDataWithModel(DataFN, Trees, Model);
+	
+	PreProcessDataWithModel(Trees, Model);
 
 	Opt = CreatOptions(Model, Analsis, Trees->NoOfStates, TreeFN, DataFN, Trees->SymbolList, Trees);
 	SetLogFName(Opt, BNo);
-//	Opt->LogFN = StrMake(LogFN);
 
 	GetOptionsArry(Opt, NoComs-2, &Coms[2]);
 

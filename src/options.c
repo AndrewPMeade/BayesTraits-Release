@@ -276,9 +276,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	
 	fprintf(Str, "Seed                             %lu\n", Opt->Seed);
 
-	if(Opt->UseGeoData == TRUE)
-		fprintf(Str, "Geo Data:                    True\n");
-
 	if(Opt->FatTailNormal == TRUE)
 		fprintf(Str, "Fat Tail Normal:             True\n");
 
@@ -779,11 +776,9 @@ char**	FatTailRateNames(OPTIONS *Opt)
 	char	*Buffer;
 	int		Index, Pos;
 	 
-	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
-	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
-	if((Ret == NULL) || (Buffer == NULL))
-		MallocErr();
-	
+	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
+		
 	Pos = 0;
 	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 	{
@@ -793,6 +788,25 @@ char**	FatTailRateNames(OPTIONS *Opt)
 		sprintf(Buffer, "Scale-%d", Index+1);
 		Ret[Pos++] = StrMake(Buffer);
 	}
+
+	free(Buffer);
+	return Ret;
+}
+
+char**	GeoRateNames(OPTIONS *Opt)
+{
+	char	**Ret;
+	char	*Buffer;
+
+	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
+
+
+	sprintf(Buffer, "Alpha");
+	Ret[0] = StrMake(Buffer);
+
+	sprintf(Buffer, "Scale");
+	Ret[1] = StrMake(Buffer);
 
 	free(Buffer);
 	return Ret;
@@ -825,6 +839,9 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 
 		case M_FATTAIL:
 			return FatTailRateNames(Opt);
+
+		case M_GEO:
+			return GeoRateNames(Opt);
 	}
 
 	return NULL;
@@ -924,6 +941,13 @@ void	SetFatTailPrior(OPTIONS *Opt)
 	}
 }
 
+void	GetGeoPriors(OPTIONS *Opt)
+{
+	Opt->Priors[0] = CreateUniformPrior(0.2, 2.0);
+	Opt->Priors[1] = CreateInvGammaPrior(2.0, 0.130435);
+}
+
+
 void	AllocRatePrios(OPTIONS *Opt)
 {
 	int		Index;
@@ -932,25 +956,32 @@ void	AllocRatePrios(OPTIONS *Opt)
 	if(Opt->Priors == NULL)
 		MallocErr();
 
-	if(Opt->Model == M_FATTAIL)
-		SetFatTailPrior(Opt);
-	else
-	{
-		for(Index=0;Index<Opt->NoOfRates;Index++)
-		{
-			if(Opt->ModelType == DISCRETE)
-				Opt->Priors[Index] = CreateUniformPrior(0, 100);
-			else
-				Opt->Priors[Index] = CreateUniformPrior(-100, 100);
-		
-			Opt->Priors[Index]->RateName = StrMake(Opt->RateName[Index]);
+	Opt->RJPrior = CreateUniformPrior(0, 100);
 
-			if((Opt->Model == M_CONTRAST) && (Index >= Opt->Trees->NoOfSites))
-				Opt->Priors[Index]->DistVals[0] = 0;
-		}
+	if(Opt->Model == M_FATTAIL)
+	{
+		SetFatTailPrior(Opt);
+		return;
 	}
 
-	Opt->RJPrior = CreateUniformPrior(0, 100);
+	if(Opt->Model == M_GEO)
+	{
+		GetGeoPriors(Opt);
+		return;
+	}
+
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+	{
+		if(Opt->ModelType == DISCRETE)
+			Opt->Priors[Index] = CreateUniformPrior(0, 100);
+		else
+			Opt->Priors[Index] = CreateUniformPrior(-100, 100);
+		
+		Opt->Priors[Index]->RateName = StrMake(Opt->RateName[Index]);
+
+		if((Opt->Model == M_CONTRAST) && (Index >= Opt->Trees->NoOfSites))
+			Opt->Priors[Index]->DistVals[0] = 0;
+	}
 }
 
 void	SetGenPriors(OPTIONS *Opt)
@@ -980,6 +1011,7 @@ MODEL_TYPE	GetModelType(MODEL Model)
 		case	M_DESCCV:			return MT_DISCRETE; break;
 		case	M_DESCHET:			return MT_DISCRETE; break;
 		case	M_FATTAIL:			return MT_FATTAIL; break;
+		case	M_GEO:				return MT_FATTAIL; break;
 	}
 
 	printf("Unkown model type (%s::%d)\n", __FILE__, __LINE__);
@@ -994,23 +1026,13 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	int		Index;
 	char	*Buffer;
 
-		
-	if((Model == M_DESCDEP) || (Model == M_DESCINDEP) || (Model == M_DESCCV) || (Model == M_DESCHET))
-		SquashDep(Trees);
-
-	if(	(GetModelType(Model) == MT_CONTINUOUS)	|| 
-		(GetModelType(Model) == MT_CONTRAST)	||
-		(GetModelType(Model) == MT_FATTAIL))
-		RemoveConMissingData(Trees);
-
 	Ret = (OPTIONS*)malloc(sizeof(OPTIONS));
 	if(Ret == NULL)
 		MallocErr();
 
 	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
 	if(Buffer == NULL)
-		MallocErr();
-	
+		MallocErr();	
 
 	Ret->Trees		= Trees;
 	Ret->Model		= Model;
@@ -1045,10 +1067,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	if(Ret->ModelType == MT_DISCRETE);
 		Ret->DataType = DISCRETE;
 
-	if(	(Ret->ModelType == MT_CONTINUOUS)	|| 
-		(Ret->ModelType == MT_CONTRAST)		||
-		(Ret->ModelType	== MT_FATTAIL)
-		) 
+	if(	Ret->ModelType == MT_CONTINUOUS	|| 
+		Ret->ModelType == MT_CONTRAST	||
+		Ret->ModelType	== MT_FATTAIL)
 	{
 		Ret->TestCorrel = TRUE;
 		Ret->DataType	= CONTINUOUS;
@@ -1061,7 +1082,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->TreeFN = StrMake(TreeFN);
 	Ret->DataFN = StrMake(DataFN);
 
-	sprintf(Buffer, "%s.%s", DataFN, LOGFILEEXT);
+	sprintf(Buffer, "%s.%s", DataFN, LOGFILE_EXT);
 	Ret->LogFN = StrMake(Buffer);
 
 	Ret->LogFile		= NULL;
@@ -1073,13 +1094,13 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->MLTries		= 10;
 	Ret->MCMCMLStart	= FALSE; 
 
-	Ret->PriorGamma		=	NULL;
-	Ret->PriorKappa		=	NULL;
-	Ret->PriorLambda	=	NULL;
-	Ret->PriorDelta		=	NULL;
-	Ret->PriorOU		=	NULL;
-	Ret->Priors			=	NULL;
-	Ret->PriorCats		=	-1;
+	Ret->PriorGamma		= NULL;
+	Ret->PriorKappa		= NULL;
+	Ret->PriorLambda	= NULL;
+	Ret->PriorDelta		= NULL;
+	Ret->PriorOU		= NULL;
+	Ret->Priors			= NULL;
+	Ret->PriorCats		= -1;
 	
 	SetGenPriors(Ret);
 
@@ -1160,6 +1181,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 
 	Ret->Precision		=	sizeof(double) * 8;
+
 #ifdef BIG_LH
 	Ret->Precision		=	256;
 #endif
@@ -1180,7 +1202,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->ScaleTrees		=	-1;
 
-	Ret->UseGeoData		=	FALSE;
 	Ret->FatTailNormal	=	FALSE;
 
 	Ret->RJLocalScalarPriors = (PRIORS**)malloc(sizeof(PRIORS*) * NO_RJ_LOCAL_SCALAR);
@@ -1213,32 +1234,32 @@ void	PrintModelChoic(TREES *Trees)
 	printf("1)	MultiState\n");
 	if((Trees->NoOfSites == 2) && (Trees->NoOfStates == 2))
 	{
-		printf("2)	Discrete: Independent\n");
-		printf("3)	Discrete: Dependant\n");
+		printf("2)\tDiscrete: Independent\n");
+		printf("3)\tDiscrete: Dependant\n");
 	}
 
 	if(Trees->ValidCData == TRUE)
 	{
-		printf("4)	Continuous: Random Walk (Model A)\n");
-		printf("5)	Continuous: Directional (Model B)\n");
+		printf("4)\tContinuous: Random Walk (Model A)\n");
+		printf("5)\tContinuous: Directional (Model B)\n");
 
 		if(Trees->NoOfSites > 1)
-			printf("6)	Continuous: Regression\n");
+			printf("6)\tContinuous: Regression\n");
 
 		if(EstData(Trees) == FALSE)
 		{
-			printf("7)	Independent Contrast\n");
+			printf("7)\tIndependent Contrast\n");
 
-			printf("8)	Independent Contrast: Correlation\n");
+			printf("8)\tIndependent Contrast: Correlation\n");
 
 			if(Trees->NoOfSites > 1)
-				printf("9)	Independent Contrast: Regression\n");
+				printf("9)\tIndependent Contrast: Regression\n");
 		}
 	}
 
 	if((Trees->NoOfSites == 2) && (Trees->NoOfStates == 2))
 	{
-		printf("10)	Discrete: Covarion\n");
+		printf("10)\tDiscrete: Covarion\n");
 	#ifndef PUBLIC_BUILD
 		if(Trees->NoOfTrees == 1)
 			printf("11)	Discrete: Heterogeneous \n");
@@ -1246,7 +1267,10 @@ void	PrintModelChoic(TREES *Trees)
 	}
 
 	if(Trees->ValidCData == TRUE)
-		printf("12) Fat Tail\n");
+		printf("12)\tFat Tail\n");
+	
+	if(Trees->ValidCData == TRUE && Trees->NoOfSites == 2)
+		printf("13)\tGeo Data\n");
 }
 
 int		GetModelInt()
@@ -1318,7 +1342,7 @@ int		ValidModelChoice(TREES *Trees, MODEL Model)
 
 	if(EstData(Trees) == TRUE)
 	{
-		if((Model == M_CONTRAST) || (Model == M_CONTRAST_CORREL) || (Model == M_CONTRAST_REG))
+		if(GetModelType(Model) == MT_CONTRAST)
 		{
 			printf("Currently estimating unknown data values is not supported in independent contrast methods, please use the continues models.\n");
 			return FALSE;
@@ -1366,29 +1390,25 @@ MODEL	IntToModel(int No)
 	if(No == 12)
 		return M_FATTAIL;
 
+	if(No == 13)
+		return M_GEO;
+
 	printf("Unknown model\n");
 	exit(0);
 }
 
-
-//./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < BigMamIn.txt > sout.txt
-void	GetModelChoice(TREES *Trees, MODEL *Model, int *Valid)
+void	GetModelChoice(TREES *Trees, MODEL *Model)
 {
 	int		No;
 	MODEL	M;
 
-	*Valid = FALSE;
-
+	
 	No = GetModelInt();
 	if(No == -1)
 		return;	
 
 	M = IntToModel(No);
 
-	if(ValidModelChoice(Trees, M) == FALSE)
-		return;
-
-	*Valid = TRUE;
 	*Model = M;
 
 }
@@ -1396,15 +1416,10 @@ void	GetModelChoice(TREES *Trees, MODEL *Model, int *Valid)
 MODEL	GetModel(TREES *Trees)
 {
 	MODEL	Model;
-	int		Valid;
 
-	do
-	{
-		PrintModelChoic(Trees);
+	PrintModelChoic(Trees);
 		
-		GetModelChoice(Trees, &Model, &Valid);
-	} while(Valid == FALSE);
-
+	GetModelChoice(Trees, &Model);
 	
 	return Model;
 }
@@ -1412,43 +1427,31 @@ MODEL	GetModel(TREES *Trees)
 
 ANALSIS	GetAnalsis(TREES *Trees)
 {
-	char	Buffer[1024];
-	int		Comment;
-
-	Comment = FALSE;
-
+	char	*Buffer;
+	int		No;
 	
+	Buffer =  (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
-	for(;;)
+	printf("Please select the analysis method to use.\n");
+	printf("1)	Maximum Likelihood.\n");
+	printf("2)	MCMC\n");
+	
+	fgets(&Buffer[0], 1024, stdin);
+	Buffer[1023] = '\0';
+
+	No = atoi(Buffer);
+	free(Buffer);
+
+	if(No != 1 && No != 2)
 	{
-		if(Comment == FALSE)
-		{
-			printf("Please select the analysis method to use.\n");
-			printf("1)	Maximum Likelihood.\n");
-			printf("2)	MCMC\n");
-		}
-		
-		fgets(&Buffer[0], 1024, stdin);
-
-		if(Buffer[0] != '#')
-		{
-			Comment = FALSE;
-			switch (atoi(&Buffer[0]))
-			{
-				case 1:
-					return ANALML;
-				break;
-
-				case 2:
-					return ANALMCMC;
-				break;
-			}
-
-			printf("Unknown choice: %s\n", Buffer);
-		}
-		else
-			Comment = TRUE;
+		printf("Invalid analysis choice\n");
+		exit(1);
 	}
+	
+	if(No == 1)
+		return ANALML;
+
+	return ANALMCMC;
 }
 
 COMMANDS	StringToCommand(char *Str)
@@ -1458,7 +1461,6 @@ COMMANDS	StringToCommand(char *Str)
 
 	if(Str[0] == '#')
 		return CCOMMENT;
-
 	do
 	{
 		if((strcmp(Str, COMMANDSTRINGS[SIndex]) == 0) || (strcmp(Str, COMMANDSTRINGS[SIndex+1]) == 0))
@@ -2106,15 +2108,13 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	int			Index, FState, NoTaxa;
 	char**		ConFState;
 	
-//	if(Opt->ModelType 
-
 	FState = -1;
 	
 	ConFState = NULL;
 
 	if(OptFindRecNode(Opt, argv[1]) != NULL)
 	{
-		printf("Node name %s is allready is use please chose another or delete the node\n", argv[1]);
+		printf("Node name %s is allready is use please chose another\n", argv[1]);
 		return;
 	}
 
@@ -3317,22 +3317,6 @@ void	SetRJLocalTransform(OPTIONS *Opt, char **Passed, int Tokes)
 	Opt->UseRJLocalScalar[Type]	= TRUE;
 }
 
-void	SetGeoData(OPTIONS *Opt)
-{
-	if(Opt->ModelType != MT_FATTAIL)
-	{
-		printf("Geo Data can only be used with Fat Tail models.\n");
-		return;
-	}
-
-	if(Opt->UseGeoData == FALSE)
-		Opt->UseGeoData = TRUE;
-	else
-		Opt->UseGeoData = FALSE;
-
-	return;
-}
-
 void	SetFatTailNormal(OPTIONS *Opt)
 {
 	if(Opt->ModelType != MT_FATTAIL)
@@ -4083,9 +4067,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetRJLocalTransform(Opt, Passed, Tokes);
 	
 
-	if(Command == CGEODATA)
-		SetGeoData(Opt);
-	
+
 	if(Command == CFATTAILNORMAL)
 		SetFatTailNormal(Opt);
 

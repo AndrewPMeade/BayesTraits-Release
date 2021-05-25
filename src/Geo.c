@@ -18,9 +18,70 @@
 #define EARTH_KM 6371.0
 #define EARTH_KM_EARTH_KM 40589641
 
-int		ValidGeoData(TREES *Trees)
+void	ValidGeoData(TREES *Trees)
 {
-	return FALSE;
+	int Index;
+	double Long, Lat;
+	TAXA *T;
+
+	if(Trees->NoOfSites != 2)
+	{
+		printf("Geo Data must be long lat\n");
+		exit(1);
+	}
+
+	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	{
+		T = Trees->Taxa[Index];
+
+		if(T->Exclude == FALSE)
+		{
+			Long = T->ConData[0];
+			Lat = T->ConData[1];
+
+			if(Long < -180 || Long > 180)
+			{
+				printf("Invalid longitude (%f) for taxa %s.\n", Long, T->Name);
+				exit(1);
+			}
+
+			if(Lat < -90 || Lat > 90)
+			{
+				printf("Invalid latitude (%f) for taxa %s.\n", Lat, T->Name);
+				exit(1);
+			}
+		}
+	}
+}
+
+void	PreProcessGeoData(TREES *Trees)
+{
+	int TIndex;
+	TAXA *Taxa;
+	double X, Y, Z;
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		Taxa = Trees->Taxa[TIndex];
+		if(Taxa->Exclude == FALSE)
+		{
+			free(Taxa->DesDataChar[0]);
+			free(Taxa->DesDataChar[1]);
+			free(Taxa->DesDataChar);
+			Taxa->DesDataChar = NULL;
+
+
+			LongLatToXYZ(Taxa->ConData[0], Taxa->ConData[1], &X, &Y, &Z);
+			free(Taxa->ConData);
+
+			Taxa->ConData = (double*)SMalloc(sizeof(double) * 3);
+			Taxa->ConData[0] = X;
+			Taxa->ConData[1] = Y;
+			Taxa->ConData[2] = Z;
+		}
+	}
+
+	Trees->NoOfSites = 3;
 }
 
 void	LongLatToXYZ(double Long, double Lat, double *X, double *Y, double *Z)
@@ -68,8 +129,6 @@ void	GetRandLongLat(RANDSTATES *RS, double Long, double Lat, double *RLong, doub
 	else
 		*RLong = *RLong * (180.0 / M_PI);
 }
-
-
 
 void	GetRandXYZPoint(RANDSTATES *RS, double SX, double SY, double SZ, double *RX, double *RY, double *RZ, double Radius)
 {
@@ -173,7 +232,7 @@ void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 {
 	FATTAILRATES *FTR;
-	double	NLh, CLh, X, Y, Z, RX, RY, RZ;
+	double NLh, CLh, X, Y, Z, RX, RY, RZ;
 	STABLEDIST *SD;
 	
 
@@ -187,8 +246,8 @@ void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 //	if(CLh > 0)
 //		printf("Err\n");
 		
-//	GetRandXYZPoint(RS, X, Y, Z, &RX, &RY, &RZ, 1000);
-	GetRandXYZPoint(RS, X, Y, Z, &RX, &RY, &RZ, 100);
+	GetRandXYZPoint(RS, X, Y, Z, &RX, &RY, &RZ, 2000);
+//	GetRandXYZPoint(RS, X, Y, Z, &RX, &RY, &RZ, 100);
 		
 	NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
 	
@@ -303,6 +362,7 @@ void	CorrectIntGeoNodes(TREE *Tree)
 
 			XYZToNode(N, X, Y, Z);
 		}
+
 	}
 }
 

@@ -1145,6 +1145,14 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	}
 }
 
+int		ValidLh(double LH)
+{
+	if(LH > 0 || LH == LH+1 || LH != LH || LH == ERRLH)
+		return FALSE;
+
+	return TRUE;
+}
+
 double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
 	double	Ret;
@@ -1161,7 +1169,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	LhTransformTree(Rates, Trees, Opt);
 
-	if(Opt->Model == M_FATTAIL)
+	if(Opt->ModelType == MT_FATTAIL)
 		return CalcTreeStableLh(Opt, Trees, Rates);
 
 	if(Opt->ModelType == MT_CONTRAST)
@@ -1202,8 +1210,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		//Err = SetAllPMatrix(Rates, Trees, Opt, RateMult);
 #endif
 		//}
-		//btdebug_exit("setpmatrix");			
-		//exit(0);
+
 			
 		if(Err == TRUE) 
 		{
@@ -1251,7 +1258,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	Ret = CombineLh(Rates, Trees, Opt);
 
 	
-	if((Ret > 0) || (Ret == Ret+1) || (Ret != Ret) || (Ret == ERRLH))
+	if(ValidLh(Ret) == FALSE)
 		return ERRLH;
 
 	return Ret;

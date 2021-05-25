@@ -123,7 +123,7 @@
 #define MAX_NUM_PARAMS (((MAX_NUMBER) * (MAX_NUMBER)) - (MAX_NUMBER) + 1)
 #define MAX_N (MAX_NUMBER * (MAX_NUMBER)) - 1
 
-#define LOGFILEEXT		"log.txt"
+#define LOGFILE_EXT		"log.txt"
 #define UNKNOWNSTATE	'-'
 #define SUMMARYFILEEXT	"sum.txt"
 #define ESTDATAPOINT	"?"
@@ -278,7 +278,6 @@ typedef enum
 	CRJDUMMY,
 	CSCALETREES,
 	CRJLOCALTRANSFORM,
-	CGEODATA,
 	CFATTAILNORMAL,
 	CADDTAG,
 	CLOCALTRANSFORM,
@@ -356,7 +355,6 @@ static char    *COMMANDSTRINGS[] =
 	"rjdummy",		"rjd",
 	"scaletrees",	"st", 
 	"rjlocaltransform", "rjlt", 
-	"geodata",		"gd", 
 	"fattailnormal", "ftn",
 	"addtag",		"at",
 	"localtransform",	"lt",
@@ -377,7 +375,8 @@ static char		*MODELNAMES[] =
 	"Independent Contrasts: Regression",
 	"Discrete: Covarion", 
 	"Discrete: Heterogeneous",
-	"Fat Tail:"
+	"Fat Tail",
+	"Geo"
 };
 
 static char    *DEPPRAMS[] =
@@ -490,7 +489,8 @@ typedef enum
 	M_CONTRAST_REG,
 	M_DESCCV,
 	M_DESCHET,
-	M_FATTAIL
+	M_FATTAIL,
+	M_GEO
 } MODEL;
 
 typedef enum
@@ -1145,7 +1145,7 @@ typedef struct
 	int			UseRJLocalScalar[NO_RJ_LOCAL_SCALAR];
 	PRIORS		**RJLocalScalarPriors;
 
-	int			UseGeoData;
+//	int			UseGeoData;
 	int			FatTailNormal;
 
 	int			EstData;

@@ -97,14 +97,14 @@ FATTAILRATES*	AllocFatTailRates(OPTIONS *Opt, TREES *Trees)
 		MallocErr();
 
 	Ret->SliceSampler = CrateSliceSampler(NO_SLICE_STEPS);
-
-
+	
 	Ret->AnsVect = (double*)malloc(sizeof(double) * NoSites * Trees->MaxNodes);
 	if(Ret->AnsVect == NULL)
 		MallocErr();	
 
 	Ret->NoSD = NoSites;
-	if(Opt->UseGeoData == TRUE)
+
+	if(Opt->Model == M_GEO)
 		Ret->NoSD = 1;
 
 	Ret->SDList = (STABLEDIST**)malloc(sizeof(double) * Ret->NoSD);
@@ -355,7 +355,7 @@ void	SetInitAnsStates(OPTIONS *Opt, TREES *Trees, TREE *Tree)
 		GetInitAnsStateNodes(SIndex, Tree);
 	}
 
-	if(Opt->UseGeoData == TRUE)
+	if(Opt->Model == M_GEO)
 		CorrectIntGeoNodes(Tree);
 }
 
@@ -373,7 +373,7 @@ void	InitFatTailTrees(OPTIONS *Opt, TREES *Trees)
 }
 
 
-double	CalcNodeStableLh(NODE N, int NoSites, STABLEDIST **SDList, int UseGeoData)
+double	CalcNodeStableLh(NODE N, int NoSites, STABLEDIST **SDList, int UseGeoModel)
 {
 	int Index, SIndex;
 	double Ret;
@@ -387,7 +387,7 @@ double	CalcNodeStableLh(NODE N, int NoSites, STABLEDIST **SDList, int UseGeoData
 	SD = SDList[0];
 	for(SIndex=0;SIndex<NoSites;SIndex++)
 	{
-		if(UseGeoData == FALSE)
+		if(UseGeoModel == FALSE)
 			SD = SDList[SIndex];
 
 		for(Index=0;Index<N->NoNodes;Index++)
@@ -408,10 +408,15 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	double Ret;
 	FATTAILRATES *FTR;
 	TREE *Tree;
+	int	UseGeoModel;
 
 	Tree = Trees->Tree[Rates->TreeNo];
 	NoSites = Trees->NoOfSites;
 	FTR = Rates->FatTailRates;
+
+	UseGeoModel = FALSE;
+	if(Opt->Model == M_GEO)
+		UseGeoModel = TRUE;
 
 	FatTailSetAnsSates(Tree, NoSites, FTR);
 
@@ -425,11 +430,11 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		if(Tree->NodeList[Index]->Tip == FALSE)
-			Ret += CalcNodeStableLh(Tree->NodeList[Index], NoSites, FTR->SDList, Opt->UseGeoData);
+			Ret += CalcNodeStableLh(Tree->NodeList[Index], NoSites, FTR->SDList, UseGeoModel);
 
 	}
 
-	if(Ret != Ret || Ret == Ret + 1.0)
+	if(ValidLh(Ret) == FALSE)
 		return ERRLH;
 
 	return Ret;
@@ -842,7 +847,7 @@ void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
 
 	fprintf(Opt->LogFatTail, "Itter\tLh\t");
 
-	if(Opt->UseGeoData == TRUE)
+	if(Opt->Model == M_GEO)
 		fprintf(Opt->LogFatTail, "Alpha\tScale\t");
 	else
 	{
@@ -852,9 +857,8 @@ void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
 
 	for(Index=0;Index<NID;Index++)
 	{
-		if(Opt->UseGeoData == TRUE)
+		if(Opt->Model == M_GEO)
 			fprintf(Opt->LogFatTail, "Node-%05d - Long\tNode-%05d - Lat\t", Index, Index);
-		//	fprintf(Opt->LogFatTail, "Node-%05d - X\tNode-%05d - Y\tNode-%05d - Z\t", Index, Index, Index);
 		else
 		{
 			for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
@@ -889,7 +893,7 @@ void	OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		N = Tree->NodeList[Index];
 		if(N->Tip == FALSE)
 		{
-			if(Opt->UseGeoData == TRUE)
+			if(Opt->Model == M_GEO)
 			{
 				NodeToLongLat(N, &Long, &Lat);
 				fprintf(Opt->LogFatTail, "%f\t%f\t", Long, Lat);
