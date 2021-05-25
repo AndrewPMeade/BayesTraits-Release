@@ -61,9 +61,13 @@
 */
 #endif
 
+
 /* Program Control */
 //	#define	RATE_CHANGE_UNI
 #define RATE_CHANGE_NORM
+
+// #define NO_GSL
+
 
 // #define RATE_CHANGE_ONE
 
@@ -465,6 +469,12 @@ typedef enum
 	PPNODE,
 	PPBRANCH
 } PLASTYTYPE;
+
+typedef enum
+{
+	 RJDUMMY_INTER,
+	 RJDUMMY_INTER_SLOPE
+} RJDUMMY_TYPE;
 
 typedef struct
 {
@@ -1074,9 +1084,10 @@ typedef struct
 
 typedef struct
 {
-	NODE	Node;
-	double	*Beta;
-	int		Iteration;
+	RJDUMMY_TYPE	Type;
+	NODE			Node;
+	double			*Beta;
+	int				Iteration;
 } DUMMYCODE;
 
 typedef struct

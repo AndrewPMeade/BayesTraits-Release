@@ -2,8 +2,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include <gsl/gsl_randist.h>
-#include <gsl/gsl_cdf.h>
+#ifndef NO_GSL
+	#include <gsl/gsl_randist.h>
+	#include <gsl/gsl_cdf.h>
+#endif
 
 #include "typedef.h"
 #include "genlib.h"
@@ -80,8 +82,12 @@ void	SetStonesP(STONES *Stones)
 	for(Index=0;Index<Stones->NoStones;Index++)
 	{
 		X = (Index+1) / (double)Stones->NoStones;
+
+#ifndef NO_GSL
 		Stones->Power[Index] = gsl_cdf_beta_Qinv(X, Stones->Alpha, Stones->Beta);
-//		Stones->Power[Index] = 0.0;
+#else
+		Stones->Power[Index] = 1.0 - X;
+#endif
 	}
 }
 

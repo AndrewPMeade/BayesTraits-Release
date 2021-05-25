@@ -605,6 +605,7 @@ void	Testxx2(void)
 double CalcRJDummyPriors(OPTIONS *Opt, RATES* Rates)
 {
 	RJDUMMY *RJDummy;
+	DUMMYCODE *DC;
 	int		Index;
 	double	Ret, P;
 
@@ -614,7 +615,13 @@ double CalcRJDummyPriors(OPTIONS *Opt, RATES* Rates)
 
 	for(Index=0;Index<RJDummy->NoDummyCode;Index++)
 	{
-		P = NormPDF(RJDummy->DummyList[Index]->Beta[0], 0.0, 1.0);
+		DC = RJDummy->DummyList[Index];
+		
+		P = NormPDF(DC->Beta[0],  0.0, 1.0);
+
+		if(DC->Type == RJDUMMY_INTER_SLOPE)
+			P *= NormPDF(DC->Beta[1],  0.0, 1.0);
+				
 		Ret += log(P);
 	}
 

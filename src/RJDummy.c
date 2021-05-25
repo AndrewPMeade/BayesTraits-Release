@@ -8,10 +8,11 @@
 #include "RJDummy.h"
 #include "likelihood.h"
 #include "options.h"
+#include "contrasts.h"
 
 int			GetMaxDummy(OPTIONS *Opt, TREES *Trees)
 {
-	return Trees->Tree[0]->NoNodes;
+	return Trees->Tree[0]->NoNodes * 2;
 	return 10;
 }
 
@@ -31,6 +32,12 @@ DUMMYCODE*	AllocDummyCode(NODE N)
 		MallocErr();
 
 	Ret->Beta = (double*)malloc(sizeof(double) * 2);
+	if(Ret->Beta == NULL)
+		MallocErr();
+
+	Ret->Beta[0] = -1;
+	Ret->Beta[1] = -1;
+
 	Ret->Node = N;
 
 	return Ret;
@@ -41,8 +48,12 @@ DUMMYCODE*	CloneDummyCode(DUMMYCODE* DC)
 	DUMMYCODE	*Ret;
 	
 	Ret = AllocDummyCode(DC->Node);
+
+	Ret->Type = DC->Type;
 		
 	Ret->Beta[0] = DC->Beta[0];
+	Ret->Beta[1] = DC->Beta[1];
+
 	Ret->Iteration = DC->Iteration;
 
 	return Ret;
@@ -77,7 +88,10 @@ void		FreeRJDummyCode(RJDUMMY *RJDummy)
 
 	for(Index=0;Index<RJDummy->NoDummyCode;Index++)
 		FreeDummyCode(RJDummy->DummyList[Index]);
+	
 	free(RJDummy->DummyList);
+
+	free(RJDummy->DummyBeta);
 
 	free(RJDummy);
 }
@@ -159,7 +173,6 @@ void		PrintDummyCodeData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		if(N->Tip == TRUE)
 		{
 			Taxa = N->Taxa;
-
 			printf("%s\t", Taxa->Name);
 			for(Index=0;Index<NoSites;Index++)
 				printf("%f\t", N->ConData->Contrast[0]->Data[Index]);
@@ -211,10 +224,18 @@ void		AddRJDummyCode(int Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates, NODE N
 
 	DC->Iteration = Itter;
 	DC->Beta[0] = (RandDouble(Rates->RS) * 10) - 5;
+	DC->Type = RJDUMMY_INTER;
 	
-	RJDummy->NoDummyCode++;
+	if(RandDouble(Rates->RS) < 0.5)
+	{
+		DC->Type = RJDUMMY_INTER_SLOPE;
+		DC->Beta[1] = (RandDouble(Rates->RS) * 10) - 5;
+		CRates->NoSites++;
+	}
+	
 	CRates->NoSites++;
-	
+	RJDummy->NoDummyCode++;
+
 	Rates->LnHastings	= 0;
 	Rates->LnJacobion	= 0;
 	Rates->LhPrior		= 0;
@@ -227,18 +248,24 @@ void		AddRJDummyCode(int Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates, NODE N
 
 void		DelDummyCode(RATES *Rates, RJDUMMY *RJDummy, int Pos)
 {
-	CONTRASTR	*CRates;
-	int			Index;
+	CONTRASTR		*CRates;
+	int				Index;
+	RJDUMMY_TYPE	Type;
 
 	CRates = Rates->Contrast;
+
+	Type = RJDummy->DummyList[Pos]->Type;
 
 	FreeDummyCode(RJDummy->DummyList[Pos]);
 	
 	for(Index=Pos;Index<RJDummy->NoDummyCode-1;Index++)
 		RJDummy->DummyList[Index] = RJDummy->DummyList[Index+1];
-
+	
 	RJDummy->NoDummyCode--;
 	CRates->NoSites--;
+
+	if(Type == RJDUMMY_INTER_SLOPE)
+		CRates->NoSites--;
 
 	SortDummyCodes(RJDummy);
 }
@@ -332,6 +359,7 @@ void		RJDummyMoveNode( OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	DUMMYCODE	*DC;
 	int			Pos;
 
+//	return;
 	Tree = Trees->Tree[Rates->TreeNo];
 
 	RJDummy = Rates->RJDummy;
@@ -384,7 +412,7 @@ void	RJDummyCopy(RATES *A, RATES *B)
 	A->Contrast->NoSites = B->Contrast->NoSites;
 }
 
-void		SetDummyCodeNode(int TNoSites, NODE N, int Pos)
+void		SetDummyCodeNode(int TNoSites, DUMMYCODE *DC, NODE N, int Pos)
 {
 	int Index;
 	CONDATA *CD;
@@ -395,18 +423,21 @@ void		SetDummyCodeNode(int TNoSites, NODE N, int Pos)
 
 		for(Index=TNoSites;Index<Pos;Index++)
 			CD->Contrast[0]->Data[Index] = 0;
-
+		
 		CD->Contrast[0]->Data[Pos] = 1;
+		if(DC->Type == RJDUMMY_INTER_SLOPE)
+			CD->Contrast[0]->Data[Pos] = CD->Contrast[0]->Data[1];
+		
 		return;
 	}
 
 	for(Index=0;Index<N->NoNodes;Index++)
-		SetDummyCodeNode(TNoSites, N->NodeList[Index], Pos);
+		SetDummyCodeNode(TNoSites, DC, N->NodeList[Index], Pos);
 }
 
 void		ClearDummyCode(TREES *Trees, RATES *Rates)
 {
-	int			Index, I, X;
+	int			Index, X;
 	CONDATA		*CD;
 	CONTRAST	*C;
 	TREE		*Tree;
@@ -428,10 +459,48 @@ void		ClearDummyCode(TREES *Trees, RATES *Rates)
 	}
 }
 
+int			TaxaHasCrossProduct(CONTRAST *C, int NoRSites, int TotalSites)
+{
+	int Index;
+
+	for(Index=NoRSites;Index<TotalSites;Index++)
+	{
+		if((C->Data[Index] != 0) && (C->Data[Index] != 1))
+			return TRUE;
+	}
+
+	return FALSE;
+}
+
+void		ZeroImpliedDummyCode(TREES *Trees, TREE *Tree, int NoRSites, int TotalSites)
+{
+	int Index;
+	NODE N;
+	CONTRAST *C;
+
+//	return;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+
+		if(N->Tip == TRUE)
+		{
+			C = N->ConData->Contrast[0];
+			if(TaxaHasCrossProduct(C, NoRSites, TotalSites) == TRUE)
+				C->Data[1] = 0;
+			else
+				C->Data[1] = DataToZScore(N->Taxa->ConData[1], Trees->PMean[1], Trees->PSD[1]);
+		}
+	}
+}
+
 void		MapDummyCodes(TREES *Trees, RATES *Rates)
 {
 	RJDUMMY		*RJDummy;
+	DUMMYCODE	*DC;
 	int			Index, Pos;
+	TREE		*Tree;
 	
 	RJDummy = Rates->RJDummy;
 
@@ -440,9 +509,19 @@ void		MapDummyCodes(TREES *Trees, RATES *Rates)
 	Pos = Trees->NoOfSites;
 	for(Index=0;Index<RJDummy->NoDummyCode;Index++)
 	{		
-		SetDummyCodeNode(Trees->NoOfSites, RJDummy->DummyList[Index]->Node, Pos);
-		Pos++;
+		DC = RJDummy->DummyList[Index];
+
+		SetDummyCodeNode(Trees->NoOfSites, DC, DC->Node, Pos);
+	
+		if(DC->Type == RJDUMMY_INTER_SLOPE)
+			Pos += 2;
+		else
+			Pos++;
 	}
+
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	ZeroImpliedDummyCode(Trees, Tree, Trees->NoOfSites, Rates->Contrast->NoSites);
 }
 
 
@@ -490,8 +569,8 @@ void	PrintRJDummy(int Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	RJDUMMY		*RJDummy;
 	DUMMYCODE	*DC;
-
-	int			Index;
+	int			Index, X;
+	NODE		N;
 	
 	RJDummy = Rates->RJDummy;
 
@@ -500,12 +579,42 @@ void	PrintRJDummy(int Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	for(Index=0;Index<RJDummy->NoDummyCode;Index++)
 	{
 		DC = RJDummy->DummyList[Index];
-		fprintf(Opt->RJDummyLog, "%f\t", Rates->Contrast->RegBeta[Index + (Trees->NoOfSites-1)]);
+
+		if(DC->Type == RJDUMMY_INTER)
+		{
+			fprintf(Opt->RJDummyLog, "Intercept\t");
+			fprintf(Opt->RJDummyLog, "%f\t", DC->Beta[0]);
+		}
+		else
+		{
+			fprintf(Opt->RJDummyLog, "Intercept+Slope\t");
+			fprintf(Opt->RJDummyLog, "%f,", DC->Beta[0]);
+			fprintf(Opt->RJDummyLog, "%f\t", DC->Beta[1]);
+		}
+		
+		fprintf(Opt->RJDummyLog, "%d\t", DC->Iteration);
+		
 		fprintf(Opt->RJDummyLog, "%d\t", DC->Node->Part->NoTaxa);
 		PrintRJDummyTaxaList(Opt->RJDummyLog, Trees, DC);
 	}
 
 	fprintf(Opt->RJDummyLog, "\n");
+
+	for(Index=0;Index<RJDummy->NoDummyCode;Index++)
+	{
+		DC = RJDummy->DummyList[Index];
+		fprintf(Opt->RJDummyLog, "#FF0000\tNoName\t1\t");
+		N = DC->Node;
+		for(X=0;X<N->Part->NoTaxa;X++)
+		{
+			fprintf(Opt->RJDummyLog, "%s\t", Trees->Taxa[N->Part->Taxa[X]]->Name);
+		}
+
+		fprintf(Opt->RJDummyLog, "\n");
+	}
+
+
+	fflush(Opt->RJDummyLog);
 }
 
 void	RJDummyChange(OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -523,12 +632,14 @@ void	RJDummyChange(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	Dev = Opt->RJDummyBetaDev;
 
-	DC->Beta[0] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
+	if((DC->Type == RJDUMMY_INTER_SLOPE) && (RandDouble(Rates->RS) < 0.5))
+		DC->Beta[1] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
+	else
+		DC->Beta[0] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
 }
 
 void	TestDummyCodeSig(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	int		Index;
 	RJDUMMY	*RJDummy;
 	double	Lh;
 

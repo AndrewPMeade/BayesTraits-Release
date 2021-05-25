@@ -96,7 +96,10 @@ void	AllocContrast(NODE N, TREES *Trees, int NoSites)
 			Ret->Data[SIndex]		= -1;
 
 			if(N->Tip == TRUE)
-				Ret->Data[SIndex] = N->Taxa->ConData[SIndex];
+			{
+				if(SIndex < Trees->NoOfSites)
+					Ret->Data[SIndex] = N->Taxa->ConData[SIndex];
+			}
 			
 			Ret->v[SIndex]			= 0;
 			if(N->Tip == TRUE)
@@ -928,7 +931,7 @@ double CalcContLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	Tree = Trees->Tree[Rates->TreeNo];
 
 	NoSites = ConRates->NoSites;
-
+	
 	AlphaErr = 0;
 	if(Opt->Analsis == ANALMCMC)
 		AlphaErr = CalcAlphaErr(Tree->Root, Rates->Contrast->Alpha, ConRates->SigmaMat, NoSites);
@@ -1575,6 +1578,9 @@ void FreeContrastRates(RATES *Rates)
 	if(CR->Alpha != NULL)
 		free(CR->Alpha);
 
+	if(CR->Sigma != NULL)
+		free(CR->Sigma);
+	
 	if(CR->SigmaMat != NULL)
 		FreeMatrix(CR->SigmaMat);
 
@@ -1589,6 +1595,7 @@ void FreeContrastRates(RATES *Rates)
 
 	if(CR->SigmaInvVec != NULL)
 		free(CR->SigmaInvVec);
+
 
 	free(CR);
 }

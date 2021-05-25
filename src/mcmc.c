@@ -369,6 +369,31 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 	}
 }
 
+
+void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int Index;
+	double Lh, X;
+
+	TestDummyCodeSig(Opt, Trees, Rates);
+	exit(0);
+
+	Lh = Likelihood(Rates, Trees, Opt);
+	printf("Lh:\t%f\n", Lh);
+
+	for(X=-1;X<2;X += 0.0001)
+	{
+		Rates->Rates[0] = X;
+		Lh = Likelihood(Rates, Trees, Opt);
+		printf("%f\t%f\n", X, Lh);
+	}
+
+	exit(0);
+}
+
+
+
+
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
 #else
@@ -476,6 +501,15 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 	StartT = GetSeconds();	
 	for(Itters=1;;Itters++)
 	{ 
+
+		if(Itters == 96000)
+		{
+//			TestArea(Opt, Trees, CRates);
+		}
+
+
+
+
  		CopyRates(NRates, CRates, Opt);
 		MutateRates(Opt, NRates, Shed, Itters);
 
