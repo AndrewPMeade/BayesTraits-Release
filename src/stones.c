@@ -48,6 +48,8 @@ double	GetStoneHeat(STONES *Stones, long long Itter, double Heat)
 
 int		StonesStarted(STONES *Stones, long long Itter)
 {
+	
+
 	if(Stones == NULL)
 		return FALSE;
 

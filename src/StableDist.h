@@ -21,4 +21,4 @@ void		SetStableDist(STABLEDIST* SD, double Alpha, double Scale);
 double		StableDistPDF(STABLEDIST* SD, double x);
 double		StableDistTPDF(STABLEDIST* SD, double x, double t);
 
-#endif STABLEDIST_H
+#endif

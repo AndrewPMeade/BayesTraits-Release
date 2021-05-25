@@ -177,11 +177,48 @@ void	FreePlasty(PLASTY* Plasty)
 	free(Plasty);
 }
 
+
+void	ScaledGammaTest(RANDSTATES *RS)
+{
+	double C, N;
+	double pC, pN, Heat;
+	int Index;
+
+	C = 1;
+	for(Index=0;Index<10000000;Index++)
+	{
+			
+		do
+		{
+			N = C;
+			N += (RandDouble(RS) * 0.5) - 0.25;
+//			N = C + (RandDouble(RS) - 0.5);
+		} while(N < 0);
+
+		pC = log(PPSGammaPDF(C, PPALPHA, PPBETA));
+		pN = log(PPSGammaPDF(N, PPALPHA, PPBETA));
+
+		Heat = pN - pC;
+
+		if(log(RandDouble(RS)) <= Heat)
+		{
+			C = N;
+			pC = pN;
+		}
+		
+		if(Index % 100 == 0)
+			printf("%d\t%f\t%f\n", Index, pC, C);
+	}
+
+	exit(0);
+
+}
+
 void	ScaleTest()
 {
 	double x;
 
-	for(x=0.0001;x<100;x+=0.01)
+	for(x=0.0000001;x<20;x+=0.0001)
 		printf("%f\t%f\n", x, log(PPSGammaPDF(x, PPALPHA, PPBETA)));
 	exit(0);
 }
@@ -192,6 +229,7 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, long long It)
 	PLASTY		*Plasty;
 	
 //	ScaleTest();
+//	ScaledGammaTest(Rates->RS);
 
 	Plasty = Rates->Plasty;
 
@@ -404,7 +442,7 @@ void	PPAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, long long It)
 	PLASTY *	Plasty;
 	int			PNodeID;
 	NODE		N;
-
+	
 	Plasty = Rates->Plasty;
 
 	do
@@ -667,7 +705,7 @@ void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 	P = Rates->Plasty;
 	T = Trees->Tree[Rates->TreeNo];
 
-	Plasty(Opt, Trees, Rates, NORM_TRANSFORMS);
+	Plasty(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
 	fprintf(Opt->PPTree, "\tTree T_%010ll_%d = (", It, P->NoNodes);
 

@@ -540,7 +540,7 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				UpDateShedAcc(FALSE, Shed);
 
 			if( (Itters % Opt->Sample==0) && 
-				(BurntIn == TRUE) && 
+				(BurntIn == TRUE) &&
 				(StonesStarted(Opt->Stones, Itters) == FALSE))
 			{
 				UpDateHMean(Opt, CRates);

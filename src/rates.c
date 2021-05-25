@@ -23,6 +23,7 @@
 #include "modelfile.h"
 #include "SimData.h"
 #include "RJDummy.h"
+#include "ContrastRegOutput.h"
 
 //double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 //void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -820,7 +821,7 @@ void	PrintConRegVarCoVarHeadder(FILE* Str, int NoOfSites)
 	fprintf(Str, "s.e. Alpha\t");
 
 	for(x=1;x<NoOfSites;x++)
-		fprintf(Str, "s.e. Beta-%d\t", x+1);
+		fprintf(Str, "s.e. Beta-%d\t", x);
 	
 /*
 	for(x=0;x<NoOfSites;x++)
@@ -1103,6 +1104,13 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		fprintf(Str, "Alpha\t");
 		for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
 			fprintf(Str, "Beta %d\t", Index);
+
+		fprintf(Str, "Var\t");
+		fprintf(Str, "R^2\t");
+
+		fprintf(Str, "s.e. Alpha\t");
+		for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
+			fprintf(Str, "s.e. Beta-%d\t", Index);
 	}
 
 	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_RR))
@@ -1125,7 +1133,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 		for(Index=1;Index<Opt->NoOfRates;Index++)
 		{
-			fprintf(Str, "Beta %d\t", Index+1);
+			fprintf(Str, "Beta %d\t", Index);
 		}
 
 		fprintf(Str, "Var\t");
@@ -1476,7 +1484,6 @@ void FindRSquared(RATES* Rates, OPTIONS *Opt, double *R2, double *SSE, double *S
 		YP[Index] -= MeanYP;
 	}
 
-
 	VectByMatrixMult(Y, Tree->ConVars->InvV, TempV);
 	T = VectByVectMult(YP, TempV, Trees->NoOfTaxa);
 	T = T * T;
@@ -1555,13 +1562,6 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 	}
 }
 
-void	PrintRegSE(RATES* Rates, OPTIONS *Opt)
-{
- //	return;
-	PrintContrast(Rates, Opt->Trees);
-	exit(0);
-}
-
 void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
 	int		Index;
@@ -1611,6 +1611,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 				fprintf(Str, "%0.12f\t", CalcR(Rates->Contrast->SigmaMat->me[x][y], Rates->Contrast->SigmaMat->me[x][x], Rates->Contrast->SigmaMat->me[y][y]));
 			//	fprintf(Str, "%0.12f\t", Rates->Contrast->SigmaMat->me[x][y]);
 		}
+
 	}
 	
 	if(Opt->Model == M_CONTRAST)
@@ -1623,16 +1624,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	}
 
 	if(Opt->Model == M_CONTRAST_REG)
-	{
-		if(Opt->RJDummy == TRUE)
-			fprintf(Str, "%d\t", Rates->RJDummy->NoDummyCode);
-
-		fprintf(Str, "%0.12f\t", Rates->Contrast->RegAlpha);
-		for(Index=0;Index<Trees->NoOfSites-1;Index++)
-			fprintf(Str, "%0.12f\t", Rates->Contrast->RegBeta[Index]);
-		
-	//	PrintRegSE(Rates, Opt);
-	}
+		OutputConReg(Str, Opt, Trees, Rates);
 
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{

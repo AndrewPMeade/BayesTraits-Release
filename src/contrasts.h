@@ -1,7 +1,10 @@
-#ifndef CONTRASTS
-#define CONTRASTS
+#ifndef CONTRASTS_H
+#define CONTRASTS_H
 
 #include "typedef.h"
+
+REG_BETA_SPACE*	InitRegBetaSpace(int NoSites, int NoCont);
+void			FreeRegBetaSpace(REG_BETA_SPACE* RSpace);
 
 void		InitContrastAll(OPTIONS *Opt, TREES* Trees);
 void		InitContrastTree(OPTIONS *Opt, TREES* Trees, int TNo, int NoSites);
@@ -29,4 +32,6 @@ void		NormaliseReg(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 double		DataToZScore(double X, double Mean, double SD);
 
 void		PrintContrast(RATES *Rates, TREES *Trees);
+
+
 #endif

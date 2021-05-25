@@ -1603,11 +1603,6 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates, int AlphaZero)
 	MATRIX	*Ret;
 	TEMPCONVAR	*TempCon;
 	int		Err;
-
-	/*	static MATRIX	*XT=NULL;
-	static MATRIX	*X=NULL;
-	static MATRIX	*TempV1;
-	static MATRIX	*TempV2; */
 	TREE	*Tree;
 	CONVAR	*CV;
 	int		Size;
@@ -1624,9 +1619,6 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates, int AlphaZero)
 
 	Ret = AllocMatrix(Size, Size);
 
-	/* Do
-		Sig*Inverse[Transpose[X].InvV.X]
-	*/
 	MatrixMult(TempCon->XT, CV->InvV, TempCon->TempV1);
 	MatrixMult(TempCon->TempV1, TempCon->RVX, TempCon->TempV2);
 

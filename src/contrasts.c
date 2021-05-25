@@ -273,12 +273,12 @@ void	PrintNodeContrast(NODE N, int NoSites)
 	{
 		for(Index=0;Index<NoSites;Index++)
 		{ 
-			printf("%f\t", ConData->Contrast[CIndex]->Data[Index]); 
-			printf("%f\t", ConData->Contrast[CIndex]->Cont[Index]);
-			printf("%f\t", ConData->Contrast[CIndex]->Var[Index]);
-			printf("%f\t", ConData->Contrast[CIndex]->Err[Index]);
+			printf("%12.12f\t", ConData->Contrast[CIndex]->Data[Index]); 
+			printf("%12.12f\t", ConData->Contrast[CIndex]->Cont[Index]);
+			printf("%12.12f\t", ConData->Contrast[CIndex]->Var[Index]);
+			printf("%12.12f\t", ConData->Contrast[CIndex]->Err[Index]);
 
-			printf("%f\t", ConData->Contrast[CIndex]->v[Index]);
+			printf("%12.12f\t", ConData->Contrast[CIndex]->v[Index]);
 
 			printf("\t");
 		}
@@ -1178,9 +1178,11 @@ double	CalcRegLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, double Alpha, double 
 	SumLogVar += log(T->Root->ConData->Contrast[0]->Err[0]);
 
 	T1 = GlobalVar;
+
 	
 	GlobalVar = GlobalVar / (T->NoContrast+1);
-	
+	ConRates->GlobalVar = GlobalVar;
+
 	Ret = (T->NoContrast+1) * log(6.28318530717958647692528676655900576839 * GlobalVar);
 	Ret += SumLogVar + (T1 / GlobalVar);
 	
@@ -1237,7 +1239,6 @@ void	SetRegUxMatrix(TREE *Tree, MATRIX *Ux, int NoSites)
 			}
 		}
 	}
-	return ;
 }
 
 /*		Caulate the ML Beta Values using.
@@ -1256,15 +1257,14 @@ void	CaclRegBeta(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	
 	BSpace = Rates->Contrast->RegSapce;
 
-
 	SetRegUxMatrix(Tree, BSpace->Ux, Trees->NoOfSites);
 
 	Transpose(BSpace->Ux, BSpace->TUx);
 
 	MatrixMult(BSpace->TUx, BSpace->Ux, BSpace->Prod1);
-
+	
 	SetRegUyMatrix(Tree, BSpace->Uy);
-
+	
 //	Mathematica Code
 //	PrintMathematicaMatrix(BSpace->Ux, "Ux=", stdout);
 //	PrintMathematicaMatrix(BSpace->Uy, "Uy=", stdout);
@@ -1409,10 +1409,10 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		ReSetBranchLength(Trees->Tree[Rates->TreeNo]);
 	
 		Rates->OU = 0;
-		TransformContrastTree(Opt, Trees, Rates, NORM_TRANSFORMS);
+		TransformContrastTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
 		if(Opt->UseVarRates == TRUE)
-			Plasty(Opt, Trees, Rates, NORM_TRANSFORMS);
+			Plasty(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 		
 	//	SaveTrees("DTest.trees", Trees); exit(0);
 	}
@@ -1425,9 +1425,7 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 #else
 	CalcContrast(Trees, Rates);	
 #endif	
-
-	PrintContrast(Rates, Trees);exit(0);
-
+	
 	if(Opt->Model == M_CONTRAST)
 		Rates->Lh = CaclStdContrastLh(Opt, Trees, Rates);
 
@@ -1532,15 +1530,10 @@ int			GetMaxNoContrasts(TREES *Trees)
 	return Ret;
 }
 
-REG_BETA_SPACE*	InitRegBetaSpace(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConRates)
+REG_BETA_SPACE*	InitRegBetaSpace(int NoSites, int NoCont)
 {
 	REG_BETA_SPACE* Ret;
-	int NoCont, NoSites;
-
-	NoSites = Opt->Trees->NoOfSites-1;
-
-	NoCont = GetMaxNoContrasts(Opt->Trees);
-
+	
 	Ret = (REG_BETA_SPACE*)malloc(sizeof(REG_BETA_SPACE));
 	if(Ret == NULL)
 		MallocErr();
@@ -1583,6 +1576,7 @@ void		FreeRegBetaSpace(REG_BETA_SPACE* RSpace)
 void		InitRegContrastRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConRates)
 {
 	int NoSites;
+	int	NoContrasts;
 
 	NoSites = GetNoContrastSites(Opt, Opt->Trees);
 
@@ -1593,7 +1587,10 @@ void		InitRegContrastRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConRates)
 	if(ConRates->RegBeta == NULL)
 		MallocErr();
 	
-	ConRates->RegSapce = InitRegBetaSpace(Opt, Rates, ConRates);
+
+	NoContrasts = GetMaxNoContrasts(Opt->Trees);
+	
+	ConRates->RegSapce = InitRegBetaSpace(Opt->Trees->NoOfSites-1, NoContrasts);
 
 	if(Opt->Analsis == ANALMCMC)
 	{
@@ -1820,6 +1817,7 @@ void	CopyContrastRatesFull(RATES *R1, RATES* R2, CONTRASTR *C1, CONTRASTR *C2, i
 void	CopyContrastRatesReg(RATES *R1, RATES* R2, CONTRASTR *C1, CONTRASTR	*C2, int NoSites)
 {
 	memcpy(C1->RegBeta, C2->RegBeta, sizeof(double) * (NoSites - 1));
+	C1->GlobalVar = C2->GlobalVar;
 }
 
 void	CopyContrastRates(OPTIONS *Opt, RATES* R1, RATES* R2, int NoSites)

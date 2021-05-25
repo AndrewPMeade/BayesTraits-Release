@@ -72,8 +72,7 @@
 // #define RATE_CHANGE_ONE
 
 // Used to test if tree transforms are normalised, so there is no cahnge in tree lenght. 
-#define		NORM_TRANSFORMS		TRUE
-//#define		NORM_TRANSFORMS		FALSE
+#define		NORMALISE_TREE_CON_SCALING FALSE
 
 /* If defined Sigma for "Independent Contrast: Full" usning MCMC is restricted to a value. */
 //#define RES_SIGMA	0.1
@@ -89,6 +88,8 @@
 
 /* Only scale the branch lengths */
 //#define	PPBLO
+
+/*	Modify the prior cost adding a VarRates scalar */
 #define PPPRIORSCALE 1
 
 /* Value of the PP alpha gamma */
@@ -884,6 +885,8 @@ typedef struct
 	double	RegSigma;
 	double	RegAlpha;
 	double	*RegBeta;
+
+	double	GlobalVar;
 
 	int		NoSites;
 
