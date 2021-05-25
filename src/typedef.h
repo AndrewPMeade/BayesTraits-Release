@@ -203,6 +203,8 @@
 #define MIN_VALID_ACC 0.2
 #define MAX_VALID_ACC 0.4
 
+#define MIN_NO_TAXA_RJ_LOCAL_TRANS 10
+
 // 
 static char    *RJ_LOCAL_SCALAR_NAMES[] =
 {

@@ -1315,7 +1315,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->NoPatterns = 0;
 	Ret->PatternList = NULL;
 
-	Ret->MinTransTaxaNo = 10;
+	Ret->MinTransTaxaNo = MIN_NO_TAXA_RJ_LOCAL_TRANS;
 
 	Ret->NormQMat = FALSE;
 
@@ -2401,6 +2401,12 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			return FALSE;
 		}
 
+		if(Command == CFOSSIL)
+		{
+			if(Opt->ModelType == MT_CONTRAST)
+				return FALSE;
+		}
+
 		if(Command == CDISTDATA)
 		{
 			if(Command == MT_CONTINUOUS)
@@ -2428,7 +2434,6 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CHYPERPRIOR)||
 			(Command == CHPRJ)		||
 			(Command == CHPALL)		||
-			(Command == CFOSSIL)	||
 			(Command == CPIS)		||
 			(Command == CPRECISION) ||
 			(Command == CNOSPERSITE)|| 
