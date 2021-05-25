@@ -214,6 +214,8 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
 
+// ./Seq/Lloydcroptyrannonotmt.trees ./Seq/LloydcroptyrannonotmtXYZ.txt < in.txt > sout.txt
+
 int main(int argc, char** argv)
 {
 	TREES*		Trees;

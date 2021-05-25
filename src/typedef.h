@@ -79,9 +79,15 @@
 //#define RES_SIGMA	0.1
 //#define RES_ALPHA	0
 
+
+/* Use uniform or gamma value priors*/
+//#define PPUNIFORM
+#define PPGAMMA
+
 /* Cost of Uniform prior */
 #define PPUNICOST		2.302585093
 #define PPJACOBIAN		1
+
 
 /* Max uniform vlaue */
 #define PPMAXSCALE	10
@@ -99,9 +105,6 @@
 // use ML paramter for indpedent contrast MCMC / Var Rates
 //#define CONTRAST_ML_PARAM
 
-/* Use uniform or gamma value priors*/
-//#define PPUNIFORM
-#define PPGAMMA
 
 // Minimum number of taxa to transform a node. 
 #define MIN_TAXA_VR_TRANS	5
@@ -1115,6 +1118,8 @@ typedef struct
 	int			UseRJLocalScalar[NO_RJ_LOCAL_SCALAR];
 	PRIORS		**RJLocalScalarPriors;
 
+	int			UseGeoData;
+
 } OPTIONS;
 
 typedef struct
@@ -1152,6 +1157,24 @@ typedef struct
 
 typedef struct
 {
+	// Total number of steps to use
+	int			NoSteps;
+
+	// Current number of horistoal slices
+	int			NoSlices;
+
+	// X,Y posititions of slice
+	double		*SliceX;
+	double		*SliceY;
+
+	// start / end paires of 
+	double		*SliceMin;
+	double		*SliceMax;
+
+} SLICESAMPLER;
+
+typedef struct
+{
 	double		*Alpha;
 	double		*Scale;
 
@@ -1163,13 +1186,9 @@ typedef struct
 	double		*SiteMax;
 	double		*SiteSD;
 
-	double		*SliceX;
-	double		*SliceY;
-
-	int			NoSlices;
-	double		*SliceMin;
-	double		*SliceMax;
-
+	SLICESAMPLER*	SliceSampler;
+	
+	int				NoSD;
 	STABLEDIST**	SDList;
 
 } FATTAILRATES;

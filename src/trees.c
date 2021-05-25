@@ -2453,8 +2453,6 @@ void	RecScaleSubTree(NODE N, double Scale)
 
 void	ScaleSubTree(NODE N, double Scale)
 {
-	int Index;
-
 	if(N->Tip == TRUE)
 	{
 		printf("Sub Tree can only scale internal nodes.\n");

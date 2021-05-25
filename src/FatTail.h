@@ -8,8 +8,11 @@
 void			InitFatTailTrees(OPTIONS *Opt, TREES *Trees);
 void			FreeFatTailTrees(OPTIONS *Opt, TREES *Trees);
 
-void			MapRatesToFatTailRate(int NoSites, RATES *Rates, FATTAILRATES *FatTailRates);
-void			MapFatTailRateToRates(int NoSites, RATES *Rates, FATTAILRATES *FatTailRates);
+void			MapRatesToFatTailRate(RATES *Rates, FATTAILRATES *FatTailRates);
+void			MapFatTailRateToRates(RATES *Rates, FATTAILRATES *FatTailRates);
+
+void			FatTailSetAnsSates(TREE *Tree, int NoSites, FATTAILRATES *FTR);
+void 			FatTailGetAnsSates(TREE *Tree, int NoSites, FATTAILRATES *FTR);
 
 FATTAILRATES*	CreateFatTailRates(OPTIONS *Opt, TREES *Trees);
 void			FreeFatTailRates(FATTAILRATES* FTR, int NoSites);

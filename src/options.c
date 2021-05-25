@@ -537,6 +537,13 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	if(Opt->Stones != NULL)
 		FreeStones(Opt->Stones);
 
+	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
+		if(Opt->RJLocalScalarPriors[Index] != NULL)
+			FreePrior(Opt->RJLocalScalarPriors[Index]);
+
+	if(Opt->RJLocalScalarPriors != NULL)
+		free(Opt->RJLocalScalarPriors);
+
 	free(Opt);
 }
 
@@ -1178,6 +1185,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->RJDummyBetaDev =	0.1;
 
 	Ret->ScaleTrees		=	-1;
+
+	Ret->UseGeoData		=	TRUE;
 
 	Ret->RJLocalScalarPriors = (PRIORS**)malloc(sizeof(PRIORS*) * NO_RJ_LOCAL_SCALAR);
 	if(Ret->RJLocalScalarPriors == NULL)

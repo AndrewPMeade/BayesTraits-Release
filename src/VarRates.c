@@ -305,6 +305,36 @@ void	SetVRScalar(OPTIONS *Opt, RATES *Rates, PLASTYNODE *PNode)
 //	PNode->Scale = 0;
 }
 
+int		CountPlasyID(long long ID, PLASTY *Plasty)
+{
+	int Ret, Index;
+
+	Ret = 0;
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+		if(Plasty->NodeList[Index]->Node->ID == ID)
+			Ret++;
+
+	return Ret;
+}
+
+void	CheckPlasyNodes(PLASTY *Plasty)
+{
+	int No, Index;
+	
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+	{
+		No = CountPlasyID(Plasty->NodeList[Index]->Node->ID, Plasty);
+		if(No != 1)
+		{
+			printf("Multiple hits of the same node.\n");
+			exit(0);
+		}
+
+		printf("%d\n", No);
+	}
+
+}
+
 void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed, NODE N, long long It)
 {
 	PLASTYNODE	*PNode;
@@ -540,6 +570,8 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	No = RandUSLong(Rates->RS) % Plasty->NoTempList;
 	PNode->Node = Plasty->TempList[No];
 
+//	CheckPlasyNodes(Plasty);
+
 	return;
 }
 
@@ -588,7 +620,9 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	if(PNodeID == -1)
 		VarRatesAddNode(Rates, Trees, Opt, Shed, N, It);
 	else
-		VarRatesDelNode(Rates, Trees, Opt, PNodeID);		
+		VarRatesDelNode(Rates, Trees, Opt, PNodeID);	
+
+//	CheckPlasyNodes(Plasty);
 }
 
 
@@ -769,7 +803,7 @@ void	RecPrintPPNodes(FILE *Out, NODE N)
 
 }
 
-
+/*
 void	PPLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE	*T;
@@ -786,9 +820,58 @@ void	PPLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		fprintf(Opt->PPLog, "%d\t%s\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
 
 	fprintf(Opt->PPLog, "%d\n", P->NoValidNode);
+
 	for(Index=0;Index<P->NoValidNode;Index++)
 	{
 		N = P->ValidNode[Index];
+		No = 0;
+		CTaxaBelow(N, &No);
+		fprintf(Opt->PPLog, "%d\t%f\t%d\t", N->ID, N->Length, No);
+		RecPrintPPNodes(Opt->PPLog, N);
+		fprintf(Opt->PPLog, "\n");
+	}
+
+	fprintf(Opt->PPLog, "It\tLh\tLh + Prior\tNo Pram\tAlpha\tSigma^2\tAlpha Scale Prior\t");
+	fprintf(Opt->PPLog, "Node ID\tScale\tCreat It\tNode / Branch\t");
+
+	fprintf(Opt->PPLog, "\n");
+
+	fflush(Opt->PPLog);
+}
+*/
+
+void	PPLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	TREE	*T;
+	int		Index;
+	NODE	N;
+	PLASTY	*P;
+	int		No;
+
+	T = Trees->Tree[0];
+	P = Rates->Plasty;
+
+	fprintf(Opt->PPLog, "%d\n", Trees->NoOfTaxa);
+	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+		fprintf(Opt->PPLog, "%d\t%s\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
+/*
+	fprintf(Opt->PPLog, "%d\n", P->NoValidNode);
+	for(Index=0;Index<P->NoValidNode;Index++)
+	{
+		N = P->ValidNode[Index];
+		No = 0;
+		CTaxaBelow(N, &No);
+		fprintf(Opt->PPLog, "%d\t%f\t%d\t", N->ID, N->Length, No);
+		RecPrintPPNodes(Opt->PPLog, N);
+		fprintf(Opt->PPLog, "\n");
+	}
+	*/
+
+	fprintf(Opt->PPLog, "%d\n", T->NoNodes);
+	for(Index=0;Index<T->NoNodes;Index++)
+	{
+	//	N = P->ValidNode[Index];
+		N = T->NodeList[Index];
 		No = 0;
 		CTaxaBelow(N, &No);
 		fprintf(Opt->PPLog, "%d\t%f\t%d\t", N->ID, N->Length, No);
@@ -927,6 +1010,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 	double		Sigma;
 
 	P = Rates->Plasty;
+//	CheckPlasyNodes(P);
 
 	Out = Opt->PPLog;
 
@@ -949,6 +1033,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 		fprintf(Out, "%f\t-1\t%f\t", Rates->Contrast->RegAlpha, P->Alpha);
 	}
 	
+	fprintf(Out, "\n");
 	for(Index=0;Index<P->NoNodes;Index++)
 	{
 		PNode = P->NodeList[Index];
@@ -959,10 +1044,10 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 		fprintf(Out, "%d\t", PNode->NodeID);
 
 		OutputVarRatesType(Out, PNode->Type);
-
+		fprintf(Out, "\n");
 	}
 	fprintf(Out, "\n");
-
+	exit(0);
 	fflush(Out);
 }	
 

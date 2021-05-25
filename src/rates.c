@@ -25,6 +25,7 @@
 #include "RJDummy.h"
 #include "ContrastRegOutput.h"
 #include "FatTail.h"
+#include "Geo.h"
 
 //double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 //void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -67,7 +68,11 @@ int		FindNoConRates(OPTIONS *Opt)
 		break;
 
 		case M_FATTAIL:
-			return Opt->Trees->NoOfSites * 2;
+
+			if(Opt->UseGeoData == FALSE)
+				return Opt->Trees->NoOfSites * 2;
+			else
+				return 2;
 		break;
 
 	}
@@ -138,7 +143,7 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->Model == M_FATTAIL)
 	{
-		MapRatesToFatTailRate(NoSites, Rates, Rates->FatTailRates);
+		MapRatesToFatTailRate(Rates, Rates->FatTailRates);
 		return;
 	}
 
@@ -525,7 +530,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	if(Opt->Model == M_FATTAIL)
 	{
 		Rates->FatTailRates = CreateFatTailRates(Opt, Trees);
-		MapFatTailRateToRates(Trees->NoOfSites, Rates, Rates->FatTailRates);
+		MapFatTailRateToRates(Rates, Rates->FatTailRates);
 	}
 }
 
@@ -684,8 +689,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->GammaCats		= 1;
 	Ret->GammaMults		= NULL;
 	Ret->LastGamma		= -1;
-	
-	
+
 	Ret->Lh				= 0;
 
 	InitHMean(Ret, Opt);
@@ -1195,8 +1199,13 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 	if(Opt->Model == M_FATTAIL)
 	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			fprintf(Str, "Alpha %d\tScale %d\t", Index+1, Index+1);
+		if(Opt->UseGeoData == TRUE)
+			fprintf(Str, "Alpha\tScale\t");
+		else
+		{
+			for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+				fprintf(Str, "Alpha %d\tScale %d\t", Index+1, Index+1);
+		}
 	}
 
 
@@ -1690,8 +1699,13 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->Model == M_FATTAIL)
 	{
-		for(Index=0;Index<Trees->NoOfSites;Index++)
-			fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[Index], Rates->FatTailRates->Scale[Index]);
+		if(Opt->UseGeoData == TRUE)
+			fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[0], Rates->FatTailRates->Scale[0]);
+		else
+		{
+			for(Index=0;Index<Trees->NoOfSites;Index++)
+				fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[Index], Rates->FatTailRates->Scale[Index]);
+		}
 	}
 
 	if(Opt->UseVarData == TRUE)
@@ -2776,8 +2790,15 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case SFATTAILANS:
-		//	SliceSampleFatTail(Opt, Opt->Trees, Rates);
-			AllSliceSampleFatTail(Opt, Opt->Trees, Rates);
+
+			if(Opt->UseGeoData == FALSE)
+			{
+			//	SliceSampleFatTail(Opt, Opt->Trees, Rates);
+				AllSliceSampleFatTail(Opt, Opt->Trees, Rates);
+			}
+			else
+				GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
+			
 		break;
 
 	}
