@@ -217,9 +217,14 @@ int		EstData(TREES *Trees)
 	{
 		Taxa  = &Trees->Taxa[TIndex];
 
+		if(Taxa->EstDepData == TRUE)
+			return TRUE;
+
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+		{
 			if(Taxa->EstDataP[SIndex] == TRUE)
 				return TRUE;
+		}
 	}
 
 	return FALSE;

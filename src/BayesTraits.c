@@ -80,6 +80,9 @@ int main(int argc, char** argv)
 
 #else
 
+// Full optermisation
+//	cl /Ox /Oi /Ob2 /Ot /Oy /GL /w *.c ./MathLib/*.c
+
 int main(int argc, char** argv)
 {
 	TREES*		Trees=NULL;
@@ -88,18 +91,6 @@ int main(int argc, char** argv)
 	char		B[1024];
 
 	SetSeed();
-/*
-	argv[1] = "./Seq/Mammal-ArtPrim.trees";
-	argv[2] = "./Seq/Mammal-ArtPrim.txt";
-
-	argc = 3; */
-//	for(Index=0;Index<argc;Index++)
-//		printf("%d\t%s\n", Index, argv[Index]);
-//	
-//	printf("No args %d\n", argc);
-	
-//	fgets(&B[0], 1024, stdin);
-//	exit(0);
 
 	if(argc != 3)
 	{

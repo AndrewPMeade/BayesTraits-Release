@@ -36,6 +36,9 @@ void	InitEstData(OPTIONS *Opt, TREES *Trees)
 	{
 		Taxa = &Trees->Taxa[TIndex];
 
+		if(Taxa->No == 76)
+			printf("Print\t%s\t%d\n", Taxa->Name, Taxa->No);
+
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 		{
 			if(Taxa->EstDataP[SIndex] == TRUE)

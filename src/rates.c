@@ -285,32 +285,6 @@ void	SetPiValues(RATES *Rates, OPTIONS *Opt)
 	FindEmpPis(Rates, Opt);
 }
 
-void			SetPhyloPlastyRates(PHYLOPLASTY *PhyloPlasty)
-{
-	int Index;
-
-	PhyloPlasty->Rates = (double*)malloc(sizeof(double) * 100);
-	if(PhyloPlasty->Rates == NULL)
-		MallocErr();
-
-	for(Index=0;Index<100;Index++)
-		PhyloPlasty->Rates[Index] = (double)(Index + 1) * 0.1;
-
-	PhyloPlasty->NoRates = 100;
-}
-
-int				FindOneRate(PHYLOPLASTY *PhyloPlasty)
-{
-	int Index;
-
-	for(Index=0;Index<PhyloPlasty->NoRates;Index++)
-		if(PhyloPlasty->Rates[Index] == 1)
-			return Index;
-
-	return -1;
-}
-
-
 
 void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 {
@@ -1097,21 +1071,6 @@ void	PrintRegVarCoVar(FILE* Str, RATES *Rates, OPTIONS *Opt)
 	FreeMatrix(Var);
 }
 
-int		NoUsePhyloPlasty(RATES* Rates)
-{
-	PHYLOPLASTY	*PP;
-	int	Index;
-	int Ret;
-
-	PP = Rates->PhyloPlasty;
-
-	Ret = 0;
-	for(Index=0;Index<PP->NoRates;Index++)
-		if(PP->Rates[Index] != 1)
-			Ret++;
-
-	return Ret;
-}
 
 void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
@@ -1214,7 +1173,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		fprintf(Str, "%f\t", Rates->EstData[Index]);
 
 	if(Opt->UsePhyloPlasty == TRUE)
-		fprintf(Str, "%d\t", NoUsePhyloPlasty(Rates));
+		fprintf(Str, "%d\t", Rates->PhyloPlasty->NoNodes);
 }
 
 void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OPTIONS *Opt)
@@ -1417,12 +1376,6 @@ void	CopyRJRtaes(RATES *A, RATES *B, OPTIONS *Opt)
 }
 
 
-void	CopyPhyloPlasty(PHYLOPLASTY *A, PHYLOPLASTY *B)
-{
-	memcpy(A->Rates, B->Rates, sizeof(double) * A->NoRates);
-
-	A->NoDiffRates = B->NoDiffRates;
-}
 
 void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 {

@@ -16,6 +16,7 @@
 #include "data.h"
 #include "gamma.h"
 #include "ml.h"
+#include "phyloplasty.h"
 
 #ifdef	 JNIRUN
 //	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
@@ -177,7 +178,7 @@ double	CalcPhyloPlastyCost(RATES *NRates, RATES *CRates)
 	NPP = NRates->PhyloPlasty;
 	CPP = CRates->PhyloPlasty;
 
-	return (NPP->NoDiffRates * Cost) - (CPP->NoDiffRates * Cost);
+	return (NPP->NoNodes * Cost) - (CPP->NoNodes * Cost);
 }
 
 void	FindNoBL(OPTIONS *Opt, TREES *Trees, RATES *CRates)
@@ -185,7 +186,38 @@ void	FindNoBL(OPTIONS *Opt, TREES *Trees, RATES *CRates)
 	int Index;
 	double Heat;
 
+	/* For Mamals */
+	CRates->Rates[0] = 3.720719;
 
+	/* For lizards */
+	CRates->Rates[0] = 1.756726;
+
+	for(Heat=0;Heat<10;Heat+=0.1)
+		printf("%f\t", Heat);
+	printf("\n");
+
+	for(Index=1;Index<Trees->NoOfNodes;Index++)
+	{
+		AddPPNode(CRates, &Trees->Tree[0].NodeList[Index], 0);
+		
+		printf("%d\t", Index);
+		for(Heat=0;Heat<10;Heat+=0.1)
+		{			
+			if(Heat == 0)
+				CRates->PhyloPlasty->NodeList[0]->Scale = 0.001;
+			else
+				CRates->PhyloPlasty->NodeList[0]->Scale = Heat;
+			CRates->Lh	=	Likelihood(CRates, Trees, Opt);
+			printf("%f\t", CRates->Lh);
+		}
+
+		printf("\n");
+		fflush(stdout);
+		BlankPP(CRates->PhyloPlasty);
+	}
+	exit(0);
+
+/*
 	CRates->Rates[0] = 3.720719;
 	CRates->PhyloPlasty->NoDiffRates = 1;
 //	CRates->PhyloPlasty->Rates[4] 
@@ -202,12 +234,11 @@ void	FindNoBL(OPTIONS *Opt, TREES *Trees, RATES *CRates)
 			CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 			printf("%f\t", CRates->Lh);
 		}
-		printf("\n");
+		printf("\n";)
 		CRates->PhyloPlasty->Rates[Index] = 1;
 		fflush(stdout);
 	}
-	exit(0);
-
+*/
 	exit(0);
 }
 
@@ -280,7 +311,7 @@ void	FindNoBL(OPTIONS *Opt, TREES *Trees, RATES *CRates)
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
 
-	FindNoBL(Opt, Trees, CRates); 
+/*	FindNoBL(Opt, Trees, CRates);  */
 
 
 	for(Itters=0;;Itters++)
@@ -296,6 +327,12 @@ void	FindNoBL(OPTIONS *Opt, TREES *Trees, RATES *CRates)
 		Heat = NRates->Lh - CRates->Lh;
 		CalcPriors(NRates, Opt);
 		
+	/*	if(Shed->Op == SESTDATA)
+		{
+			printf("%f\t%f\n", CRates->Lh, NRates->Lh);
+			fflush(stdout);
+		}
+*/
 		Heat += NRates->LhPrior - CRates->LhPrior;
 		
 		if(Opt->UsePhyloPlasty == TRUE)

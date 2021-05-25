@@ -546,12 +546,23 @@ typedef struct
 
 typedef struct
 {
+	NODE	Node;
+	int		NoTaxa;
+	double	Scale;
+} PPSCALENODE;
+
+typedef struct
+{
 	double		*RealBL;
-	double		*Rates;
+	int			NoBL;
+
+	PPSCALENODE**	NodeList;
+	int			NoNodes;
+/*	double		*Rates;
 	int			NoRates;
 	int			NoDiffRates;
 
-	int			InvV;
+	int			InvV; */
 } PHYLOPLASTY;
 
 typedef struct
