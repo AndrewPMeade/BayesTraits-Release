@@ -18,13 +18,11 @@
 #include "continuous.h"
 #include "initialise.h"
 
-#include "./MathLib/dcalc.h"
-#include "./MathLib/mconf.h"
+#include "mathlib.h"
+//#include "./MathLib/mconf.h"
 
 extern void BayesModeTest(OPTIONS *Opt, TREES *Trees);
 extern void PMatrixTest(void);
-
-
 /*
 	./Seq/AllDiono.trees ./Seq/AllDiono.txt < in.txt
 	./Seq/allnodes.nex.tre ./Seq/InputData.txt < in.txt	 > sout.txt

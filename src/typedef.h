@@ -9,31 +9,35 @@
 */
 #ifdef	 JNIRUN
 	#include "jni.h"
-/*	Build 
+/*	Build
 	gcc-4.2 -dynamiclib -lm -O3 -w -o libBayesTraits.jnilib *.c ./MathLib/*.c -static-libgcc
 
 	trying
 	gcc-4.2 -dynamiclib -lm -O3 -w -o libBayesTraits.jnilib *.c ./MathLib/*.c -nodefaultlibs -static-libgcc -lsystem.B -nostatfiles
 
-	find out what dynamic libs are in play. 
+	find out what dynamic libs are in play.
 	otool -L libBayesTraits.jnilib
 
-	its normaly, will have to sort this out.  
+	its normaly, will have to sort this out.
 	/usr/lib/libSystem.B.dylib
 */
 #endif
 
+/* If defined Sigma in indep contrast is restricted to a given value */
+#define RES_SIGMA	0.0034
+#define RES_ALPHA	0
+
 /* Cost of Uniform prior */
 #define PPUNICOST		2.302585093
-#define PPJACOBIAN	1
+#define PPJACOBIAN		1
 
 /* Max uniform vlaue */
 #define PPMAXSCALE	10
-//#define	PPSCALEDEV	10
 #define	PPSCALEDEV	100
 
-#define	PPBLO
-#define PPPRIORSCALE 6
+/* Only scale the branch lengths */
+//#define	PPBLO
+#define PPPRIORSCALE 1
 
 /* Value of the PP alpha gamma */
 #define	PPALPHA		1.1
@@ -42,8 +46,8 @@
 #define PPALPHASCLAE 0.1
 
 /* Use uniform or gamma value priors*/
-#define PPUNIFORM
-//#define PPGAMMA
+//#define PPUNIFORM
+#define PPGAMMA
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000
@@ -210,7 +214,7 @@ static char    *COMMANDSTRINGS[] =
 	"solotreemove",	"stree",
 	"setseed",		"ss",
 	"makeum",		"mum",
-	"phyloplasty",	"pp", 
+	"phyloplasty",	"pp",
 	"equaltrees",	"eqt",
 	""
 };
@@ -406,7 +410,7 @@ struct RNODE
 	NODE*		TreeNodes;
 
 	char**		ConData;
-	
+
 	struct		RNODE *Next;
 };
 
@@ -462,7 +466,7 @@ typedef	struct
 
 	NODE		Root;
 
-	
+
 	CONVAR*		ConVars;
 } TREE;
 
@@ -570,7 +574,7 @@ typedef struct
 {
 	int			NoNodes;
 	PLASTYNODE **NodeList;
-	
+
 	int			NoTrees;
 	double		**TrueBL;
 	double		*ScaleBL;
@@ -606,11 +610,11 @@ typedef struct
 	RESTYPES	*ResTypes;
 	int			*ResNo;
 	double		*ResConst;
-	
+
 	double		RateDev;
 	double		*RateDevList;
 
-	
+
 	double		EstDataDev;
 	double		PPScaleDev;
 //	PPSCALEDEV
@@ -820,7 +824,7 @@ static char    *SHEDOP[] =
 	"Var Data",
 	"Solo Tree Move",
 	"PP Add / Remove",
-	"PP Move", 
+	"PP Move",
 	"PP Change Scale",
 	"PP Hyper Prior"
 };

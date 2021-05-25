@@ -195,7 +195,7 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, int It)
 #ifdef PPBLO
 	PNode->Type = PPBRANCH;
 #else
-	if(GenRandState(Rates->RandStates) < 0.1)
+	if(GenRandState(Rates->RandStates) < 0.5)
 		PNode->Type = PPBRANCH;
 	else
 		PNode->Type = PPNODE;
