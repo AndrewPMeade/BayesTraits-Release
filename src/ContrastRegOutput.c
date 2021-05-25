@@ -352,7 +352,7 @@ void	CalcMSE(REG_CON_POST*	RegConPost)
 	{
 		Ret += RegConPost->Residuals[Index] * RegConPost->Residuals[Index];
 	}
-
+		
 	Ret = Ret / (RegConPost->NoContrasts - RegConPost->NoSites);
 
 	RegConPost->MSE = Ret;

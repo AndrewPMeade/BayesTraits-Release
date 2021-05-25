@@ -553,8 +553,15 @@ int		FatTailSetYPosVect(SLICESAMPLER *SS, OPTIONS *Opt, NODE N, int SiteNo, STAB
 
 void	GetSiteMinMax(FATTAILRATES *FTR, int SiteNo, double *Min, double *Max)
 {
-	*Min = FTR->SiteMin[SiteNo] - (FTR->SiteMin[SiteNo] * 0.1);
-	*Max = FTR->SiteMax[SiteNo] + (FTR->SiteMax[SiteNo] * 0.1);
+	if(FTR->SiteMin[SiteNo] > 0)
+		*Min = FTR->SiteMin[SiteNo] - (FTR->SiteMin[SiteNo] * 0.1);
+	else
+		*Min = FTR->SiteMin[SiteNo] + (FTR->SiteMin[SiteNo] * 0.1);
+
+	if(FTR->SiteMax[SiteNo] > 0)
+		*Max = FTR->SiteMax[SiteNo] + (FTR->SiteMax[SiteNo] * 0.1);
+	else
+		*Max = FTR->SiteMax[SiteNo] - (FTR->SiteMax[SiteNo] * 0.1);
 }
 
 
@@ -637,7 +644,7 @@ void	TestMapping(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 void	SSNodeFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates, SLICESAMPLER *SS, RANDSTATES *RS) 
 {
-	int Changed, Valid;
+	int Changed, Valid, Index;
 	double CLh, CAns, NAns, NLh, Min, Max;
 	FATTAILRATES *FTR;
 
@@ -653,7 +660,7 @@ void	SSNodeFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates,
 	SSSetXPosVect(SS, Min, Max); 
 	
 	Valid = FatTailSetYPosVect(SS, Opt, N, SiteNo, FTR->SDList[SiteNo]);
-	
+
 	Changed = FALSE;
 	do
 	{
