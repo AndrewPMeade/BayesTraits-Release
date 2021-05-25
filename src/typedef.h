@@ -119,7 +119,7 @@
 #define ZERORATENO		-1
 
 /* Use to set V to idenity for testing */
-//#define IDMATRIX
+//#define ID_MATRIX
 
 //extern double LhPraxis(LhPraxisdouble *);
 
@@ -228,6 +228,7 @@ typedef enum
 	CSTONES,
 	CADDERR,
 	CSHEDULE, 
+	CRJDUMMY,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -302,6 +303,7 @@ static char    *COMMANDSTRINGS[] =
 	"stones",		"st",
 	"adderr",		"er",
 	"schedule",		"sh", 
+	"rjdummy",		"rjd",
 	""
 };
 
@@ -767,6 +769,10 @@ typedef struct
 	double		NormConst;
 
 	int			JStop;
+
+	double		*PMean;
+	double		*PSD;
+
 #ifdef BTOCL
 	// discrete: SetPMatrix related 
 	cl_mem 		buffer_pmatrix; // MaxNodes*NOS*NOS  write-only NO read/write!
@@ -843,7 +849,8 @@ typedef struct
 	double* Sigma;
 
 	MATRIX_INVERT	*SigmaInvInfo;
-	MATRIX*	SigmaMat;
+	MATRIX			*SigmaMat;
+	double			*SigmaInvVec;
 //	MATRIX*	EstSigma;
 
 //	double*	EstAlpha;
@@ -853,7 +860,8 @@ typedef struct
 	double	RegSigma;
 	double	RegAlpha;
 	double	*RegBeta;
-	
+
+	int		NoSites;
 
 	REG_BETA_SPACE	*RegSapce;
 } CONTRASTR;
@@ -1039,6 +1047,12 @@ typedef struct
 	char		*LoadModelsFN;
 
 	STONES		*Stones;
+
+	int			RJDummy;
+	FILE		*RJDummyLog;
+
+	double		RJDummyBetaDev;
+
 } OPTIONS;
 
 typedef struct
@@ -1056,8 +1070,22 @@ typedef struct
 	int		NoParam;
 	char	*FName;
 	double	**ModelP;
-
 } MODELFILE;
+
+typedef struct
+{
+	NODE	Node;
+	double	*Beta;
+	int		Iteration;
+} DUMMYCODE;
+
+typedef struct
+{
+	DUMMYCODE	**DummyList;
+	int			NoDummyCode;
+	int			NoMaxDummy;
+	double		*DummyBeta;
+} RJDUMMY;
 
 typedef struct
 {
@@ -1144,6 +1172,7 @@ typedef struct
 	PLASTY			*Plasty;
 	CONTRASTR		*Contrast;
 	HETERO			*Hetero;
+	RJDUMMY			*RJDummy;
 } RATES;
 
 typedef struct
@@ -1160,7 +1189,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NOOFOPERATORS	18
+#define NOOFOPERATORS	21
 
 static char    *SHEDOP[] =
 {
@@ -1181,7 +1210,10 @@ static char    *SHEDOP[] =
 	"Change Hetero",
 	"Tree Move",
 	"OU",
-	"Gamma"
+	"Gamma",
+	"RJ Dummy Add / Remove",
+	"RJ Dummy Move Node",
+	"RJ Dummy Change Beta"
 };
 
 typedef enum
@@ -1203,7 +1235,10 @@ typedef enum
 	SHETERO, 
 	STREEMOVE,
 	SOU,
-	SGAMMA
+	SGAMMA,
+	SRJDUMMY, 
+	SRJDUMMYMOVE,
+	SRJDUMMYCHANGEBETA
 } OPERATORS;
 
 typedef struct 
@@ -1247,7 +1282,8 @@ typedef struct
 	AUTOTUNE	*DeltaAT;
 	AUTOTUNE	*LambdaAT;
 	AUTOTUNE	*OUAT;
-	
+
+	AUTOTUNE	*RJDummyBetaAT;
 
 } SCHEDULE;
 

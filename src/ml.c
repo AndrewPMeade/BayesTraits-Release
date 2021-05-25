@@ -339,6 +339,14 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	return;
 }
 
+void	InitML(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double Lh;
+	if(Opt->Model == M_CONTRAST_REG)
+	{
+		NormaliseReg(Opt, Trees, Rates);
+	}
+}
 
 #ifdef	 JNIRUN
 	void	FindML(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
@@ -363,6 +371,8 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	Rates = CreatRates(Opt);
 	
+	InitML(Opt, Trees, Rates);
+
 //	Test(Opt, Trees, Rates);
 	#ifndef JNIRUN
 		PrintOptions(stdout, Opt);

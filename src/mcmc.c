@@ -21,6 +21,9 @@
 #include "schedule.h"
 #include "modelfile.h"
 #include "stones.h"
+#include "RJDummy.h"
+#include "contrasts.h"
+
 
 #ifdef	 JNIRUN
 //	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
@@ -231,6 +234,9 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	Rates->TreeNo = 0;
 
+	if(Opt->Model == M_CONTRAST_REG)
+		NormaliseReg(Opt, Trees, Rates);
+
 	if(Opt->MCMCMLStart == TRUE)
 		MLTree(Opt, Trees, Rates);
 	else
@@ -404,6 +410,9 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 
 	if(Opt->UseVarRates == TRUE)
 		InitPPFiles(Opt, Trees, CRates);
+
+	if(Opt->RJDummy == TRUE)
+		InitRJDummyFile(Opt);
 	
 	#ifndef JNIRUN
 		PrintOptions(stdout, Opt);
@@ -457,7 +466,6 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 	if(Opt->Stones != NULL)
 		StoneF = CreatStoneOuput(Opt);
 
-//	MCMCTest(Opt, Trees, NRates, CRates);
 
 	GBurntIn = BurntIn = FALSE;
 	if(Opt->BurnIn == 0)
@@ -476,7 +484,6 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 
 		NRates->Lh = Likelihood(NRates, Trees, Opt);
 	
-
 		if(NRates->Lh == ERRLH)
 			Itters--;
 		else
@@ -488,7 +495,6 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 			if(Opt->Stones != NULL)
 				Heat = GetStoneHeat(Opt->Stones, Itters, Heat);
 			
-//			printf("LH:\t%f\t%f\t%f\n", Heat, NRates->Lh , CRates->Lh);
 			Heat += NRates->LhPrior - CRates->LhPrior;
 			Heat += NRates->LnHastings;
 
@@ -521,6 +527,9 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 				if(Opt->UseVarRates == TRUE)
 					PrintPPOutput(Opt, Trees, CRates, Itters);
 
+				if(Opt->RJDummy == TRUE)
+					PrintRJDummy(Itters, Opt, Trees, CRates);
+
 				#ifdef JNIRUN
 					fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
 					AddResults(Env, Obj, Opt);
@@ -542,6 +551,8 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 
 			if(ExitMCMC(Opt, Itters) == TRUE)
 			{
+	//			TestDummyCodeSig(Opt, Trees, CRates);
+
 				if( (Opt->UseEqualTrees == FALSE) || 
 					(CRates->TreeNo == Trees->NoOfTrees - 1))
 				{	

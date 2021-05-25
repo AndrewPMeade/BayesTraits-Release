@@ -16,4 +16,6 @@ double		GetAccRate(int Op, SCHEDULE* Shed);
 
 int			FindNoOfAutoCalibRates(OPTIONS *Opt);
 
+void		PrintShed(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str);
+
 #endif

@@ -24,7 +24,7 @@
 #endif
 
 #ifdef BTLAPACK
-#include "btlapack_interface.h"
+	#include "btlapack_interface.h"
 #endif
 
 double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree);
@@ -379,7 +379,7 @@ void	VToTree(TREES *Trees, TREE *Tree)
 
 void	CalcPVarCoVar(TREES* Trees, TREE *Tree)
 {
-	#ifdef IDMATRIX
+	#ifdef ID_MATRIX
 		SetIdentityMatrix(Tree->ConVars->V);
 		return;
 	#endif
@@ -1133,6 +1133,7 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 	// Use sum of least squares, should not be used.
 //	if(SLS == TRUE)
 //		return Ret * (1.0/(Trees->NoOfTaxa - (Trees->NoOfSites+1)));
+
 	Ret = Ret * (1.0/Trees->NoOfTaxa);  
 	
 	return Ret;
@@ -1521,6 +1522,7 @@ void	CalcDelta(MATRIX *V, double Delta)
 		}
 	}
 }
+
 void	CalcLambda(MATRIX *V, double Lambda)
 {
 	int x,y;

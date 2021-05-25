@@ -271,7 +271,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			if(Opt->CapRJRatesNo != -1)
 				fprintf(Str, "Cap RJ Rate Number:              %d\n", Opt->CapRJRatesNo);
 		}
-
+			
 		if(Opt->UseSchedule	== TRUE)
 			fprintf(Str, "Schedule File:                   %s.Schedule.txt\n", Opt->LogFN);
 
@@ -292,6 +292,10 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			}
 		}
 	}
+
+	if(Opt->RJDummy == TRUE)
+		fprintf(Str, "RJDummy Codeing:                 True\n");
+		
 
 	if(Opt->NOSPerSite == TRUE)
 		fprintf(Str, "Fit no of states per Site:       Yes\n");
@@ -364,7 +368,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			fprintf(Str, "Varable Data form file:          %s\n", Opt->VarDataFile);
 	
 		if(Opt->UseVarRates == TRUE)
-			fprintf(Str, "Using PhyloPlasty:               True\n");
+			fprintf(Str, "Using VarRates:                  True\n");
 	}
 	else
 	{
@@ -1099,6 +1103,10 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->LoadModelsFN	=	NULL;
 
 	Ret->Stones			=	NULL;
+	Ret->RJDummy		=	FALSE;
+	Ret->RJDummyLog		=	NULL;
+
+	Ret->RJDummyBetaDev =	0.1;
 
 	free(Buffer);
 	return Ret; 
@@ -2227,12 +2235,13 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 	}
 #endif
 
-
 	if(Opt->DataType == CONTINUOUS)
 	{
 		if((Opt->Model != M_CONTRAST) && (Command == CVARRATES))
 			return FALSE;
-		
+
+		if((Opt->Model != M_CONTRAST_REG) && (Command == CRJDUMMY))
+			return FALSE;
 
 		if(Opt->Model == M_CONTRAST_CORREL)
 		{
@@ -2275,8 +2284,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CNODEDATA)  ||
 			(Command == CDEPSITE)   ||
 			(Command == CDATADEV)	||
-			(Command == CVARRATES)
-	
+			(Command == CRJDUMMY)	||
+			(Command == CVARRATES)	
 			)
 		{
 			printf("Command %s (%s) is not valid with Discrete data\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2310,6 +2319,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CSAVEMODELS)	||
 			(Command == CLOADMODELS)	||
 			(Command == CSHEDULE)		||
+			(Command == CRJDUMMY)		||
 			(Command == CVARRATES)
 			)
 		{
@@ -3117,6 +3127,12 @@ void	SetRateDev(OPTIONS *Opt, int Tokes, char **Passed)
 		return;
 	}
 
+	if(Opt->ModelType == MT_CONTRAST)
+	{
+		printf("RateDev is not valid with independent contrast models.\n");
+		return;
+	}
+
 //	MakeLower(Passed[0]);
 		
 	if(Tokes == 1)
@@ -3280,6 +3296,26 @@ void	SetSteppingstone(OPTIONS *Opt, char **Passed, int Tokes)
 		FreeStones(Opt->Stones);
 
 	Opt->Stones = CratesStones(K,  Sample,  Alpha,  Beta);
+}
+
+void	SetRJDummy(OPTIONS *Opt, char **Passed, int Tokes)
+{
+	if(Opt->Trees->NoOfTrees != 1)
+	{
+		printf("RJ Dummy coding only works on a singel tree.\n");
+		return;
+	}
+
+	if(Opt->Trees->NoOfSites > 2)
+	{
+		printf("RJ Dummy coding does not currently work with multiple regressions.\n");
+		return;
+	}
+
+	if(Opt->RJDummy == TRUE)
+		Opt->RJDummy = FALSE;
+	else
+		Opt->RJDummy = TRUE;
 }
 
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
@@ -3915,6 +3951,11 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 			Opt->UseSchedule = TRUE;
 		else
 			Opt->UseSchedule = FALSE;
+	}
+
+	if(Command == CRJDUMMY)
+	{
+		SetRJDummy(Opt, Passed, Tokes);
 	}
 
 	return FALSE;

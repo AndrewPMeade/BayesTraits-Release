@@ -22,6 +22,7 @@
 #include "schedule.h"
 #include "modelfile.h"
 #include "SimData.h"
+#include "RJDummy.h"
 
 //double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 //void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -135,6 +136,7 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
+		
 		Rates->Means[0] = Rates->Rates[0];
 
 //		memcpy(Rates->Beta, Rates->Rates, sizeof(double) * Rates->NoOfRates);
@@ -667,13 +669,13 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	InitHMean(Ret, Opt);
 
-	Ret->NoEstData		= 0;
-	Ret->EstData		= NULL;
+	Ret->NoEstData		=	0;
+	Ret->EstData		=	NULL;
 //	Ret->NoOfModels		= -1;
 //	Ret->FixedModels	= NULL;
-	Ret->ModelFile		= NULL;
-	Ret->ModelNo		= -1;
-	Ret->VarDataSite	= -1;
+	Ret->ModelFile		=	NULL;
+	Ret->ModelNo		=	-1;
+	Ret->VarDataSite	=	-1;
 
 	Ret->EstData		=	NULL;
 	Ret->EstDescData	=	NULL;
@@ -690,8 +692,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->ModelFile		=	NULL;
 
 	Ret->Contrast		=	NULL;
+	Ret->RJDummy		=	NULL;
 	
-
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	
 	if(Opt->UseGamma == TRUE)
@@ -875,9 +877,9 @@ void	PrintConRecNodesHeadder(FILE *Str, OPTIONS *Opt)
 		for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
 		{
 			if(Opt->Trees->NoOfSites == 1)
-				fprintf(Str, "%s Alpha\t%s Sigma^2\t%s Lh\t", RNode->Name, RNode->Name, RNode->Name);
+				fprintf(Str, "%s Alpha\t", RNode->Name);
 			else
-				fprintf(Str, "%s %d Alpha\t%s %d Sigma^2\t%s %d Lh\t", RNode->Name, SiteIndex + 1, RNode->Name, SiteIndex + 1,RNode->Name, SiteIndex + 1);
+				fprintf(Str, "%s %d Alpha\t", RNode->Name, SiteIndex + 1);
 		}
 	}
 }
@@ -1002,14 +1004,22 @@ void	PrintAutoTuneHeader(FILE* Str, OPTIONS *Opt)
 			fprintf(Str, "Rate Dev\tRate Acc\t");
 		else
 		{
-			PName = GetAutoParamNames(Opt);
-			NoP = FindNoOfAutoCalibRates(Opt);
-			for(Index=0;Index<NoP;Index++)
+
+			if(Opt->Model == M_CONTRAST_REG)
 			{
-				Name = PName[Index];
-				fprintf(Str, "Rate Dev - %s\tRate Acc - %s\t", Name, Name);			
+				fprintf(Str, "Betas Dev\tBeta Acc\t");
 			}
-			FreeParamNames(NoP, PName);
+			else
+			{
+				PName = GetAutoParamNames(Opt);
+				NoP = FindNoOfAutoCalibRates(Opt);
+				for(Index=0;Index<NoP;Index++)
+				{
+					Name = PName[Index];
+					fprintf(Str, "Rate Dev - %s\tRate Acc - %s\t", Name, Name);			
+				}
+				FreeParamNames(NoP, PName);
+			}
 		}
 	}
 
@@ -1071,7 +1081,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		for(x=0;x<NOS;x++)
 		{
 			for(y=0;y<x;y++)
-				fprintf(Str, "CoVar %d-%d\t", y+1, x+1);
+				fprintf(Str, "R Trait %d %d\t", y+1, x+1);
 		}
 	}
 
@@ -1086,6 +1096,10 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST_REG)
 	{
+
+		if(Opt->RJDummy == TRUE)
+			fprintf(Str, "No Dummy Codes\t");
+
 		fprintf(Str, "Alpha\t");
 		for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
 			fprintf(Str, "Beta %d\t", Index);
@@ -1170,17 +1184,7 @@ void	PrintRecNodeHeadder(FILE* Str, OPTIONS *Opt, char* Name, int SiteNo)
 	int		Index;
 	int		NOS;
 	TREES	*Trees;
-/*
-	if(Opt->Model == DESCINDEP)
-	{
-		fprintf(Str, "%s - T1 - P(0)\t", Name);
-		fprintf(Str, "%s - T1 - P(1)\t", Name);
-		fprintf(Str, "%s - T2 - P(0)\t", Name);
-		fprintf(Str, "%s - T2 - P(1)\t", Name);
 
-		return;
-	}
-*/
 	if((Opt->Model == M_DESCDEP) || (Opt->Model == M_DESCINDEP))
 	{
 		fprintf(Str, "%s - P(0,0)\t", Name);
@@ -1526,11 +1530,8 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 	RECNODE		RNode;
 	NODE		N;
 	CONTRAST	*Con;
-	double		Alpha, Sigma, Lh;
+	double		Alpha; //, Sigma, Lh;
 		
-	if(Opt->Model != M_CONTRAST_CORREL)
-		return;
-	
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
 		RNode = Opt->RecNodeList[Index];
@@ -1543,13 +1544,12 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 		}
 		else
 		{
-			
 			Con = N->ConData->Contrast[0];
 
 			for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
 			{
-				RecIntNode(N, SiteIndex, &Alpha, &Sigma, &Lh);
-				fprintf(Str, "%f\t%f\t%f\t", Alpha, Sigma, Lh);
+				RecIntNode(N, SiteIndex, &Alpha);
+				fprintf(Str, "%f\t", Alpha);
 			}
 		}
 	}
@@ -1590,6 +1590,8 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST_CORREL)
 	{
+//		PrintMatrix(Rates->Contrast->SigmaMat, "Sig = ", stdout);exit(0);
+
 		for(Index=0;Index<NOS;Index++)
 			fprintf(Str, "%0.12f\t", Rates->Contrast->Alpha[Index]);
 
@@ -1599,7 +1601,8 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		for(x=0;x<NOS;x++)
 		{
 			for(y=0;y<x;y++)
-				fprintf(Str, "%0.12f\t", Rates->Contrast->SigmaMat->me[x][y]);
+				fprintf(Str, "%0.12f\t", CalcR(Rates->Contrast->SigmaMat->me[x][y], Rates->Contrast->SigmaMat->me[x][x], Rates->Contrast->SigmaMat->me[y][y]));
+			//	fprintf(Str, "%0.12f\t", Rates->Contrast->SigmaMat->me[x][y]);
 		}
 	}
 	
@@ -1614,6 +1617,9 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST_REG)
 	{
+		if(Opt->RJDummy == TRUE)
+			fprintf(Str, "%d\t", Rates->RJDummy->NoDummyCode);
+
 		fprintf(Str, "%0.12f\t", Rates->Contrast->RegAlpha);
 		for(Index=0;Index<Trees->NoOfSites-1;Index++)
 			fprintf(Str, "%0.12f\t", Rates->Contrast->RegBeta[Index]);
@@ -1880,6 +1886,7 @@ void	PrintAutoTune(FILE* Str, OPTIONS *Opt, SCHEDULE* Shed)
 	int Index;
 	double Acc;
 
+
 	if(Opt->AutoTuneRD == TRUE)
 	{
 		if(Opt->RateDevPerParm == FALSE)
@@ -2093,7 +2100,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	}
 
 	if(Opt->ModelType == MT_CONTRAST)
+	{
 		CopyContrastRates(Opt, A, B, Opt->Trees->NoOfSites);
+	}
 
 	if(Opt->UseVarRates == TRUE)
 		PlastyCopy(A, B);
@@ -2102,6 +2111,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 
 	if(A->Hetero != NULL)
 		CopyHetero(A->Hetero, B->Hetero);
+
+	if(Opt->RJDummy == TRUE)
+		RJDummyCopy(A, B);
 } 
 
 double ChangeRatesTest(RATES *Rates, double RateV, double dev)
@@ -2275,32 +2287,46 @@ int		ValidMove(RATES *Rates, int No)
 			return FALSE;
 	}
 
+	if((No == SRJDUMMYMOVE) || (No == SRJDUMMYCHANGEBETA))
+	{
+		if(Rates->RJDummy->NoDummyCode == 0)
+			return FALSE;
+	}
+
+
 	return TRUE;
+}
+
+int		PickFromVect(RANDSTATES *RS, double *Vect, int Size)
+{
+	double	Val, Sum;
+	int		Index;
+
+	Val = RandDouble(RS);
+	Sum = 0;
+	for(Index=0;Index<Size;Index++)
+	{
+		if((Val > Sum) && (Val <= (Sum + Vect[Index])))
+			return Index;
+
+		Sum += Vect[Index];
+	}
+
+	printf("Error in PickACat %s::%d\n", __FILE__, __LINE__);
+	exit(0);
+	return -1;
 }
 
 int	PickACat(RATES *Rates, double *Vect, int Size)
 {
-	double	Val;
-	int		Index;
+	int		Cat;
 
 	do
 	{
-		Val = RandDouble(Rates->RS);
-		for(Index=0;Index<Size;Index++)
-		{
-			if(Val<Vect[Index])
-			{
-				if(ValidMove(Rates, Index) == TRUE)
-					return Index;
-				else
-					Index = Size;
-			}
-		}
-	}while(1);
+		Cat = PickFromVect(Rates->RS, Vect, Size);
+	}while(ValidMove(Rates, Cat) == FALSE);
 
-	printf("Error in %s line %d\n", __FILE__, __LINE__);
-
-	return -1;
+	return Cat;
 }
 
 int		NumInList(int *List, int No, int Size)
@@ -2560,13 +2586,6 @@ void	ChangeRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 
 	if(Opt->DataType == DISCRETE)
 	{
-		// Does not have a valid hasting ratio. 
-/*		if(RandDouble(Rates->RS) < 0.01)
-		{
-			SetRandStaes(Opt, Opt->Trees, Rates);
-			return;
-		}
-		*/
 		NoOfRates = Rates->NoOfRates;
 		if(Opt->UseRJMCMC == TRUE)
 			NoOfRates = Rates->NoOfRJRates;
@@ -2684,6 +2703,19 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 		case SGAMMA:
 			Rates->Gamma =  ChangeRate(Rates, Rates->Gamma, Opt->RateDev);
 		break;
+
+		case SRJDUMMY:
+			RJDummyMove(It, Opt, Opt->Trees, Rates);
+		break;
+
+		case SRJDUMMYMOVE:
+			RJDummyMoveNode(Opt, Opt->Trees, Rates);
+		break;
+
+		case SRJDUMMYCHANGEBETA:
+			RJDummyChange(Opt, Opt->Trees, Rates);
+		break;
+
 	}
 }
 
@@ -2735,6 +2767,9 @@ void	FreeRates(RATES *Rates)
 
 	if(Rates->ModelFile != NULL)
 		FreeModelFile(Rates->ModelFile);
+
+	if(Rates->RJDummy != NULL)
+		FreeRJDummyCode(Rates->RJDummy);
 
 	free(Rates);
 }

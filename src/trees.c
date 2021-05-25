@@ -236,6 +236,12 @@ void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 	if(Trees->TempConVars != NULL)
 		FreeTempConVars(Trees->TempConVars);
 
+	if(Trees->PMean != NULL)
+		free(Trees->PMean);
+
+	if(Trees->PSD != NULL)
+		free(Trees->PSD);
+
 	free(Trees);
 }
 
@@ -657,6 +663,8 @@ TREES*	LoadTrees(char* FileName)
 	Ret->ValidCData			= TRUE;
 	Ret->ValidDData			= TRUE;
 
+	Ret->PMean				= NULL;
+	Ret->PSD				= NULL;
 	Ret->TempConVars		= NULL;
 
 	PTrees = LoadNTrees(FileName, &Err);

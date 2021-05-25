@@ -345,6 +345,7 @@ double	RateToBetaLh(double Rate, int NoOfCats, double* Prams)
 	return Ret;
 }
 
+
 /*
 double	FindBetaBeta(double Mue, double Sigma)
 {
@@ -568,21 +569,72 @@ double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
 	return Ret;
 }
 
+double	NormPDF(double x, double Mean, double Var)
+{
+	double Ret, T1, T2;
+
+	Ret = sqrt(Var) * sqrt(6.283185307);
+	Ret = 1.0 / Ret;
+
+	T1 = (x - Mean) * (x - Mean);
+	T2 = 2 * Var;
+
+	T1 = T1 / T2;
+	T2 = exp(-T1);
+
+	Ret = Ret * T2;
+	return Ret;
+}
+
+void	Testxx2(void)
+{
+	double x,  p;
+
+	x = -5;
+
+	for(;x<5;x = x + 0.0001)
+	{
+		p = NormPDF(x, 0, 1);
+		p = log(p);
+		printf("%f\t%f\n", x, p);
+	}
+
+	exit(0);
+}
+
+double CalcRJDummyPriors(OPTIONS *Opt, RATES* Rates)
+{
+	RJDUMMY *RJDummy;
+	int		Index;
+	double	Ret, P;
+
+//	Testxx2();
+	Ret = 0;
+	RJDummy = Rates->RJDummy;
+
+	for(Index=0;Index<RJDummy->NoDummyCode;Index++)
+	{
+		P = NormPDF(RJDummy->DummyList[Index]->Beta[0], 0.0, 1.0);
+		Ret += log(P);
+	}
+
+	return Ret;
+}
+
 void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 {
 	PRIORS	*Prior;
-	int		PIndex=0;
-	double	NLh;
+	int		PIndex;
+	double	TLh;
 	double	Rate;
 	int		NoPRates;
+	double	CalcP;
 
-	Rates->LhPrior = 0;
+	CalcP = 0;
 	
 	if(Opt->LoadModels == TRUE)
 		return;
 
-	if(Opt->UseVarRates == TRUE)
-		Rates->LhPrior += CalcPPPriors(Rates, Opt);
 
 	if(Opt->UseRJMCMC == TRUE)
 		NoPRates = Rates->NoOfRJRates;
@@ -602,25 +654,32 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 			Rate = Rates->Rates[PIndex];
 		}
 
-		NLh = CaclPriorCost(Rate, Prior, Opt->PriorCats);
+		TLh = CaclPriorCost(Rate, Prior, Opt->PriorCats);
 
-		if((NLh == ERRLH) || (IsNum(NLh) == FALSE))
+		if((TLh == ERRLH) || (IsNum(TLh) == FALSE))
 		{
 			Rates->LhPrior = ERRLH;
 			return;
 		}
 
-		Rates->LhPrior += NLh;
+		CalcP += TLh;
 	}
 
-	NLh = CalcTreeTransPrior(Rates, Opt);
-	if((NLh == ERRLH) || (IsNum(NLh) == FALSE))
+	CalcP += CalcTreeTransPrior(Rates, Opt);
+
+	if(Opt->RJDummy == TRUE)
+		CalcP += CalcRJDummyPriors(Opt, Rates);
+
+	if(Opt->UseVarRates == TRUE)
+		CalcP += CalcPPPriors(Rates, Opt);
+	
+	if((CalcP == ERRLH) || (IsNum(CalcP) == FALSE))
 	{
 		Rates->LhPrior = ERRLH;
 		return;
 	}
 
-	Rates->LhPrior += NLh;
+	Rates->LhPrior = CalcP;
 }
 
 void	MutatePriors(RATES *Rates, PRIORS **PriosList, int NoOfPriors)

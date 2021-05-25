@@ -251,8 +251,7 @@ void	TransformContrastTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 		else
 			TransContNodeDelta(Root, Opt->FixDelta, Norm);
 	}
-
-	
+		
 	if(Opt->UseLambda == TRUE)
 	{
 		SetTreeDistToRoot(Tree);

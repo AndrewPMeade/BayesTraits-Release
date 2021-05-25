@@ -106,8 +106,64 @@ int main(int argc, char** argv)
 }
 
 #else
+/*
+int		ValidTaxa(NODE N)
+{
+	int Index;
+	NODE Ans, NN;
 
+	if(N->Ans == NULL)
+		return TRUE;
 
+	Ans = N->Ans;
+	
+	for(Index=0;Index<Ans->NoNodes;Index++)
+	{
+		NN = Ans->NodeList[Index];
+		if(NN != N)
+		{
+			if(NN->Tip == TRUE)
+			{
+				if(NN->Taxa->ConData[0] == N->Taxa->ConData[0])
+					return FALSE;
+			}
+		}
+	}
+
+	return TRUE;
+}
+
+void	TestTreeLh(OPTIONS *Opt, TREES *Trees)
+{
+	TREE *Tree;
+	int	Index;
+	NODE N;
+
+	Tree = Trees->Tree[0];
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+		if(N->Tip == TRUE)
+		{
+			
+			if(ValidTaxa(N) == FALSE)
+			{
+				printf("%s\t%f\tNo\n", N->Taxa->Name, N->Taxa->ConData[0]);
+				N->Taxa->ConData[0] = -1;
+			}
+			else
+				printf("%s\t%f\tYes\n", N->Taxa->Name, N->Taxa->ConData[0]);
+		}
+	}
+
+	printf("====================\n");
+
+	for(Index=0;Index<Trees->NoOfRemovedTaxa;Index++)
+		printf("%s\t-\n", Trees->RemovedTaxa[Index]);
+	exit(0);
+}
+*/
 void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 {
 	char Line[1024];
@@ -133,89 +189,12 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // Big Lh + OpenMP
 // gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp
 // gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp -Dwarn _unused_result 
-  
-// ./Seq/Mammal-ArtPrim.trees ./Seq/Mammal-ArtPrim.txt < in.txt > sout.txt 
-// ./Seq/ContrastTestLh.trees ./Seq/ContrastTestLh.txt < in.txt > sout.txt
-// ./Seq/MammalBig.trees ./Seq/MammalBig.txt < in.txt > sout.txt
-// ./Seq/LhInDep.trees ./Seq/LhInDep.txt < in.txt > sout.txt
-
-// ./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < BigMamIn.txt > sout.txt
-// ./Seq/PhyCorrectT.trees ./Seq/PhyCorrectT.txt < in.txt > sout.txt
-// ./Seq/Zuzana/Chiroptera.trees ./Seq/Zuzana/Chiroptera_BrW.txt  < ./Seq/Zuzana/in.txt > sout.txt
-// ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt  < BigMamIn.txt > sout.txt
-// ./Seq/MamBigTrimCNodes.trees ./Seq/MamBigTrim.txt < BigMamIn.txt > sout.txt
-
-//	./Seq/Lang/IE-M1P-RS.trees ./Seq/Lang/IE-MS.nex-0007.txt < in.txt > sout.txt
-
-//	./Seq/stu.trees ./Seq/stu.txt < in.txt > sout.txt
-
-//	./Seq/BirdDiscRJ/Sub.trees ./Seq/BirdDiscRJ/Sub.txt < ./Seq/BirdDiscRJ/Sub.in.txt > ./Seq/BirdDiscRJ/Sub.out.txt
-//	./Seq/Ficus3genesReSampled.rooted.trees ./Seq/Ficus3genesReSampled.rooted.txt < in.txt > sout.txt
-//	./Seq/P_E_Primates_ClusterRep2. trees ./Seq/ConSim-000001.txt < in.txt > sout.txt
-
-//	./Seq/PTest.trees ./Seq/PTest.txt < in.txt > sout.txt
-	
-//	./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
-//	./Seq/PrimatesCon.trees ./Seq/PrimatesMS.txt < in.txt > sout.txt
-
-// ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
-
-// ./Seq/MamTrees-50.trees ./Seq/MamData.txt< in.txt > sout.txt
-// ./Seq/Ther.trees ./Seq/Ther.txt < in.txt > sout.txt
-
-// ./Seq/Artiodactyl.trees ./Seq/Artiodactyl.txt < in.txt > sout.txt
-// ./Seq/P_E_Lagomorpha.trees ./Seq/LagomorphaDs02.txt < in.txt > sout.txt
-// ./Seq/SaurFL.trees ./Seq/3wayNoiseR42.txt < in.txt > sout.txt
-
-// ./Seq/Wing.trees ./Seq/Wing.txt < in.txt > sout.txt
-
-// ./Seq/Birds/FullEricson_Crop.trees ./Seq/Birds/BM_Dat.txt < in.txt > sout.txt
-// ./Seq/Birds/Test.trees ./Seq/Birds/Test.txt < in.txt > sout.txt
-
-
-// ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt  < in.txt > sout.txt
-// ./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < in.txt > sout.txt
-
-// ./Seq/Birds/Test.trees ./Seq/Birds/Test.txt < in.txt > sout.txt
-
-// ./Seq/MamTrees-1.trees ./Seq/MamDataMRegTest.txt < in.txt > sout.txt
-// ./Seq/MamBigTrim-00200.trees ./Seq/MultiRegData.txt < in.txt > sout.txt
-// ./Seq/MamTreesPoly2-1.trees ./Seq/MammalBrainBody.txt < in.txt > sout.txt
-// ./Seq/Mammal.trees ./Seq/MammalBrainBody.txt < in.txt > sout.txt
-
-// ./Seq/IE-M1P-RS.trees ./Seq/IE-MS.nex-0019.txt < in.txt > sout.txt
-
-// ./Seq/MamBigTrim-00200.trees ./Seq/MammalBrainBody.txt < in.txt > sout.txt
-
-// ./Seq/Wing.trees ./Seq/Wing.txt < in.txt > sout.txt
-// ./Seq/Lago_Time.trees ./Seq/lago_outransform_simvar0.002.txt < in.txt > sout.txt
-
-// ./Seq/Artiodactyl-1.trees ./Seq/Artiodactyl.txt < in.txt > sout.txt
-
-// ./Seq/OUTest/minitree.trees ./Seq/OUTest/Data.txt < in.txt > sout.txt
-// ./Seq/Cat_FossTree.trees ./Seq/cat_outransform_var0.002.txt < in.txt > sout.txt
-
-// ./Seq/IE-M1P-RS.trees ./Seq/IE-MS.nex-0019.txt < in.txt > sout.txt
-// ./Seq/Mammal-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
-
-// ./Seq/Mammal-1.trees ./Seq/MamData.txt < in.txt > sout.txt
-
-// ./Seq/ContrastReg/RegTree.trees ./Seq/ContrastReg/Data.txt < in.txt > sout.txt
-
-// ./Seq/croptree2.trees ./Seq/croptree2.txt < in.txt > sout.txt
-
-// ./Seq/Tree-00000503.trees ./Seq/Data-00000503.txt < in.txt > sout.txt
-
-// ./Seq/Artiodactyl.trees ./Seq/Artiodactyl.txt < in.txt > sout.txt
-
-// ./Seq/PrimatesBrainBody.trees ./Seq/PrimatesBrainBody.txt < in.txt > sout.txt
-
-// ./Seq/mammal-1.trees ./Seq/MammalBrainBodyGtEst.txt < in.txt > sout.txt
-
-// ./Seq/Marsupials.trees ./Seq/Marsupials.txt < in.txt > sout.txt
-
-//extern double igam(double a, double x);
-
+ 
+// ./Seq/MamTrees-1.trees ./Seq/MamData.txt < in.txt > sout.txt
+// ./Seq/MamBrainBody.trees ./Seq/MamBrainBody.txt < in.txt. > sout.txt
+// ./Seq/MamBrainBody.trees ./Seq/MamBrainBody.txt < in.txt. > sout.txt
+// ./Seq/FritzMammalianSupertree.trees ./Seq/JustBM.txt < in.txt > sout.txt
+// ./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
 
 int main(int argc, char** argv)
 {
@@ -258,7 +237,7 @@ int main(int argc, char** argv)
 	LoadData(DataFN, Trees);
 	
 	Opt = SetUpOptions(Trees, TreeFN, DataFN);
-	
+
 	PrintOptions(stdout, Opt);
 
 	GetOptions(Opt);
