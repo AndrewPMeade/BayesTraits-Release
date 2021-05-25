@@ -10,7 +10,7 @@
 #include "options.h"
 #include "rates.h"
 #include "likelihood.h"
-#include "rand.h"
+#include "RandLib.h"
 #include "priors.h"
 #include "mcmc.h"
 #include "praxis.h"

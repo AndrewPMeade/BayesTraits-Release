@@ -6,7 +6,7 @@
 #include "genlib.h"
 #include "phyloplasty.h"
 #include "matrix.h"
-#include "rand.h"
+#include "RandLib.h"
 #include "likelihood.h"
 #include "trees.h"
 #include "randdists.h"
@@ -195,7 +195,7 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, int It)
 #ifdef PPBLO
 	PNode->Type = PPBRANCH;
 #else
-	if(GenRandState(Rates->RandStates) < 0.5)
+	if(RandDouble(Rates->RS) < 0.5)
 		PNode->Type = PPBRANCH;
 	else
 		PNode->Type = PPNODE;
@@ -259,12 +259,12 @@ double	ChangePlastyRate(RATES *Rates, double Scale, double SD)
 	double		Ret;
 	RANDSTATES	*RS;
 
-	RS = Rates->RandStates;
+	RS = Rates->RS;
 
 	do
 	{
 //		Ret = (nrand(RS) * SD) + Scale;
-		Ret = ((GenRandState(RS) * SD) - (SD / 2.0)) + Scale; 
+		Ret = ((RandDouble(RS) * SD) - (SD / 2.0)) + Scale; 
 		
 #ifdef PPUNIFORM
 	} while((Ret <= 0) || (Ret > PPMAXSCALE));
@@ -283,7 +283,7 @@ void	PPChangeScale(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 
 	Plasty = Rates->Plasty;
 
-	No = rand() % Plasty->NoNodes;
+	No = RandUSLong(Rates->RS) % Plasty->NoNodes;
 	Node = Plasty->NodeList[No];
 
 	Rates->LnHastings = CalcNormalHasting(Node->Scale, PPSCALEDEV);
@@ -344,12 +344,12 @@ void 	PPMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 
 	Plasty = Rates->Plasty;
 
-	No = rand() % Plasty->NoNodes;
+	No = RandUSLong(Rates->RS) % Plasty->NoNodes;
 	PNode = Plasty->NodeList[No];
 
 	N = PNode->Node;
 
-	if( (GenRandState(Rates->RandStates) < 0.05) && 
+	if( (RandDouble(Rates->RS) < 0.05) && 
 		(PNode->Node->Tip == FALSE))
 	{
 		SawpNodeType(PNode);
@@ -373,7 +373,7 @@ void 	PPMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 		return;
 	}
 
-	No = rand() % Plasty->NoTempList;
+	No = RandUSLong(Rates->RS) % Plasty->NoTempList;
 	PNode->Node = Plasty->TempList[No];
 
 	return;
@@ -400,7 +400,7 @@ void	PPAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, int It)
 
 	do
 	{
-		N = Plasty->ValidNode[rand() % Plasty->NoValidNode];
+		N = Plasty->ValidNode[RandUSLong(Rates->RS) % Plasty->NoValidNode];
 	}while(N == Trees->Tree[0].Root);
 
 	PNodeID = GetPlastyNode(N->ID, Plasty);
@@ -740,7 +740,7 @@ void	ChangePPHyperPrior(RATES *Rates, OPTIONS *Opt)
 	
 	do
 	{
-		NAlpha = (nrand(Rates->RandStates) * PPALPHASCLAE) + Plasty->Alpha;
+		NAlpha = RandNormal(Rates->RS, Plasty->Alpha, PPALPHASCLAE);
 	} while(NAlpha <= 1);
 
 	Plasty->Alpha = NAlpha;

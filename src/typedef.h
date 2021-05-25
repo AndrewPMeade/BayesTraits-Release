@@ -3,10 +3,11 @@
 
 #pragma warning(disable : 4996)
 #include <stdio.h>
-#include "matrix.h"
 
+#include "matrix.h"
+#include "RandLib.h"
 // #define	JNIRUN
-// #define THREADED
+#define THREADED
 // #define BIG_LH
 
 #ifdef BIG_LH
@@ -20,9 +21,7 @@
 
 #ifdef	THREADED
 	#include <omp.h>
-
 	#define MIN_NODES_PER_PROC	2
-
 #endif
 
 #ifdef	 JNIRUN
@@ -169,6 +168,7 @@ typedef enum
 	CPHYLOPLASTY,
 	CEQUALTREES,
 	CPRECISION,
+	CCORES,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -235,7 +235,8 @@ static char    *COMMANDSTRINGS[] =
 	"makeum",		"mum",
 	"phyloplasty",	"pp",
 	"equaltrees",	"eqt",
-	"precision",	"pre"
+	"precision",	"pre",
+	"cores",		"cor",
 	""
 };
 
@@ -344,12 +345,6 @@ typedef enum
 	PPNODE,
 	PPBRANCH
 } PLASTYTYPE;
-
-typedef struct
-{
-	int	K;
-	unsigned long *States;
-} RANDSTATES;
 
 typedef struct
 {
@@ -762,7 +757,7 @@ typedef struct
 	int			ETreeBI;
 
 	int			Precision;
-
+	int			Cores;
 } OPTIONS;
 
 
@@ -823,7 +818,7 @@ typedef struct
 
 	int		VarDataSite;
 
-	RANDSTATES		*RandStates;
+	RANDSTATES		*RS;
 
 	PLASTY			*Plasty;
 	CONTRASTR		*Contrast;

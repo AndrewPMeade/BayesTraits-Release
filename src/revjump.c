@@ -6,7 +6,7 @@
 #include "typedef.h"
 #include "rates.h"
 #include "genlib.h"
-#include "rand.h"
+#include "RandLib.h"
 #include "trees.h"
 #include "continuous.h"
 #include "revjump.h"
@@ -227,13 +227,13 @@ MAPINFO*	CreatMapping(RATES* Rates)
 	return Ret;
 }
 
-int		PickSplitGroup(MAPINFO *MapInfo)
+int		PickSplitGroup(RATES *Rates, MAPINFO *MapInfo)
 {
 	int	Ret;
 
 	do
 	{
-		Ret = rand() % MapInfo->NoOfGroups;
+		Ret = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
 	}while(MapInfo->GroupSize[Ret] <= 1);
 
 	return Ret;
@@ -255,7 +255,7 @@ int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
 	G0 = G1 = 0;
 	for(Index=0;Index<GSize-1;Index++)
 	{
-		if(GenRandState(Rates->RandStates) < 0.5)
+		if(RandDouble(Rates->RS) < 0.5)
 		{
 			Ret[Index] = 0;
 			G0++;
@@ -269,7 +269,7 @@ int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
 
 	if((G0 > 0) && (G1 > 0))
 	{
-		if(GenRandState(Rates->RandStates) < 0.5)
+		if(RandDouble(Rates->RS) < 0.5)
 			Ret[Index] = 0;
 		else
 			Ret[Index] = 1;
@@ -286,12 +286,12 @@ int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
 	return Ret;
 }
 
-double	GenDoubleIn(RANDSTATES*	RandStates, double Min, double Max)
+double	GenDoubleIn(RANDSTATES*	RS, double Min, double Max)
 {
 	double	Diff;
 	
 	Diff = Max - Min;
-	return (GenRandState(RandStates) * Diff) + Min;
+	return (RandDouble(RS) * Diff) + Min;
 }
 
 
@@ -320,7 +320,7 @@ void	RJSplit(RATES* Rates, OPTIONS* Opt)
 		return;
 	}
 
-	GroupNo = PickSplitGroup(MapInfo);
+	GroupNo = PickSplitGroup(Rates, MapInfo);
 	SplitID	= MapInfo->GroupID[GroupNo];
 
 	GSize = MapInfo->GroupSize[GroupNo];
@@ -345,7 +345,7 @@ void	RJSplit(RATES* Rates, OPTIONS* Opt)
 	OldR = Mue / (double)G0;
 	*/
 
-	Mue = GenDoubleIn(Rates->RandStates, -(G0*OldR), (G1*OldR));
+	Mue = GenDoubleIn(Rates->RS, -(G0*OldR), (G1*OldR));
 	NewR = OldR + (Mue / (double)G0);
 	OldR = OldR - (Mue / (double)G1);
 
@@ -517,9 +517,9 @@ void	RJMerge(RATES* Rates, OPTIONS* Opt)
 		return;
 	}
 
-	G0 = rand() % MapInfo->NoOfGroups;
+	G0 = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
 	do
-		G1 = rand() % MapInfo->NoOfGroups;
+		G1 = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
 	while(G1 == G0);
 
 	if(G1 < G0)
@@ -575,7 +575,7 @@ void	RJMerge(RATES* Rates, OPTIONS* Opt)
 }
 
 
-int		FindGropToReduce(MAPINFO* MapInfo)
+int		FindGropToReduce(RATES* Rates, MAPINFO* MapInfo)
 {
 	int		NoCandidates;
 	int		No;
@@ -587,7 +587,7 @@ int		FindGropToReduce(MAPINFO* MapInfo)
 
 	do
 	{
-		No = rand() % MapInfo->NoOfGroups;
+		No = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
 		if(MapInfo->GroupSize[No] > 1)
 			return No;
 	}while(1);
@@ -606,7 +606,7 @@ void	RJReduce(RATES* Rates, OPTIONS* Opt)
 
 	MapInfo = CreatMapping(Rates);
 
-	Group = FindGropToReduce(MapInfo);
+	Group = FindGropToReduce(Rates, MapInfo);
 
 	if(Group == -1)
 	{
@@ -614,7 +614,7 @@ void	RJReduce(RATES* Rates, OPTIONS* Opt)
 		return;
 	}
 
-	TheOne = rand() % MapInfo->GroupSize[Group];
+	TheOne = RandUSLong(Rates->RS) % MapInfo->GroupSize[Group];
 
 	Pos = MapInfo->GroupPos[Group][TheOne];
 
@@ -649,9 +649,9 @@ void	RJAugment(RATES* Rates, OPTIONS* Opt)
 		return;
 	}
 
-	ZeroPos = rand() % MapInfo->NoInZero;
+	ZeroPos = RandUSLong(Rates->RS) % MapInfo->NoInZero;
 	ZeroPos = MapInfo->ZeroPos[ZeroPos];
-	Group = rand() % MapInfo->NoOfGroups;
+	Group = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
 
 	Rates->MappingVect[ZeroPos] = Group;
 	

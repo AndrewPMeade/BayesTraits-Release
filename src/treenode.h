@@ -9,5 +9,3 @@ void	SetRecNodes(RECNODE RNode, OPTIONS *Opt);
 NODE	FindNode(RECNODE RNode, TREE *Tree, int *Depth, int NoOfNodes);
 
 #endif
-
-	

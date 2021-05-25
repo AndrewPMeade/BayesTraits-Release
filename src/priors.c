@@ -6,7 +6,7 @@
 #include "typedef.h"
 #include "genlib.h"
 #include "priors.h"
-#include "rand.h"
+#include "RandLib.h"
 #include "revjump.h"
 #include "likelihood.h"
 #include "phyloplasty.h"
@@ -480,8 +480,8 @@ void	MutatePriors(RATES *Rates, PRIORS **PriosList, int NoOfPriors)
 
 	for(PIndex=0;PIndex<NoOfPriors;PIndex++)
 	{
-		PriosList[PIndex]->DistVals[0] = GenRandState(Rates->RandStates) * 100;
-		PriosList[PIndex]->DistVals[1] = GenRandState(Rates->RandStates) * 100;
+		PriosList[PIndex]->DistVals[0] = RandDouble(Rates->RS) * 100;
+		PriosList[PIndex]->DistVals[1] = RandDouble(Rates->RS) * 100;
 	}
 }
 
@@ -491,7 +491,7 @@ double	ChangePriorNorm(RATES *Rates, double Val, double Dev, double Min, double 
 
 	do
 	{
-		Ret = Val + (nrand(Rates->RandStates) * Dev);
+		Ret = RandNormal(Rates->RS, Val, Dev);
 	} while((Ret > Max) || (Ret < Min));
 
 	return Ret;
@@ -521,7 +521,7 @@ double ChangePrior(RANDSTATES *RandStates, double Rate, double dev)
 {
 	double	Ret;
 
-	Ret = (GenRandState(RandStates) * dev) - (dev / 2.0); 
+	Ret = (RandDouble(RandStates) * dev) - (dev / 2.0); 
 
 	Ret += Rate;
 

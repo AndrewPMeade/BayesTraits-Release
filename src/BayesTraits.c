@@ -9,7 +9,6 @@
 #include "options.h"
 #include "rates.h"
 #include "likelihood.h"
-#include "rand.h"
 #include "priors.h"
 #include "mcmc.h"
 #include "praxis.h"
@@ -17,6 +16,7 @@
 #include "genlib.h"
 #include "continuous.h"
 #include "initialise.h"
+#include "RandLib.h"
 
 #include "mathlib.h"
 //#include "./MathLib/mconf.h"
@@ -92,6 +92,12 @@ int main(int argc, char** argv)
 
 // Full optermisation
 //	cl /Ox /Oi /Ob2 /Ot /Oy /GL /w *.c ./MathLib/*.c
+
+// gcc -O3 -fomit-frame-pointer -lm 
+
+
+// Big Lh + OpenMP
+// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp
   
 // ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
 // ./Seq/Mammal-ArtPrim.trees ./Seq/Mammal-ArtPrim.txt < in.txt > sout.txt 
@@ -107,15 +113,13 @@ int main(int argc, char** argv)
 
 //	./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
 //	./Seq/Lang/IE-M1P-RS.trees ./Seq/Lang/IE-MS.nex-0007.txt < in.txt > sout.txt
-
+//  ./Seq/Turk/ConTurkicAll.nex.trees ./Seq/Turk/TurkicAll.txt < in.txt > sout.txt
 
 int main(int argc, char** argv)
 {
 	TREES*		Trees;
 	OPTIONS*	Opt; 
 	int			NoSites;
-
-	SetSeed();
 
 	if(argc != 3)
 	{
@@ -153,7 +157,8 @@ int main(int argc, char** argv)
 	FreeTrees(Trees, Opt);
 	FreeOptions(Opt, NoSites);
 
-	return 0;
+	return 0;	
 }
 
 #endif
+

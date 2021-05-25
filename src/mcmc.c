@@ -10,7 +10,7 @@
 #include "priors.h"
 #include "likelihood.h"
 #include "genlib.h"
-#include "rand.h"
+#include "RandLib.h"
 #include "options.h"
 #include "revjump.h"
 #include "data.h"
@@ -147,7 +147,17 @@ void	PrintTest(int Itters, RATES* Rates)
 void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	double	*Vec;
+	int		Index;
 
+/*	do
+	{
+		for(Index=0;Index<Rates->NoOfRates;Index++)
+			Rates->Rates[Index] = (RandDouble(Rates->RS) * 0.1) + 0.1;
+	} while((Likelihood(Rates, Trees, Opt) == ERRLH));
+	*/
+	for(Index=0;Index<Rates->NoOfRates;Index++)
+		Rates->Rates[Index] = 0.01732;
+	
 	if(Likelihood(Rates, Trees, Opt) != ERRLH)
 		return;
 
@@ -282,7 +292,7 @@ void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		Heat += NRates->LhPrior - CRates->LhPrior;
 		Heat += NRates->LnHastings;
 		
-		if((log(GenRandState(CRates->RandStates)) <= Heat) && (NRates->Lh != ERRLH))
+		if((log(RandDouble(CRates->RS)) <= Heat) && (NRates->Lh != ERRLH))
 		{
 			Swap((void**)&NRates, (void**)&CRates);
 			Acc++;

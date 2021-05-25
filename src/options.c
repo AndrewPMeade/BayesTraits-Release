@@ -9,7 +9,8 @@
 #include "trees.h"
 #include "priors.h"
 #include "treenode.h"
-#include "rand.h"
+#include "RandLib.h"
+#include "threaded.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHTINDENT		4
@@ -284,6 +285,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	}
 	
 	fprintf(Str, "Precision:                       %d bits\n", Opt->Precision);
+	fprintf(Str, "Cores:                           %d\n", Opt->Cores);
 
 	if(Opt->Analsis == ANALMCMC)
 	{
@@ -974,6 +976,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 #ifdef BIG_LH
 	Ret->Precision		=	256;
 #endif
+
+	Ret->Cores			=	GetMaxThreads();
 
 	return Ret; 
 }
@@ -2703,8 +2707,7 @@ void	OptSetSeed(OPTIONS *Opt, char	*CSeed)
 		return;
 	}
 
-	IntSetSeed(atoi(CSeed));
-	Opt->Seed = GetSeed();
+	Opt->Seed = atoi(CSeed);
 }
 
 int	FossilNoPramOK(OPTIONS *Opt, int Tokes)
@@ -2766,6 +2769,32 @@ void	SetPrecision(OPTIONS *Opt, char *Token)
 	}
 
 	Opt->Precision = Pre;
+}
+
+void	SetCores(OPTIONS *Opt, int Tokes, char** Passed)
+{
+	int Cores;
+
+	if(Tokes != 2)
+	{
+		printf("Cores takes the number of cores to use.\n");
+		return;
+	}
+
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("Could not covert %s to a valid number of cores\n", Passed[0]);
+		return;
+	}
+
+	Cores = atoi(Passed[1]);
+	if(Cores < 1)
+	{
+		printf("the number of course must be >= 0\n");
+		return;
+	}
+
+	Opt->Cores = Cores;
 }
 
 int		PassLine(OPTIONS *Opt, char *Buffer)
@@ -3355,6 +3384,16 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		return FALSE;
 #endif
 		SetPrecision(Opt, Passed[1]);
+	}
+
+	if(Command == CCORES)
+	{
+#ifndef THREADED
+		printf("Cores is not valid with this build. please use the threaded build.");
+		return FALSE;
+#else
+		SetCores(Opt, Tokes, Passed);
+#endif
 	}
 
 	return FALSE;

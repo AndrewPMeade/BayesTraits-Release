@@ -25,7 +25,6 @@ int		GetMaxThreads(void)
 #endif	
 }
 
-
 void	SetNoOfThreads(int No)
 {
 #ifndef THREADED
@@ -34,5 +33,4 @@ void	SetNoOfThreads(int No)
 	omp_set_num_threads(No);
 	return; 
 #endif	
-
 }

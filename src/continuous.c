@@ -12,10 +12,10 @@
 #include "likelihood.h"
 #include "matrix.h"
 #include "linalg.h"
-#include "rand.h"
 #include "rates.h"
 #include "ckappa.h"
 #include "contrasts.h"
+#include "RandLib.h"
 
 
 void	InitEstData(OPTIONS *Opt, TREES *Trees)

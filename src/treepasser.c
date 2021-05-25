@@ -1348,53 +1348,6 @@ int		GetTaxaID(NTREES* Trees, char *TaxaName)
 	return -1;
 }
 
-void	NNI(NTREE* T)
-{
-	NNODE	p, u, v, a, b, c;
-	int		r;
-
-	do
-	{
-		r = rand() % T->NoOfNodes;
-		p = T->NodeList[r]; 
-	}
-	while((p == T->Root) || (p->Tip == TRUE));
-	
-	u = p;
-	v = u->Ans;
-	a = u->NodeList[0];
-	b = u->NodeList[1];
-
-	if(v->NodeList[0] == u)
-		c = v->NodeList[1];
-	else
-		c = v->NodeList[0];
-
-	if(rand() % 100 < 50)
-	{
-		if(v->NodeList[0] == u)
-			v->NodeList[1] = b;
-		else
-			v->NodeList[0] = b;
-
-		u->NodeList[0] = a;
-		u->NodeList[1]=c;
-		a->Ans = c->Ans = u;
-		b->Ans = v;
-	}
-	else
-	{
-		if(v->NodeList[0] == u)
-			v->NodeList[1] = a;
-		else
-			v->NodeList[0] = a;
-		u->NodeList[0] = b;
-		u->NodeList[1] = c;
-		b->Ans = c->Ans = u;
-		a->Ans = v;
-	}
-}
-
 
 int		NodesBelow(NNODE N)
 {

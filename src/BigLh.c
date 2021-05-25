@@ -12,7 +12,7 @@
 void	InitTreeBigLh(OPTIONS *Opt, TREES *Trees) { }
 void	FreeTreeBigLh(OPTIONS *Opt, TREES *Trees) { }
 
-void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo, int *Err) { }
+void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo) { }
 double CombineBigLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS) {return 0.0;}
 
 void	SetBigLhNodeRec(NODE N, int NOS, int NoOfSites, RATES *Rates, OPTIONS *Opt) { }
@@ -147,7 +147,7 @@ void	FossilLhBig(NODE N, TREES *Trees, int SiteNo)
 
 }
 
-void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo, int *Err)
+void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo)
 { 
 	int Inner, Outter, NIndex;
 	double Lh;

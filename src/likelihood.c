@@ -14,7 +14,7 @@
 #include "gamma.h"
 #include "trees.h"
 #include "praxis.h"
-#include "rand.h"
+#include "RandLib.h"
 #include "contrasts.h"
 #include "threaded.h"
 #include "BigLh.h"
@@ -110,8 +110,8 @@ int	PreCalc(TREES *Trees, RATES *Rates)
 		printf("\n\n\n");
 		PrintMatrix(InvInfo->Q, "QMat", stdout);
 		PrintMathematicaMatrix(InvInfo->Q, "Q", stdout);
-		Die(0, "Error in fitness.c::PreCalc error no 1\n"); 
-*/		return ERROR;
+		exit(0); */
+		return ERROR;
 	}
 
 	CopyMatrix(InvInfo->Q, InvInfo->vec);
@@ -158,6 +158,8 @@ int	CreateMSAMatrix(MATRIX *A, RATES* Rates, TREES* Trees)
 
 		A->me[Outter][Outter] = -Tot;
 	}
+
+
 
 	return PreCalc(Trees, Rates);
 }
@@ -786,7 +788,7 @@ void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err,
 }
 */
 
-void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo,  int* Err, int Rec)
+void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo,  int Rec)
 {
 	int		Inner, Outter, NIndex;
 	double	Lh;
@@ -797,7 +799,7 @@ void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo,  int* Err, int Rec)
 		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
 		{
 			if(N->NodeList[NIndex]->Tip == FALSE)
-				SumLikeMultiState(N->NodeList[NIndex], Trees, SiteNo, Err, Rec);
+				SumLikeMultiState(N->NodeList[NIndex], Trees, SiteNo, Rec);
 		}
 	}
 
@@ -994,7 +996,7 @@ int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
 	int	Err;
 
-	if(Opt->UseRModel == TRUE)
+ 	if(Opt->UseRModel == TRUE)
 		return NO_ERROR;
 
 	if(Opt->Model == MULTISTATE)
@@ -1274,6 +1276,7 @@ int		SetRPMatrix(TREES *Trees, NODE N, MATRIX *P, double Gamma, double Kappa)
 
 
 
+
 int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, double Kappa)
 {
 	int NIndex, Err, NoErr;
@@ -1285,13 +1288,14 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 	Tree = &Trees->Tree[Rates->TreeNo];
 	/* No need to compute P for root */
 
+	
 #ifdef THREADED
-	#pragma omp parallel for private(N, Err)
+	#pragma omp parallel for private(N, Err) num_threads(Opt->Cores)
 #endif	
 	for(NIndex=1;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = Tree->NodeList[NIndex];
-
+		Err = FALSE;
 		if(NoErr == 0)
 		{
 
@@ -1307,15 +1311,7 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 		}
 
 		if(Err == TRUE)
-		{
-#ifdef THREADED
-//			Creat a race condion but all you need to know is if NoErr > 0
-//			#pragma omp critical
 			NoErr++;
-#else
-
-#endif
-		}
 	}
 
 	if(NoErr > 0)
@@ -1324,61 +1320,54 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 	return FALSE;
 }
 
-void	LinerLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
+void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Trees, OPTIONS *Opt, int SiteNo)
 {
+	int NIndex;
 
+	if(Parallel == FALSE)
+	{
+		for(NIndex=0;NIndex<Tree->NoPNodes[GroupNo];NIndex++)
+		{
+			#ifndef BIG_LH
+				SumLikeMultiState(Tree->PNodes[GroupNo][NIndex], Trees, SiteNo, FALSE);
+			#else
+				LhBigLh(Tree->PNodes[GroupNo][NIndex], Trees, Opt->Precision, SiteNo);
+			#endif
+		}
+
+		return;
+	}
+
+#ifdef THREADED
+	#pragma omp parallel for num_threads(Opt->Cores)
+#endif
+	for(NIndex=0;NIndex<Tree->NoPNodes[GroupNo];NIndex++)
+	{
+		#ifndef BIG_LH
+			SumLikeMultiState(Tree->PNodes[GroupNo][NIndex], Trees, SiteNo, FALSE);
+		#else
+			LhBigLh(Tree->PNodes[GroupNo][NIndex], Trees, Opt->Precision, SiteNo);
+		#endif
+	}
+}
+
+void	SumLhLiner(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
+{
 	int	GIndex, NIndex;
 	TREE	*Tree;
-	int		Err;
-
-	Err = FALSE;
 	
 	Tree = &Trees->Tree[Rates->TreeNo];
 	for(GIndex=0;GIndex<Tree->NoPGroups;GIndex++)
 	{
-
-	//	if(Tree->NoPNodes[GIndex] >= Trees->InvInfo->NoThreads * MIN_NODES_PER_PROC)
-		{
-#ifdef THREADED
-			#pragma omp parallel for
-#endif
-			for(NIndex=0;NIndex<Tree->NoPNodes[GIndex];NIndex++)
-			#ifndef BIG_LH
-				SumLikeMultiState(Tree->PNodes[GIndex][NIndex], Trees, SiteNo, &Err, FALSE);
-			#else
-				LhBigLh(Tree->PNodes[GIndex][NIndex], Trees, Opt->Precision, SiteNo, &Err);
-			#endif
-		}/*
-		else
-		{
-			for(NIndex=0;NIndex<Tree->NoPNodes[GIndex];NIndex++)
-				SumLikeMultiState(Tree->PNodes[GIndex][NIndex], Trees, SiteNo, Rates->Kappa, &Err, RateMult, FALSE);
-	
-		}*/
-	}
-}
-
-int		SumLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
-{
-//	TREE	*Tree;
-	int		Err;
-
-	Err = FALSE;
-	
-//	Tree = &Trees->Tree[Rates->TreeNo];
-
-	LinerLh(Rates, Trees, Opt, SiteNo);
-/*
 #ifndef THREADED
-	if(Opt->UseRModel == TRUE)
-		SumLikeRModel(Tree->Root, Trees, SiteNo, Rates);
-	else
-		SumLikeMultiState(Tree->Root, Trees, SiteNo, &Err, TRUE);
-#else	
-	LinerLh(Rates, Trees, Opt, SiteNo, RateMult);
+		RunNodeGroup(GIndex, FALSE, Rates, Tree, Trees, Opt, SiteNo);
+#else
+		if(Tree->NoPNodes[GIndex] >= Trees->InvInfo->NoThreads * MIN_NODES_PER_PROC)
+			RunNodeGroup(GIndex, TRUE, Rates, Tree, Trees, Opt, SiteNo);
+		else
+			RunNodeGroup(GIndex, FALSE, Rates, Tree, Trees, Opt, SiteNo);
 #endif
-*/
-	return Err;
+	}
 }
 
 double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
@@ -1416,7 +1405,7 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		}
 
 		if(IsNum(log(SiteLh)) == FALSE)
-			SiteLh = exp(-700);
+			return ERRLH;
 
 		Ret += log(SiteLh);
 #else
@@ -1480,7 +1469,8 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 		for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
 		{
-			Err = SumLh(Rates, Trees, Opt, SiteNo);
+			SumLhLiner(Rates, Trees, Opt, SiteNo);
+//			Err = SumLh(Rates, Trees, Opt, SiteNo);
 
 			if(Err == TRUE)
 				return ERRLH;
@@ -1495,7 +1485,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	Ret = CombineLh(Rates, Trees, Opt);
 
-	if((Ret > 0) || (Ret == Ret+1) || (Ret != Ret))
+	if((Ret > 0) || (Ret == Ret+1) || (Ret != Ret) || (Ret == ERRLH))
 		return ERRLH;
 
 	return Ret;

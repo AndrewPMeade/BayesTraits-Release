@@ -15,6 +15,3 @@ void		FreeOptions(OPTIONS *Opt, int NoSites);
 void		GetOptionsArry(OPTIONS *Opt, int Size, char** OptStr);
 
 #endif
-
-
-

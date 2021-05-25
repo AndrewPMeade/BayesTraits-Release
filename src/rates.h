@@ -28,5 +28,3 @@ char		RJModelType(int *ModelStr);
 
 void		FindRSquared(RATES* Rates, OPTIONS *Opt, double *R2, double *SSE, double *SST);
 #endif
-
-

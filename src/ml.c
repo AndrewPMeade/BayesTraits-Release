@@ -3,7 +3,7 @@
 #include <math.h>
 
 #include "typedef.h"
-#include "rand.h"
+#include "RandLib.h"
 #include "genlib.h"
 #include "rates.h"
 #include "praxis.h"
@@ -47,14 +47,14 @@ void	FindValidStartSet(double *Vec, RATES *Rates, TREES *Trees, OPTIONS *Opt)
 				if(i == 0)		
 					Vec[Index] = 1;
 				else
-					Vec[Index] = GenRandState(Rates->RandStates);
+					Vec[Index] = RandDouble(Rates->RS);
 			}
 			else
 			{
-				if(GenRandState(Rates->RandStates)<0.1)
-					Vec[Index] = GenRandState(Rates->RandStates) * 10;
+				if(RandDouble(Rates->RS) < 0.1)
+					Vec[Index] = RandDouble(Rates->RS) * 10;
 				else
-					Vec[Index] = GenRandState(Rates->RandStates) * 0.1;
+					Vec[Index] = RandDouble(Rates->RS) * 0.1;
 			}
 		}	
 	

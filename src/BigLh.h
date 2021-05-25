@@ -6,7 +6,7 @@
 void	InitTreeBigLh(OPTIONS *Opt, TREES *Trees);
 void	FreeTreeBigLh(OPTIONS *Opt, TREES *Trees);
 
-void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo, int *Err);
+void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo);
 
 double 	CombineBigLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS);
 

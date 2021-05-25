@@ -7,7 +7,7 @@
 #include "genlib.h"
 #include "contrasts.h"
 #include "praxis.h"
-#include "rand.h"
+#include "RandLib.h"
 #include "phyloplasty.h"
 
 CONTRAST*	AllocContrastMem(int NoSites)
@@ -530,7 +530,7 @@ double	ChangeContrastRate(double Rate, double Dev, RANDSTATES *RS)
 	
 	do
 	{
-		Ret = (GenRandState(RS) * Dev) - (Dev / 2.0); 
+		Ret = (RandDouble(RS) * Dev) - (Dev / 2.0); 
 		Ret += Rate;
 	} while(Ret <= 0);
 
@@ -545,18 +545,18 @@ void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	Con = Rates->Contrast;
 
-	if(GenRandState(Rates->RandStates) < 0.5)
+	if(RandDouble(Rates->RS) < 0.5)
 	{
 		Dev = Opt->RateDevList[0];
 
 		for(Index=0;Index<Trees->NoOfSites;Index++)
-			Con->EstAlpha[Index] += (GenRandState(Rates->RandStates) * Dev) - (Dev / 2.0);
+			Con->EstAlpha[Index] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
 	}	
 	else
 	{
 		Dev = Opt->RateDevList[1];
 		for(Index=0;Index<Trees->NoOfSites;Index++)
-			Con->EstSigma[Index] = ChangeContrastRate(Con->EstSigma[Index], Dev, Rates->RandStates);
+			Con->EstSigma[Index] = ChangeContrastRate(Con->EstSigma[Index], Dev, Rates->RS);
 	} 
 }
 

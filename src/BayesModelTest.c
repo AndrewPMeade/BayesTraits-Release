@@ -9,14 +9,13 @@
 #include "options.h"
 #include "rates.h"
 #include "likelihood.h"
-#include "rand.h"
 #include "priors.h"
 #include "mcmc.h"
 #include "praxis.h"
 #include "ml.h"
 #include "genlib.h"
 #include "continuous.h"
-
+#include "RandLib.h"
 
 void	GenDataFormModel(OPTIONS *Opt, TREES *Trees, double *Model, double *Error)
 {
@@ -98,7 +97,7 @@ void	BayesModeTest(OPTIONS *Opt, TREES *Trees)
 */
 		for(Index=0;Index<NumFile->NoOfLines;Index++)
 		{
-		/*	GenDataFormModel(Opt, Trees, NumFile->Data[Index], Err->Data[rand() % Err->NoOfLines]); */
+		/*	GenDataFormModel(Opt, Trees, NumFile->Data[Index], Err->Data[RandUSLong(Rates->RS) % Err->NoOfLines]); */
 			SetData(Opt, Trees, Rates, NumFile->Data[Index]);
 			CalcZ(Trees, &Trees->Tree[0], Opt);
 
@@ -108,3 +107,4 @@ void	BayesModeTest(OPTIONS *Opt, TREES *Trees)
 
 		exit(0);
 }
+

@@ -6,7 +6,7 @@
 #include "genlib.h"
 #include "1dopt.h"
 #include "likelihood.h"
-#include "rand.h"
+#include "RandLib.h"
 
 #define R 0.61803399 
 #define C (1.0-R)

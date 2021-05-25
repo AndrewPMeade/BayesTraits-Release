@@ -159,6 +159,8 @@ typedef struct
 
 	/* Free pointer to carry other data strcts */
 	void	*Pt;
+
+
 } PRAXSTATE;
 
 double		rndom(void);
