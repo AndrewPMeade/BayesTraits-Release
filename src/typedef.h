@@ -12,6 +12,18 @@
 
 #ifdef	 JNIRUN
 	#include "jni.h"
+/*	Build 
+	gcc-4.2 -dynamiclib -lm -O3 -w -o libBayesTraits.jnilib *.c ./MathLib/*.c -static-libgcc
+
+	trying
+	gcc-4.2 -dynamiclib -lm -O3 -w -o libBayesTraits.jnilib *.c ./MathLib/*.c -nodefaultlibs -static-libgcc -lsystem.B -nostatfiles
+
+	find out what dynamic libs are in play. 
+	otool -L libBayesTraits.jnilib
+
+	its normaly, will have to sort this out.  
+	/usr/lib/libSystem.B.dylib
+*/
 #endif
 
 
