@@ -563,6 +563,8 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	{
 		Rates->FatTailRates = CreateFatTailRates(Opt, Trees);
 		MapFatTailRateToRates(Rates, Rates->FatTailRates);
+
+
 	}
 }
 
@@ -3027,7 +3029,9 @@ void	SetEstDataFromPrior(RATES *Rates)
 	for(Index=0;Index<Rates->NoEstData;Index++)
 	{
 		SiteNo = Rates->EstDataSiteNo[Index];
+
 		Prior = GetAnsStatePrior(SiteNo, Rates->Priors, Rates->NoPriors);
+		
 		Rates->EstData[Index] = RandFromPrior(Rates->RNG, Prior);
 	}
 }

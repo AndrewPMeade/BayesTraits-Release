@@ -46,9 +46,6 @@
 #include "DistData.h"
 #include "Threaded.h"
 
-#define NO_SLICE_STEPS 100
-#define	MAX_STEP_DIFF	5.0
-
 void	SetInitAnsStates(OPTIONS *Opt, TREES *Trees, TREE *Tree);
 
 //void MapRatesToTree(TREE *Tree, int NoSites, FATTAILRATES *FTR)
@@ -115,7 +112,7 @@ FATTAILRATES*	AllocFatTailRates(OPTIONS *Opt, TREES *Trees)
 	Ret->SliceSamplers = (SLICESAMPLER**)SMalloc(sizeof(SLICESAMPLER*) * GetMaxThreads());
 
 	for(Index=0;Index<GetMaxThreads();Index++)
-		Ret->SliceSamplers[Index] = CrateSliceSampler(NO_SLICE_STEPS);
+		Ret->SliceSamplers[Index] = CrateSliceSampler(Opt->NoSliceSampleSteps);
 	
 	Ret->AnsVect = (double*)SMalloc(sizeof(double) * NoSites * Trees->MaxNodes);
 
@@ -368,6 +365,8 @@ void	SetInitAnsStates(OPTIONS *Opt, TREES *Trees, TREE *Tree)
 		GetInitAnsStateNodes(SIndex, Tree);
 	}
 
+
+
 	if(Opt->Model == M_GEO)
 		CorrectIntGeoNodes(Tree);
 }
@@ -521,7 +520,8 @@ int		FatTailSetYPosVect(SLICESAMPLER *SS, OPTIONS *Opt, NODE N, int SiteNo, STAB
 		SS->SliceY[Index] = AnsStateLh(SS->SliceX[Index], SiteNo, N, SD);
 	
 	return TRUE;
-	for(Index=0;Index<SS->NoSteps;Index++)
+//	Used to test if the lh differnce between slices is to big, posible lh err
+/*	for(Index=0;Index<SS->NoSteps;Index++)
 	{
 		if(Index > 1)
 		{
@@ -536,7 +536,7 @@ int		FatTailSetYPosVect(SLICESAMPLER *SS, OPTIONS *Opt, NODE N, int SiteNo, STAB
 			return FALSE;
 	}
 
-	return TRUE;
+	return TRUE;*/
 }
 
 void	GetSiteMinMax(FATTAILRATES *FTR, int SiteNo, double *Min, double *Max)
@@ -660,21 +660,40 @@ void	SSNodeFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates,
 	N->FatTailNode->Ans[SiteNo] = NAns;
 }
 
+void	PrintAllAnsStates(TREES *Trees)
+{
+	int NIndex, SIndex;
+	TREE *Tree;
+	NODE N;
+
+	Tree = Trees->Tree[0];
+
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
+	{
+		N = Tree->NodeList[NIndex];
+		for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
+			printf("%f\t", N->FatTailNode->Ans[SIndex]);
+	}
+	printf("\n");
+	fflush(stdout);
+}
+
+
 void	SSAllAnsStatesFatTailSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, FATTAILRATES *FTR, TREE *Tree, int SiteNo)
 {
 	int FIndex, NIndex, TNo;
 	NODE N;
+	int Index;
 
 	SetStableDist(FTR->SDList[SiteNo], FTR->Alpha[SiteNo], FTR->Scale[SiteNo]);
-
-
+	
 	for(FIndex=0;FIndex<Tree->NoFGroups;FIndex++)
 	{
 #ifdef OPENMP_THR
 	#pragma omp parallel for num_threads(Opt->Cores) private(TNo, N) schedule(dynamic, 1)
 #endif
 		for(NIndex=0;NIndex<Tree->NoFNodes[FIndex];NIndex++)
-		{
+		{			
 			N = Tree->FNodes[FIndex][NIndex];
 			TNo = GetThreadNo();
 			SSNodeFatTail(N, SiteNo, Opt, Trees, Rates, FTR->SliceSamplers[TNo], Rates->RSList[TNo]);
@@ -822,11 +841,13 @@ void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		N = Tree->NodeList[Index];
-		if(N->Tip == FALSE)
+//		if(N->Tip == FALSE)
 		{
 			Part = N->Part;
 
 			fprintf(Opt->LogFatTail, "Node-%05d\t", NID++);
+
+			fprintf(Opt->LogFatTail, "%f\t", N->UserLength);
 			
 			for(TIndex=0;TIndex<Part->NoTaxa;TIndex++)
 			{
@@ -849,6 +870,7 @@ void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
 
 	for(Index=0;Index<NID;Index++)
 	{
+		fprintf(Opt->LogFatTail, "Node-%05d - Branch Length\t", Index);
 		if(Opt->Model == M_GEO)
 			fprintf(Opt->LogFatTail, "Node-%05d - Long\tNode-%05d - Lat\t", Index, Index);
 		else
@@ -883,18 +905,17 @@ void	OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		N = Tree->NodeList[Index];
-		if(N->Tip == FALSE)
+
+		fprintf(Opt->LogFatTail, "%f\t", N->Length);
+		if(Opt->Model == M_GEO)
 		{
-			if(Opt->Model == M_GEO)
-			{
-				NodeToLongLat(N, &Long, &Lat);
-				fprintf(Opt->LogFatTail, "%f\t%f\t", Long, Lat);
-			}
-			else
-			{				
-				for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
-					fprintf(Opt->LogFatTail, "%f\t", N->FatTailNode->Ans[SIndex]);
-			}
+			NodeToLongLat(N, &Long, &Lat);
+			fprintf(Opt->LogFatTail, "%f\t%f\t", Long, Lat);
+		}
+		else
+		{				
+			for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
+				fprintf(Opt->LogFatTail, "%f\t", N->FatTailNode->Ans[SIndex]);
 		}
 	}
 

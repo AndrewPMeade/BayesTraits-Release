@@ -309,6 +309,7 @@ typedef enum
 	CSETMINTAXATRANS,
 	CSETMINMAXRATE, 
 	CNORMQMAT, 
+	CNOSLICESAMPLESTEPS,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -392,6 +393,7 @@ static char    *COMMANDSTRINGS[] =
 	"SetMinTransTaxaNo", "smttn",
 	"SetMinMaxRate", "smmr",
 	"NormaliseQMatrix", "nqm",
+	"NoSliceSampleSteps", "nsss",
 	""
 };
 
@@ -1234,6 +1236,8 @@ typedef struct
 	double		RateMin, RateMax;
 
 	int			NormQMat;
+
+	int			NoSliceSampleSteps;
 
 } OPTIONS;
 

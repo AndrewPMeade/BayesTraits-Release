@@ -198,10 +198,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	}
 
 	if(Opt->Model == M_FATTAIL)
-	{
-		Shed->OptFreq[S_FAT_TAIL_ANS_ALL] = 0.9;
-		//Shed->OptFreq[S_FAT_TAIL_ANS] = 0.9;
-	}
+		Shed->OptFreq[S_FAT_TAIL_ANS_ALL] = 0.8;
 
 	if(MultiTree(Opt) == TRUE)
 		Shed->OptFreq[S_TREE_MOVE] = 0.1;
@@ -235,7 +232,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	{
 		Shed->OptFreq[S_RATES] = 0.5;
 		if(Opt->ModelType == MT_FATTAIL)
-			Shed->OptFreq[S_RATES] = 0.05;
+			Shed->OptFreq[S_RATES] = 0.1;
 	}
 	
 #ifdef CONTRAST_ML_PARAM

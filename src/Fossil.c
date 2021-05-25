@@ -53,7 +53,7 @@ void	MakeDiscretePattern(int *Mask, int s00, int s01, int s10, int s11)
 		Mask[1] = 1;
 
 	if(s10 == 1)
-		Mask[1] = 1;
+		Mask[2] = 1;
 
 	if(s11 == 1)
 		Mask[3] = 1;
@@ -142,9 +142,6 @@ int*	MakeFossilMask(RECNODE *RNode, int NOS, MODEL M)
 		return Ret;
 	}
 
-	printf("CV not supported with Fossil, Please contact support if you need this feature\n");
-	exit(1);
-
 	return NULL;
 }
 
@@ -157,15 +154,16 @@ void	SetFossils(TREES *Trees, OPTIONS *Opt)
 	
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
-		if(Opt->UseCovarion == TRUE)
-		{
-			printf("CV not supported with Fossil, Please contact support if you need this feature\n");
-			exit(1);
-		}
-
 		RNode = Opt->RecNodeList[Index];
+	
 		if(RNode->NodeType == FOSSIL)
 		{
+			if(Opt->UseCovarion == TRUE)
+			{
+				printf("CV not supported with Fossil, Please contact support if you need this feature\n");
+				exit(1);
+			}
+
 			for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 			{
 				N = RNode->Tag->NodeList[TIndex];

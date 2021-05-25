@@ -74,6 +74,13 @@ void	SSSetXPosVect(SLICESAMPLER* SS, double Min, double Max)
 
 	for(Index=0;Index<SS->NoSteps;Index++)
 		SS->SliceX[Index] = Min + (StepSize * Index);
+
+//	printf("%f\t%f\n", Min, Max);
+
+//	for(Index=0;Index<SS->NoSteps;Index++)
+//		printf("%d\t%f\n", Index, SS->SliceX[Index]);
+
+//	exit(0);
 }
 
 

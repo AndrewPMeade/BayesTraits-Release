@@ -424,6 +424,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			fprintf(Str, "Schedule File:                   %s%s\n", Opt->BaseOutputFN, OUTPUT_EXT_SCHEDULE);
 
 		fprintf(Str, "Rate Dev:                        AutoTune\n");
+
+		if(Opt->Model == M_FATTAIL)
+			fprintf(Str, "No Slice Sample Steps:           %d\n", Opt->NoSliceSampleSteps);
 	}
 
 	if(Opt->RJDummy == TRUE)
@@ -1344,6 +1347,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->MinTransTaxaNo = MIN_NO_TAXA_RJ_LOCAL_TRANS;
 
 	Ret->NormQMat = FALSE;
+	
+	Ret->NoSliceSampleSteps = 100;
 
 	free(Buffer);
 
@@ -2118,7 +2123,7 @@ TAXA*	GetTaxaFromName(char *ID, TREES* Trees)
 	return NULL;
 }*/		  
 
-char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char *argv[])
+char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char **argv)
 {
 	int		Index;
 	char	**Ret;
@@ -2290,7 +2295,7 @@ void	AddConAnsStatePrior(OPTIONS *Opt, int SiteNo)
  	if(Opt->Model == M_CONTINUOUS_REG && SiteNo == 1)
 		sprintf(Buffer, "AncState-Dep");
 	else
-		sprintf(Buffer, "AncState-%d", SiteNo-1);
+		sprintf(Buffer, "AncState-%d", SiteNo);
 
 	RemovePriorFormOpt(Buffer, Opt);
 	Prior = CreateUniformPrior(Buffer, -100, 100);
@@ -2428,6 +2433,9 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 
 	if(Opt->DataType == CONTINUOUS)
 	{
+		if(Opt->Model != M_FATTAIL && Command == CNOSLICESAMPLESTEPS)
+			return FALSE;
+
 		if(Command == CVARRATES)
 		{
 			if(Opt->ModelType == MT_CONTINUOUS)
@@ -4137,6 +4145,33 @@ void	SetNormQMatrix(OPTIONS *Opt, int Tokes, char **Passed)
 	}
 }
 
+void	SetNoSliceSampleSteps(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	int NoSteps;
+
+	if(Tokes != 2)
+	{
+		printf("NoSliceSampleSteps take a number of steps.\n");
+		exit(1);
+	}
+
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("Cannot convert %s to a valid number of steps", Passed[1]);
+		exit(1);
+	}
+
+	NoSteps = atoi(Passed[1]);
+
+	if(NoSteps < 2)
+	{
+		printf("Cannot convert %s to a valid number of steps", Passed[1]);
+		exit(1);
+	}
+
+	Opt->NoSliceSampleSteps = NoSteps;
+}
+
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 {
 	int			Tokes;
@@ -4586,6 +4621,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CNORMQMAT)
 		SetNormQMatrix(Opt, Tokes, Passed);
+
+	if(Command == CNOSLICESAMPLESTEPS)
+		SetNoSliceSampleSteps(Opt, Tokes, Passed);
 
 	return FALSE;
 }
