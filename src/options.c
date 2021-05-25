@@ -1016,7 +1016,7 @@ void	SetFatTailPrior(OPTIONS *Opt)
 		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.2, 2.0);
 		AddPriorToOpt(Opt, Prior);
 
-		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.0, 100.0);
+		Prior = CreateUniformPrior(Opt->RateName[Pos+1], 0.0, 100.0);
 		AddPriorToOpt(Opt, Prior);
 	}
 }
@@ -1389,8 +1389,8 @@ void	PrintModelChoic(TREES *Trees)
 			printf("11)	Discrete: Heterogeneous \n");
 	}
 
-//	if(Trees->ValidCData == TRUE)
-//		printf("12)\tFat Tail\n");
+	if(Trees->ValidCData == TRUE)
+		printf("12)\tFat Tail\n");
 	
 	if(Trees->ValidCData == TRUE && Trees->NoSites == 2)
 		printf("13)\tGeo\n");
@@ -1510,8 +1510,8 @@ MODEL	IntToModel(int No)
 	if(No == 11)
 		return M_DESCHET;
 
-//	if(No == 12)
-//		return M_FATTAIL;
+	if(No == 12)
+		return M_FATTAIL;
 
 	if(No == 13)
 		return M_GEO;
