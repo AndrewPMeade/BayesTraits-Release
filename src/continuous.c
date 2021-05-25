@@ -333,6 +333,8 @@ void	CaclPVarCoVarRec(TREES* Trees, TREE *Tree, MATRIX *V)
 	for(Index=0;Index<N->NoNodes;Index++)
 		RecCalcV(Trees, V->me, N->NodeList[Index], CPart);
 
+//	PrintMatrix(V, "V=", stdout); exit(0);
+
 	FreePart(CPart);
 }
 
@@ -1082,8 +1084,8 @@ double	MLFindAlphaMean(TREES* Trees, TREE *Tree, int Site)
 		ColTemp = 0;
 		for(x=0;x<Trees->NoTaxa;x++)
 			ColTemp = ColTemp + Tree->ConVars->InvV->me[x][y];
+
 		P2 += ColTemp * Trees->Taxa[y]->ConData[Site];
-	//	P2 += ColTemp * Trees->Taxa[y]->Dependant;
 	}
 
 	return P1 * P2;
@@ -1131,6 +1133,9 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 	CV = Tree->ConVars;
 
 	MatrixVectProduct(CV->InvV->me[0], CV->TVect1, CV->TVect2, Trees->NoTaxa);
+
+
+
 	Ret  = VectVectDotProduct(CV->TVect2, CV->TVect3, Trees->NoTaxa);
 
 
@@ -1981,6 +1986,9 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 #else
 	VectByKroneckerMult(Tree->ConVars->ZA, Tree->ConVars->InvSigma, Tree->ConVars->InvV,Tree->ConVars->ZATemp);
 #endif
+
+	
+
 //	btdebug_exit("kronecker");
 
 	if(Opt->Model == M_CONTINUOUS_REG)
