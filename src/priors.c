@@ -660,7 +660,7 @@ double TestPT(void)
 
 double	CaclPriorCost(double Val, PRIORS *Prior, int NoCats)
 {
-	double Ret, Width;
+	double Ret, Width, Alpha;
 
 	Width = 1.0 / NoCats;
 
@@ -682,7 +682,8 @@ double	CaclPriorCost(double Val, PRIORS *Prior, int NoCats)
 		break;
 
 		case EXP:
-			Ret = PExpWidth(Val, Prior->DistVals[0], Width);
+			Alpha = 1.0 / Prior->DistVals[0];
+			Ret = PExpWidth(Val, Alpha, Width);
 		break;
 
 		case CHI:

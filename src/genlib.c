@@ -17,6 +17,19 @@ void		MallocErrFull(char* FileName, int LineNo)
 	exit(1);
 }
 
+void*	smalloc(size_t n, char* FName, unsigned long LineNo)
+{
+	void *Ret;
+
+	Ret = malloc(n);
+
+	if(Ret == NULL)
+		MallocErrFull(FName, LineNo);
+	
+
+	return Ret;
+}
+
 char*		StrMake(const char* Str)
 {
 	char*	Ret;

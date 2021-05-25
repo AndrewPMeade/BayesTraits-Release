@@ -57,7 +57,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	int		ID;
 
 	if(Opt->ScaleTrees != -1.0)
-		ScaleTrees(Trees, Opt->ScaleTrees);
+		ScaleUserTrees(Trees, Opt->ScaleTrees);
 
 	if(Opt->Model == M_CONTRAST_REG)
 	{
@@ -67,13 +67,8 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	
 	SetNoOfThreads(Opt->Cores);
 
-	if(Opt->UseVarData == TRUE)
-		LoadVarData(Opt);
-
 	if(Opt->Stones != NULL)
-	{
 		Opt->Stones->ItStart = Opt->Itters + 1;
-	}
 
 	FlattenRecNode(Opt);
 	

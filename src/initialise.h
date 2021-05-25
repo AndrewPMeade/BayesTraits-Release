@@ -1,5 +1,5 @@
-#if !defined (INITIALISE)
-#define INITIALISE
+#ifndef INITIALISE_H
+#define INITIALISE_H
 
 
 #include "typedef.h"

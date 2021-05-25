@@ -1710,10 +1710,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	if(Rates->UseEstData == TRUE)
 		SetEstData(Trees, Rates);
 
-	if(Opt->UseVarData == TRUE)
-		SetVarData(Trees, Opt->VarData, Rates->VarDataSite);
-
-	if((Rates->UseEstData == TRUE) || (Opt->UseVarData == TRUE))
+	if(Rates->UseEstData == TRUE)
 		CalcZ(Trees, Tree, Opt);
 
 #ifdef MATHMAT
@@ -1729,6 +1726,8 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 //	PrintMatrix(Tree->ConVars->V, "V = ", stdout);
 #endif
+
+
 
 	if(Opt->InvertV	== TRUE)
 	{
@@ -1769,6 +1768,9 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		if(Err != FALSE)
 			return ERRLH;
 	}
+
+	PrintMatrix(Tree->ConVars->V, "V", stdout);
+	exit(0);
 
 	CalcSigma(Opt, Trees, Tree, Rates->Means, Rates->Beta);
 

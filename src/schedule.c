@@ -203,9 +203,6 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	if(EstData(Opt->Trees) == TRUE)
 		Shed->OptFreq[SESTDATA] = 0.5;
 
-	if(Opt->UseVarData == TRUE)
-		Shed->OptFreq[SVARDATA] = 0.1;
-
 	if((Opt->EstOU == TRUE) && (Opt->LoadModels == FALSE))
 		Shed->OptFreq[SOU] = 0.1;
 

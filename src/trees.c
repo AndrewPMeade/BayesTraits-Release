@@ -2458,7 +2458,7 @@ void	RecScaleSubTree(NODE N, double Scale)
 	int Index;
 
 	N->Length = N->Length * Scale;
-
+	
 	if(N->Tip == TRUE)
 		return;
 
@@ -2489,3 +2489,26 @@ void	ScaleTrees(TREES *Trees, double Scale)
 		RecScaleSubTree(Trees->Tree[Index]->Root, Scale);
 
 }
+
+void	RecScaleUserSubTree(NODE N, double Scale)
+{
+	int Index;
+
+	N->Length = N->Length * Scale;
+	N->UserLength = N->UserLength * Scale;
+
+	if(N->Tip == TRUE)
+		return;
+
+	for(Index=0;Index<N->NoNodes;Index++)
+		RecScaleUserSubTree(N->NodeList[Index], Scale);
+}
+
+
+void	ScaleUserTrees(TREES *Trees, double Scale)
+{
+	int Index;
+
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
+		RecScaleUserSubTree(Trees->Tree[Index]->Root, Scale);
+}	

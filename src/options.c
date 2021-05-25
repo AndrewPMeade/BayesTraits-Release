@@ -17,6 +17,7 @@
 #include "Tag.h"
 #include "VarRates.h"
 #include "LocalTransform.h"
+#include "DistData.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHT_INDENT	4
@@ -393,9 +394,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 
 		if(Opt->NodeBLData == TRUE)
 			fprintf(Str, "Model for Node BLS Data:         True\n");
-
-		if(Opt->UseVarData == TRUE)
-			fprintf(Str, "Varable Data form file:          %s\n", Opt->VarDataFile);
 	
 		if(Opt->UseVarRates == TRUE)
 			fprintf(Str, "Using VarRates:                  True\n");
@@ -492,10 +490,13 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		for(Index=0;Index<Opt->Trees->NoOfRemovedTaxa;Index++)
 			fprintf(Str, "          %s\n", Opt->Trees->RemovedTaxa[Index]);
 	}
-
-
+	
 	if(Opt->Model == M_DESCHET)
 		PrintHetMap(Str, Opt, Opt->Trees);
+
+
+	if(Opt->DistData != NULL)
+		PrintDistData(Str, Opt->DistData);
 
 	PrintTreesInfo(Str, Opt->Trees, Opt->DataType);
 	fflush(Str);
@@ -591,6 +592,9 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 		FreeTag(Opt->TagList[Index]);
 	if(Opt->TagList != NULL)
 		free(Opt->TagList);
+
+	if(Opt->DistData != NULL)
+		FreeDistData(Opt->DistData);
 
 	free(Opt);
 }
@@ -1141,11 +1145,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->Headers		=	TRUE;
 
-	Ret->VarData		=	NULL;
-	Ret->UseVarData		=	FALSE;
-	Ret->VarDataFile	=	NULL;
-	
-
 	Ret->AnalyticalP	=	FALSE;
 
 
@@ -1182,7 +1181,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->ScaleTrees		=	-1;
 
-//	Ret->UseGeoData		=	TRUE;
 	Ret->UseGeoData		=	FALSE;
 	Ret->FatTailNormal	=	FALSE;
 
@@ -1196,11 +1194,14 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		Ret->RJLocalScalarPriors[Index] = NULL;
 	}
 
-	Ret->NoTags			= 0;
-	Ret->TagList		= NULL;
+	Ret->NoTags	= 0;
+	Ret->TagList = NULL;
 
-	Ret->NoLocalTransforms	= 0;
-	Ret->LocalTransforms		= NULL;
+	Ret->NoLocalTransforms = 0;
+	Ret->LocalTransforms = NULL;
+
+	Ret->UseDistData = FALSE;
+	Ret->DistData = NULL;
 	
 	free(Buffer);
 
@@ -2393,7 +2394,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CDEPSITE)   ||
 			(Command == CRJDUMMY)	||
 			(Command == CVARRATES)	||
-			(Command == CRJLOCALTRANSFORM)
+			(Command == CRJLOCALTRANSFORM) ||
+			(Command == CDISTDATA)
 			)
 		{
 			printf("Command %s (%s) is not valid with Discrete data\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2758,37 +2760,6 @@ void	SetCI(OPTIONS *Opt, char *Rate)
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
 		
-	}
-}
-
-
-
-void	SetVarDataFile(OPTIONS *Opt, int Tokes, char** Passed)
-{
-	if(Tokes == 1)
-	{
-		if(Opt->VarDataFile != NULL)
-		{
-			free(Opt->VarDataFile);
-			Opt->VarDataFile = NULL;
-		}
-
-		Opt->UseVarData = FALSE;
-		return;
-	}
-
-	if(Tokes == 2)
-	{
-		if(Opt->VarDataFile != NULL)
-			free(Opt->VarDataFile);
-
-		Opt->VarDataFile = StrMake(Passed[1]);
-		Opt->UseVarData = TRUE;
-	}
-	else
-	{
-		printf("VarData (VD) command take 0 or 1 parameters, 0 to turn the use of a data file to off. 1 to specify the data file name.\n");
-		return;
 	}
 }
 
@@ -3467,6 +3438,21 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 	Opt->LocalTransforms = (LOCAL_TRANSFORM**)AddToList(&Opt->NoLocalTransforms, (void**)Opt->LocalTransforms, UVR);
 }
 
+void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 2)
+	{
+		printf("Data Dist takes a data distribution file.\n");
+		exit(0);
+	}
+
+	if(Opt->DistData != NULL)
+		FreeDistData(Opt->DistData);
+
+	Opt->DistData = LoadDistData(Opt->Trees, Passed[1]);
+	Opt->UseDistData = TRUE;
+}
+
 void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	long long TBurnIn;
@@ -3974,11 +3960,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 			Opt->Headers = FALSE;
 		else
 			Opt->Headers = TRUE;
-
 	}
-
-	if(Command == CVARDATA)
-		SetVarDataFile(Opt, Tokes, Passed);
 
 	if(Command == CRMODEL)
 	{
@@ -4143,6 +4125,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CLOCALTRANSFORM)
 		AddLocalTransform(Opt, Tokes, Passed);
+
+	if(Command == CDISTDATA)
+		SetDistData(Opt, Tokes, Passed);
 
 	return FALSE;
 }

@@ -244,6 +244,10 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/StartLHTest/Somebird_tree_ladder.trees ./Seq/StartLHTest/song_coop_1.txt < in.txt > sout.txt
 // ./Seq/Testing/HTest/prim10k.trees ./Seq/Testing/HTest/l-lambdatest_1.txt < ./Seq/Testing/HTest/in.txt > ./Seq/Testing/HTest/sout.txt
+
+// ./Seq/Mammal.trees ./Seq/MammalBrainBody.txt < in.txt > sout.txt
+
+// ./Seq/OUTest.trees ./Seq/OUTest.txt < in.txt > sout.txt
 int main(int argc, char** argv)
 {
 	TREES*		Trees;

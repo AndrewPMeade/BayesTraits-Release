@@ -262,8 +262,6 @@ typedef enum
 	CCI,
 	CDEPSITE,
 	CHEADERS,
-/*	CPREVAR, */
-	CVARDATA,
 	CRMODEL,
 	CCOMMENT,
 	CNOSPERSITE,
@@ -289,6 +287,7 @@ typedef enum
 	CFATTAILNORMAL,
 	CADDTAG,
 	CLOCALTRANSFORM,
+	CDISTDATA,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -342,7 +341,6 @@ static char    *COMMANDSTRINGS[] =
 	"depsite",		"ds",
 	"headers",		"hd",
 /*	"prevar",		"pv", */
-	"vardata",		"vd",
 	"rmodel",		"rm",
 	"#",			"//",
 	"fitnospersite","nps",
@@ -368,6 +366,7 @@ static char    *COMMANDSTRINGS[] =
 	"fattailnormal", "ftn",
 	"addtag",		"at",
 	"localtransform",	"lt",
+	"distdata",			"dd",
 	""
 };
 
@@ -534,6 +533,13 @@ typedef enum
 	 RJDUMMY_INTER_SLOPE
 } RJDUMMY_TYPE;
 
+typedef enum
+{
+	NODEREC,
+	MRCA,
+	FOSSIL,
+} NODETYPE;
+
 typedef struct
 {
 	// User supplied taxa number, may not be continues  
@@ -553,6 +559,34 @@ typedef struct
 	int		EstDepData;
 	char	*RealData;	
 } TAXA;
+
+typedef struct
+{
+	TAXA *Taxa;
+
+	int		*NoSites;
+	double	**Data;
+
+	int		Linked;
+} DIST_DATA_TAXA;
+
+typedef struct
+{
+	char *FName;
+
+	int		NoSites;
+	int		NoTaxa;
+	DIST_DATA_TAXA	**DistDataTaxa;
+
+} DIST_DATA;
+
+typedef struct
+{
+	int NoTaxa;
+	int NoSites;
+
+	int **SiteMap;
+} DIST_DATE_RATES;
 
 typedef struct
 {
@@ -635,13 +669,6 @@ struct INODE
 
 typedef struct INODE*	NODE;
 
-typedef enum
-{
-	NODEREC,
-	MRCA,
-	FOSSIL,
-} NODETYPE;
-
 struct RNODE
 {
 	NODETYPE	NodeType;
@@ -649,9 +676,6 @@ struct RNODE
 
 	int			PresInTrees;
 	int			FossilState;
-
-//	int			*TaxaID;
-//	int			NoOfTaxa;
 
 	PART		*Part;
 
@@ -900,14 +924,6 @@ typedef struct
 
 typedef struct
 {
-	double	**Data;
-	char	**TaxaNames;
-	int		Site;
-	int		NoPoints;
-} VARDATA;
-
-typedef struct
-{
 	NODE			Node;
 	double			Scale;
 	TRANSFORM_TYPE	Type;
@@ -1003,26 +1019,7 @@ typedef struct
 	RESTYPES	*ResTypes;
 	int			*ResNo;
 	double		*ResConst;
-
-//	double		RateDev;
-//	double		*RateDevList;
-//	int			AutoTuneRD;
-//	int			RateDevPerParm;
 	
-/*	double		RateDevKappa;
-	double		RateDevLambda;
-	double		RateDevDelta;
-	double		RateDevOU;
-
-	double		EstDataDev;
-	int			AutoTuneDD;
-	
-	
-	double		VarRatesScaleDev;
-	int			AutoTuneVarRates;
-	*/
-	//	PPSCALEDEV
-
 	PRIORS		**Priors;
 
 	int			PriorCats;
@@ -1115,10 +1112,6 @@ typedef struct
 //	char*		ModelFile;
 //	int			UseModelFile;
 
-	int			UseVarData;
-	char		*VarDataFile;
-	VARDATA*	VarData;
-
 	int			UseRModel;
 	double		RModelP;
 
@@ -1173,6 +1166,9 @@ typedef struct
 
 	int				NoLocalTransforms;
 	LOCAL_TRANSFORM	**LocalTransforms;
+
+	DIST_DATA	*DistData;
+	int			UseDistData;
 
 } OPTIONS;
 
@@ -1324,8 +1320,6 @@ typedef struct
 	MODELFILE		*ModelFile;
 	int				ModelNo;
 
-	int				VarDataSite;
-
 	RANDSTATES		*RS;
 	RANDSTATES		**RSList;
 
@@ -1340,6 +1334,8 @@ typedef struct
 	
 	int				NoLocalTransforms;
 	LOCAL_TRANSFORM	**LocalTransforms;
+
+	DIST_DATE_RATES	*DistDataRates;
 } RATES;
 
 typedef struct
@@ -1356,7 +1352,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NOOFOPERATORS	23
+#define NOOFOPERATORS	22
 
 static char    *SHEDOP[] =
 {
@@ -1368,7 +1364,6 @@ static char    *SHEDOP[] =
 	"Jump",
 	"Prior Change",
 	"Est Data",
-	"Var Data",
 	"Solo Tree Move",
 	"RJ Local Transform Add / Remove",
 	"Local Transform Move",
@@ -1395,7 +1390,6 @@ typedef enum
 	SJUMP,
 	SPPROR,
 	SESTDATA,
-	SVARDATA,
 	SSOLOTREEMOVE,
 	SPPADDREMOVE,
 	SPPMOVE,

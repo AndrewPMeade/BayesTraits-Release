@@ -15,10 +15,6 @@ void		RemoveConMissingData(TREES* Trees);
 void		SetTreeAsData(OPTIONS *Opt, TREES *Trees, int TreeNo);
 int			EstData(TREES *Trees);
 
-void		LoadVarData(OPTIONS* Opt);
-void		FreeVarData(OPTIONS* Opt, VARDATA *VarData);
-void		SetVarData(TREES* Trees, VARDATA *VarData, int Site);
-
 void		FreeData(OPTIONS *Opt);
 void		FreeTaxa(TAXA *Taxa, int NoOfSites);
 void		FindSiteSymbols(TREES *Trees, int SiteNo);

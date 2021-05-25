@@ -28,6 +28,7 @@
 #include "Geo.h"
 #include "Threaded.h"
 #include "LocalTransform.h"
+#include "DistData.h"
 
 //double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 //void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -460,9 +461,6 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 			else
 				Rates->Beta = NULL;
 		}
-
-		if(Opt->UseVarData == TRUE)
-			Rates->VarDataSite = 0;
 	}
 
 	Trees = Opt->Trees;
@@ -695,7 +693,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 //	Ret->FixedModels	= NULL;
 	Ret->ModelFile		=	NULL;
 	Ret->ModelNo		=	-1;
-	Ret->VarDataSite	=	-1;
 
 	Ret->EstData		=	NULL;
 	Ret->EstDescData	=	NULL;
@@ -715,9 +712,14 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->RJDummy		=	NULL;
 	Ret->FatTailRates	=	NULL;
 	
+	Ret->DistDataRates	=	NULL;
+	
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
 	SetRatesLocalRates(Ret, Opt);
+
+	if(Opt->UseDistData == TRUE)
+		Ret->DistDataRates = CreateDistDataRates(Opt->DistData, Ret->RS);
 
 
 	if(Opt->UseGamma == TRUE)
@@ -1063,9 +1065,6 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		}
 	}
 
-
-	if(Opt->UseVarData == TRUE)
-		fprintf(Str, "Var Data Site\t");
 
 	if((Opt->EstKappa == TRUE) || (Opt->FixKappa != -1))
 		fprintf(Str, "Kappa\t");
@@ -1591,8 +1590,6 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		}
 	}
 
-	if(Opt->UseVarData == TRUE)
-		fprintf(Str, "%d\t", Rates->VarDataSite);
 
 	if(Opt->EstKappa == TRUE)
 		fprintf(Str, "%0.12f\t", Rates->Kappa);
@@ -2005,8 +2002,6 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	
 	if(UseNonParametricMethods(Opt) == TRUE)
 		VarRatesCopy(A, B);
-
-	A->VarDataSite = B->VarDataSite;
 
 	if(A->Hetero != NULL)
 		CopyHetero(A->Hetero, B->Hetero);
@@ -2605,10 +2600,6 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 			MutateEstRates(Opt, Rates, Shed);
 		/*	for(Index=0;Index<Rates->NoEstData;Index++)
 				Rates->EstData[Index] += (GenRandState(Rates->RandStates) * Opt->EstDataDev) - (Opt->EstDataDev / 2.0);*/
-		break;
-
-		case SVARDATA:
-			Rates->VarDataSite = RandUSLong(Rates->RS) % Opt->VarData->NoPoints;
 		break;
 
 		case SSOLOTREEMOVE:
