@@ -32,10 +32,10 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 #include "BigLh.h"
-#include "likelihood.h"
+#include "Likelihood.h"
 
 #ifndef BIG_LH
 void	InitTreeBigLh(OPTIONS *Opt, TREES *Trees) { }

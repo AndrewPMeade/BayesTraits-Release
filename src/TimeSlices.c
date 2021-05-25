@@ -31,12 +31,12 @@
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 #include "TimeSlices.h"
-#include "trees.h"
+#include "Trees.h"
 #include "LocalTransform.h"
-#include "priors.h"
+#include "Priors.h"
 
 TIME_SLICE*		AllocTimeSlice(char *Name)
 {

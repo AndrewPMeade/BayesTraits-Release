@@ -30,20 +30,20 @@
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "trees.h"
-#include "genlib.h"
-#include "data.h"
-#include "likelihood.h"
-#include "matrix.h"
-#include "linalg.h"
-#include "continuous.h"
-#include "treepasser.h"
+#include "TypeDef.h"
+#include "Trees.h"
+#include "GenLib.h"
+#include "Data.h"
+#include "Likelihood.h"
+#include "Matrix.h"
+#include "LinAlg.h"
+#include "Continuous.h"
+#include "TreePasser.h"
 #include "BigLh.h"
-#include "part.h"
+#include "Part.h"
 #include "RandLib.h"
 #include "QuadDouble.h"
-#include "contrasts.h"
+#include "Contrasts.h"
 #include "FatTail.h"
 
 #ifdef BTOCL

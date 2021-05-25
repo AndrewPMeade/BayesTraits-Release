@@ -32,8 +32,8 @@
 #include <math.h>
 
 #include "SliceSampler.h"
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 
 SLICESAMPLER*	CrateSliceSampler(int NoSteps)
 {

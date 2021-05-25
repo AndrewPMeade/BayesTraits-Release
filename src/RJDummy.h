@@ -1,7 +1,7 @@
 #ifndef RJDUMMY_H
 #define RJDUMMY_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 int			GetMaxDummy(OPTIONS *Opt, TREES *Trees);
 

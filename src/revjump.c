@@ -31,13 +31,13 @@
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
+#include "TypeDef.h"
 #include "Rates.h"
-#include "genlib.h"
+#include "GenLib.h"
 #include "RandLib.h"
-#include "trees.h"
-#include "continuous.h"
-#include "revjump.h"
+#include "Trees.h"
+#include "Continuous.h"
+#include "RevJump.h"
 
 void	RJSplitPropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0Size, int G1Size, double Rate, int OGroup);
 

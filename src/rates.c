@@ -31,24 +31,24 @@
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
+#include "TypeDef.h"
 #include "Rates.h"
-#include "genlib.h"
+#include "GenLib.h"
 #include "RandLib.h"
-#include "trees.h"
-#include "continuous.h"
-#include "revjump.h"
-#include "priors.h"
-#include "likelihood.h"
-#include "data.h"
-#include "matrix.h"
-#include "randdists.h"
-#include "contrasts.h"
+#include "Trees.h"
+#include "Continuous.h"
+#include "RevJump.h"
+#include "Priors.h"
+#include "Likelihood.h"
+#include "Data.h"
+#include "Matrix.h"
+#include "RandDists.h"
+#include "Contrasts.h"
 #include "VarRates.h"
 #include "BigLh.h"
-#include "ml.h"
-#include "schedule.h"
-#include "modelfile.h"
+#include "ML.h"
+#include "Schedule.h"
+#include "ModelFile.h"
 #include "SimData.h"
 #include "RJDummy.h"
 #include "ContrastRegOutput.h"
@@ -58,11 +58,6 @@
 #include "LocalTransform.h"
 #include "DistData.h"
 #include "TimeSlices.h"
-
-
-//double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
-//void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
-
 
 void	SetRegBetaZero(int NoSites, RATES *Rates)
 {

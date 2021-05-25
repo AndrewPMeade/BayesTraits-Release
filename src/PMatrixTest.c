@@ -31,10 +31,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "genlib.h"
-#include "matrix.h"
-#include "linalg.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "Matrix.h"
+#include "LinAlg.h"
 #include "Rates.h"
 
 extern INVINFO*	AllocInvInfo(int NOS);
@@ -45,9 +45,7 @@ double*	GetRates(void)
 	double*	Ret;
 	int		Index;
 	
-	Ret = (double*)malloc(sizeof(double) * 8);
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (double*)SMalloc(sizeof(double) * 8);
 
 	for(Index=0;Index<8;Index++)
 	{

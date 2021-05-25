@@ -34,9 +34,9 @@
 
 #include "ContrastRegOutput.h"
 #include "ContrastRegCalcReg.h"
-#include "genlib.h"
-#include "typedef.h"
-#include "contrasts.h"
+#include "GenLib.h"
+#include "TypeDef.h"
+#include "Contrasts.h"
 
 void			PrintRegConPost(REG_CON_POST* RegConPost)
 {

@@ -1,8 +1,7 @@
 #ifndef CONTRASTS_TRANS_H
 #define CONTRASTS_TRANS_H
 
-#include "typedef.h"
-
+#include "TypeDef.h"
 
 void	TransformTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm);
 

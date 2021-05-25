@@ -1,7 +1,7 @@
 #ifndef CONTRASTS_H
 #define CONTRASTS_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 REG_BETA_SPACE*	InitRegBetaSpace(int NoSites, int NoCont);
 void			FreeRegBetaSpace(REG_BETA_SPACE* RSpace);

@@ -1,7 +1,7 @@
 #ifndef PART_H
 #define PART_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 
 void	SetParts(TREES *Trees);

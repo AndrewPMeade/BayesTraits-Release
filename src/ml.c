@@ -32,18 +32,18 @@
 #include <math.h>
 #include <string.h>
 
-#include "genlib.h"
-#include "typedef.h"
-#include "trees.h"
+#include "GenLib.h"
+#include "TypeDef.h"
+#include "Trees.h"
 #include "Rates.h"
-#include "ml.h"
-#include "likelihood.h"
-#include "praxis.h"
-#include "priors.h"
-#include "continuous.h"
+#include "ML.h"
+#include "Likelihood.h"
+#include "Praxis.h"
+#include "Priors.h"
+#include "Continuous.h"
 #include "Threaded.h"
-#include "options.h"
-#include "data.h"
+#include "Options.h"
+#include "Data.h"
 #include "TimeSlices.h"
 #include "NLOptBT.h"
 

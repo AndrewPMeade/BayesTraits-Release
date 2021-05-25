@@ -32,9 +32,9 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "genlib.h"
-#include "linalg.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "LinAlg.h"
 
 int	InvMat(INVINFO	*InvInfo, int NoStates)
 {

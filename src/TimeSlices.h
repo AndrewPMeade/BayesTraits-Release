@@ -1,8 +1,8 @@
 #ifndef TIME_SLICES_H
 #define TIME_SLICES_H
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 
 TIME_SLICE*		AddTimeSlice(TIME_SLICES *TSlices, char *Name, double Time, double Scale);
 TIME_SLICE*		AllocTimeSlice(char *Name);

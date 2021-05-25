@@ -36,7 +36,7 @@
 
 #include "typedef.h"
 #include "trees.h"
-#include "continuous.h"
+#include "Continuous.h"
 #include "genlib.h"
 #include "matrix.h"
 // OpenCL headers

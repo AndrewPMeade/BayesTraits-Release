@@ -31,10 +31,10 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "typedef.h"
+#include "TypeDef.h"
 #include "VarRates.h"
-#include "genlib.h"
-#include "trees.h"
+#include "GenLib.h"
+#include "Trees.h"
 
 
 LOCAL_TRANSFORM*	CreateLocalTransforms(char *Name, TAG **TagList, int NoTags, TRANSFORM_TYPE Type, int Est, double Scale)

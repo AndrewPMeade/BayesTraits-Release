@@ -35,7 +35,7 @@
 
 #include "typedef.h"
 #include "trees.h"
-#include "continuous.h"
+#include "Continuous.h"
 
 // OpenCL headers
 #include "btocl_continuous.h"

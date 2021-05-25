@@ -25,18 +25,16 @@
 *
 */
 
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "praxis.h"
-#include "genlib.h"
-#include "likelihood.h"
-#include "ml.h"
+#include "TypeDef.h"
+#include "Praxis.h"
+#include "GenLib.h"
+#include "Likelihood.h"
+#include "ML.h"
 
 #define	NO_ML_ALG	7
 

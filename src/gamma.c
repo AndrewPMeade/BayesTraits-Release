@@ -5,7 +5,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "gamma.h"
+#include "Gamma.h"
 
 #define MAINCAT 4
 

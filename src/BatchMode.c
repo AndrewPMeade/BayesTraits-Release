@@ -29,14 +29,14 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "genlib.h"
-#include "typedef.h"
-#include "trees.h"
-#include "data.h"
-#include "options.h"
-#include "initialise.h"
-#include "mcmc.h"
-#include "ml.h"
+#include "GenLib.h"
+#include "TypeDef.h"
+#include "Trees.h"
+#include "Data.h"
+#include "Options.h"
+#include "Initialise.h"
+#include "MCMC.h"
+#include "ML.h"
 
 #ifdef BTOCL
 #include "btocl_runtime.h"

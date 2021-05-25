@@ -1,7 +1,7 @@
 #ifndef MODELFILE_H
 #define MODELFILE_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 FILE*			InitSaveModelFile(char *FName, OPTIONS *Opt, TREES *Trees, RATES *Rates);
 

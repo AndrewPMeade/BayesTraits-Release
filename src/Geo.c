@@ -32,12 +32,12 @@
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
+#include "TypeDef.h"
 #include "Geo.h"
-#include "genlib.h"
+#include "GenLib.h"
 #include "Threaded.h"
 #include "FatTail.h"
-#include "likelihood.h"
+#include "Likelihood.h"
 #include "Rates.h"
 
 

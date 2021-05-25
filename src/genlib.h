@@ -17,8 +17,6 @@
 
 #define	MallocErr() MallocErrFull(__FILE__, __LINE__)
 
-
-
 void*	smalloc(size_t n, char* FName, unsigned long LineNo);
 
 #define SMalloc(N) smalloc(N, __FILE__, __LINE__)

@@ -30,18 +30,18 @@
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "trees.h"
-#include "data.h"
-#include "options.h"
+#include "TypeDef.h"
+#include "Trees.h"
+#include "Data.h"
+#include "Options.h"
 #include "Rates.h"
-#include "likelihood.h"
-#include "priors.h"
-#include "mcmc.h"
-#include "praxis.h"
-#include "ml.h"
-#include "genlib.h"
-#include "continuous.h"
+#include "Likelihood.h"
+#include "Priors.h"
+#include "MCMC.h"
+#include "Praxis.h"
+#include "ML.h"
+#include "GenLib.h"
+#include "Continuous.h"
 #include "RandLib.h"
 
 void	GenDataFormModel(OPTIONS *Opt, TREES *Trees, double *Model, double *Error)

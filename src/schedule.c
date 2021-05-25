@@ -31,10 +31,10 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "genlib.h"
-#include "schedule.h"
-#include "data.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "Schedule.h"
+#include "Data.h"
 #include "AutoTune.h"
 #include "Rates.h"
 #include "VarRates.h"

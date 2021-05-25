@@ -32,10 +32,10 @@
 #include <math.h>
 #include <string.h>
 
-#include "genlib.h"
-#include "typedef.h"
-#include "modelfile.h"
-#include "likelihood.h"
+#include "GenLib.h"
+#include "TypeDef.h"
+#include "ModelFile.h"
+#include "Likelihood.h"
 #include "Rates.h"
 
 int		GetParamPerModel(OPTIONS *Opt, TREES *Trees, RATES *Rates)

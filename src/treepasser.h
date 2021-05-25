@@ -1,4 +1,4 @@
-#if !defined (TRESSPASSER_HEADDER)
+#ifndef TRESSPASSER_HEADDER
 #define TRESSPASSER_HEADDER
 
 static char    *TREETAGS[] =

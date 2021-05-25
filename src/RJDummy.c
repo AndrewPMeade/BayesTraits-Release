@@ -31,12 +31,12 @@
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 #include "RJDummy.h"
-#include "likelihood.h"
-#include "options.h"
-#include "contrasts.h"
+#include "Likelihood.h"
+#include "Options.h"
+#include "Contrasts.h"
 
 int			GetMaxDummy(OPTIONS *Opt, TREES *Trees)
 {

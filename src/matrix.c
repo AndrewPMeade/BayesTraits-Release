@@ -32,9 +32,9 @@
 #include <string.h>
 #include <math.h>
 
-#include "genlib.h"
-#include "matrix.h"
-#include "linalg.h"
+#include "GenLib.h"
+#include "Matrix.h"
+#include "LinAlg.h"
 
 /* Some matrix manipulasion rotueses */
 /* The representatin of me is Row By Coloum*/

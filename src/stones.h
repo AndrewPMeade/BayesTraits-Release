@@ -1,7 +1,7 @@
 #ifndef STONES_H
 #define STONES_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 void	PrintStones(FILE *Str, STONES *Stones);
 void	OutputStoneHeadder(FILE *Out, STONES *Stones);

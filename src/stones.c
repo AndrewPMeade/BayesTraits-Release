@@ -35,10 +35,10 @@
 	#include <gsl/gsl_cdf.h>
 #endif
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 #include "Stones.h"
-#include "options.h"
+#include "Options.h"
 
 void	PrintStones(FILE *Str, STONES *Stones)
 {

@@ -1,8 +1,8 @@
 #ifndef PATTERN_H
 #define PATTERN_H
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 
 void	AddPattern(OPTIONS *Opt, char *Name, int NoTags, char **TagNameList);
 void	FreePattern(PATTERN *Pattern);

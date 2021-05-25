@@ -27,7 +27,7 @@
 
 
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 #ifdef BTLAPACK
 
@@ -35,8 +35,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "trees.h"
-#include "continuous.h"
+#include "Trees.h"
+#include "Continuous.h"
 
 
 // OpenCL headers

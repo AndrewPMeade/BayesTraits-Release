@@ -32,10 +32,10 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 #include "DistData.h"
-#include "trees.h"
+#include "Trees.h"
 #include "Geo.h"
 
 int	GetLinked(char *Taxa, char *Str)

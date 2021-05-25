@@ -30,9 +30,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "genlib.h"
-#include "part.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "Part.h"
 #include "Tag.h"
 
 TAG*	GetTagFromName(OPTIONS *Opt, char *Name)

@@ -30,14 +30,14 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "genlib.h"
-#include "trees.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "Trees.h"
 #include "TransformTree.h"
-#include "continuous.h"
+#include "Continuous.h"
 
-void	SetFixedConTrans(OPTIONS *Opt, TREES *Trees);
-void	SetConTrans(TREE *Tree, double Kappa, double Lambda, double Delta, double OU);
+//void	SetFixedConTrans(OPTIONS *Opt, TREES *Trees);
+//void	SetConTrans(TREE *Tree, double Kappa, double Lambda, double Delta, double OU);
 
 void	RecTransContNodeDelta(NODE N, double Delta, double PathLen)
 {

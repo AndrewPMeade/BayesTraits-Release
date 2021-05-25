@@ -1,7 +1,7 @@
 #ifndef RJ_LOCACL_S_HEADDER
 #define RJ_LOCACL_S_HEADDER
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 TRANSFORM_TYPE			NameToRJLocalType(char *Name, int *Err);
 

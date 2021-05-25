@@ -31,12 +31,12 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "data.h"
-#include "genlib.h"
-#include "trees.h"
-#include "part.h"
-#include "options.h"
+#include "TypeDef.h"
+#include "Data.h"
+#include "GenLib.h"
+#include "Trees.h"
+#include "Part.h"
+#include "Options.h"
 #include "Geo.h"
 #include "FatTail.h"
 

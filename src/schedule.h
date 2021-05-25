@@ -1,7 +1,7 @@
 #ifndef SCHEDULE_HEADDER
 #define SCHEDULE_HEADDER
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS);
 void		FreeeSchedule(SCHEDULE* Shed);

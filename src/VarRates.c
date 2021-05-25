@@ -29,16 +29,16 @@
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 #include "VarRates.h"
-#include "matrix.h"
+#include "Matrix.h"
 #include "RandLib.h"
-#include "likelihood.h"
-#include "trees.h"
-#include "randdists.h"
+#include "Likelihood.h"
+#include "Trees.h"
+#include "RandDists.h"
 #include "RJLocalScalar.h"
-#include "priors.h"
+#include "Priors.h"
 #include "TransformTree.h"
 
 #include <gsl/gsl_cdf.h>

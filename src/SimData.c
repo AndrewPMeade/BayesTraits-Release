@@ -31,11 +31,11 @@
 #include <string.h>
 #include <math.h>
 
-#include "genlib.h"
-#include "typedef.h"
-#include "trees.h"
+#include "GenLib.h"
+#include "TypeDef.h"
+#include "Trees.h"
 #include "RandLib.h"
-#include "likelihood.h"
+#include "Likelihood.h"
 
 FILE*	OpenRandSimOutFile(int NOS)
 {

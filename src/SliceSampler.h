@@ -1,7 +1,7 @@
 #ifndef SLICESAMPLER_H
 #define SLICESAMPLER_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 SLICESAMPLER*	CrateSliceSampler(int NoSlices);
 void			FreeSliceSampler(SLICESAMPLER* SS);

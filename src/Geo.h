@@ -1,7 +1,7 @@
 #ifndef GEO_HEADDER
 #define GEO_HEADDER
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 // Data should be Long / Lat
 

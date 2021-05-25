@@ -33,11 +33,11 @@
 #include <string.h>
 
 #include "Threaded.h"
-#include "typedef.h"
-#include "genlib.h"
-#include "continuous.h"
-#include "ckappa.h"
-#include "part.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "Continuous.h"
+#include "CKappa.h"
+#include "Part.h"
 
 void	RecCalcKappaV(TREES* Trees, TREE *Tree, NODE N, PART *DiffPart, double Kappa, double SumLogPath)
 {

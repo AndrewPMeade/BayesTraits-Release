@@ -1,7 +1,7 @@
-#if !defined (MCMCHEADDER)
-#define MCMCHEADDER
+#ifndef MCMC_H
+#define MCMC_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj);

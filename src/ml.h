@@ -1,7 +1,7 @@
 #ifndef MLHEADDER
 #define MLHEADDER
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 typedef enum
 {

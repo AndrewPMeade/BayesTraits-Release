@@ -31,11 +31,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "genlib.h"
-#include "ptrees.h"
-#include "trees.h"
-#include "part.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "PTrees.h"
+#include "Trees.h"
+#include "Part.h"
 
 typedef struct
 {

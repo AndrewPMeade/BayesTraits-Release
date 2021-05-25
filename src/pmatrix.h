@@ -1,7 +1,7 @@
 #ifndef PMATRIX_H
 #define PMATRIX_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 void	CreateMSAMatrix(INVINFO *InvInfo, int NOS, double *Rates, double *Pis);
 void	CreateMSAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *RateP, double *Pi);

@@ -1,7 +1,7 @@
 #ifndef BIGLH_HEADDER
 #define BIGLH_HEADDER
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 void	InitTreeBigLh(OPTIONS *Opt, TREES *Trees);
 void	FreeTreeBigLh(OPTIONS *Opt, TREES *Trees);

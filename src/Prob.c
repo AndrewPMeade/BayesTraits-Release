@@ -32,7 +32,7 @@
 #include <stdlib.h>
 
 
-#include "typedef.h"
+#include "TypeDef.h"
 #include "Prob.h"
 
 #ifndef M_PI

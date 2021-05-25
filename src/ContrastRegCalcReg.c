@@ -32,12 +32,12 @@
 #include <string.h>
 #include <math.h>
 
-#include "genlib.h"
-#include "matrix.h"
+#include "GenLib.h"
+#include "Matrix.h"
 #include "ContrastRegCalcReg.h"
-#include "contrasts.h"
-#include "typedef.h"
-#include "linalg.h"
+#include "Contrasts.h"
+#include "TypeDef.h"
+#include "LinAlg.h"
 
 void	SetContrastMultiRegData(MATRIX *M, int N,  int NoX, REG_BETA_SPACE*	RegSpace)
 {

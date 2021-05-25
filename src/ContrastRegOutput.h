@@ -1,8 +1,8 @@
 #ifndef CON_REG_OUTPUT_H
 #define CON_REG_OUTPUT_H
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 
 typedef struct
 {

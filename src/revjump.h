@@ -1,7 +1,7 @@
-#if !defined (RJMCMCHEADDER)
+#ifndef RJMCMCHEADDER
 #define RJMCMCHEADDER
 
-#include	"typedef.h"
+#include "TypeDef.h"
 
 void		MapRJRates(OPTIONS *Opt, RATES *Rates);
 int			NoOfPramGroups(RATES* Rates, int *GroupID, int *GroupSize);

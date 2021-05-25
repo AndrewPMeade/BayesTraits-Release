@@ -31,8 +31,8 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 #include "AutoTune.h"
 
 void		CalcRSqr(double *x, double *y, int Size, double *R2, double *Slope, double *Intercept);

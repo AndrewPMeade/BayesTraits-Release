@@ -33,18 +33,16 @@
 #include <string.h>
 
 #include "FatTail.h"
-
-#include "typedef.h"
-
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 #include "StableDist.h"
-#include "likelihood.h"
-#include "part.h"
-#include "trees.h"
-#include "praxis.h"
+#include "Likelihood.h"
+#include "Part.h"
+#include "Trees.h"
+#include "Praxis.h"
 #include "Geo.h"
 #include "SliceSampler.h"
-#include "mcmc.h"
+#include "MCMC.h"
 #include "DistData.h"
 
 #define NO_SLICE_STEPS 100

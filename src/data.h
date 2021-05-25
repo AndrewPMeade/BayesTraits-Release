@@ -1,7 +1,7 @@
-#if !defined (DATAHEADDER)
-#define DATAHEADDER
+#ifndef DATA_H
+#define DATA_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 void		LoadData(char* FileName, TREES *Trees);
 void		CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model);

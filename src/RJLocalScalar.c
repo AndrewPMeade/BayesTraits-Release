@@ -32,10 +32,10 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 #include "RJLocalScalar.h"
-#include "priors.h"
+#include "Priors.h"
 
 TRANSFORM_TYPE	NameToRJLocalType(char *Name, int *Err)
 {

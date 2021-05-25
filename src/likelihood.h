@@ -1,7 +1,7 @@
 #ifndef LIKELIHOOD_HEADDER
 #define LIKELIHOOD_HEADDER
 
-#include "praxis.h"
+#include "Praxis.h"
 
 void	FossilLh(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo);
 

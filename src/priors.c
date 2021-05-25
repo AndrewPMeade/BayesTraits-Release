@@ -30,14 +30,14 @@
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "genlib.h"
-#include "priors.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "Priors.h"
 #include "RandLib.h"
-#include "revjump.h"
-#include "likelihood.h"
+#include "RevJump.h"
+#include "Likelihood.h"
 #include "VarRates.h"
-#include "randdists.h"
+#include "RandDists.h"
 #include "RandLib.h"
 #include "Prob.h"
 #include "LocalTransform.h"

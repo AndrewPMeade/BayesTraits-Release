@@ -35,7 +35,7 @@
 #include <time.h>
 #include <stdint.h>
 
-#include "genlib.h"
+#include "GenLib.h"
 
 
 void		MallocErrFull(char* FileName, int LineNo)

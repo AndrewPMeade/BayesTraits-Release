@@ -1,7 +1,7 @@
 #ifndef		LOCAL_TRANSFORMS_H
 #define		LOCAL_TRANSFORMS_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 void				ApplyLocalTransforms(RATES *Rates, TREES *Trees, OPTIONS *Opt, int Norm);
 

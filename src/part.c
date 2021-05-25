@@ -31,11 +31,11 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "part.h"
-#include "typedef.h"
-#include "genlib.h"
-#include "continuous.h"
-#include "trees.h"
+#include "Part.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "Continuous.h"
+#include "Trees.h"
 
 void	FreePart(PART *Part)
 {

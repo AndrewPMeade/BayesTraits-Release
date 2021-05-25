@@ -30,9 +30,9 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "genlib.h"
-#include "typedef.h"
-#include "treepasser.h"
+#include "GenLib.h"
+#include "TypeDef.h"
+#include "TreePasser.h"
 
 #define	NEXUSTAG	"#NEXUS"
 #define	TREESTAG	"TREES"

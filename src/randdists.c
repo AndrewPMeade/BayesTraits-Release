@@ -25,15 +25,15 @@
 *
 */
 
-
-
-#include "randdists.h"
-#include "matrix.h"
-#include "genlib.h"
-
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+
+#include "RandDists.h"
+#include "Matrix.h"
+#include "GenLib.h"
+
+
 #define ABS(x) ((x) >= 0 ? (x) : -(x))
 
 #ifndef min

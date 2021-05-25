@@ -1,7 +1,7 @@
 #ifndef FATTAIL_HEADDER
 #define FATTAIL_HEADDER
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 void			InitFatTailTrees(OPTIONS *Opt, TREES *Trees);
 void			FreeFatTailTrees(OPTIONS *Opt, TREES *Trees);

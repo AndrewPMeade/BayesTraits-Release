@@ -34,20 +34,20 @@
 
 //#define MATHMAT
 
-#include "typedef.h"
-#include "trees.h"
-#include "genlib.h"
-#include "data.h"
-#include "likelihood.h"
-#include "matrix.h"
-#include "linalg.h"
+#include "TypeDef.h"
+#include "Trees.h"
+#include "GenLib.h"
+#include "Data.h"
+#include "Likelihood.h"
+#include "Matrix.h"
+#include "LinAlg.h"
 #include "Rates.h"
-#include "ckappa.h"
-#include "contrasts.h"
+#include "CKappa.h"
+#include "Contrasts.h"
 #include "RandLib.h"
-#include "randdists.h"
-#include "part.h"
-#include "InvMKL.h"
+#include "RandDists.h"
+#include "Part.h"
+
 
 #ifdef BTOCL
 	#include "btocl_continuous.h"
@@ -1827,10 +1827,6 @@ int	CalcInvV(TREES *Trees, TREE *Tree)
 #ifdef BTLAPACK
 	btlapack_FindInvV(Trees, Tree);
 	return FALSE;
-#endif
-
-#ifdef USE_MLK
-	return InvMLK(Trees, Tree);
 #endif
 
 	return FindInvV(Trees, Tree);

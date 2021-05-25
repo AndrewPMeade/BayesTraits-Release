@@ -1,7 +1,7 @@
 #ifndef AUTOTUNE_H
 #define AUTOTUNE_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 #define		AT_HSIZE		128
 #define		AT_SCALE		2.0

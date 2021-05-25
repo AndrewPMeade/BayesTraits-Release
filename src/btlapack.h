@@ -6,6 +6,7 @@
 #include "btlin_basic.h"
 
 // ****************** Interface with LAPACK and BLAS ****************************
+/*
 
 // LU decomoposition of a general matrix
 extern void dgetrf_(int* M, int *N, double* A, int* lda, int* IPIV, int* INFO);
@@ -37,8 +38,40 @@ extern void dtrti2_(char* uplo, char* diag, int* n, double* A, int* lda, int* IN
 // Blocked version
 // SUBROUTINE DTRTRI( UPLO, DIAG, N, A, LDA, INFO )
 extern void dtrtri_(char* uplo, char* diag, int* n, double* A, int* lda, int* INFO);
-
+*/
 // ************************************************************************
+
+// LU decomoposition of a general matrix
+extern void dgetrf_(const int* M, const int *N, double* A, const int* lda, int* IPIV, int* INFO);
+
+// generate inverse of a matrix given its LU decomposition
+extern void dgetri_(const int* N, double* A, const int* lda, const int* IPIV, double* WORK, const int* lwork, int* INFO);
+
+// calculates the LDL factorisation of symmetric (indefinite) matrix A
+extern void dsytrf_(const char* uplo, const int* N, double* A, const int* lda, int* IPIV, double* WORK, const int* LWORK, int* INFO);
+// Computes the inverse of a real symmetric indefinite matrix A using the UDU/LDL
+// factorization computed by dsytrf
+extern void dsytri_(const char* uplo, const int* N, double* A, const int* lda, const int* IPIV, double* WORK, int* INFO);
+
+// calculates the choleski factorisation of symmetric positive definite matrix A
+extern void dpotrf_(const char* uplo, const int* N, double* A, const int* lda, int* INFO);
+
+// compute the Cholesky factorization of a real symmetric positive definite matrix A
+// This is the unblocked version of the algorithm, calling Level 2 BLAS
+extern void dpotf2_(const char* uplo, const int* N, double* A, const int* lda, int* INFO);
+
+// computes the inverse of the matrix given as input to dpotrf
+extern void dpotri_(const char* uplo, const int* N, double* A, const int* lda, int* INFO);
+
+// *********** Lower Triangular Inverse  ****************
+// Unblocked version
+// SUBROUTINE DTRTI2( UPLO, DIAG, N, A, LDA, INFO )
+extern void dtrti2_(const char* uplo, const char* diag, const int* n, double* A, const int* lda, int* INFO);
+
+// Blocked version
+// SUBROUTINE DTRTRI( UPLO, DIAG, N, A, LDA, INFO )
+extern void dtrtri_(const char* uplo, const char* diag, const int* n, double* A, const int* lda, int* INFO);
+
 
 int btlapack_cholesky(double* m, int n, double* det);
 int btlapack_invcholesky(double* m, int n, double* det);

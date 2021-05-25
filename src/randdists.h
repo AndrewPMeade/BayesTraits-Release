@@ -1,7 +1,7 @@
 #ifndef RANDDISTH
 #define RANDDISTH
 
-#include "matrix.h"
+#include "Matrix.h"
 
 	MATRIX*	MultivariateNormal(int No, MATRIX *CoVar);
 

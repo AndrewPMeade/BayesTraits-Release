@@ -31,9 +31,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "typedef.h"
+#include "TypeDef.h"
 #include "Fossil.h"
-#include "genlib.h"
+#include "GenLib.h"
 
 
 void	MakeMSFossilMask(RECNODE *RNode, int *Mask, int NOS)

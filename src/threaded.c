@@ -36,12 +36,10 @@
 	#include <cilk/cilk_api.h>
 #endif
 
-#include "typedef.h"
+#include "TypeDef.h"
 #include "Threaded.h"
 
-#ifdef USE_MLK
-	#include "InvMKL.h"
-#endif
+
 
 int		GetThreadNo(void)
 {
@@ -62,7 +60,7 @@ int		GetMaxThreads(void)
 
 void	SetNoOfThreads(int No)
 {
-#ifdef USE_MLK
+#ifdef USE_MKL
 	mkl_set_num_threads(No);
 #endif
 

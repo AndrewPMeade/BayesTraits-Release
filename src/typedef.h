@@ -7,7 +7,7 @@
 #include <assert.h>
 #include <gsl/gsl_randist.h>
 
-#include "matrix.h"
+#include "Matrix.h"
 #include "RandLib.h"
 #include "StableDist.h"
 #include "AutoTune.h"
@@ -20,7 +20,12 @@
 //#define BTLAPACK
 
 // use the intel MLK lib
-//#define USE_MLK
+//#define USE_MKL
+
+#ifdef USE_MKL
+	#define MKL_INT int
+	#include <mkl.h>
+#endif
 
 #ifdef BTOCL
 	#include "btocl_runtime.h"

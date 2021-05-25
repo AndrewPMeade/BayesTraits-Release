@@ -4,8 +4,9 @@
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
-#include "linalg.h"
-#include "genlib.h"
+
+#include "LinAlg.h"
+#include "GenLib.h"
 
 
 static void     LUBackSubst (double **a, int n, int *indx, double *b);

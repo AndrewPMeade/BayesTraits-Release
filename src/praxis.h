@@ -77,7 +77,7 @@
 #ifndef PRAXIS
 #define PRAXIS
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 #define EPSILON 1.0e-8
 #define SQREPSILON 1.0e-16

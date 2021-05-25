@@ -1,7 +1,7 @@
 #ifndef PHYLOPLASTYHEADDER
 #define PHYLOPLASTYHEADDER
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 int				UseNonParametricMethods(OPTIONS *Opt);
 

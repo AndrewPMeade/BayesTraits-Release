@@ -1,9 +1,9 @@
 #ifndef NLOPTBT_H
 #define NLOPTBT_H
 
-#include "typedef.h"
-#include "praxis.h"
-#include "ml.h"
+#include "TypeDef.h"
+#include "Praxis.h"
+#include "ML.h"
 
 int		ValidMLAlgName(char *Name);
 void	PrintAlgNames(void);

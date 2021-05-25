@@ -32,8 +32,8 @@
 #include <string.h>
 
 #include "Pattern.h"
-#include "genlib.h"
-#include "typedef.h"
+#include "GenLib.h"
+#include "TypeDef.h"
 #include "Tag.h"
 
 PATTERN*	AllocPattern(void)

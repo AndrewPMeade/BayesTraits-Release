@@ -31,9 +31,9 @@
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "typedef.h"
+#include "TypeDef.h"
 #include "QuadDouble.h"
-#include "genlib.h"
+#include "GenLib.h"
 
 
 #ifndef QUAD_DOUBLE

@@ -1,7 +1,7 @@
 #if !defined LOADTREES
 #define LOADTREES
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 TREES*	LoadTrees(char* FileName);
 
