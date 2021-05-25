@@ -2397,7 +2397,7 @@ void	GetBasePis(OPTIONS *Opt, char* Type)
 {
 	MakeLower(Type);
 
-	if(strcmp(Type, "emp")==0 || strcmp(Type, "empirical") == 0)
+	if(strcmp(Type, "emp") == 0 || strcmp(Type, "empirical") == 0)
 	{
 		Opt->PiTypes = PI_EMP;
 		return;
@@ -4616,7 +4616,6 @@ void	GetOptions(OPTIONS *Opt)
 
 	do
 	{
-		printf("> ");
 		fgets(Buffer, BUFFERSIZE, stdin); 
 	} while(PassLine(Opt,Buffer, Passed) == FALSE);
 	

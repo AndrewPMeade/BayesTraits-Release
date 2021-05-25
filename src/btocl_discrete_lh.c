@@ -34,11 +34,11 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "trees.h"
+#include "TypeDef.h"
+#include "Trees.h"
 #include "Continuous.h"
-#include "genlib.h"
-#include "matrix.h"
+#include "GenLib.h"
+#include "Matrix.h"
 // OpenCL headers
 
 

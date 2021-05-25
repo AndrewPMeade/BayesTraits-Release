@@ -33,8 +33,9 @@
 #include <stdlib.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "trees.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "Trees.h"
 #include "Continuous.h"
 
 // OpenCL headers

@@ -895,7 +895,7 @@ void	VarRatesLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	}
 
 	fprintf(Opt->VarRatesLog, "It\tLh\tLh + Prior\tNo Pram\tAlpha\tSigma^2\tAlpha Scale Prior\t");
-	fprintf(Opt->VarRatesLog, "Node ID\tScale\tCreat It\tNode / Branch\t");
+	fprintf(Opt->VarRatesLog, "Node ID\tScaler\tCreat It\tNode / Branch\t");
 
 	fprintf(Opt->VarRatesLog, "\n");
 

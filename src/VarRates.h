@@ -1,5 +1,5 @@
-#ifndef PHYLOPLASTYHEADDER
-#define PHYLOPLASTYHEADDER
+#ifndef VAR_RATES_HEADDER
+#define VAR_RATES_HEADDER
 
 #include "TypeDef.h"
 

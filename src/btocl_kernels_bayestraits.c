@@ -36,7 +36,7 @@
 #include <string.h>
 #include <limits.h>
 
-#include "typedef.h" 
+#include "TypeDef.h" 
 
 
 #include "btocl_kernels_bayestraits.h"
