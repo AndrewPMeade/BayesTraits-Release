@@ -393,28 +393,26 @@ int btlapack_ltri_inv(double* a, int n, int lda, double* det) {
 	
 }
 
-
+#endif  // if BTLAPACK defined
 
 // computes the log of the determinant of a lower triangular matrix
-double btlapack_ltri_det(double* a, int n, int lda) {
+double btlapack_ltri_det(double* a, int n, int lda) 
+{
 	double  det, *pdiag;
 	int i;
 
 	det = 0.0;
 	pdiag = a;
-	//printf("Diag elements: ");
-	for(i=0; i<n; i++) {
-		//printf("%lf ",*pdiag);
+	for(i=0; i<n; i++) 
+	{
 		if (*pdiag < 0)
 			det += log(-*pdiag);
 		else
 			det += log(*pdiag);
 		pdiag += (lda+1);
 	}
-	//printf("-- total %lf\n",det);
 
 	return det;
 }
 
 
-#endif  // if BTLAPACK defined

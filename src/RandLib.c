@@ -514,9 +514,7 @@ void DirichletRandomVariable (RANDSTATES* RS, double *alp, double *z, int n)
 		}
 	for(i=0; i<n; i++)
 		z[i] /= sum;
-
 }
-
 
 /* Generate an integer in proprtion to values in List */
 int RandInProportion(RANDSTATES* RS, double *List, int No)

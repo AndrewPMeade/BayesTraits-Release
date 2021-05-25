@@ -988,8 +988,11 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		if(Rates->VarRates != NULL)
 			VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 		
-	//	SaveTrees("DTest.trees", Trees); exit(0);
+		
 	}
+//	ScaleTrees(Trees, 0.0000000001);
+//	ScaleTrees(Trees, 0.000000001);
+//	SaveTrees("DTest.trees", Trees); exit(0);
 }
 
 int		ValidLh(double LH, MODEL_TYPE MT)

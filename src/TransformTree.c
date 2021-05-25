@@ -421,3 +421,33 @@ double	GetTransformDefValue(TRANSFORM_TYPE TranType)
 	return 1.0;
 }
 
+void	TransformToMinMax(TRANSFORM_TYPE Type, double *Min, double *Max)
+{
+	*Min = MIN_LOCAL_RATE;
+
+	if(Type == VR_BL || Type == VR_NODE)
+		*Max = MAX_LOCAL_RATE;
+
+	if(Type == VR_DELTA)
+		*Max = MAX_DELTA;
+
+	if(Type == VR_KAPPA)
+		*Max = MAX_KAPPA;
+
+	if(Type == VR_LAMBDA)
+		*Max = MAX_LAMBDA;
+
+	if(Type == VR_OU)
+		*Max = MAX_OU;
+}
+
+//double	CalcTreeToTreeDist(
+
+double	FitTransformToTree(TREES *Trees, long long It, TRANSFORM_TYPE Type)
+{
+	double Min, Max;
+
+	TransformToMinMax(Type, &Min, &Max);
+
+
+}

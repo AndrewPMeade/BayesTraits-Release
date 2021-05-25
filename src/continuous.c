@@ -18,6 +18,7 @@
 #include "RandLib.h"
 #include "randdists.h"
 #include "part.h"
+#include "InvMKL.h"
 
 #ifdef BTOCL
 	#include "btocl_continuous.h"
@@ -593,12 +594,10 @@ void	FreeConVar(CONVAR* ConVar, int NoTaxa)
 
 CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 {
-	CONVAR* Ret=NULL;
+	CONVAR* Ret;
 	int		Lager;
 
-	Ret = (CONVAR*)malloc(sizeof(CONVAR));
-	if(Ret==NULL)
-		MallocErr();
+	Ret = (CONVAR*)SMalloc(sizeof(CONVAR));
 
 	Ret->TVT		=	NULL;
 
@@ -673,41 +672,28 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
-		Ret->Z		=	(double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-		Ret->ZA		=	(double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-		Ret->ZATemp	=	(double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-		Ret->DepVect=	(double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-		if(Ret->DepVect == NULL)
-			MallocErr();
+		Ret->Z		=	(double*)SMalloc(sizeof(double) * Trees->NoOfTaxa);
+		Ret->ZA		=	(double*)SMalloc(sizeof(double) * Trees->NoOfTaxa);
+		Ret->ZATemp	=	(double*)SMalloc(sizeof(double) * Trees->NoOfTaxa);
+		Ret->DepVect=	(double*)SMalloc(sizeof(double) * Trees->NoOfTaxa);
 	}
 	else
 	{
-		Ret->Z		=	(double*)malloc(sizeof(double) * Trees->NoOfSites * Trees->NoOfTaxa);
-		Ret->ZA		=	(double*)malloc(sizeof(double) * Trees->NoOfSites * Trees->NoOfTaxa);
-		Ret->ZATemp	=	(double*)malloc(sizeof(double) * Trees->NoOfSites * Trees->NoOfTaxa);
+		Ret->Z		=	(double*)SMalloc(sizeof(double) * Trees->NoOfSites * Trees->NoOfTaxa);
+		Ret->ZA		=	(double*)SMalloc(sizeof(double) * Trees->NoOfSites * Trees->NoOfTaxa);
+		Ret->ZATemp	=	(double*)SMalloc(sizeof(double) * Trees->NoOfSites * Trees->NoOfTaxa);
 		Ret->DepVect=	NULL;
 	}
-
-	if(	(Ret->Z		== NULL) ||
-		(Ret->ZA	== NULL) ||
-		(Ret->ZATemp== NULL))
-		MallocErr();
 
 	if(Trees->NoOfTaxa > Trees->NoOfSites)
 		Lager = Trees->NoOfTaxa;
 	else
 		Lager = Trees->NoOfSites;
 
-	Ret->TVect1	=	(double*)malloc(sizeof(double) * Lager);
-	Ret->TVect2	=	(double*)malloc(sizeof(double) * Lager);
-	Ret->TVect3	=	(double*)malloc(sizeof(double) * Lager);
-	Ret->SVect	=	(double*)malloc(sizeof(double) * Lager);
-
-	if( (Ret->TVect1 == NULL) ||
-		(Ret->TVect2 == NULL) ||
-		(Ret->TVect3 == NULL) ||
-		(Ret->SVect  == NULL))
-		MallocErr();
+	Ret->TVect1	=	(double*)SMalloc(sizeof(double) * Lager);
+	Ret->TVect2	=	(double*)SMalloc(sizeof(double) * Lager);
+	Ret->TVect3	=	(double*)SMalloc(sizeof(double) * Lager);
+	Ret->SVect	=	(double*)SMalloc(sizeof(double) * Lager);
 
 	Ret->MultiVarNormState = NULL;
 	Ret->MultiVarNormTemp = NULL;
@@ -736,14 +722,14 @@ int		FindInvV(TREES *Trees, TREE* Tree)
 	Err = InvertMatrixAndDet(TempCon->TMat->me, Trees->NoOfTaxa, TempCon->T1, TempCon->T2, Tree->ConVars->InvV->me, &Tree->ConVars->LogDetOfV);
 
 //	printf("LogDetOfV=%f;\n", Tree->ConVars->LogDetOfV);
-	/*
+/*
 	if(Err != FALSE)
 	{
 		printf("V Matrix inverstion error in %s %d\n", __FILE__, __LINE__);
 		PrintMathematicaMatrix(Tree->ConVars->V, "V=", stdout);
 		exit(0);
 	}
-	*/
+*/
 	return Err;
 }
 
@@ -1502,9 +1488,9 @@ void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 		}
 	}
 		
-	VToTree(V, Tree);
-	SaveTrees("vtree.trees", Trees);
-	PrintMatrix(V, "V=", stdout);exit(0);
+//	VToTree(V, Tree);
+//	SaveTrees("vtree.trees", Trees);
+//	PrintMatrix(V, "V=", stdout);exit(0);
 }
 
 
@@ -1741,6 +1727,24 @@ void	PrintMathmatCode(void)
 
 }
 
+
+int	CalcInvV(TREES *Trees, TREE *Tree)
+{
+#ifdef BTOCL
+	return btocl_FindInvV(Trees, Tree);
+#endif
+
+#ifdef BTLAPACK
+	return btlapack_FindInvV(Trees, Tree);
+#endif
+
+#ifdef USE_MLK
+	return InvMLK(Trees, Tree);
+#endif
+
+	return FindInvV(Trees, Tree);
+}
+
 double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 	double	Val;
@@ -1751,9 +1755,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	double	Ret;
 	TREE	*Tree;
 	CONVAR	*CV;
-
 	
-
 	Err = FALSE;
 
 	Tree = Trees->Tree[Rates->TreeNo];
@@ -1808,15 +1810,9 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	//	PrintMatrix(Tree->ConVars->V, "V = ", stdout);
 	//	PrintMathematicaTFMatrix(Tree->ConVars->V, "V = ", stdout);
-#ifdef BTOCL
-		btocl_FindInvV(Trees, Tree);
-#else
-#ifdef BTLAPACK
-		btlapack_FindInvV(Trees,Tree);
-#else
-		Err = FindInvV(Trees, Tree);
-#endif
-#endif
+
+		Err = CalcInvV(Trees, Tree);
+
 		if(Err != FALSE)
 			return ERRLH;
 	}
@@ -1984,7 +1980,7 @@ void	VTest(TREES* Trees, TREE *Tree)
 
 void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 {
-	int		Index, Err;
+	int		Index;
 	CONVAR	*CV;
 	TREE	*Tree;
 
@@ -2024,15 +2020,9 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 	
 	CalcZ(Trees, Tree, Opt);
 	
-#ifdef BTOCL
-	btocl_FindInvV(Trees, Trees->Tree[TreeNo]);
-#else
-#ifdef BTLAPACK
-	btlapack_FindInvV(Trees, Trees->Tree[TreeNo]);
-#else
-	Err = FindInvV(Trees, Trees->Tree[TreeNo]);
-#endif
-#endif	
+
+
+	CalcInvV(Trees, Trees->Tree[TreeNo]);
 	
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
@@ -2068,16 +2058,13 @@ TEMPCONVAR* AllocTempConVars(OPTIONS *Opt, TREES* Trees)
 	TAXA		*Taxa;
 	int			x,y;
 
-	Ret = (TEMPCONVAR*) malloc(sizeof(TEMPCONVAR));
-	if(Ret == NULL)
-		MallocErr();
-
+	Ret = (TEMPCONVAR*) SMalloc(sizeof(TEMPCONVAR));
+	
 	/* Statics form FindInvV */
-	Ret->T1 = (double*)malloc(sizeof(double)*Trees->NoOfTaxa);
-	Ret->T2 = (int*)malloc(sizeof(int)*Trees->NoOfTaxa);
+	Ret->T1 = (double*)SMalloc(sizeof(double)*Trees->NoOfTaxa);
+	Ret->T2 = (int*)SMalloc(sizeof(int)*Trees->NoOfTaxa);
 	Ret->TMat = AllocMatrix(Trees->NoOfTaxa, Trees->NoOfTaxa);
-	if((Ret->T1==NULL) || (Ret->T2==NULL) || (Ret->TMat == NULL))
-			MallocErr();
+	
 
 	/* Statics from FindMLRagVals */
 	if(Opt->AlphaZero == FALSE)
@@ -2148,11 +2135,11 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 	InitEstData(Opt, Trees);
 	
 	Opt->InvertV = FALSE;
-	if(	(Opt->EstDelta == TRUE) ||
-		(Opt->EstKappa == TRUE) ||
-		(Opt->EstLambda== TRUE) ||
-		(Opt->EstOU == TRUE) ||
-		(Opt->UseVarRates == TRUE))
+	if(	Opt->EstDelta == TRUE ||
+		Opt->EstKappa == TRUE ||
+		Opt->EstLambda== TRUE ||
+		Opt->EstOU == TRUE ||
+		Opt->UseVarRates == TRUE)
 		Opt->InvertV = TRUE;
 
 	if(Opt->Analsis == ANALMCMC)

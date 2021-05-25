@@ -19,6 +19,9 @@
 // #define BTOCL
 //#define BTLAPACK
 
+// use the intel MLK lib
+//#define USE_MLK
+
 #ifdef BTOCL
 	#include "btocl_runtime.h"
 #endif

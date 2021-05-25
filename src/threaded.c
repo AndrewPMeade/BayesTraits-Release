@@ -12,6 +12,9 @@
 #include "typedef.h"
 #include "Threaded.h"
 
+#ifdef USE_MLK
+	#include "InvMKL.h"
+#endif
 
 int		GetThreadNo(void)
 {
@@ -32,6 +35,10 @@ int		GetMaxThreads(void)
 
 void	SetNoOfThreads(int No)
 {
+#ifdef USE_MLK
+	mkl_set_num_threads(No);
+#endif
+
 #ifdef OPENMP_THR
 	omp_set_num_threads(No);
 	return; 

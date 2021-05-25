@@ -146,10 +146,12 @@ int			ValidDistDataLine(OPTIONS *Opt, TREES *Trees, int Tokes)
 		return TRUE;
 
 	if(Opt->Model == M_GEO)
+	{
 		if(Tokes != Trees->NoOfSites + 1)
 			return FALSE;
 		else
 			return TRUE;
+	}
 
 	if(Tokes != Trees->NoOfSites + 2)
 		return FALSE;

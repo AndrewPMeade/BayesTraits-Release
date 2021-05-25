@@ -1046,7 +1046,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->NOSPerSite		=	FALSE;
 
-	if(Ret->ModelType == MT_DISCRETE);
+	if(Ret->ModelType == MT_DISCRETE)
 		Ret->DataType = DISCRETE;
 
 	if(	Ret->ModelType == MT_CONTINUOUS	|| 
@@ -3395,11 +3395,20 @@ void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)
 int		CompCShed(const void *CS1, const void *CS2)
 {
 	CUSTOM_SCHEDULE **S1, **S2;
+	long long Diff;
 
 	S1 = (CUSTOM_SCHEDULE**)CS1;
 	S2 = (CUSTOM_SCHEDULE**)CS2;
 
-	return (*S1)->Iteration - (*S2)->Iteration;
+	Diff  = (*S1)->Iteration - (*S2)->Iteration;
+
+	if(Diff == 0)
+		return 0;
+
+	if(Diff < 0)
+		return -1;
+
+	return 1;
 }
 
 
@@ -3444,7 +3453,7 @@ void SetOptCustomSchedule(OPTIONS *Opt, int Tokes, char **Passed)
 
 			if(Freq < 0)
 			{
-				printf("Frequncyies my be > 0.\n", Passed[Index+2]);
+				printf("Frequncyies my be > 0, value is %s.\n", Passed[Index+2]);
 				exit(0);
 			}
 

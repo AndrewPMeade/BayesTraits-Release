@@ -16,4 +16,6 @@ int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates);
 
 double	GetTransformDefValue(TRANSFORM_TYPE TranType);
 
+double	FitTransformToTree(TREES *Trees, TREE *Tree, long long It, TRANSFORM_TYPE Type);
+
 #endif

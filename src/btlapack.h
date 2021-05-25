@@ -65,4 +65,6 @@ int btlapack_ducholeskydet(char uplo,double* m,int n,int lda, double* det);
 
 #endif  // if BTLAPACK defined
 
+double btlapack_ltri_det(double* a, int n, int lda);
+
 #endif

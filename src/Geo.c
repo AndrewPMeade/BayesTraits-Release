@@ -555,7 +555,7 @@ void GeoTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 void	SetLoadGeoData(char **AnsState, TREES *Trees, TREE *Tree)
 {
-	int Index, SIndex, Pos;
+	int Index, Pos;
 	double Long, Lat;
 	NODE N;
 	int NoInt;
