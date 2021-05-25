@@ -2088,8 +2088,7 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 
 	InitEstData(Opt, Trees);
 
-	if(Opt->UseVarData == TRUE)
-		LoadVarData(Opt);
+
 
 	Opt->InvertV = FALSE;
 	if(	(Opt->EstDelta == TRUE) ||

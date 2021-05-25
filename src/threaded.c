@@ -28,7 +28,6 @@ int		GetMaxThreads(void)
 #endif
 	
 	return 1;
-
 }
 
 void	SetNoOfThreads(int No)

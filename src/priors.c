@@ -429,7 +429,7 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	int		NoPRates;
 
 	Rates->LhPrior = 0;
-	NLh = 0;
+	
 
 	if(Opt->LoadModels == TRUE)
 		return;
@@ -441,6 +441,18 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 		NoPRates = Rates->NoOfRJRates;
 	else
 		NoPRates = Rates->NoOfRates;
+
+	if(Opt->EstOU == TRUE)
+	{
+		if(Rates->OU != MIN_OU)
+		{
+			Rates->LhPrior += log((double)1.0/(MAX_OU - MIN_OU));
+	//		Rates->LhPrior = Rates->LhPrior  * 100;
+		}
+		else
+			Rates->LhPrior = 0;
+	}
+
 
 	for(PIndex=0;PIndex<NoPRates;PIndex++)
 	{

@@ -50,7 +50,10 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 	if(Opt->LoadModels == TRUE)
 		Opt->AutoTuneRD = FALSE;
-		
+
+	if(Opt->UseVarData == TRUE)
+		LoadVarData(Opt);
+
 	FlattenRecNode(Opt);
 	
 	for(Index=0;Index<Trees->NoOfTrees;Index++)

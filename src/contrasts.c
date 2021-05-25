@@ -1330,7 +1330,7 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		TransformContrastTree(Opt, Trees, Rates, NORM_TRANSFORMS);
 
 		if(Opt->UseVarRates == TRUE)
-			Plasty(Opt, Trees, Rates);
+			Plasty(Opt, Trees, Rates, NORM_TRANSFORMS);
 	}
 
 #ifdef THREADED

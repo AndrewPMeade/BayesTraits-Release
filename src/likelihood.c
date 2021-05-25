@@ -1048,8 +1048,6 @@ void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Tr
 		#else
 			#ifdef QUAD_DOUBLE
 				NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo);
-				
-			//	fdadfad
 			#else
 				SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo, FALSE);
 			#endif

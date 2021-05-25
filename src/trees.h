@@ -60,4 +60,8 @@ void	SetAsUserBranchLength(TREE *Tree);
 void	SetTreesDistToRoot(TREES *Trees);
 void	SetTreeDistToRoot(TREE *Tree);
 void	RecSetDistToRoot(NODE N);
+
+void	RecScaleSubTree(NODE N, double Scale);
+double	SumNodeBL(NODE N);
+void	ScaleSubTree(NODE N, double Scale);
 #endif

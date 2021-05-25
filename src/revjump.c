@@ -561,13 +561,11 @@ int		RJMerge(RATES* Rates, OPTIONS* Opt)
 		G0 = Index;
 	}
 
-
 	G0ID = MapInfo->GroupID[G0];
 	G1ID = MapInfo->GroupID[G1];
 
 	DelPosInRates = Rates->MappingVect[MapInfo->GroupPos[G1][0]];
-
-
+	
 	NewRate = Rates->Rates[Rates->MappingVect[MapInfo->GroupPos[G0][0]]] * MapInfo->GroupSize[G0]; 
 	NewRate += Rates->Rates[Rates->MappingVect[MapInfo->GroupPos[G1][0]]] * MapInfo->GroupSize[G1]; 
 	NewRate = NewRate / (double)(MapInfo->GroupSize[G0] + MapInfo->GroupSize[G1]);

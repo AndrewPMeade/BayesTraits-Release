@@ -861,7 +861,6 @@ void	LoadVarDataTaxa(OPTIONS *Opt, TEXTFILE* File)
 		exit(0);
 	}
 
-
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
 
@@ -990,7 +989,6 @@ void	LoadVarData(OPTIONS* Opt)
 {
 	VARDATA		*Ret;
 	TEXTFILE	*File;
-/*	int			TIndex,Index; */
 
 	File = LoadTextFile(Opt->VarDataFile, FALSE);
 

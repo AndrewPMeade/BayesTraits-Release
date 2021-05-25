@@ -219,7 +219,6 @@ void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
 	PLASTYNODE	**NList;
 	int			Index;
 	
-
 	Plasty = Rates->Plasty;
 	
 	if(Plasty->NoNodes == 1)
@@ -230,8 +229,7 @@ void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
 		Plasty->NoNodes = 0;
 		return;
 	}
-
-
+	
 	free(Plasty->NodeList[No]);
 	Plasty->NodeList[No] = NULL;
 
@@ -488,12 +486,13 @@ void	PlastyNode(NODE N, PLASTYNODE *P)
 		PlastyNode(N->NodeList[Index], P);
 }
 
-void	Plasty(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	Plasty(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 {
 	int Index;
 	int	TNo;
 	TREE *T;
 	PLASTY *P;
+	double SumBL, Scale;
 
 	P = Rates->Plasty;
 	TNo = Rates->TreeNo;
@@ -502,8 +501,17 @@ void	Plasty(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	for(Index=0;Index<T->NoNodes;Index++)
 		T->NodeList[Index]->Length = P->TrueBL[TNo][Index];
 
+	if(Normalise == TRUE)
+		SumBL = SumNodeBL(T->Root);
+
 	for(Index=0;Index<P->NoNodes;Index++)
 		PlastyNode(P->NodeList[Index]->Node, P->NodeList[Index]);
+
+	if(Normalise == FALSE)
+		return;
+
+	Scale = SumBL / SumNodeBL(T->Root);
+	ScaleSubTree(T->Root, Scale);
 }
 
 void	InitPPTreeFile(OPTIONS *Opt, TREES *Trees)
@@ -648,7 +656,7 @@ void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 	P = Rates->Plasty;
 	T = Trees->Tree[Rates->TreeNo];
 
-	Plasty(Opt, Trees, Rates);
+	Plasty(Opt, Trees, Rates, NORM_TRANSFORMS);
 
 	fprintf(Opt->PPTree, "\tTree T_%010d_%d = (", It, P->NoNodes);
 
@@ -671,6 +679,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 	int			Index;
 	PLASTYNODE	*PNode;
 	NODE		N;
+	double		Sigma;
 
 	P = Rates->Plasty;
 
@@ -678,8 +687,12 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 
 	fprintf(Out, "%d\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, P->NoNodes);
 
+	if(Opt->Model == M_CONTRAST_STD)
+		Sigma = Rates->Contrast->SigmaMat->me[0][0];
+	else
+		Sigma = Rates->Contrast->Sigma[0];
 
-	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Rates->Contrast->SigmaMat->me[0][0], P->Alpha);
+	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
 
 	for(Index=0;Index<P->NoNodes;Index++)
 	{

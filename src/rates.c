@@ -682,7 +682,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->MappingVect	= NULL;
 	Ret->LhPrior		= 0;
 	Ret->LnHastings		= 0;
-	Ret->LnJacobion	= 0;
+	Ret->LnJacobion		= 0;
 
 	Ret->Gamma			= -1;
 	Ret->GammaCats		= 1;
@@ -1659,28 +1659,28 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		fprintf(Str, "%d\t", Rates->VarDataSite);
 
 	if(Opt->EstKappa == TRUE)
-		fprintf(Str, "%f\t", Rates->Kappa);
+		fprintf(Str, "%0.12f\t", Rates->Kappa);
 
 	if(Opt->FixKappa != -1)
-		fprintf(Str, "%f\t", Opt->FixKappa);
+		fprintf(Str, "%0.12f\t", Opt->FixKappa);
 
 	if(Opt->EstDelta == TRUE)
-		fprintf(Str, "%f\t", Rates->Delta);
+		fprintf(Str, "%0.12f\t", Rates->Delta);
 
 	if(Opt->FixDelta != -1)
-		fprintf(Str, "%f\t", Opt->FixDelta);
+		fprintf(Str, "%0.12f\t", Opt->FixDelta);
 
 	if(Opt->EstLambda == TRUE)
-		fprintf(Str, "%f\t", Rates->Lambda);
+		fprintf(Str, "%0.12f\t", Rates->Lambda);
 
 	if(Opt->FixLambda != -1)
-		fprintf(Str, "%f\t", Opt->FixLambda);
+		fprintf(Str, "%0.12f\t", Opt->FixLambda);
 
 	if(Opt->EstOU == TRUE)
-		fprintf(Str, "%f\t", Rates->OU);
+		fprintf(Str, "%0.12f\t", Rates->OU);
 
 	if(Opt->FixOU != -1)
-		fprintf(Str, "%f\t", Opt->FixOU);
+		fprintf(Str, "%0.12f\t", Opt->FixOU);
 
 	if(Opt->NodeBLData == TRUE)
 	{
@@ -2648,6 +2648,19 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 		break;
 
 		case SOU:
+			if(Rates->OU == MIN_OU)
+			{
+				if(RandDouble(Rates->RS) < 0.1)
+					Rates->OU = RandUniDouble(Rates->RS, MIN_OU, MAX_OU);
+				return;	
+			}
+	
+			if(RandDouble(Rates->RS) < 0.1)
+			{
+				Rates->OU = MIN_OU;
+				return;
+			}
+
 			if(Opt->RateDevOU == MAX_OU)
 				Rates->OU = RandUniDouble(Rates->RS, MIN_OU, MAX_OU);
 			else

@@ -508,8 +508,8 @@ int		FindMaxPoly(TREES *Trees)
 	if(Ret == NULL)
 		MallocErr();
 
-	Ret->No				= No;
-	Ret->Name			= StrMake(Name);
+	Ret->No				=	No;
+	Ret->Name			=	StrMake(Name);
 	Ret->Index			=	-1;
 
 	Ret->DesDataChar	=	NULL;
@@ -1628,6 +1628,8 @@ int	RemoveTaxa(OPTIONS *Opt, TREES *Trees, char *TName)
 		RemoveTaxaFromTree(Trees, Trees->Tree[TIndex], TName);
 
 	RemoveTaxaRec(Opt, Trees, TaxaPos);
+	
+	SetTaxaIndex(Trees);
 
 	return TRUE;
 }
@@ -2376,4 +2378,56 @@ void	SetAsUserBranchLength(TREE *Tree)
 		N = Tree->NodeList[Index];
 		N->UserLength = N->Length;
 	}
+}
+
+void	RecGetSumBL(NODE N, double *SumBL)
+{
+	int Index;
+
+	*SumBL += N->Length;
+
+	if(N->Tip == TRUE)
+		return;
+
+	for(Index=0;Index<N->NoNodes;Index++)
+		RecGetSumBL(N->NodeList[Index], SumBL);
+}
+
+double	SumNodeBL(NODE N)
+{
+	double Ret;
+
+	Ret = 0;
+	RecGetSumBL(N, &Ret);
+
+	Ret = Ret - N->Length;
+
+	return Ret;
+}
+
+void	RecScaleSubTree(NODE N, double Scale)
+{
+	int Index;
+
+	N->Length = N->Length * Scale;
+
+	if(N->Tip == TRUE)
+		return;
+
+	for(Index=0;Index<N->NoNodes;Index++)
+		RecScaleSubTree(N->NodeList[Index], Scale);
+}
+
+void	ScaleSubTree(NODE N, double Scale)
+{
+	int Index;
+
+	if(N->Tip == TRUE)
+	{
+		printf("Sub Tree can only scale internal nodes.\n");
+		exit(0);
+	}
+
+	for(Index=0;Index<N->NoNodes;Index++)
+		RecScaleSubTree(N->NodeList[Index], Scale);
 }

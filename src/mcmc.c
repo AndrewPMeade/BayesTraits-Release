@@ -301,7 +301,6 @@ FILE*	SetScheduleFile(OPTIONS *Opt, SCHEDULE*	Shed)
 
 void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
 {
-	int Index;
 	double OU;
 
 

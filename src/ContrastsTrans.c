@@ -10,57 +10,9 @@
 void	SetFixedConTrans(OPTIONS *Opt, TREES *Trees);
 void	SetConTrans(TREE *Tree, double Kappa, double Lambda, double Delta, double OU);
 
-void	RecGetSumBL(NODE N, double *SumBL)
-{
-	int Index;
 
-	*SumBL += N->Length;
 
-	if(N->Tip == TRUE)
-		return;
 
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecGetSumBL(N->NodeList[Index], SumBL);
-}
-
-double	SumNodeBL(NODE N)
-{
-	double Ret;
-
-	Ret = 0;
-	RecGetSumBL(N, &Ret);
-
-	Ret = Ret - N->Length;
-
-	return Ret;
-}
-
-void	RecScaleSubTree(NODE N, double Scale)
-{
-	int Index;
-
-	N->Length = N->Length * Scale;
-
-	if(N->Tip == TRUE)
-		return;
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecScaleSubTree(N->NodeList[Index], Scale);
-}
-
-void	ScaleSubTree(NODE N, double Scale)
-{
-	int Index;
-
-	if(N->Tip == TRUE)
-	{
-		printf("Sub Tree can only scale internal nodes.\n");
-		exit(0);
-	}
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecScaleSubTree(N->NodeList[Index], Scale);
-}
 
 void	RecTransContNodeDelta(NODE N, double Delta, double PathLen)
 {
