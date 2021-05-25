@@ -28,10 +28,10 @@
 #define PPJACOBIAN	1
 #define PPMAXSCALE	10
 #define	PPALPHA		1.5
-#define PPBETA		6
+#define PPBETA		5
 #define	PPSCALEDEV	5
 
-#define PPUNIFORM
+//#define PPUNIFORM
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000
