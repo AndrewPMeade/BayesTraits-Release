@@ -74,7 +74,7 @@ void	InitContrastTree(OPTIONS *Opt, TREES* Trees, int TNo)
 	int NIndex;
 	NODE N;
 
-	Tree = &Trees->Tree[TNo];
+	Tree = Trees->Tree[TNo];
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = Tree->NodeList[NIndex];
@@ -106,7 +106,7 @@ void	FreeContrast(OPTIONS *Opt, TREES* Trees, int TreeNo)
 	NODE N;
 	int NIndex, CIndex;
 
-	Tree = &Trees->Tree[TreeNo];
+	Tree = Trees->Tree[TreeNo];
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = Tree->NodeList[NIndex];
@@ -246,7 +246,7 @@ void	PrintContrasts(TREES* Trees, RATES* Rates)
 	CONTRAST	*C;
 
 
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
@@ -271,7 +271,7 @@ void	CalcContrast(TREES* Trees, RATES* Rates)
 {
 	TREE	*Tree;
 
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 	RecCalcContrast(Tree->Root, Trees->NoOfSites);
 }
 
@@ -288,7 +288,7 @@ double	CalcSiteLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, int SiteNo)
 	int			NoCon, CIndex;
 
 	ConRates = Rates->Contrast;
-	T = &Trees->Tree[Rates->TreeNo];
+	T = Trees->Tree[Rates->TreeNo];
 
 	NoCon = 0;
 	GlobalVar = 0;
@@ -351,7 +351,7 @@ double CalcContrastMCMCSiteLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, int Site
 	double		Ret;
 
 	ConRates = Rates->Contrast;
-	T = &Trees->Tree[Rates->TreeNo];
+	T = Trees->Tree[Rates->TreeNo];
 
 	NoCon = 0;
 	GlobalVar = 0;
@@ -451,7 +451,7 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	}
 
 	for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
-		Con->AlphaErr[SIndex] = CalcMCMCAlpha(Trees->Tree[0].Root, Con->EstAlpha[SIndex], SIndex);
+		Con->AlphaErr[SIndex] = CalcMCMCAlpha(Trees->Tree[0]->Root, Con->EstAlpha[SIndex], SIndex);
 
 	CalcContrastMCMC(Opt, Trees, Rates);
 	

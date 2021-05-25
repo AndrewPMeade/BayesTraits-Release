@@ -290,8 +290,8 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 			}
 			else
 			{
-				FreeConVar(Trees->Tree[TIndex].ConVars, Trees->NoOfTaxa);
-				Trees->Tree[TIndex].ConVars = NULL;
+				FreeConVar(Trees->Tree[TIndex]->ConVars, Trees->NoOfTaxa);
+				Trees->Tree[TIndex]->ConVars = NULL;
 			}
 		}
 	}

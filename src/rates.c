@@ -241,7 +241,7 @@ void	FindEmpPis(RATES *Rates, OPTIONS *Opt)
 	{
 		for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 		{
-			Taxa = &Trees->Taxa[TIndex];
+			Taxa = Trees->Taxa[TIndex];
 
 			if(SiteHadUnKnownState(Taxa->DesDataChar[SIndex]) == FALSE)
 			{
@@ -430,7 +430,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
-		Taxa = &Trees->Taxa[Index];
+		Taxa = Trees->Taxa[Index];
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 			if(Taxa->EstDataP[SIndex] == TRUE)
 				Rates->NoEstData++;
@@ -474,7 +474,7 @@ int		FindNoEstData(TREES *Trees, OPTIONS *Opt)
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Taxa = &Trees->Taxa[TIndex];
+		Taxa = Trees->Taxa[TIndex];
 		
 		if(Opt->Model == MULTISTATE)
 			NOS = Trees->NoOfSites;
@@ -705,7 +705,7 @@ void	PrintEstDataHeader(FILE *Str, OPTIONS *Opt)
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
-		Taxa = &Trees->Taxa[Index];
+		Taxa = Trees->Taxa[Index];
 		if(Taxa->EstData == TRUE)
 		{
 			for(x=0;x<NOS;x++)
@@ -1023,7 +1023,7 @@ double	FindERatio(RATES* Rates, OPTIONS *Opt)
 	double	Mean;
 
 	Trees	= Opt->Trees;
-	Tree	= &Trees->Tree[Rates->TreeNo];
+	Tree	= Trees->Tree[Rates->TreeNo];
 	CV		= Tree->ConVars;
 	
 	Y		= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
@@ -1035,7 +1035,7 @@ double	FindERatio(RATES* Rates, OPTIONS *Opt)
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
-		Taxa = &Trees->Taxa[Index];
+		Taxa = Trees->Taxa[Index];
 
 		Y[Index] = Taxa->Dependant;
 		YP[Index] = Taxa->Dependant - FindYEst(CV->Alpha[0], CV->Beta, Taxa->ConData, Trees->NoOfSites);
@@ -1076,7 +1076,7 @@ void FindRSquared(RATES* Rates, OPTIONS *Opt, double *R2, double *SSE, double *S
 	double	T,B1,B2;
 
 	Trees	= Opt->Trees;
-	Tree	= &Trees->Tree[Rates->TreeNo];
+	Tree	= Trees->Tree[Rates->TreeNo];
 	CV		= Tree->ConVars;
 	
 	Y		= (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
@@ -1088,7 +1088,7 @@ void FindRSquared(RATES* Rates, OPTIONS *Opt, double *R2, double *SSE, double *S
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
-		Taxa = &Trees->Taxa[Index];
+		Taxa = Trees->Taxa[Index];
 
 		Y[Index] = Taxa->Dependant;
 		YP[Index] = FindYEst(CV->Alpha[0], CV->Beta, Taxa->ConData, Trees->NoOfSites);
@@ -1163,7 +1163,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	Trees = Opt->Trees;
 	
-	ConVar = Opt->Trees->Tree[Rates->TreeNo].ConVars;
+	ConVar = Opt->Trees->Tree[Rates->TreeNo]->ConVars;
 
 	fprintf(Str, "%d\t", Rates->TreeNo+1);
 	fprintf(Str, "%f\t", Rates->Lh);
@@ -1256,10 +1256,10 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		fprintf(Str, "%f\t", ConVar->Sigma->me[0][1] / ConVar->Sigma->me[0][0]);
 		fprintf(Str, "%f\t", ConVar->Sigma->me[0][1] / ConVar->Sigma->me[1][1]);
 		
-		MinNodes = MaxNodes = (int)Opt->Trees->Taxa[0].ConData[0];
+		MinNodes = MaxNodes = (int)Opt->Trees->Taxa[0]->ConData[0];
 		for(Index=1;Index<Opt->Trees->NoOfTaxa;Index++)
 		{
-			Taxa = &Opt->Trees->Taxa[Index];
+			Taxa = Opt->Trees->Taxa[Index];
 			if((int)Taxa->ConData[0] > MaxNodes)
 				MaxNodes = (int)Taxa->ConData[0];
 
@@ -1481,7 +1481,7 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	// TODO Phoneim remove. 
 #ifndef PHONEIM_RUN
-	PrintNodeRec(Str, Opt->Trees->Tree[Rates->TreeNo].Root, Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
+	PrintNodeRec(Str, Opt->Trees->Tree[Rates->TreeNo]->Root, Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
 
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 		PrintNodeRec(Str, Opt->RecNodeList[Index]->TreeNodes[Rates->TreeNo], Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
@@ -1760,7 +1760,7 @@ double*	GetMultVarChanges(RATES *Rates, OPTIONS *Opt)
 	int		Index;
 
 	Trees = Opt->Trees;
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 
 	if(VarCo == NULL)
 		VarCo = AllocMatrix(Trees->NoOfTaxa, Trees->NoOfTaxa);
@@ -1814,7 +1814,7 @@ void	MutateEstRates(OPTIONS* Opt, RATES* Rates)
 	RIndex	=	0;
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Taxa = &Trees->Taxa[TIndex];
+		Taxa = Trees->Taxa[TIndex];
 
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 		{
@@ -2062,7 +2062,7 @@ void	UpDataSummary(SUMMARY *Summary, RATES* Rates, OPTIONS *Opt)
 	double	Pct;
 	double	*RootP=NULL;
 
-	RootP = Opt->Trees->Tree[Rates->TreeNo].Root->Partial[0];
+	RootP = Opt->Trees->Tree[Rates->TreeNo]->Root->Partial[0];
 
 	UpDataSummaryNo(&Summary->Lh, Rates->Lh);
 

@@ -3,12 +3,17 @@
 
 #pragma warning(disable : 4996)
 #include <stdio.h>
+#include <assert.h>
 
 #include "matrix.h"
 #include "RandLib.h"
+
 // #define	JNIRUN
 // #define THREADED
 // #define BIG_LH
+
+// Information for the phomem cog est runs
+// #define	PHONEIM_RUN
 
 #ifdef BIG_LH
 	#include <gmp.h>
@@ -47,8 +52,6 @@
 #define RATE_CHANGE_ALL
 // #define RATE_CHANGE_ONE
 
-// Information for the phomem cog est runs
-// #define	PHONEIM_RUN
 
 /* If defined Sigma in indep contrast is restricted to a given value */
 #define RES_SIGMA	0.0034
@@ -569,8 +572,8 @@ typedef struct
 	MATRIX		**PList;
 	int			MaxNodes;
 
-	TAXA		*Taxa;
-	TREE		*Tree;
+	TAXA		**Taxa;
+	TREE		**Tree;
 
 	char		*SymbolList;
 

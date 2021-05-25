@@ -7,8 +7,8 @@ TREES*	LoadTrees(char* FileName);
 
 void	FreeTrees(TREES* Trees, OPTIONS *Opt);
 void	AllocPartial(TREES* Trees, int Gamma);
-TAXA*	GetTaxaFromID(int ID, TAXA *Taxa, int NoOfTaxa);
-TAXA*	GetTaxaFromName(char *Name, TAXA *Taxa, int NoOfTaxa);
+TAXA*	GetTaxaFromID(int ID, TAXA **Taxa, int NoOfTaxa);
+TAXA*	GetTaxaFromName(char *Name, TAXA **Taxa, int NoOfTaxa);
 
 void	CTaxaBelow(NODE N, int *No);
 void	PrintTrees(FILE*	Str, TREES *Trees, DATATYPE DataType);

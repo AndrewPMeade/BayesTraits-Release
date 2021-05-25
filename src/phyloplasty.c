@@ -59,14 +59,14 @@ double**	MakeTrueBL(TREES *Trees)
 
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 	{
-		Ret[Index] = (double*)malloc(sizeof(double) * Trees->Tree[Index].NoNodes);
+		Ret[Index] = (double*)malloc(sizeof(double) * Trees->Tree[Index]->NoNodes);
 		if(Ret[Index] == NULL)
 			MallocErr();
 	}
 
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 	{
-		T = &Trees->Tree[Index];
+		T = Trees->Tree[Index];
 		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
 			Ret[Index][NIndex] = T->NodeList[NIndex]->Length;
 	}
@@ -89,7 +89,7 @@ int		FindNoValidNodes(TREES *Trees)
 	int		Ret;
 
 	Ret = 0;
-	T = &Trees->Tree[0];
+	T = Trees->Tree[0];
 	for(Index=0;Index<T->NoNodes;Index++)
 	{
 		if(IsValidPPNode(T->NodeList[Index]) == TRUE)
@@ -112,7 +112,7 @@ void	MakeValidNodes(TREES *Trees, PLASTY* Plasty)
 
 	Plasty->NoValidNode = 0;
 
-	T = &Trees->Tree[0];
+	T = Trees->Tree[0];
 	for(Index=0;Index<T->NoNodes;Index++)
 	{
 		N = T->NodeList[Index];
@@ -357,7 +357,7 @@ void 	PPMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	}
 
 	Plasty->NoTempList = 0;
-	if((N->Ans != NULL) && (IsValidPPNode(N->Ans) == TRUE) && (N != Trees->Tree[0].Root))
+	if((N->Ans != NULL) && (IsValidPPNode(N->Ans) == TRUE) && (N != Trees->Tree[0]->Root))
 		if(NodeScaled(N->Ans->ID, Plasty) == FALSE)
 			Plasty->TempList[Plasty->NoTempList++] = N->Ans;
 
@@ -401,7 +401,7 @@ void	PPAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, int It)
 	do
 	{
 		N = Plasty->ValidNode[RandUSLong(Rates->RS) % Plasty->NoValidNode];
-	}while(N == Trees->Tree[0].Root);
+	}while(N == Trees->Tree[0]->Root);
 
 	PNodeID = GetPlastyNode(N->ID, Plasty);
 
@@ -497,7 +497,7 @@ void	Plasty(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	P = Rates->Plasty;
 	TNo = Rates->TreeNo;
-	T = &Trees->Tree[TNo];
+	T = Trees->Tree[TNo];
 
 	for(Index=0;Index<T->NoNodes;Index++)
 		T->NodeList[Index]->Length = P->TrueBL[TNo][Index];
@@ -510,7 +510,7 @@ void	InitPPTreeFile(OPTIONS *Opt, TREES *Trees)
 {
 	char	*Buffer;
 	int		Index;
-
+	
 	Buffer = (char*)malloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
 	if(Buffer == NULL)
 		MallocErr();
@@ -523,8 +523,8 @@ void	InitPPTreeFile(OPTIONS *Opt, TREES *Trees)
 	fprintf(Opt->PPTree, "\t\tTranslate\n");
 
 	for(Index=0;Index<Trees->NoOfTaxa-1;Index++)
-		fprintf(Opt->PPTree, "\t\t%d\t%s,\n", Trees->Taxa[Index].No, Trees->Taxa[Index].Name);
-	fprintf(Opt->PPTree, "\t\t%d\t%s\n\t\t;\n", Trees->Taxa[Index].No, Trees->Taxa[Index].Name);
+		fprintf(Opt->PPTree, "\t\t%d\t%s,\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
+	fprintf(Opt->PPTree, "\t\t%d\t%s\n\t\t;\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
 
 	fflush(Opt->PPTree);
 }
@@ -554,12 +554,12 @@ void	PPLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	PLASTY	*P;
 	int		No;
 
-	T = &Trees->Tree[0];
+	T = Trees->Tree[0];
 	P = Rates->Plasty;
 
 	fprintf(Opt->PPLog, "%d\n", Trees->NoOfTaxa);
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		fprintf(Opt->PPLog, "%d\t%s\n", Trees->Taxa[Index].No, Trees->Taxa[Index].Name);
+		fprintf(Opt->PPLog, "%d\t%s\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
 
 	fprintf(Opt->PPLog, "%d\n", P->NoValidNode);
 	for(Index=0;Index<P->NoValidNode;Index++)
@@ -646,7 +646,7 @@ void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 	int		Index;
 
 	P = Rates->Plasty;
-	T = &Trees->Tree[Rates->TreeNo];
+	T = Trees->Tree[Rates->TreeNo];
 
 	Plasty(Opt, Trees, Rates);
 

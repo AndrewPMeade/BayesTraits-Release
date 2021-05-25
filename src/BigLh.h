@@ -12,4 +12,7 @@ double 	CombineBigLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int N
 
 void	SetBigLhNodeRec(NODE N, int NOS, int NoOfSites, RATES *Rates, OPTIONS *Opt);
 
+void	FossilLhBig(NODE N, TREES *Trees, int SiteNo);
+void	FossilDepLhBig(NODE N, int SiteNo, int s00, int s01, int s10, int s11);
+
 #endif

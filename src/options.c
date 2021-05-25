@@ -231,7 +231,7 @@ void	PrintEstData(FILE *Str, OPTIONS *Opt)
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Taxa = &Trees->Taxa[TIndex];
+		Taxa = Trees->Taxa[TIndex];
 		if(Taxa->EstData == TRUE)
 		{
 			fprintf(Str, "\t");
@@ -1616,9 +1616,9 @@ int		GetTaxaNoFormName(char* Name, TREES* Trees, int *No)
 	
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
-		if(strcmp(Name, Trees->Taxa[Index].Name) == 0)
+		if(strcmp(Name, Trees->Taxa[Index]->Name) == 0)
 		{
-			*No = Trees->Taxa[Index].No;
+			*No = Trees->Taxa[Index]->No;
 			return TRUE;
 		}
 	}
@@ -1671,8 +1671,8 @@ TAXA*	GetTaxaFromNameNo(char *ID, TREES* Trees)
 		return GetTaxaFromID(atoi(ID), Trees->Taxa, Trees->NoOfTaxa);
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		if(strcmp(ID, Trees->Taxa[Index].Name) == 0)
-			return &Trees->Taxa[Index];
+		if(strcmp(ID, Trees->Taxa[Index]->Name) == 0)
+			return Trees->Taxa[Index];
 
 	return NULL;
 }					  
@@ -1708,7 +1708,6 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	int			FState;
 	char**		ConFState;
 	
-
 	FState = -1;
 	
 	ConFState = NULL;
@@ -1984,7 +1983,7 @@ void	SetEvenRoot(TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		Root = Trees->Tree[TIndex].Root;
+		Root = Trees->Tree[TIndex]->Root;
 		t = 0;
 
 		for(NIndex=0;NIndex<Root->NoNodes;NIndex++)
@@ -2216,9 +2215,9 @@ void	PrintTaxaInfo(OPTIONS *Opt)
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
 		printf("    ");
-		sprintf(&Buffer[0], "%d", Trees->Taxa[TIndex].No);
+		sprintf(&Buffer[0], "%d", Trees->Taxa[TIndex]->No);
 		PrintFixSize(&Buffer[0], 5, stdout);
-		printf("%s", Trees->Taxa[TIndex].Name);
+		printf("%s", Trees->Taxa[TIndex]->Name);
 		printf("\n");
 	}
 }
@@ -2710,8 +2709,14 @@ void	OptSetSeed(OPTIONS *Opt, char	*CSeed)
 	Opt->Seed = atoi(CSeed);
 }
 
-int	FossilNoPramOK(OPTIONS *Opt, int Tokes)
+int	FossilNoPramOK(OPTIONS *Opt, char **Passed, int Tokes)
 {
+	int State;
+	char *Name;
+
+	if(Tokes < 5)
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -2901,7 +2906,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 			Restrict(Opt, Tokes, Passed);
 		else
 			printf("The Restrict command takes two parimiters, a rate to restict and a constant or rate to restict it to.\n");
-
 	}
 
 	if(Command == CUNRES)
@@ -2979,7 +2983,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		}
 		else
 			printf("Itters requires a number that spesifies the number of descrete prior catagiores.\n");
-
 	}
 
 	if(Command == CMLTRIES)
@@ -3219,7 +3222,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 
 	if(Command == CFOSSIL)
 	{
-		if(FossilNoPramOK(Opt, Tokes) == TRUE)
+		if(FossilNoPramOK(Opt, Passed, Tokes) == TRUE)
 			AddRecNode(Opt, FOSSIL, Tokes, Passed);
 		else
 		{

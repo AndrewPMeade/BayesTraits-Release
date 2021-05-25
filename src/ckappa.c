@@ -122,7 +122,7 @@ void	KappaTaxaVarCoVar(TREES* Trees, TREE* Tree, TAXA* Taxa, int TNo)
 	
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		CTaxa = &Trees->Taxa[TIndex];
+		CTaxa = Trees->Taxa[TIndex];
 		
 		BlankVisited(Trees, Tree);
 		SetUpTrace(MyNode, Tree);
@@ -165,7 +165,7 @@ void	KappaVarCoVar(TREES* Trees, TREE* Tree)
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		KappaTaxaVarCoVar(Trees, Tree, &Trees->Taxa[TIndex], TIndex);
+		KappaTaxaVarCoVar(Trees, Tree, Trees->Taxa[TIndex], TIndex);
 	}
 }
 
@@ -175,8 +175,8 @@ void	InitCKappa(OPTIONS* Opt, TREES* Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		InitCKappaTree(Trees, &Trees->Tree[TIndex]);
-		KappaVarCoVar(Trees, &Trees->Tree[TIndex]);
+		InitCKappaTree(Trees, Trees->Tree[TIndex]);
+		KappaVarCoVar(Trees, Trees->Tree[TIndex]);
 	}
 }
 

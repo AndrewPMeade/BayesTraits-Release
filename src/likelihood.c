@@ -559,6 +559,11 @@ void	SumLikeDep(NODE N, TREES *Trees, int SiteNo, double Kappa, int *Err)
 
 void	SetFossilStates(NODE N, int SiteNo, int s00, int s01, int s10, int s11)
 {
+#ifdef BIG_LH
+	FossilDepLhBig(N, SiteNo, s00, s01, s10, s11);
+	return;
+#endif
+
 	if(s00 == 0)
 		N->Partial[SiteNo][0] = 0;
 
@@ -602,6 +607,11 @@ void	FossilLh(NODE N, TREES *Trees, int SiteNo)
 	/* Are we using the expanded discite fossil states? */
 	if(N->FossilState < Trees->NoOfStates)
 	{
+		#ifdef BIG_LH
+			FossilLhBig(N, Trees, SiteNo);
+			return;
+		#endif
+
 		for(Index=0;Index<Trees->NoOfStates;Index++)
 		{
 			if(Index != N->FossilState)
@@ -635,7 +645,6 @@ void	FossilLh(NODE N, TREES *Trees, int SiteNo)
 			case 15:
 				SetFossilStates(N, SiteNo, 0, 0, 1, 1);
 			break;
-
 
 			case 20:
 				SetFossilStates(N, SiteNo, 1, 1, 1, 0);
@@ -978,7 +987,7 @@ void	PrintTipData(TREES* Trees, int TreeNo)
 	TREE	*Tree=NULL;
 	NODE	N;
 
-	Tree = &Trees->Tree[TreeNo];
+	Tree = Trees->Tree[TreeNo];
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
@@ -1044,7 +1053,7 @@ void	SetGammaBlank(RATES* Rates, OPTIONS* Opt)
 	int		NOS;
 
 	Trees	= Opt->Trees;
-	Tree	= &Trees->Tree[Rates->TreeNo];
+	Tree	= Trees->Tree[Rates->TreeNo];
 	
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
@@ -1098,7 +1107,7 @@ void	ProcessGamma(RATES *Rates, TREES* Trees)
 
 
 
-	Tree	= &Trees->Tree[Rates->TreeNo];
+	Tree	= Trees->Tree[Rates->TreeNo];
 	Weight	= (double)1 / Rates->GammaCats;
 	NOS = Trees->NoOfStates;
 
@@ -1129,7 +1138,7 @@ void	FinishUpGamma(RATES* Rates, OPTIONS* Opt, TREES* Trees)
 	int		SiteIndex;
 	int		NOS;
 
-	Tree	= &Trees->Tree[Rates->TreeNo];
+	Tree	= Trees->Tree[Rates->TreeNo];
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
@@ -1183,7 +1192,7 @@ void SetDiscEstData(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	TAXA	*Taxa;
 
 	MDPos = 0;	
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
@@ -1290,7 +1299,7 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 	
 	NoErr = 0;
 	Err = FALSE;
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 	/* No need to compute P for root */
 
 	
@@ -1361,7 +1370,7 @@ void	SumLhLiner(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
 	int	GIndex, NIndex;
 	TREE	*Tree;
 	
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 	for(GIndex=0;GIndex<Tree->NoPGroups;GIndex++)
 	{
 #ifndef THREADED
@@ -1381,7 +1390,7 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	double Sum, SiteLh, Ret;
 	TREE	*Tree;
 
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 
 	Ret = 0;
 	for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
@@ -1444,7 +1453,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	if(Opt->DataType == CONTINUOUS)
 		return LHRandWalk(Opt, Trees, Rates);
 
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 
 	if(Rates->UseEstData == TRUE)
 		SetDiscEstData(Rates, Trees, Opt);

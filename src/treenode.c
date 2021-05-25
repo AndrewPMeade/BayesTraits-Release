@@ -112,7 +112,7 @@ void	FreePartitions(TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		Tree = &Trees->Tree[TIndex];
+		Tree = Trees->Tree[TIndex];
 
 		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 		{
@@ -134,7 +134,7 @@ void	SetPartitions(TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		Tree = &Trees->Tree[TIndex];
+		Tree = Trees->Tree[TIndex];
 
 		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 		{
@@ -242,7 +242,7 @@ void	SetRecNodes(RECNODE RNode, OPTIONS *Opt)
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
 		Depth = 0;
-		N = FindNode(RNode, &Trees->Tree[TIndex], &Depth, Trees->Tree[TIndex].NoNodes);
+		N = FindNode(RNode, Trees->Tree[TIndex], &Depth, Trees->Tree[TIndex]->NoNodes);
 		RNode->TreeNodes[TIndex] = N;
 
 		if(N != NULL)

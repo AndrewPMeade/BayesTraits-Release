@@ -8,15 +8,16 @@
 #include "BigLh.h"
 
 #ifndef BIG_LH
-
 void	InitTreeBigLh(OPTIONS *Opt, TREES *Trees) { }
 void	FreeTreeBigLh(OPTIONS *Opt, TREES *Trees) { }
 
 void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo) { }
-double CombineBigLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS) {return 0.0;}
+double	CombineBigLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS) {return 0.0;}
 
 void	SetBigLhNodeRec(NODE N, int NOS, int NoOfSites, RATES *Rates, OPTIONS *Opt) { }
 
+void	FossilLhBig(NODE N, TREES *Trees, int SiteNo) { }
+void	FossilDepLhBig(NODE N, int SiteNo, int s00, int s01, int s10, int s11) { }
 #else
 
 void	AllocNodeMemBigLh(NODE N, OPTIONS *Opt, TREES *Trees)
@@ -61,7 +62,7 @@ void	AllocMemory(OPTIONS *Opt, TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		T = &Trees->Tree[TIndex];
+		T = Trees->Tree[TIndex];
 		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
 		{
 			N = T->NodeList[NIndex];
@@ -92,7 +93,7 @@ void	SetTipDataBigLh(OPTIONS *Opt, TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		T = &Trees->Tree[TIndex];
+		T = Trees->Tree[TIndex];
 		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
 		{
 			N = T->NodeList[NIndex];
@@ -133,7 +134,7 @@ void	FreeTreeBigLh(OPTIONS *Opt, TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		T = &Trees->Tree[TIndex];
+		T = Trees->Tree[TIndex];
 		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
 		{
 			N = T->NodeList[NIndex];
@@ -142,10 +143,38 @@ void	FreeTreeBigLh(OPTIONS *Opt, TREES *Trees)
 	}
 }
 
+void SetBigLHZero(mpfr_t State)
+{
+	mpfr_set_d(State, 0.0, DEF_ROUND);
+}
+
 void	FossilLhBig(NODE N, TREES *Trees, int SiteNo)
 {
-
+	int Index;
+	
+	for(Index=0;Index<Trees->NoOfStates;Index++)
+	{
+		if(Index != N->FossilState)
+			SetBigLHZero(N->BigPartial[SiteNo][Index]);
+	}
 }
+
+void	FossilDepLhBig(NODE N, int SiteNo, int s00, int s01, int s10, int s11)
+{
+	if(s00 == 0)
+		SetBigLHZero(N->BigPartial[SiteNo][0]);
+
+	if(s01 == 0)
+		SetBigLHZero(N->BigPartial[SiteNo][1]);
+
+	if(s10 == 0)
+		SetBigLHZero(N->BigPartial[SiteNo][2]);
+
+	if(s11 == 0)
+		SetBigLHZero(N->BigPartial[SiteNo][3]);
+}
+
+
 
 void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo)
 { 
@@ -189,7 +218,7 @@ double CombineBigLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NO
 
 	Ret = 0;
 
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 	Root = Tree->Root;
 
 	mpfr_set_d(Root->t1, 0.0, DEF_ROUND);

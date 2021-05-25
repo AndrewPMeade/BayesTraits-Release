@@ -35,8 +35,7 @@ void	InitEstData(OPTIONS *Opt, TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Taxa = &Trees->Taxa[TIndex];
-
+		Taxa = Trees->Taxa[TIndex];
 
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 		{
@@ -95,7 +94,7 @@ void	RemoveDependantData(OPTIONS *Opt, TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Taxa = &Trees->Taxa[TIndex];
+		Taxa = Trees->Taxa[TIndex];
 
 		if(Taxa->EstDataP[DepNo] == TRUE)
 		{
@@ -140,10 +139,10 @@ double	GetTinyBL(TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		for(NIndex=0;NIndex<Trees->Tree[TIndex].NoNodes;NIndex++)
+		for(NIndex=0;NIndex<Trees->Tree[TIndex]->NoNodes;NIndex++)
 		{
-			Node = Trees->Tree[TIndex].NodeList[NIndex];
-			if((Node != Trees->Tree[TIndex].Root) &&
+			Node = Trees->Tree[TIndex]->NodeList[NIndex];
+			if((Node != Trees->Tree[TIndex]->Root) &&
 				(Node->Length != 0))
 			{
 				if(Node->Length < Ret)
@@ -170,11 +169,11 @@ void	CheckZeroTaxaBL(TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		for(NIndex=0;NIndex<Trees->Tree[TIndex].NoNodes;NIndex++)
+		for(NIndex=0;NIndex<Trees->Tree[TIndex]->NoNodes;NIndex++)
 		{
-			Node = Trees->Tree[TIndex].NodeList[NIndex];
+			Node = Trees->Tree[TIndex]->NodeList[NIndex];
 
-			if((Node->Tip == TRUE) && (Node != Trees->Tree[TIndex].Root))
+			if((Node->Tip == TRUE) && (Node != Trees->Tree[TIndex]->Root))
 			{
 				if(Node->Length < TinyBL)
 					Node->Length = TinyBL;
@@ -203,8 +202,8 @@ double	FindCoVar(TREES* Trees, TREE *Tree, int T1, int T2)
     for(Index=0;Index<Tree->NoNodes;Index++)
 		Tree->NodeList[Index]->Visited = FALSE;
 
-	N1 = TaxaToNode(Trees, Tree, &Trees->Taxa[T1]);
-	N2 = TaxaToNode(Trees, Tree, &Trees->Taxa[T2]);
+	N1 = TaxaToNode(Trees, Tree, Trees->Taxa[T1]);
+	N2 = TaxaToNode(Trees, Tree, Trees->Taxa[T2]);
 
 	while(N1!=Tree->Root)
 	{
@@ -232,14 +231,14 @@ void	CalcZ(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 	if(Opt->Model == CONTINUOUSREG)
 	{
 		for(SIndex=0;SIndex<Trees->NoOfTaxa;SIndex++)
-			Tree->ConVars->Z[SIndex] = Trees->Taxa[SIndex].Dependant;
+			Tree->ConVars->Z[SIndex] = Trees->Taxa[SIndex]->Dependant;
 	}
 	else
 	{
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 		{
 			for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++,ZPos++)
-				Tree->ConVars->Z[ZPos] = Trees->Taxa[TIndex].ConData[SIndex];
+				Tree->ConVars->Z[ZPos] = Trees->Taxa[TIndex]->ConData[SIndex];
 		}
 	}
 }
@@ -265,7 +264,7 @@ void	CalcPVarCoVar(TREES* Trees, TREE *Tree)
 			}
 			else
 			{
-				N = TaxaToNode(Trees, Tree, &Trees->Taxa[x]);
+				N = TaxaToNode(Trees, Tree, Trees->Taxa[x]);
 				CoVar = DistToRoot(N, Tree->Root);
 				Tree->ConVars->V->me[x][x] = CoVar;
 			}
@@ -298,24 +297,24 @@ void	CalcPVarCoVar(TREES* Trees, TREE *Tree)
 */
 }
 
-double	FindSum(TAXA* Taxa, int NoOfTaxa, int TraitNo)
+double	FindSum(TAXA** Taxa, int NoOfTaxa, int TraitNo)
 {
 	double	Ret=0;
 	int		Index;
 
 	for(Index=0;Index<NoOfTaxa;Index++)
-		Ret += Taxa[Index].ConData[TraitNo];
+		Ret += Taxa[Index]->ConData[TraitNo];
 
 	return Ret;
 }
 
-double	FindSumSqu(TAXA* Taxa, int NoOfTaxa, int TraitNo)
+double	FindSumSqu(TAXA** Taxa, int NoOfTaxa, int TraitNo)
 {
 	double	Ret=0;
 	int		Index;
 
 	for(Index=0;Index<NoOfTaxa;Index++)
-		Ret += (Taxa[Index].ConData[TraitNo] * Taxa[Index].ConData[TraitNo]);
+		Ret += (Taxa[Index]->ConData[TraitNo] * Taxa[Index]->ConData[TraitNo]);
 
 	return Ret;
 }
@@ -346,7 +345,7 @@ double	CalcCoVar(TREES* Trees, int T1, int T2)
 	Sum2 = FindSum(Trees->Taxa, Trees->NoOfTaxa, T2);
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		Ret = Ret + (Trees->Taxa[Index].ConData[T1] * Trees->Taxa[Index].ConData[T2]);
+		Ret = Ret + (Trees->Taxa[Index]->ConData[T1] * Trees->Taxa[Index]->ConData[T2]);
 
 	Ret = Ret - ((Sum1 * Sum2) / (double)Trees->NoOfTaxa);
 /*	Ret = Ret / (double)(Trees->NoOfTaxa - 1); */
@@ -657,7 +656,7 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 	TempCon = Trees->TempConVars;
 
 	for(x=0;x<Trees->NoOfTaxa;x++)
-		TempCon->Y[x] = Trees->Taxa[x].Dependant;
+		TempCon->Y[x] = Trees->Taxa[x]->Dependant;
 
 
 	if(Opt->AlphaZero == FALSE)
@@ -668,7 +667,7 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 		for(x=1;x<Trees->NoOfSites+1;x++)
 		{
 			for(y=0;y<Trees->NoOfTaxa;y++)
-				TempCon->X->me[y][x] = Trees->Taxa[y].ConData[x-1];
+				TempCon->X->me[y][x] = Trees->Taxa[y]->ConData[x-1];
 		}
 	}
 	else
@@ -676,7 +675,7 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 		for(x=0;x<Trees->NoOfSites;x++)
 		{
 			for(y=0;y<Trees->NoOfTaxa;y++)
-				TempCon->X->me[y][x] = Trees->Taxa[y].ConData[x];
+				TempCon->X->me[y][x] = Trees->Taxa[y]->ConData[x];
 		}
 	}
 
@@ -753,13 +752,13 @@ void	MLFindAlphaBeta(TREES* Trees, TREE *Tree, int Site, int AlphaZero)
 
 	Temp = 0;
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		Temp += Trees->Taxa[Index].ConData[Site] * TMat->me[0][Index];
+		Temp += Trees->Taxa[Index]->ConData[Site] * TMat->me[0][Index];
 
 	TempTVX[0] = Temp;
 
 	Temp = 0;
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		Temp += Trees->Taxa[Index].ConData[Site] * TMat->me[1][Index];
+		Temp += Trees->Taxa[Index]->ConData[Site] * TMat->me[1][Index];
 
 	TempTVX[1] = Temp;
 
@@ -864,7 +863,7 @@ double	MLFindAlphaMean(TREES* Trees, TREE *Tree, int Site)
 		ColTemp = 0;
 		for(x=0;x<Trees->NoOfTaxa;x++)
 			ColTemp = ColTemp + Tree->ConVars->InvV->me[x][y];
-		P2 += ColTemp * Trees->Taxa[y].ConData[Site];
+		P2 += ColTemp * Trees->Taxa[y]->ConData[Site];
 	}
 
 	return P1 * P2;
@@ -907,8 +906,8 @@ double	FindMLVar(TREES* Trees, TREE *Tree, int Site1, double Alpha1, double Beta
 
 	for(x=0;x<Trees->NoOfTaxa;x++)
 	{
-		CV->TVect1[x] = Trees->Taxa[x].ConData[Site1]  - (Alpha1 + (Beta1 * CV->V->me[x][x]));
-		CV->TVect3[x] = Trees->Taxa[x].ConData[Site2]  - (Alpha2 + (Beta2 * CV->V->me[x][x]));
+		CV->TVect1[x] = Trees->Taxa[x]->ConData[Site1]  - (Alpha1 + (Beta1 * CV->V->me[x][x]));
+		CV->TVect3[x] = Trees->Taxa[x]->ConData[Site2]  - (Alpha2 + (Beta2 * CV->V->me[x][x]));
 
 		CV->TVect2[x] = 0;
 	}
@@ -930,9 +929,9 @@ double	FindMLRegVar(TREES* Trees, TREE *Tree)
 	{
 		Reg = CV->Alpha[0];
 		for(x=0;x<Trees->NoOfSites;x++)
-			Reg += CV->Beta[x] * Trees->Taxa[TIndex].ConData[x];
+			Reg += CV->Beta[x] * Trees->Taxa[TIndex]->ConData[x];
 
-		CV->TVect1[TIndex] = Trees->Taxa[TIndex].Dependant  - Reg;
+		CV->TVect1[TIndex] = Trees->Taxa[TIndex]->Dependant  - Reg;
 		CV->TVect3[TIndex] = CV->TVect1[TIndex];
 		CV->TVect2[TIndex] = 0;
 	}
@@ -1029,7 +1028,7 @@ double	CalcZAReg(TREES* Trees, TREE* Tree, int TaxaNo)
 	TAXA	*Taxa;
 
 	CV	= Tree->ConVars;
-	Taxa= &Trees->Taxa[TaxaNo];
+	Taxa= Trees->Taxa[TaxaNo];
 
 	Ret = CV->Alpha[0];
 	for(Index=0;Index<Trees->NoOfSites;Index++)
@@ -1199,7 +1198,7 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates, int AlphaZero)
 
 	TempCon = Trees->TempConVars;
 
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 	CV = Tree->ConVars;
 
 	if(AlphaZero == FALSE)
@@ -1242,7 +1241,7 @@ void	SetEstData(TREES *Trees, RATES* Rates)
 	RIndex=0;
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Taxa = &Trees->Taxa[TIndex];
+		Taxa = Trees->Taxa[TIndex];
 
 		if(Taxa->EstData == TRUE)
 		{
@@ -1287,7 +1286,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	TREE	*Tree;
 	CONVAR	*CV;
 
-	Tree = &Trees->Tree[Rates->TreeNo];
+	Tree = Trees->Tree[Rates->TreeNo];
 	CV = Tree->ConVars;
 
 	if(Rates->UseEstData == TRUE)
@@ -1440,19 +1439,19 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 		return;
 	}
 
-	Trees->Tree[TreeNo].ConVars = AllocConVar(Opt, Trees);
-	CV = Trees->Tree[TreeNo].ConVars;
+	Trees->Tree[TreeNo]->ConVars = AllocConVar(Opt, Trees);
+	CV = Trees->Tree[TreeNo]->ConVars;
 
 	if((Opt->NodeData == TRUE) || (Opt->NodeBLData == TRUE))
 		SetTreeAsData(Opt, Trees, TreeNo);
 
 	if(Opt->FixKappa != -1)
-		TreeBLToPower(Trees, &Trees->Tree[TreeNo], Opt->FixKappa);
+		TreeBLToPower(Trees, Trees->Tree[TreeNo], Opt->FixKappa);
 
-	CalcPVarCoVar(Trees, &Trees->Tree[TreeNo]);
+	CalcPVarCoVar(Trees, Trees->Tree[TreeNo]);
 
 	if(Opt->InvertV == TRUE)
-		CopyMatrix(Trees->Tree[TreeNo].ConVars->TrueV, Trees->Tree[TreeNo].ConVars->V);
+		CopyMatrix(Trees->Tree[TreeNo]->ConVars->TrueV, Trees->Tree[TreeNo]->ConVars->V);
 
 	if(Opt->FixDelta != -1)
 		CalcDelta(CV->V, Opt->FixDelta);
@@ -1460,19 +1459,19 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 	if(Opt->FixLambda != -1)
 		CalcLabda(CV->V, Opt->FixLambda);
 
-	CalcZ(Trees, &Trees->Tree[TreeNo], Opt);
-	FindInvV(Trees, &Trees->Tree[TreeNo]);
+	CalcZ(Trees, Trees->Tree[TreeNo], Opt);
+	FindInvV(Trees, Trees->Tree[TreeNo]);
 
 	if(Opt->EstKappa == TRUE)
 	{
-		InitCKappaTree(Trees, &Trees->Tree[TreeNo]);
-		KappaVarCoVar(Trees, &Trees->Tree[TreeNo]);
+		InitCKappaTree(Trees, Trees->Tree[TreeNo]);
+		KappaVarCoVar(Trees, Trees->Tree[TreeNo]);
 	}
 
 	if(Opt->Model == CONTINUOUSREG)
 	{
 		for(Index=0;Index<Trees->NoOfTaxa;Index++)
-			CV->DepVect[Index] = Trees->Taxa[Index].Dependant;
+			CV->DepVect[Index] = Trees->Taxa[Index]->Dependant;
 	}
 }
 
@@ -1544,7 +1543,7 @@ TEMPCONVAR* AllocTempConVars(OPTIONS *Opt, TREES* Trees)
 	{
 		for(x=0;x<Trees->NoOfTaxa;x++)
 		{
-			Taxa = &Trees->Taxa[x];
+			Taxa = Trees->Taxa[x];
 			Ret->RVX->me[x][0] = 1;
 			for(y=0;y<Trees->NoOfSites;y++)
 				Ret->RVX->me[x][y+1] = Taxa->ConData[y];
@@ -1554,7 +1553,7 @@ TEMPCONVAR* AllocTempConVars(OPTIONS *Opt, TREES* Trees)
 	{
 		for(x=0;x<Trees->NoOfTaxa;x++)
 		{
-			Taxa = &Trees->Taxa[x];
+			Taxa = Trees->Taxa[x];
 			for(y=0;y<Trees->NoOfSites;y++)
 				Ret->RVX->me[x][y] = Taxa->ConData[y];
 		}

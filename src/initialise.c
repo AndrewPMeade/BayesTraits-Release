@@ -46,7 +46,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 	{
 		ID = 0;
-		SetNodeIDs(Trees->Tree[Index].Root, &ID);
+		SetNodeIDs(Trees->Tree[Index]->Root, &ID);
 	}
 	
 
@@ -74,7 +74,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		if((Opt->UseKappa == TRUE) && (Opt->FixKappa != -1))
 		{
 			for(Index=0;Index<Trees->NoOfTrees;Index++)
-				TreeBLToPower(Trees, &Trees->Tree[Index], Opt->FixKappa);
+				TreeBLToPower(Trees, Trees->Tree[Index], Opt->FixKappa);
 
 			Opt->FixKappa = -1;
 			Opt->UseKappa = FALSE;
