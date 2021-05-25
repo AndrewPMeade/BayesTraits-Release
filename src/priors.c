@@ -32,7 +32,10 @@ void	FreePrior(PRIORS* P)
 void	FreePriors(RATES *Rates)
 {
 	int	PIndex;
-
+	
+	if(Rates->Prios == NULL)
+		return;
+	
 	for(PIndex=0;PIndex<Rates->NoOfPriors;PIndex++)
 		FreePrior(Rates->Prios[PIndex]);
 

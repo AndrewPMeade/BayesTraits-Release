@@ -489,7 +489,7 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 			if(Opt->Stones != NULL)
 				Heat = GetStoneHeat(Opt->Stones, Itters, Heat);
 			
-	//		printf("LH:\t%f\t%f\t%f\n", Heat, NRates->Lh , CRates->Lh);
+//			printf("LH:\t%f\t%f\t%f\n", Heat, NRates->Lh , CRates->Lh);
 			Heat += NRates->LhPrior - CRates->LhPrior;
 			Heat += NRates->LnHastings;
 

@@ -205,6 +205,10 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/Tree-00000503.trees ./Seq/Data-00000503.txt < in.txt > sout.txt
 
+// ./Seq/Artiodactyl.trees ./Seq/Artiodactyl.txt < in.txt > sout.txt
+
+// ./Seq/PrimatesBrainBody.trees ./Seq/PrimatesBrainBody.txt < in.txt > sout.txt
+
 extern double igam(double a, double x);
 
 

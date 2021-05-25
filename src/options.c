@@ -988,17 +988,19 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		
 		Ret->Itters		=	5050000;
 		Ret->BurnIn		=	50000;
-
+		
 		Ret->Itters		=	1010000;
 		Ret->BurnIn		=	10000;
 		Ret->Sample		=	1000;
+		
+//		Set short run time, good for testing.
+
 		/*
 		Ret->BurnIn		=	10000;
 		Ret->Sample		=	100;
 		Ret->Itters		=	1000;
 		Ret->Itters		=	101000;
 		*/
-
 		Ret->PriorCats	=	100;
 		Ret->RateDev	=	1;
 		Ret->AutoTuneRD	=	TRUE;
@@ -1006,7 +1008,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		
 		AllocPrios(Ret);
 
-		Ret->UseSchedule	= TRUE;
+//		Ret->UseSchedule	= TRUE;
+		Ret->UseSchedule	= FALSE;
 	}
 
 	if(Ret->DataType == CONTINUOUS)
@@ -3193,7 +3196,7 @@ void	LoadAddErr(OPTIONS *Opt, char *FName)
 
 void	SetSteppingstone(OPTIONS *Opt, char **Passed, int Tokes)
 {
-	int K, Sample, Start;
+	int K, Sample;
 	double	Alpha, Beta;
 
 	if(Tokes == 1)

@@ -56,6 +56,8 @@ int		FindNoConRates(OPTIONS *Opt)
 		break;
 
 		case M_CONTRAST_REG:
+			if(Opt->TestCorrel == FALSE)
+				return 1;
 			return Opt->Trees->NoOfSites; 
 		break;
 
@@ -394,33 +396,6 @@ int		FindNoEstDataPoint(OPTIONS *Opt, TREES *Trees)
 	return Ret;
 }
 
-void	CreatMCMCContrastRates(OPTIONS *Opt, RATES *Rates)
-{
-	TREES *Trees;
-	int		Index;
-
-	Trees = Opt->Trees;
-
-	if(Opt->Model == M_CONTRAST_CORREL)
-		Rates->NoOfRates = Trees->NoOfSites;
-	
-	if(Opt->Model == M_CONTRAST_REG)
-	{
-		if(Opt->TestCorrel == FALSE)
-			Rates->NoOfRates = 1;
-		else
-			Rates->NoOfRates = Trees->NoOfSites;
-	}
-	
-	if(Opt->Model == M_CONTRAST)
-		Rates->NoOfRates = Trees->NoOfSites * 2;
-	
-	Rates->NoOfFullRates = Rates->NoOfRates;
-
-	Rates->Rates = (double*)malloc(sizeof(double) * Rates->NoOfRates);
-	for(Index=0;Index<Rates->NoOfRates;Index++)
-		Rates->Rates[Index] = 0.0;
-}
 
 void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 {
@@ -440,26 +415,23 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	if(Opt->Analsis == ANALMCMC)
 	{
 		Rates->NoOfRates = FindNoConRates(Opt);
-		
+	
+		Rates->NoOfFullRates = Rates->NoOfRates;
+
+		Rates->Rates = (double*)malloc(sizeof(double) * Rates->NoOfRates);
+		if(Rates->Rates == NULL)
+			MallocErr();
+
+		for(Index=0;Index<Rates->NoOfRates;Index++)
+			Rates->Rates[Index] = 0;
+
 		if(Opt->ModelType == MT_CONTRAST)
 		{
 			Rates->Means = NULL;
-			Rates->Rates = NULL;
 			Rates->Beta	 = NULL;
-
-			CreatMCMCContrastRates(Opt, Rates);
 		}
 		else
 		{
-			Rates->NoOfFullRates = Rates->NoOfRates;
-
-			Rates->Rates = (double*)malloc(sizeof(double) * Rates->NoOfRates);
-			if(Rates->Rates == NULL)
-				MallocErr();
-
-			for(Index=0;Index<Rates->NoOfRates;Index++)
-				Rates->Rates[Index] = 0;
-
 			if(Opt->Model == M_CONTINUOUS_REG)
 				Rates->Means = (double*)malloc(sizeof(double));
 			else
@@ -485,9 +457,6 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	{
 		Rates->NoOfRates = 0;
 		Rates->Means = NULL;
-
-//		if(Opt->Model == CONTRASTM)
-//			Rates->NoOfRates++;
 
 		if(Opt->EstDelta == TRUE)
 			Rates->NoOfRates++;
@@ -950,12 +919,15 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		sprintf(Buffer, "Alpha");
 		Ret[PIndex++] = StrMake(Buffer);
 
-		for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
+		if(Opt->TestCorrel == TRUE)
 		{
-			sprintf(Buffer, "Beta %d", Index);
-			Ret[PIndex++] = StrMake(Buffer);
-		}
-							
+
+			for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
+			{
+				sprintf(Buffer, "Beta %d", Index);
+				Ret[PIndex++] = StrMake(Buffer);
+			}
+		}			
 		free(Buffer);
 		return Ret;
 	}

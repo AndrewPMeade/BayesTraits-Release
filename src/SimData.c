@@ -32,7 +32,7 @@ void	BuildStateDS(int NOS, TREES *Trees)
 {
 	char *SymList = "0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ";
 	FILE *Out;
-	int Index, Len, Pos;
+	int Index, Len;
 		
 	Len = strlen(SymList);
 	Out = OpenRandSimOutFile(NOS);
