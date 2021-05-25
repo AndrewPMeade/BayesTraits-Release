@@ -75,7 +75,7 @@ void polmov ( double *, int, double * );
 void polclr ( double *, int );
 void poladd ( double *, int, double *, int, double * );
 void polmul ( double *, int, double *, int, double * );
-void * malloc ( long );
+void * malloc ( size_t );
 void free ( void * );
 #else
 void polmov(), polclr(), poladd(), polmul();

@@ -63,7 +63,7 @@
 #include "mconf.h"
 #if ANSIPROT
 void exit (int);
-extern void * malloc ( long );
+extern void * malloc ( size_t );
 extern void free ( void * );
 void polclr ( double *, int );
 void polmov ( double *, int, double * );

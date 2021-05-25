@@ -18,7 +18,7 @@ extern void poladd ( double a[], int na, double b[], int nb, double c[] );
 extern void polsub ( double a[], int na, double b[], int nb, double c[] );
 extern int poldiv ( double a[], int na, double b[], int nb, double c[] );
 extern void polsbt ( double a[], int na, double b[], int nb, double c[] );
-extern void * malloc ( long );
+extern void * malloc ( size_t );
 extern void free ( void * );
 #else
 double atan2(), sqrt(), fabs(), sin(), cos();

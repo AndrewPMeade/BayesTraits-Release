@@ -1855,7 +1855,7 @@ void	MutateEstRates(OPTIONS* Opt, RATES* Rates)
 	free(Changes);
 }
 
-void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
+void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 {
 	int		Index;
 	int		NoOfGroups;
@@ -1975,7 +1975,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 		break;
 
 		case(SPPADDREMOVE):
-			PPAddRemove(Rates, Opt->Trees, Opt);
+			PPAddRemove(Rates, Opt->Trees, Opt, It);
 		break;
 
 		case(SPPMOVE):
@@ -1984,6 +1984,10 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 		
 		case(SPPCHANGESCALE):
 			PPChangeScale(Rates, Opt->Trees, Opt);
+		break;
+
+		case(SPPHYPERPRIOR):
+			ChangePPHyperPrior(Rates, Opt);
 		break;
 	}
 
@@ -2264,11 +2268,23 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 
 	if(Opt->UsePhyloPlasty == TRUE)
 	{
-		Shed->OptFreq[10] = 0.4;
-		Shed->OptFreq[11] = 0.1;
-		Shed->OptFreq[12] = 0.4;
+/*
+		SPPADDREMOVE=10,
+		SPPMOVE=11,
+		SPPCHANGESCALE=12,
+		SPPHYPERPRIOR=13,
+*/
+		Shed->OptFreq[10] = 0;
+		Shed->OptFreq[11] = 0;
+		Shed->OptFreq[12] = 0;
+		Shed->OptFreq[13] = 0;
 
-		Left = Left - (Shed->OptFreq[10] + Shed->OptFreq[11] + Shed->OptFreq[12]);
+		Shed->OptFreq[10] = 0.4;
+		Shed->OptFreq[11] = 0.05;
+		Shed->OptFreq[12] = 0.4;
+//		Shed->OptFreq[13] = 0.05;
+
+		Left = Left - (Shed->OptFreq[10] + Shed->OptFreq[11] + Shed->OptFreq[12] + Shed->OptFreq[13]);
 	}
 
 	Rates = 0;
@@ -2283,6 +2299,9 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Shed->OptFreq[0] = 0;
 	else
 		Shed->OptFreq[0] = Left;
+
+//	if(Opt->UsePhyloPlasty == TRUE)
+//		Shed->OptFreq[0] = 0;
 	
 	if(Opt->UseModelFile == TRUE)
 		Shed->OptFreq[0] = 0.3;

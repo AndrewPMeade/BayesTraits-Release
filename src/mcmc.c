@@ -167,6 +167,21 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	free(Vec);
 }
 
+void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double Sig;
+
+	Rates->Contrast->EstAlpha[0] = -0.84678;
+	for(Sig=0;Sig<0.5;Sig+=0.0001)
+	{
+		Rates->Contrast->EstSigma[0] = Sig;
+		printf("%f\t%f\n", Sig, Likelihood(Rates, Trees, Opt));
+	}
+
+	exit(0);
+}
+
+
 
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
@@ -239,26 +254,25 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	InitMCMC(Opt, Trees, CRates);
 	
+//	TestLHSurface(Opt, Trees, CRates);
 
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
 
 /*	FindNoBL(Opt, Trees, CRates);  */
 
-
 	for(Itters=0;;Itters++)
 	{ 
 		CopyRates(NRates, CRates, Opt);
-		MutateRates(Opt, NRates, Shed);
+		MutateRates(Opt, NRates, Shed, Itters);
 
 		if(Opt->NodeData == TRUE)
 			SetTreeAsData(Opt, Trees, NRates->TreeNo);
 
 		NRates->Lh = Likelihood(NRates, Trees, Opt);
+		CalcPriors(NRates, Opt);
 
 		Heat = NRates->Lh - CRates->Lh;
-		CalcPriors(NRates, Opt);
-		
 		Heat += NRates->LhPrior - CRates->LhPrior;
 		Heat += NRates->LnHastings;
 		

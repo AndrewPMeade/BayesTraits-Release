@@ -160,9 +160,7 @@ static unsigned short bmask[] = {
 };
 
 
-
-/*
-
+#ifdef EXTRA_FLOOR
 double floor(x)
 double x;
 {
@@ -191,7 +189,7 @@ if(x == 0.0L)
 	return(x);
 #endif
 u.y = x;
-// find the exponent (power of 2) 
+/* find the exponent (power of 2)  */
 #ifdef DEC
 p = (unsigned short *)&u.sh[0];
 e = (( *p  >> 7) & 0377) - 0201;
@@ -219,7 +217,7 @@ if( e < 0 )
 	}
 
 e = (NBITS -1) - e;
-// clean out 16 bits at a time 
+/* clean out 16 bits at a time  */
 while( e >= 16 )
 	{
 #ifdef IBMPC
@@ -236,7 +234,7 @@ while( e >= 16 )
 	e -= 16;
 	}
 
-// clear the remaining bits 
+/* clear the remaining bits  */
 if( e > 0 )
 	*p &= bmask[e];
 
@@ -246,7 +244,8 @@ if( (x < 0) && (u.y != x) )
 return(u.y);
 }
 
-*/
+#endif
+
 
 
 double frexp( x, pw2 )

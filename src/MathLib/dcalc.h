@@ -2,6 +2,10 @@
  * include file for calc.c
  */
  
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
+
 /* 32 bit memory addresses: */
 #define LARGEMEM 1
 

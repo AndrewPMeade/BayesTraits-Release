@@ -62,6 +62,9 @@ Copyright 1984, 1987, 1989, 1995 by Stephen L. Moshier
 */
 #pragma warning(disable : 4996)
 
+#include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 
 /* Define if the `long double' type works.  */
 #define HAVE_LONG_DOUBLE 1
@@ -206,6 +209,7 @@ typedef struct
 
 /* Get ANSI function prototypes, if you want them. */
 #if 1
+
 /* #ifdef __STDC__ */
 #define ANSIPROT 1
 int mtherr ( char *, int );

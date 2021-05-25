@@ -23,15 +23,24 @@
 */
 #endif
 
-#define PPMASSDEL	10
-#define PPCOST		2.302585093
-#define PPJACOBIAN	1
-#define PPMAXSCALE	10
-#define	PPALPHA		1.5
-#define PPBETA		5
-#define	PPSCALEDEV	5
+/* Cost of Uniform prior */
+#define PPUNICOST		2.302585093
 
-//#define PPUNIFORM
+#define PPJACOBIAN	1
+
+/* Max uniform vlaue */
+#define PPMAXSCALE	10
+//#define	PPSCALEDEV	10
+#define	PPSCALEDEV	100
+
+/* Value of the PP alpha gamma */
+#define	PPALPHA		1.1
+#define PPBETA		1
+
+#define PPALPHASCLAE 0.1
+
+/* Use uniform or gamma value priors*/
+#define PPUNIFORM
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000
@@ -548,8 +557,6 @@ typedef struct
 	int			NoNodes;
 	PLASTYNODE **NodeList;
 	
-	int			NoID;
-	
 	int			NoTrees;
 	double		**TrueBL;
 	double		*ScaleBL;
@@ -560,6 +567,7 @@ typedef struct
 	NODE		*TempList;
 	int			NoTempList;
 
+	double		Alpha;
 } PLASTY;
 
 typedef struct
@@ -780,7 +788,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NOOFOPERATORS	13
+#define NOOFOPERATORS	14
 
 static char    *SHEDOP[] =
 {
@@ -796,7 +804,8 @@ static char    *SHEDOP[] =
 	"Solo Tree Move",
 	"PP Add / Remove",
 	"PP Move", 
-	"PP Change Scale"
+	"PP Change Scale",
+	"PP Hyper Prior"
 };
 
 typedef enum
@@ -814,6 +823,7 @@ typedef enum
 	SPPADDREMOVE=10,
 	SPPMOVE=11,
 	SPPCHANGESCALE=12,
+	SPPHYPERPRIOR=13,
 } OPERATORS;
 
 typedef struct

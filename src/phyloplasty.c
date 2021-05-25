@@ -131,7 +131,6 @@ PLASTY*	CreatPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	Ret->NodeList= NULL;
 
 	Ret->TrueBL = MakeTrueBL(Trees);
-	Ret->NoID = 0;
 
 	MakeValidNodes(Trees, Ret);
 
@@ -140,6 +139,12 @@ PLASTY*	CreatPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 		MallocErr();
 
 	Ret->TempList = (NODE*)malloc(sizeof(NODE) * Ret->NoValidNode);
+
+#ifdef PPUNIFORM
+	Ret->Alpha = -1;
+#else
+	Ret->Alpha = PPALPHA;
+#endif
 
 	return Ret;
 }
@@ -166,11 +171,10 @@ void	FreePlasty(PLASTY* Plasty)
 }
 
 
-void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N)
+void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, int It)
 {
 	PLASTYNODE	*PNode;
 	PLASTY		*Plasty;
-//	double		Cost;
 
 	Plasty = Rates->Plasty;
 
@@ -178,7 +182,7 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N)
 	if(PNode == NULL)
 		MallocErr();
 
-	PNode->NodeID = Plasty->NoID++;
+	PNode->NodeID = It;
 
 	PNode->Node = N;
 
@@ -204,7 +208,6 @@ void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
 	PLASTY		*Plasty;
 	PLASTYNODE	**NList;
 	int			Index;
-	double		Cost;
 	
 
 	Plasty = Rates->Plasty;
@@ -215,12 +218,9 @@ void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
 		free(Plasty->NodeList);
 		Plasty->NodeList = NULL;
 		Plasty->NoNodes = 0;
-		Cost = -log(PPSGammaPDF(Plasty->NodeList[0]->Scale, PPALPHA, PPBETA));
-		Rates->LnHastings= Cost;
 		return;
 	}
 
-	Cost = -log(PPSGammaPDF(Plasty->NodeList[No]->Scale, PPALPHA, PPBETA));
 
 	free(Plasty->NodeList[No]);
 	Plasty->NodeList[No] = NULL;
@@ -240,7 +240,6 @@ void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
 	Plasty->NodeList = NList;
 	Plasty->NoNodes--;
 	
-
 	Rates->LnHastings = 0;
 	Rates->LogJacobion = 0;
 }
@@ -254,7 +253,9 @@ double	ChangePlastyRate(RATES *Rates, double Scale, double SD)
 
 	do
 	{
-		Ret = (nrand(RS) * SD) + Scale;
+//		Ret = (nrand(RS) * SD) + Scale;
+		Ret = ((GenRandState(RS) * SD) - (SD / 2.0)) + Scale; 
+		
 #ifdef PPUNIFORM
 	} while((Ret <= 0) || (Ret > PPMAXSCALE));
 #else
@@ -276,12 +277,28 @@ void	PPChangeScale(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	Node = Plasty->NodeList[No];
 
 	Rates->LnHastings = CalcNormalHasting(Node->Scale, PPSCALEDEV);
+//	Rates->LnHastings = 0;
 	Node->Scale = ChangePlastyRate(Rates, Node->Scale, PPSCALEDEV);
 }
 
-void	MakeTNodeList(NODE N, NODE* List, int *Size)
+
+int		NodeScaled(int NID, PLASTY *Plasty)
 {
-	if(IsValidPPNode(N) == TRUE)
+	int	Index;
+
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+	{
+		if(Plasty->NodeList[Index]->Node->ID == NID)
+			return TRUE;
+	}
+	
+	return FALSE;
+}
+
+
+void	MakeTNodeList(PLASTY *Plasty, NODE N, NODE* List, int *Size)
+{
+	if( (IsValidPPNode(N) == TRUE) && (NodeScaled(N->ID, Plasty) == FALSE))
 	{
 		List[*Size] = N;
 		(*Size)++;
@@ -290,8 +307,16 @@ void	MakeTNodeList(NODE N, NODE* List, int *Size)
 	if(N->Tip == TRUE)
 		return;
 
-	MakeTNodeList(N->Left, List, Size);
-	MakeTNodeList(N->Right, List, Size);
+	MakeTNodeList(Plasty, N->Left, List, Size);
+	MakeTNodeList(Plasty, N->Right, List, Size);
+}
+
+void	SawpNodeType(PLASTYNODE	*PNode)
+{
+	if(PNode->Type == PPNODE)
+		PNode->Type = PPBRANCH;
+	else
+		PNode->Type = PPNODE;
 }
 
 void 	PPMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
@@ -308,28 +333,29 @@ void 	PPMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 
 	N = PNode->Node;
 
-	if((GenRandState(Rates->RandStates) < 0.05) && (PNode->Node->Tip == FALSE))
+	if( (GenRandState(Rates->RandStates) < 0.05) && 
+		(PNode->Node->Tip == FALSE))
 	{
-		if(PNode->Type == PPNODE)
-			PNode->Type = PPBRANCH;
-		else
-			PNode->Type = PPNODE;
+		SawpNodeType(PNode);
 		return;
 	}
 
 	Plasty->NoTempList = 0;
-	if((N->Ans != NULL) && (IsValidPPNode(N->Ans) == TRUE))
-		Plasty->TempList[Plasty->NoTempList++] = N->Ans;
+	if((N->Ans != NULL) && (IsValidPPNode(N->Ans) == TRUE) && (N != Trees->Tree[0].Root))
+		if(NodeScaled(N->Ans->ID, Plasty) == FALSE)
+			Plasty->TempList[Plasty->NoTempList++] = N->Ans;
 
 	if(N->Tip == FALSE)
 	{
-		MakeTNodeList(N->Left, Plasty->TempList, &Plasty->NoTempList);
-		MakeTNodeList(N->Right, Plasty->TempList, &Plasty->NoTempList);
+		MakeTNodeList(Plasty, N->Left, Plasty->TempList, &Plasty->NoTempList);
+		MakeTNodeList(Plasty, N->Right, Plasty->TempList, &Plasty->NoTempList);
 	}
 
-
 	if(Plasty->NoTempList == 0)
+	{
+		SawpNodeType(PNode);
 		return;
+	}
 
 	No = rand() % Plasty->NoTempList;
 	PNode->Node = Plasty->TempList[No];
@@ -348,7 +374,7 @@ int GetPlastyNode(int ID, PLASTY *Plasty)
 	return -1;
 }
 
-void	PPAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+void	PPAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, int It)
 {
 	PLASTY *	Plasty;
 	int			PNodeID;
@@ -356,14 +382,17 @@ void	PPAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 
 	Plasty = Rates->Plasty;
 
-	N = Plasty->ValidNode[rand() % Plasty->NoValidNode];
+	do
+	{
+		N = Plasty->ValidNode[rand() % Plasty->NoValidNode];
+	}while(N == Trees->Tree[0].Root);
+
 	PNodeID = GetPlastyNode(N->ID, Plasty);
 
 	if(PNodeID == -1)
-		PlastyAdd(Rates, Trees, Opt, N);		
+		PlastyAdd(Rates, Trees, Opt, N, It);
 	else
 		DelPlastyNode(Rates, Trees, Opt, PNodeID);		
-
 }
 
 
@@ -425,7 +454,7 @@ void	PlastyCopy(RATES *R1, RATES *R2)
 	P1->NodeList = NList;
 	P1->NoNodes = P2->NoNodes;
 
-	P1->NoID = P2->NoID;
+	P1->Alpha = P2->Alpha;
 }
 
 void	PlastyNode(NODE N, PLASTYNODE *P)
@@ -522,6 +551,13 @@ void	PPLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		RecPrintPPNodes(Opt->PPLog, N);
 		fprintf(Opt->PPLog, "\n");
 	}
+
+	fprintf(Opt->PPLog, "It\tLh\tLh + Prior\tNo Pram\tAlpha\tSigma\tAlpha Scale Prior\t");
+	fprintf(Opt->PPLog, "Node ID\tScale\tCreat It\tNode / Branch\t");
+
+	fprintf(Opt->PPLog, "\n");
+
+	fflush(Opt->PPLog);
 }
 
 void	IntiPPLogFile(OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -605,8 +641,8 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 
 	Out = Opt->PPLog;
 
-	fprintf(Out, "%d\t%f\t%d\t", It, Rates->Lh, P->NoNodes);
-	fprintf(Out, "%f\t%f\t", Rates->Contrast->EstAlpha[0], Rates->Contrast->EstSigma[0]);
+	fprintf(Out, "%d\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, P->NoNodes);
+	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->EstAlpha[0], Rates->Contrast->EstSigma[0], P->Alpha);
 
 	for(Index=0;Index<P->NoNodes;Index++)
 	{
@@ -632,20 +668,7 @@ void	PrintPPOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 	PrintPPTree(Opt, Trees, Rates, It);
 	LogPPResults(Opt, Trees, Rates, It);
 }
-/*
- double gengam(double a,double r)
-           GENerates random deviates from GAMma distribution
-                              Function
-     Generates random deviates from the gamma distribution whose
-     density is
-          (A**R)/Gamma(R) * X**(R-1) * Exp(-A*X)
-                              Arguments
-     a --> Location parameter of Gamma distribution
-     JJV   (a > 0)
-     r --> Shape parameter of Gamma distribution
-     JJV   (r > 0)
-                              Method
-*/
+
 
 double	GammPDF(double x, double Shape, double Scale)
 {
@@ -659,8 +682,6 @@ double	GammPDF(double x, double Shape, double Scale)
 	return T1 * T2;
 }
 
-
-
 void	NormalTest(void)
 {
 	double	x;
@@ -673,24 +694,22 @@ void	NormalTest(void)
 	exit(0);
 }
 
-void	TestGenRand(OPTIONS *Opt, TREES *Trees, RATES* Rates)
+void	ChangePPHyperPrior(RATES *Rates, OPTIONS *Opt)
 {
-	int Index;
-	double	 dev;
+	double	NAlpha;
+	PLASTY	*Plasty;
 
-	dev = 2;
+	Plasty = Rates->Plasty;
 
-//	NormalTest();
+	Rates->LnHastings = CalcNormalHasting(Plasty->Alpha - 1, PPALPHASCLAE);
+	
+	do
+	{
+		NAlpha = (nrand(Rates->RandStates) * PPALPHASCLAE) + Plasty->Alpha;
+	} while(NAlpha <= 1);
 
-	printf("\n");
-	for(Index=0;Index<100000;Index++)
-//		printf("%f\n", RandGamma(8.85, 5.28));
-		printf("%f\n", RandGamma(PPALPHA, PPBETA));
-		
-//		printf("%f\n", RandGamma(1.5, 6));
-	exit(0);
+	Plasty->Alpha = NAlpha;
 }
-
 
 double	CalcPPPriors(RATES *Rates, OPTIONS *Opt)
 {
@@ -704,17 +723,45 @@ double	CalcPPPriors(RATES *Rates, OPTIONS *Opt)
 	Ret = 0;
 
 #ifdef PPUNIFORM
-	Ret = Plasty->NoNodes * -PPCOST;
+	Ret = Plasty->NoNodes * -PPUNICOST;
 	return Ret;
 #endif
 
 	for(Index=0;Index<Plasty->NoNodes;Index++)
 	{
 		PNode = Plasty->NodeList[Index];
-
-		PVal = PPSGammaPDF(PNode->Scale, PPALPHA, PPBETA);
+		PVal = PPSGammaPDF(PNode->Scale, Plasty->Alpha, PPBETA);
 		Ret += log(PVal);
 	}
 
 	return Ret;
+}
+
+
+int		SeenNodeID(int NID, PLASTY *Plasty, int Size)
+{
+	int	Index;
+
+	for(Index=0;Index<Size;Index++)
+		if(Plasty->NodeList[Index]->Node->ID == NID)
+			return TRUE;
+
+	return FALSE;
+}
+
+void	CheckPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+{
+	PLASTY	*Plasty;
+	int		Index;
+	
+	Plasty = Rates->Plasty;
+
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+	{
+		if(SeenNodeID(Plasty->NodeList[Index]->Node->ID, Plasty, Index) == TRUE)
+		{
+			printf("Dup node in list %d.\n", Plasty->NodeList[Index]->Node->ID);
+			exit(0);
+		}
+	}	
 }

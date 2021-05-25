@@ -70,7 +70,7 @@ extern double gamma ( double );
 extern double lgam ( double );
 extern double exp ( double );
 extern double log ( double );
-extern double floor ( double );
+/* extern double floor ( double ); */
 #else
 double fabs(), gamma(), lgam(), exp(), log(), floor();
 #endif

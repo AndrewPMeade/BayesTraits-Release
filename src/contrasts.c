@@ -271,15 +271,17 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	CalcContrast(Trees, Rates);	
 	
+//	Use ML values for MCMC
 	if(Opt->Analsis == ANALML)
 	{
 		CalcContLh(Opt, Trees, Rates);
-		Con->EstAlpha[0] = Con->Alpha[0];
-		Con->EstSigma[0] = Con->Sigma[0];
+		if(Opt->Analsis != ANALMCMC)
+		{
+			Con->EstAlpha[0] = Con->Alpha[0];
+			Con->EstSigma[0] = Con->Sigma[0];
+		}
 		return Rates->Lh;
 	}
-
-//	Con->EstSigma[0] = Con->Sigma[0];
 
 	Con->AlphaErr = CalcMCMCAlpha(Trees->Tree[0].Root, Con->EstAlpha[0]);
 	CalcContrastMCMC(Opt, Trees, Rates);
