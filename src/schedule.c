@@ -704,3 +704,14 @@ void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 //	Shed->FullATList[1]->CDev = 132640.854585;
 }
 
+void		SetCustomShed(SCHEDULE* Shed)
+{
+	int Index;
+
+	for(Index=0;Index<Shed->NoOfOpts;Index++)
+		Shed->OptFreq[Index] = 0.0;
+
+	Shed->OptFreq[SPPMOVE] = 1.0;
+
+	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
+}

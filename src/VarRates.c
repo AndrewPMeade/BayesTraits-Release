@@ -540,6 +540,44 @@ int		CompVarRatesNode(const void *Vr1, const void *Vr2)
 	return 0;
 }
 
+/*
+void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+{
+	VARRATES	*VarRates;
+	VAR_RATES_NODE	*PNode;
+	NODE		N;
+	int			No;
+	int			Index;
+
+	VarRates = Rates->VarRates;
+
+	No = RandUSLong(Rates->RS) % VarRates->NoNodes;
+	PNode = VarRates->NodeList[No];
+
+	N = PNode->Node;
+	 
+	VarRates->NoTempList = 0;
+	if(ValidMoveNode(VarRates, N->Ans, PNode->Type) == TRUE)
+		VarRates->TempList[VarRates->NoTempList++] = N->Ans;
+
+	if(N->Tip == FALSE)
+	{
+		for(Index=0;Index<N->NoNodes;Index++)
+			MakeTNodeList(Opt, VarRates, PNode->Type, N->NodeList[Index], VarRates->TempList, &VarRates->NoTempList);
+	}
+
+	if(VarRates->NoTempList == 0)
+		return;
+	
+	No = RandUSLong(Rates->RS) % VarRates->NoTempList;
+	PNode->Node = VarRates->TempList[No];
+
+	qsort(VarRates->NodeList, VarRates->NoNodes, sizeof(VAR_RATES_NODE*), CompVarRatesNode);
+
+	return;
+}
+*/
+
 void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
 	VARRATES	*VarRates;
@@ -564,7 +602,7 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 		for(Index=0;Index<N->NoNodes;Index++)
 			MakeTNodeList(Opt, VarRates, PNode->Type, N->NodeList[Index], VarRates->TempList, &VarRates->NoTempList);
 	}
-
+	
 	if(VarRates->NoTempList == 0)
 		return;
 	
@@ -572,10 +610,16 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	PNode->Node = VarRates->TempList[No];
 
 	qsort(VarRates->NodeList, VarRates->NoNodes, sizeof(VAR_RATES_NODE*), CompVarRatesNode);
+	
+	if(N->Tip == TRUE)
+		Rates->LnHastings = log(1.0 / 3.0);
 
+	if(N->Ans != NULL)
+		if(N->Ans->Ans == NULL)
+			Rates->LnHastings = log(2.0 / 3.0);
+	
 	return;
 }
-
 
 NODE	GetVarRatesNode(RATES *Rates, TREES *Trees, TRANSFORM_TYPE	Type)
 {
@@ -616,7 +660,7 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	TRANSFORM_TYPE		Type;
 	
 	Type = GetVarRatesType(Rates->RS, Shed);
-		
+			
 	VarRates = Rates->VarRates;
 	
 	N = GetVarRatesNode(Rates, Trees, Type);
@@ -832,44 +876,8 @@ void	RecPrintPPNodes(FILE *Out, NODE N)
 
 }
 
-/*
-void	PPLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	TREE	*T;
-	int		Index;
-	NODE	N;
-	PLASTY	*P;
-	int		No;
 
-	T = Trees->Tree[0];
-	P = Rates->Plasty;
-
-	fprintf(Opt->PPLog, "%d\n", Trees->NoOfTaxa);
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		fprintf(Opt->PPLog, "%d\t%s\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
-
-	fprintf(Opt->PPLog, "%d\n", P->NoValidNode);
-
-	for(Index=0;Index<P->NoValidNode;Index++)
-	{
-		N = P->ValidNode[Index];
-		No = 0;
-		CTaxaBelow(N, &No);
-		fprintf(Opt->PPLog, "%d\t%f\t%d\t", N->ID, N->Length, No);
-		RecPrintPPNodes(Opt->PPLog, N);
-		fprintf(Opt->PPLog, "\n");
-	}
-
-	fprintf(Opt->PPLog, "It\tLh\tLh + Prior\tNo Pram\tAlpha\tSigma^2\tAlpha Scale Prior\t");
-	fprintf(Opt->PPLog, "Node ID\tScale\tCreat It\tNode / Branch\t");
-
-	fprintf(Opt->PPLog, "\n");
-
-	fflush(Opt->PPLog);
-}
-*/
-
-void	PPLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	VarRatesLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE	*T;
 	int		Index;
@@ -928,7 +936,7 @@ void	IntiVarRatesLogFile(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	Opt->PPLog = OpenWrite(Buffer);
 	free(Buffer);
 
-	PPLogFileHeader(Opt, Trees, Rates);
+	VarRatesLogFileHeader(Opt, Trees, Rates);
 
 	fflush(Opt->PPLog);
 }
@@ -982,7 +990,7 @@ void	PrintPPNode(FILE *Out, NODE N)
 	fprintf(Out, "):%f", N->Length);
 }
 
-void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
+void	PrintVarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 {
 	VARRATES	*VarRates;
 	TREE	*Tree;
@@ -1086,7 +1094,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 
 void	PrintVarRatesOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 {
-	PrintPPTree(Opt, Trees, Rates, It);
+	PrintVarRatesTree(Opt, Trees, Rates, It);
 	LogPPResults(Opt, Trees, Rates, It);
 }
 
@@ -1163,7 +1171,7 @@ double	CaclVRPrior(VAR_RATES_NODE *PNode, RATES *Rates)
 	Prior = GetVRPrior(PNode->Type, Rates);
 	
 	Ret = CalcLhPriorP(PNode->Scale, Prior);
-	
+
 	return Ret;
 }
 
@@ -1410,7 +1418,7 @@ void	SpecifcPairTest(OPTIONS *Opt, RATES *Rates)
 
 	CalcPriors(Rates, Opt);
 
-	PrintPPTree(Opt, Opt->Trees, Rates, 1);
+	PrintVarRatesTree(Opt, Opt->Trees, Rates, 1);
 		
 	exit(0);
 }
@@ -1436,7 +1444,7 @@ void	TestEachVarRatePair(OPTIONS *Opt, RATES *Rates)
 
 	CalcPriors(Rates, Opt);
 
-	PrintPPTree(Opt, Opt->Trees, Rates, 1);
+	PrintVarRatesTree(Opt, Opt->Trees, Rates, 1);
 		
 	exit(0);
 */	
@@ -1487,7 +1495,7 @@ void	TestVarRates(OPTIONS *Opt, RATES *Rates)
 
 	TestEachVarRatePair(Opt, Rates);
 	
-//	PrintPPTree(Opt, Opt->Trees, Rates, 1);
+//	PrintVarRatesTree(Opt, Opt->Trees, Rates, 1);
 
 	exit(0);
 }
@@ -1529,14 +1537,13 @@ void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt)
 	int Index, Tokes;
 	char *S;
 
-	PrintPPTree(Opt, Opt->Trees, Rates, 1);
+	PrintVarRatesTree(Opt, Opt->Trees, Rates, 1);
 	
 
 	S = StrMake(Str);
 
-	Passed = (char**)malloc(sizeof(char*) * strlen(Str));
-	if(Passed == NULL)
-		MallocErr();
+	Passed = (char**)SMalloc(sizeof(char*) * strlen(Str));
+	
 
 	Tokes = MakeArgv(S, Passed, (int)strlen(S));
 

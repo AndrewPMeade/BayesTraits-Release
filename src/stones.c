@@ -99,16 +99,12 @@ STONES*	CratesStones(int NoS, int Sample, double Alpha, double Beta)
 	STONES *Ret;
 	int Index;
 
-	Ret = (STONES*)malloc(sizeof(STONES));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (STONES*)SMalloc(sizeof(STONES));
 
 	Ret->NoStones = NoS;
 
-	Ret->MLh = (double*)malloc(sizeof(double) * Ret->NoStones);
-	Ret->Power = (double*)malloc(sizeof(double) * Ret->NoStones);
-	if((Ret->MLh == NULL) || (Ret->Power == NULL))
-		MallocErr();
+	Ret->MLh = (double*)SMalloc(sizeof(double) * Ret->NoStones);
+	Ret->Power = (double*)SMalloc(sizeof(double) * Ret->NoStones);
 
 	for(Index=0;Index<Ret->NoStones;Index++)
 		Ret->MLh[Index] = 0.0;

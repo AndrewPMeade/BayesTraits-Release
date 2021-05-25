@@ -874,10 +874,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 		Ret->ModelFile = LoadModelFile(Opt->LoadModelsFN, Opt, Opt->Trees, Ret);
 		ChangeModelFile(Ret, Ret->RS);
 	}
-
-
-
-//	SimData(Opt, Opt->Trees, Ret);
+	
+	SimData(Opt, Opt->Trees, Ret);
 
 	return Ret;
 }

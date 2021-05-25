@@ -141,8 +141,8 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 //	Rates->Rates[0] = 0.000001;
 //	Rates->Rates[0] = 1.503441;
 
-//	for(Index=0;Index<Rates->NoOfRates;Index++)
-//		Rates->Rates[Index] = RandDouble(RS) * 10;
+	for(Index=0;Index<Rates->NoOfRates;Index++)
+		Rates->Rates[Index] = 1.0;
 
 	Rates->TreeNo = 0;
 

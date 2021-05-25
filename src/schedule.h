@@ -16,4 +16,6 @@ int			FindNoOfAutoCalibRates(OPTIONS *Opt);
 
 void		PrintShed(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str);
 
+void		SetCustomShed(SCHEDULE* Shed);
+
 #endif
