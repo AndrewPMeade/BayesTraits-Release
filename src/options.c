@@ -1978,8 +1978,8 @@ TAXA*	GetTaxaFromNameNo(char *ID, TREES* Trees)
 {
 	int	Index;
 
-	if(IsValidInt(ID) == TRUE)
-		return GetTaxaFromID(atoi(ID), Trees->Taxa, Trees->NoOfTaxa);
+//	if(IsValidInt(ID) == TRUE)
+//		return GetTaxaFromID(atoi(ID), Trees->Taxa, Trees->NoOfTaxa);
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 		if(strcmp(ID, Trees->Taxa[Index]->Name) == 0)

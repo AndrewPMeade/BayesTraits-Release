@@ -980,7 +980,8 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	{
 		SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
 
-		ApplyTimeSlices(Rates, Trees);
+		if(Rates->TimeSlices != NULL)
+			ApplyTimeSlices(Rates, Trees);
 
 //		PrintTreeBL(Trees->Tree[Rates->TreeNo]); exit(0);			
 

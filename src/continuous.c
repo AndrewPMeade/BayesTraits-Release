@@ -716,6 +716,8 @@ int		FindInvV(TREES *Trees, TREE* Tree)
 
 	CopyMatrix(TempCon->TMat, Tree->ConVars->V);
 
+//	PrintMatrix(Tree->ConVars->V, "V=", stdout);exit(0);
+
 	Err = InvertMatrixAndDet(TempCon->TMat->me, Trees->NoOfTaxa, TempCon->T1, TempCon->T2, Tree->ConVars->InvV->me, &Tree->ConVars->LogDetOfV);
 
 //	printf("LogDetOfV=%f;\n", Tree->ConVars->LogDetOfV);
@@ -1752,7 +1754,8 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	double	Ret;
 	TREE	*Tree;
 	CONVAR	*CV;
-	
+
+
 	Err = FALSE;
 
 	Tree = Trees->Tree[Rates->TreeNo];

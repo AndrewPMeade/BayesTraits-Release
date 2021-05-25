@@ -78,6 +78,7 @@ NODE	AllocNode(void)
 	Ret->Partial		=	NULL;
 	Ret->FossilMask		=	NULL;
 	Ret->Part			=	NULL;
+	Ret->FatTailNode	=	NULL;
 	Ret->GammaPartial	=	NULL;
 
 	Ret->NodeList		=	NULL;

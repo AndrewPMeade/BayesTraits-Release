@@ -1501,8 +1501,11 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 	int			Index, SiteIndex;
 	RECNODE		*RNode;
 	NODE		N;
-	CONTRAST	*Con;
+//	CONTRAST	*Con;
 	double		Alpha; //, Sigma, Lh;
+
+	if(Opt->ModelType == MT_CONTINUOUS)
+		return;
 		
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
@@ -1516,8 +1519,6 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 		}
 		else
 		{
-			Con = N->ConData->Contrast[0];
-
 			for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
 			{
 				RecIntNode(N, SiteIndex, &Alpha);
@@ -2328,9 +2329,7 @@ double*	GetMultVarChanges(RATES *Rates, OPTIONS *Opt, SCHEDULE* Shed)
 	Trees = Opt->Trees;
 	Tree = Trees->Tree[Rates->TreeNo];
 		
-	Ret = (double*)malloc(sizeof(double) * Trees->NoOfTaxa);
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (double*)SMalloc(sizeof(double) * Trees->NoOfTaxa);
 
 	genmn(Tree->ConVars->MultiVarNormState, Ret, Tree->ConVars->MultiVarNormTemp);
 

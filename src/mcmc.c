@@ -236,6 +236,7 @@ void	SetDefMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates, 	gsl_rng *RN
 
 double		ValidMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {	
+
 	Rates->Lh = Likelihood(Rates, Trees, Opt);
 
 	if(Rates->Lh == ERRLH)
@@ -492,6 +493,7 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	exit(0);
 }
 
+
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
 #else
@@ -558,8 +560,6 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		ProcessHeaders(Env, Obj, Opt);
 	#endif
 
-
-
 	InitMCMC(Opt, Trees, CRates);
 	
 	
@@ -593,7 +593,9 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	fflush(stdout);
 	fflush(Opt->LogFile);
-	
+
+
+
 	StartT = GetSeconds();	
 	for(Itters=0;;Itters++)
 	{ 
@@ -672,6 +674,8 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 			if(ExitMCMC(Opt, Itters) == TRUE)
 			{
+
+
 				if( (Opt->UseEqualTrees == FALSE) || 
 					(CRates->TreeNo == Trees->NoOfTrees - 1))
 				{	

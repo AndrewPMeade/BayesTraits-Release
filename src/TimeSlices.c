@@ -317,6 +317,8 @@ void	RunTimeSlice(TREE *Tree, double Start, double End, double Scale)
 //./Seq/Carnivores.trees ./Seq/Carnivores.txt < in.txt > sout.txt
 //./Seq/3TaxaTest.trees ./Seq/Carnivores.txt < in.txt > sout.txt
 
+// ./Seq/MammalBig.trees ./Seq/MammalBig.txt < in.txt > sout.txt
+
 void	ApplyTimeSlices(RATES *Rates, TREES *Trees)
 {
 	TIME_SLICES *TS;
@@ -324,7 +326,6 @@ void	ApplyTimeSlices(RATES *Rates, TREES *Trees)
 	TREE *Tree;
 	double	Start, End, Scale, RootToTip;
 	int Index;
-	
 	
 	Tree = Trees->Tree[Rates->TreeNo];
 
@@ -352,7 +353,6 @@ void	ApplyTimeSlices(RATES *Rates, TREES *Trees)
 		if(Index != TS->NoTimeSlices - 1)
 			End = TS->TimeSlices[Index+1]->Time;
 		
-
 		Start = Start * RootToTip;
 		End = End * RootToTip;
 
