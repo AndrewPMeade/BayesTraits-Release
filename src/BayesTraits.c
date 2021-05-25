@@ -68,6 +68,8 @@ extern void PMatrixTest(void);
 	./Seq/Primates.trees ./Seq/PrimatesEstData.txt < in.txt > sout.txt
 	./Seq/9tree.trees ./Seq/9F.txt < in.txt > sout.txt
 	./Seq/AustCon.trees ./Seq/0204.txt < in.txt > sout.txt
+
+	./Seq/Mammal-ArtPrim.trees ./Seq/Mammal-ArtPrim.txt < in.txt > sout.txt
 */
 
 #ifdef JNIRUN
@@ -82,8 +84,22 @@ int main(int argc, char** argv)
 {
 	TREES*		Trees=NULL;
 	OPTIONS*	Opt=NULL; 
+	int			Index;
+	char		B[1024];
 
 	SetSeed();
+/*
+	argv[1] = "./Seq/Mammal-ArtPrim.trees";
+	argv[2] = "./Seq/Mammal-ArtPrim.txt";
+
+	argc = 3; */
+//	for(Index=0;Index<argc;Index++)
+//		printf("%d\t%s\n", Index, argv[Index]);
+//	
+//	printf("No args %d\n", argc);
+	
+//	fgets(&B[0], 1024, stdin);
+//	exit(0);
 
 	if(argc != 3)
 	{
