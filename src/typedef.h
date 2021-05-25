@@ -739,7 +739,6 @@ typedef struct
 } RECNODE;
 
 
-
 typedef struct 
 {
 	double	*AnsVect;
@@ -753,8 +752,7 @@ typedef struct
 	MATRIX		*InvV;
 	MATRIX		*Sigma;
 	MATRIX		*InvSigma;
-//	MATRIX		*KProd;
-//	MATRIX		*InvKProd;
+
 #ifdef BTOCL   // continuous: V matrix and Z,ZA for Kronecker product
 	cl_mem      buffer_invV;
 	cl_mem		buffer_invSigma;
@@ -778,8 +776,6 @@ typedef struct
 	double		*TVect2;
 	double		*TVect3;
 	double		*SVect;
-
-//	TAXADIST	*TaxaDist;
 
 	double		LogDetOfV;
 	double		LogDetOfSigma;
@@ -1426,8 +1422,8 @@ static char    *SHEDOP[] =
 	"Fat Tail Ans",
 	"Local Rates",
 	"Data Dist",
-	"Time Slice – Time",
-	"Time Slice – Scale"
+	"Time Slice - Time",
+	"Time Slice - Scale"
 };
 
 typedef enum

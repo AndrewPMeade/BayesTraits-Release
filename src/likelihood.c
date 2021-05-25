@@ -33,7 +33,7 @@
 #endif
 
 
-double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et);
+//double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et);
 
 int		IsNum(double n)
 {
@@ -780,15 +780,15 @@ int		SetStdPMatrix(INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gam
 	switch(Trees->NoStates)
 	{
 		case 2:
-			ErrVal = Create2SPMat(Len, InvInfo, P, Trees, InvInfo->As[ThrNo], InvInfo->Ets[ThrNo]);
+			ErrVal = Create2SPMat(Len, InvInfo, P, ThrNo);
 		break;
 
 		case 4:
-			ErrVal = Create4SPMat(Len, InvInfo, P, Trees, InvInfo->As[ThrNo], InvInfo->Ets[ThrNo]);
+			ErrVal = Create4SPMat(Len, InvInfo, P, ThrNo);
 		break;
 
 		default:
-			ErrVal = CreatFullPMatrix(Len, InvInfo, P, Trees, InvInfo->As[ThrNo], InvInfo->Ets[ThrNo]);
+			ErrVal = CreatFullPMatrix(Len, InvInfo, P, Trees->NoStates, ThrNo);
 		break;
 	}
 	
@@ -804,8 +804,6 @@ int		SetAnalyticalPMatrix(TREES *Trees, NODE N, MATRIX *P, double Rate, double G
 	
 	Len = N->Length * Gamma;
 	
-	
-
 	ErrVal = CreatFullAP(Len, Rate, Trees->NoStates, P);			
 
 	return FALSE;
@@ -947,6 +945,7 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		Sum = 0;
 		for(Index=0;Index<NOS;Index++)
 			Sum += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
+
 
 		SiteLh = 0;
 		for(Index=0;Index<NOS;Index++)

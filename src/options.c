@@ -4187,6 +4187,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	{
 #ifndef BIG_LH
 		printf("Precision is only valid with the Big Lh build of BayesTraits.\n");
+		exit(1);
 		return FALSE;
 #endif
 		SetPrecision(Opt, Passed[1]);

@@ -567,9 +567,7 @@ INVINFO**	CreatInvInfo(int NOS,  int NoM)
 	int	 Index;
 	INVINFO** Ret;
 
-	Ret = (INVINFO**)malloc(sizeof(INVINFO**) * NoM);
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (INVINFO**)SMalloc(sizeof(INVINFO**) * NoM);
 
 	for(Index=0;Index<NoM;Index++)
 		Ret[Index] = AllocInvInfo(NOS);
@@ -597,18 +595,14 @@ HETERO*	CreatHetero(OPTIONS *Opt, RATES* Rates)
 
 	Trees = Opt->Trees;
 
-	Ret = (HETERO*)malloc(sizeof(HETERO));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (HETERO*)SMalloc(sizeof(HETERO));
 
 	Ret->NoModels = 2;
 	Ret->ModelInv = CreatInvInfo(Trees->NoStates, Ret->NoModels);
 	
 	Ret->MListSize = Trees->MaxNodes;
 
-	Ret->MList = (int*)malloc(sizeof(int) * Ret->MListSize);
-	if(Ret->MList == NULL)
-		MallocErr();
+	Ret->MList = (int*)SMalloc(sizeof(int) * Ret->MListSize);
 	
 	for(Index=0;Index<Ret->MListSize;Index++)
 		Ret->MList[Index] = RandUSInt(Rates->RS) % Ret->NoModels;
