@@ -158,7 +158,12 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				if(LT->Type == VR_NODE || LT->Type == VR_BL)
 					AddTypePToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE, ML_P_TYPE_RATE_S);
 				else
-					AddPToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
+				{
+					if(LT->Type == VR_LS_BL)
+						AddPToMLMap(MLMap, 1.0, -MAX_LOCAL_RATE, MAX_LOCAL_RATE);
+					else
+						AddPToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
+				}
 			}
 		}
 	}

@@ -161,9 +161,11 @@
 #define OUTPUT_EXT_ANC			".AncStates.txt"
 #define OUTPUT_EXT_DUMMY_CODE	".DummyCode.txt"
 #define OUTPUT_EXT_SIM			".Sim.txt"
+#define OUTPUT_EXT_LAND_GROUP	".LandscapeGroups.txt"
 #define OUTPUT_EXT_VAR_RATES	".VarRates.txt"
 #define OUTPUT_EXT_STONES		".Stones.txt"
 #define OUTPUT_EXT_TREES		".Output.trees"
+
 
 
 #define UNKNOWNSTATE	'-'
@@ -1172,6 +1174,7 @@ typedef struct
 	FILE		*OutTrees;
 	FILE		*VarRatesLog;
 	FILE		*LogFatTail;
+	FILE		*LogLandscapeGroups;
 	char		*LogFileBuffer;
 	char		**PassedOut;
 
@@ -1487,7 +1490,7 @@ typedef struct
 	double			NormConst;
 
 	LANDSCAPE		*Landscape;
-	LAND_RATE_GROUPS	*RJLandscapeRateGroups;
+	LAND_RATE_GROUPS	*LandscapeRateGroups;
 } RATES;
 
 typedef struct
@@ -1504,7 +1507,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NO_SCHEDULE_OPT	28
+#define NO_SCHEDULE_OPT	29
 
 static char    *SHEDOP[] =
 {
@@ -1535,7 +1538,8 @@ static char    *SHEDOP[] =
 	"Data Dist",
 	"Time Slice - Time",
 	"Time Slice - Scale",
-	"Global Rate"
+	"Global Rate",
+	"LandRate-Move"
 };
 
 typedef enum
@@ -1567,7 +1571,8 @@ typedef enum
 	S_DATA_DIST,
 	S_TIME_SLICE_TIME,
 	S_TIME_SLICE_SCALE,
-	S_GLOBAL_RATE
+	S_GLOBAL_RATE, 
+	S_LAND_RATE_MOVE
 } OPERATORS;
 
 typedef struct

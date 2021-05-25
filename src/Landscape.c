@@ -114,6 +114,27 @@ void		MapRJLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	}
 }
 
+void		MapLocalTranfromsBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	LOCAL_TRANSFORM *LRate;
+	int TIndex, Index;
+	TREE *Tree;
+	NODE N;
+
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+	{
+		LRate = Rates->LocalTransforms[Index];
+
+		for(TIndex=0;TIndex<LRate->NoTags;TIndex++)
+		{
+			N = LRate->TagList[TIndex]->NodeList[Rates->TreeNo];
+			N->LandscapeBeta = LRate->Scale;
+		}
+	}	
+}
+
 void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 
@@ -125,9 +146,11 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	ResetTreeLandscape(Tree);
 
+	MapLocalTranfromsBeta(Opt, Trees, Rates);
+	
 	MapRJLandscape(Opt, Trees, Rates);
 	
-	if(Rates->RJLandscapeRateGroups != NULL)
+	if(Rates->LandscapeRateGroups != NULL)
 		MapLandRateGroups(Opt, Trees, Rates);
 
 	PropLandscapeBeta(Trees, Tree->Root, 0.0);

@@ -819,7 +819,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 
 	Ret->Landscape		=	NULL;
-	Ret->RJLandscapeRateGroups	= NULL;
+	Ret->LandscapeRateGroups	= NULL;
 		
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
@@ -832,7 +832,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	SetRatesLocalRates(Ret, Opt);
 
 	if(Opt->UseRJLandscapeRateGroup == TRUE)
-		Ret->RJLandscapeRateGroups = CreateLandRateGroups(Opt->Trees->Tree[0]->NoNodes-1);
+		Ret->LandscapeRateGroups = CreateLandRateGroups(Ret, Opt->Trees->Tree[0]->NoNodes-1);
 	
 	if(Opt->UseDistData == TRUE)
 		Ret->DistDataRates = CreateDistDataRates(Opt->DistData, Ret->RS);
@@ -2192,6 +2192,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	if(A->TimeSlices != NULL)
 		CopyTimeSlices(A->TimeSlices, B->TimeSlices);
 
+	if(A->LandscapeRateGroups != NULL)
+		CopyLandRateGroups(A->LandscapeRateGroups, B->LandscapeRateGroups);
+
 	A->NormConst = B->NormConst;
 	A->GlobablRate = B->GlobablRate;
 }
@@ -2852,6 +2855,11 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		case S_GLOBAL_RATE:
 			ChangeGlobalRate(Rates, Shed);
 		break;
+
+		case S_LAND_RATE_MOVE:
+			if(It > 100000)
+				SwapRateGroupParam(Rates);
+		break;
 	}
 }
 
@@ -2939,8 +2947,8 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 	if(Rates->TimeSlices != NULL)
 		FreeTimeSlices(Rates->TimeSlices);
 
-	if(Rates->RJLandscapeRateGroups != NULL)
-		FreeLandRateGroups(Rates->RJLandscapeRateGroups);
+	if(Rates->LandscapeRateGroups != NULL)
+		FreeLandRateGroups(Rates->LandscapeRateGroups);
 
 	free(Rates);
 }
