@@ -60,18 +60,14 @@ int		UsingHP(OPTIONS *Opt)
 {
 	int Index;
 
-	for(Index=0;Index<Opt->NoOfRates;Index++)
+	for(Index=0;Index<Opt->NoAllPriors;Index++)
 	{
-		if(Opt->Priors[Index]->UseHP == TRUE)
+		if(Opt->AllPriors[Index]->UseHP == TRUE)
 			return TRUE;
 	}
 
-	if(Opt->RJPrior->UseHP == TRUE)
-		return TRUE;
-
 	return FALSE;
 }
-
 
 void	BlankSchedule(SCHEDULE*	Shed)
 {
@@ -207,7 +203,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		Shed->OptFreq[SOU] = 0.1;
 
 	if(Opt->EstGamma == TRUE)
-		Shed->OptFreq[SGAMMA] = 0.1;
+		Shed->OptFreq[SGAMMAMOVE] = 0.1;
 
 	if(Opt->ModelType == MT_FATTAIL)
 		Shed->OptFreq[SFATTAILANS] = 0.9;

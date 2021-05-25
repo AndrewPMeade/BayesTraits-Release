@@ -7,6 +7,7 @@
 #include "typedef.h"
 #include "genlib.h"
 #include "RJLocalScalar.h"
+#include "priors.h"
 
 TRANSFORM_TYPE	NameToRJLocalType (char *Name)
 {
@@ -37,7 +38,28 @@ int	UseRJLocalScalars(OPTIONS *Opt)
 	return FALSE;
 }
 
-PRIORS*	GetPriorFromRJRatesScalar(OPTIONS *Opt, TRANSFORM_TYPE Type)
+
+PRIOR*	GetPriorFromRJRatesScalar(OPTIONS *Opt, TRANSFORM_TYPE Type)
 {
-	return Opt->RJLocalScalarPriors[Type];
+	if(Type == VR_KAPPA)
+		return GetPriorFromName("Kappa", Opt->AllPriors, Opt->NoAllPriors);
+
+	if(Type == VR_LAMBDA)
+		return GetPriorFromName("Lambda", Opt->AllPriors, Opt->NoAllPriors);
+
+	if(Type == VR_DELTA)
+		return GetPriorFromName("Detla", Opt->AllPriors, Opt->NoAllPriors);
+
+	if(Type == VR_OU)
+		return GetPriorFromName("OU", Opt->AllPriors, Opt->NoAllPriors);
+
+	if(Type == VR_NODE)
+		return GetPriorFromName("VRNode", Opt->AllPriors, Opt->NoAllPriors);
+
+	if(Type == VR_BL)
+		return GetPriorFromName("VRBranch", Opt->AllPriors, Opt->NoAllPriors);
+
+	printf("Unknown transform type");
+	exit(1);
+	return NULL;
 }

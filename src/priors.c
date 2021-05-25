@@ -13,6 +13,9 @@
 #include "randdists.h"
 #include "RandLib.h"
 #include "Prob.h"
+#include "gsl\gsl_cdf.h"
+
+
 
 /*
 extern double beta(double a, double b);
@@ -26,55 +29,88 @@ extern double gamma(double a);
 
 extern double chdtr(double df, double x);
 
-void	FreePrior(PRIORS* P)
+int		ValidPriorLh(double LH)
+{
+	if(LH == LH+1 || LH != LH || LH == ERRLH)
+		return FALSE;
+
+	return TRUE;
+}
+
+double		CalcPriorPDFLh(double X, PRIOR *Prior)
+{
+	double Ret;
+
+	Ret = 0.0;
+
+	if(Prior->Dist == UNIFORM)
+	{
+		if(X < Prior->DistVals[0] || X > Prior->DistVals[1])
+			return ERRLH;
+
+		Ret = 1.0 / (Prior->DistVals[1]  - Prior->DistVals[0]);
+		return log(Ret);
+	}
+	
+	if(X < 0.0)
+		return ERRLH;
+	
+	if(Prior->Dist == GAMMA)
+		Ret = PDFGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
+
+	if(Prior->Dist == CHI)
+		Ret = PDFChi(X, Prior->DistVals[0], Prior->DistVals[1]);
+	
+	if(Prior->Dist == EXP)
+		Ret = PDFExp(X, Prior->DistVals[0]);
+	
+	if(Prior->Dist == INVGAMMA)
+		Ret = PDFInvGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
+
+	if(Prior->Dist == SGAMMA)
+		Ret = PDFSGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
+
+	Ret = log(Ret);
+
+	if(ValidPriorLh(Ret) == FALSE)
+		return ERRLH;
+
+	return Ret;	
+}
+
+void	FreePrior(PRIOR* P)
 {
 	free(P->DistVals);
 
 	if(P->HP != NULL)
 		free(P->HP);
 
-	if(P->RateName != NULL)
-		free(P->RateName);
+	if(P->Name != NULL)
+		free(P->Name);
 
 	free(P);
 }
 
-void	FreePriors(RATES *Rates)
+void		CrateRatePriors(OPTIONS* Opt, RATES* Rates)
 {
-	int	PIndex;
-	
-	if(Rates->Prios == NULL)
-		return;
-	
-	for(PIndex=0;PIndex<Rates->NoOfPriors;PIndex++)
-		FreePrior(Rates->Prios[PIndex]);
-
-	free(Rates->Prios);
-
-	if(Rates->PriorGamma != NULL)
-		FreePrior(Rates->PriorGamma);
-
-	if(Rates->PriorOU != NULL)
-		FreePrior(Rates->PriorOU);
-
-	if(Rates->PriorDelta != NULL)
-		FreePrior(Rates->PriorDelta);
-
-	if(Rates->PriorKappa != NULL)
-		FreePrior(Rates->PriorKappa);
-
-	if(Rates->PriorLambda != NULL)
-		FreePrior(Rates->PriorLambda);
+	Rates->Priors = ClonePriors(Opt->AllPriors, Opt->NoAllPriors);
+	Rates->NoPriors = Opt->NoAllPriors;
 }
 
-PRIORS*			CreatPrior(PRIORS* P, int RateNo)
+void	FreePriors(RATES *Rates)
 {
-	PRIORS* Ret;
+	int	Index;
+
+	for(Index=0;Index<Rates->NoPriors;Index++)
+		FreePrior(Rates->Priors[Index]);	
+}
+
+PRIOR*			CreatPrior(PRIOR* P, int RateNo)
+{
+	PRIOR* Ret;
 	int		NoOfDistVals;
 	
-	Ret = (PRIORS*) malloc(sizeof(PRIORS));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (PRIOR*)SMalloc(sizeof(PRIOR));
 
 	Ret->RateNo		= RateNo;
 
@@ -83,9 +119,7 @@ PRIORS*			CreatPrior(PRIORS* P, int RateNo)
 
 	NoOfDistVals	= DISTPRAMS[P->Dist];
 
-	Ret->DistVals = (double*)malloc(sizeof(double) * NoOfDistVals);
-	if(Ret==NULL)
-		MallocErr();
+	Ret->DistVals = (double*)SMalloc(sizeof(double) * NoOfDistVals);
 
 	memcpy(Ret->DistVals, P->DistVals, sizeof(double) * NoOfDistVals);
 
@@ -93,229 +127,211 @@ PRIORS*			CreatPrior(PRIORS* P, int RateNo)
 
 	if(Ret->UseHP == TRUE)
 	{
-		Ret->HP = (double*)malloc(sizeof(double) * (NoOfDistVals * 2));
-		if(Ret->HP == NULL)
-			MallocErr();
+		Ret->HP = (double*)SMalloc(sizeof(double) * (NoOfDistVals * 2));
 		memcpy(Ret->HP, P->HP, sizeof(double) * (NoOfDistVals * 2));
 	}
 	else
 		Ret->HP = NULL;
 
-	Ret->RateName = NULL;
+	Ret->Name = NULL;
 
 	return Ret;
 }
 
-PRIORS*	AllocBlankPrior(int NoP)
+PRIOR*	AllocBlankPrior(int NoP)
 {
-	PRIORS* Ret;
+	PRIOR* Ret;
 
-	Ret = (PRIORS*)malloc(sizeof(PRIORS));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (PRIOR*)SMalloc(sizeof(PRIOR));
 
-//	Ret->Dist = UNIFORM;
-	Ret->DistVals = (double*)malloc(sizeof(double) * NoP);
-	if(Ret->DistVals == NULL)
-		MallocErr();
+	Ret->DistVals = (double*)SMalloc(sizeof(double) * NoP);
 	
 	Ret->RateNo		= -1;
 	Ret->HP			= NULL;
 	Ret->UseHP		= FALSE;
 	Ret->OffSet		= 0;
-	Ret->RateName	= NULL;
+	Ret->Name		= NULL;
 
 	return Ret;
 }
 
-PRIORS*		CreateBetaPrior(double Mean, double Var)
-{
-	PRIORS* Ret;
 
-	Ret = AllocBlankPrior(2);
+PRIOR*		CreatePrior(char *Name, PRIORDIST PDist, double *PVal)
+{
+	PRIOR *Ret;
+	int NoPram;
+
+	NoPram = DISTPRAMS[PDist];
+	Ret = AllocBlankPrior(NoPram);
+
+	memcpy(Ret->DistVals, PVal, sizeof(double) * NoPram);
 	
-	Ret->Dist			= BETA;
-	Ret->DistVals[0]	= Mean;
-	Ret->DistVals[1]	= Var;
-	
+	Ret->Dist = PDist;
+	Ret->Name = StrMake(Name);
+
 	return Ret;
 }
 
-PRIORS*		CreateGammaPrior(double Mean, double Var)
+PRIOR*		CreateGammaPrior(char *Name, double Mean, double Var)
 {
-	PRIORS* Ret;
+	PRIOR* Ret;
 
 	Ret = AllocBlankPrior(2);
 	
 	Ret->Dist			= GAMMA;
 	Ret->DistVals[0]	= Mean;
 	Ret->DistVals[1]	= Var;
+
+	Ret->Name = StrMake(Name);
 	
 	return Ret;
 }
 
-PRIORS*		CreateUniformPrior(double Min, double Max)
+PRIOR*		CreateUniformPrior(char *Name, double Min, double Max)
 {
-	PRIORS* Ret;
+	PRIOR* Ret;
 
 	Ret = AllocBlankPrior(2);
 	
 	Ret->Dist			= UNIFORM;
 	Ret->DistVals[0]	= Min;
 	Ret->DistVals[1]	= Max;
+
+	Ret->Name = StrMake(Name);
 	
 	return Ret;
 }
 
-PRIORS*		CreateChiPrior(double Mean, double Var)
+PRIOR*		CreateChiPrior(char *Name, double Mean, double Var)
 {
-	PRIORS* Ret;
+	PRIOR* Ret;
 
 	Ret = AllocBlankPrior(2);
 	
 	Ret->Dist			= CHI;
 	Ret->DistVals[0]	= Mean;
 	Ret->DistVals[1]	= Var;
+
+	Ret->Name = StrMake(Name);
 	
 	return Ret;
 }
 
-PRIORS*		CreateExpPrior(double Mean)
+PRIOR*		CreateExpPrior(char *Name, double Mean)
 {
-	PRIORS* Ret;
+	PRIOR* Ret;
 
 	Ret = AllocBlankPrior(1);
 	
 	Ret->Dist			= EXP;
 	Ret->DistVals[0]	= Mean;
+
+	Ret->Name = StrMake(Name);
 		
 	return Ret;
 }
 
-PRIORS*		CreateInvGammaPrior(double Alpha, double Beta)
+PRIOR*		CreateInvGammaPrior(char *Name, double Alpha, double Beta)
 {
-	PRIORS* Ret;
+	PRIOR* Ret;
 
 	Ret = AllocBlankPrior(2);
 	
 	Ret->Dist			= INVGAMMA;
 	Ret->DistVals[0]	= Alpha;
 	Ret->DistVals[1]	= Beta;
+
+	Ret->Name = StrMake(Name);
 			
 	return Ret;
 }
 
-void		CreatTreeTransformPriors(OPTIONS *Opt, RATES *Rates)
+PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta)
 {
-	if(Opt->UseGamma == TRUE)
-		Rates->PriorGamma = CreatPrior(Opt->PriorGamma, -1);
-	else
-		Rates->PriorGamma = NULL;
+	int		NoP;
+	PRIOR	*Ret;
 
-	if(Opt->EstKappa == TRUE)
-		Rates->PriorKappa = CreatPrior(Opt->PriorKappa, -1);
-	else
-		Rates->PriorKappa = NULL;
+	NoP = DISTPRAMS[SGAMMA];
+	Ret = AllocBlankPrior(NoP);
 
+	Ret->Dist = SGAMMA;
+	Ret->DistVals[0] = Alpha;
+	Ret->DistVals[1] = Beta;
+	
+	Ret->Name = StrMake(Name);
 
-	if(Opt->EstDelta == TRUE)
-		Rates->PriorDelta = CreatPrior(Opt->PriorDelta, -1);
-	else
-		Rates->PriorDelta = NULL;
-
-
-	if(Opt->EstLambda == TRUE)
-		Rates->PriorLambda = CreatPrior(Opt->PriorLambda, -1);
-	else
-		Rates->PriorLambda = NULL;
-
-	if(Opt->EstOU == TRUE)
-		Rates->PriorOU = CreatPrior(Opt->PriorOU, -1);
-	else
-		Rates->PriorOU = NULL;
+	return Ret;
 }
 
-void		CreatPriors(OPTIONS *Opt, RATES* Rates)
+void		SetHPDistParam(int Pos, PRIOR* Prior)
 {
-	PRIORS**	Ret=NULL;
-	int			NoOfPriors;
-	int			Index;
-	int			RIndex;
+	int OS;
+	double Min, Max;
 
-	CreatTreeTransformPriors(Opt, Rates);
-	
-	if(Opt->UseRJMCMC == TRUE)
+	OS = Pos * 2;
+
+	Min = Prior->HP[OS];
+	Max = Prior->HP[OS+1];
+
+	if(Min > Max)
 	{
-		Ret = (PRIORS**)malloc(sizeof(PRIORS*));
-		if(Ret==NULL)
-			MallocErr();
-
-		Ret[0] = CreatPrior(Opt->RJPrior, -1);
-
-		Rates->NoOfPriors = 1;
-		Rates->Prios = Ret;
-		return;
+		printf("Hyper prior %s min is larger than max %f", Prior->Name, Max);
+		exit(0);
 	}
 
-	NoOfPriors = 0;
-	
-	for(Index=0;Index<Opt->NoOfRates;Index++)
-	{
-		if(Opt->ResTypes[Index] == RESNONE)
-			NoOfPriors++;
-	}
-	fflush(stdout);
-	
-	Rates->NoOfPriors = NoOfPriors;
-	
-	if(NoOfPriors==0)
-	{
-		Rates->Prios = NULL;
-	}
-
-	Ret = (PRIORS**)malloc(sizeof(PRIORS*)*NoOfPriors);
-	if(Ret==NULL)
-		MallocErr();
-
-	Index=0;
-	for(RIndex=0;RIndex<Opt->NoOfRates;RIndex++)
-	{
-		if(Opt->ResTypes[RIndex] == RESNONE)
-		{
-			Ret[Index] = CreatPrior(Opt->Priors[RIndex], Index) ;
-			Ret[Index]->NoOfCats = Opt->PriorCats;
-
-			Index++;
-		}
-	}
-
-
-	Rates->Prios = Ret;
+	Prior->DistVals[Pos] = Min + ((Max - Min) * 0.5);
 }
 
-void	SetRatesToPriors(OPTIONS *Opt, RATES* Rates)
+PRIOR*		CreateHyperPrior(char *Name, PRIORDIST PDist, double *PVal)
 {
-	PRIORS	*Prior;
-	int		PIndex=0;
-	int		NoOfPriors;
+	PRIOR* Ret;
+	int		Index, NoParam, NoHPParam;
 
-	NoOfPriors = Rates->NoOfRates;
-	if(Opt->UseRJMCMC == TRUE)
-		NoOfPriors = 1;
+	NoParam = DISTPRAMS[PDist];
+	Ret = AllocBlankPrior(NoParam);
 
-	for(PIndex=0;PIndex<NoOfPriors;PIndex++)
-	{
-		Prior = Rates->Prios[PIndex];
+	Ret->Name = StrMake(Name);
+	Ret->Dist = PDist;
+	Ret->UseHP = TRUE;
 		
-		if(Prior->Dist == UNIFORM)
-		{
-			if(Opt->LoadModels == FALSE)
-			{
-				if(Opt->ModelType != MT_CONTRAST)
-					Rates->Rates[PIndex] = Prior->DistVals[0]+((Prior->DistVals[1]-Prior->DistVals[0])/2.0);
-			}
-		}
-	}	
+	NoHPParam = NoParam * 2;
+
+	Ret->HP = (double*)SMalloc(sizeof(double) * NoHPParam);
+	memcpy(Ret->HP, PVal, sizeof(double) * NoHPParam);
+
+	for(Index=0;Index<NoParam;Index++)
+		SetHPDistParam(Index, Ret);
+
+	return Ret;	
+}
+
+PRIOR*		ClonePrior(PRIOR *Prior)
+{
+	PRIOR *Ret;
+
+	if(Prior->UseHP == FALSE)
+		Ret = CreatePrior(Prior->Name, Prior->Dist, Prior->DistVals);
+	else
+		Ret = CreateHyperPrior(Prior->Name, Prior->Dist, Prior->HP);
+
+	return Ret;
+}
+
+PRIOR**	ClonePriors(PRIOR **PList, int NoPriors)
+{
+	int Index;
+	PRIOR **Ret;
+
+	if(NoPriors == 0)
+		return NULL;
+		
+
+	Ret = (PRIOR**)SMalloc(sizeof(PRIOR*) * NoPriors);
+	
+	for(Index=0;Index<NoPriors;Index++)
+		Ret[Index] = ClonePrior(PList[Index]);
+
+	return Ret;
 }
 
 int		FindCat(double x, double CatWidth, int NoOfCats)
@@ -626,7 +642,7 @@ void InverseGammaTest(void)
 	exit(0);
 }
 
-void	PriorLhTest(PRIORS *Prior, double Width)
+void	PriorLhTest(PRIOR *Prior, double Width)
 {
 	double *List;
 	int Index, No;
@@ -658,44 +674,71 @@ double TestPT(void)
 	exit(0);
 }
 
-double	CaclPriorCost(double Val, PRIORS *Prior, int NoCats)
+double	CalcGPriorGSL(double X, PRIOR *P, double Width)
+{
+	double A, B;
+
+	A = gsl_cdf_gamma_P(X, P->DistVals[0], P->DistVals[1]);
+	B = gsl_cdf_gamma_P(X+Width, P->DistVals[0], P->DistVals[1]);
+
+	A = B - A;
+	A = log(A);
+	printf("A:\t%f\n", A);
+
+	return A;
+}
+
+void GammaPTest(void)
+{
+	double GLh, Lh, X, Width; 
+	PRIOR *Prior;
+
+	Prior = CreateGammaPrior("Hello", 1.0, 1.0);
+
+
+	Width = 1.0 / 100;
+
+	X = 0.5;
+	Lh = PGamaWidth(X, Prior->DistVals[0], Prior->DistVals[1], Width);
+
+	CalcGPriorGSL(X, Prior, Width);
+	Lh = log(Lh);
+	printf("Lh:\t%f\n", Lh);
+	exit(0);
+
+}
+
+double	CaclPriorCost(double X, PRIOR *Prior, int NoCats)
 {
 	double Ret, Width, Alpha;
 
 	Width = 1.0 / NoCats;
 
-//	InverseGammaTest();
-//	FatTailTest(Prior, Width);
+	GammaPTest();
 
 	switch(Prior->Dist)
 	{
-		case BETA:
-			Ret = PBetaWidth(Val, Prior->DistVals[0], Prior->DistVals[1], Width);
-		break;
-
 		case GAMMA:
-			Ret = PGamaWidth(Val, Prior->DistVals[0], Prior->DistVals[1], Width);
+			Ret = PGamaWidth(X, Prior->DistVals[0], Prior->DistVals[1], Width);
 		break;
 
 		case UNIFORM:
-			Ret = PUni(Val, Prior->DistVals[0], Prior->DistVals[1]);
+			Ret = PUni(X, Prior->DistVals[0], Prior->DistVals[1]);
 		break;
 
 		case EXP:
 			Alpha = 1.0 / Prior->DistVals[0];
-			Ret = PExpWidth(Val, Alpha, Width);
+			Ret = PExpWidth(X, Alpha, Width);
 		break;
 
 		case CHI:
 			printf("Chi is not currenlty implmented. \n");
 			exit(0);
-			Ret = PChiWidth(Val, Prior->DistVals[0], Prior->DistVals[1], Width);
+			Ret = PChiWidth(X, Prior->DistVals[0], Prior->DistVals[1], Width);
 		break;
 
 		case INVGAMMA:
-			Ret = PDFInvGamma(Val, Prior->DistVals[0], Prior->DistVals[1]);
-//			InvGammaTest(Prior, Width);
-//			Ret = PInvGammaWidth(Val, Prior->DistVals[0], Prior->DistVals[1], Width);
+			Ret = PDFInvGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
 		break;
 	}
 
@@ -707,24 +750,55 @@ double	CaclPriorCost(double Val, PRIORS *Prior, int NoCats)
 
 double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
 {
-	double Ret;
+	double PLh, Ret;
+	PRIOR	*Prior;
 
 	Ret = 0;
 
 	if(Opt->EstKappa == TRUE)
-		Ret += CaclPriorCost(Rates->Kappa, Rates->PriorKappa, Opt->PriorCats);
+	{
+		Prior = GetPriorFromName("Kappa", Rates->Priors, Rates->NoPriors);
+		PLh = CaclPriorCost(Rates->Kappa, Prior, Opt->PriorCats);
+		if(PLh == ERRLH)
+			return ERRLH;
+		Ret += PLh;
+	}
 
 	if(Opt->EstLambda == TRUE)
-		Ret += CaclPriorCost(Rates->Lambda, Rates->PriorLambda, Opt->PriorCats);
+	{
+		Prior = GetPriorFromName("Lambda", Rates->Priors, Rates->NoPriors);
+		PLh = CaclPriorCost(Rates->Lambda, Prior, Opt->PriorCats);
+		if(PLh == ERRLH)
+			return ERRLH;
+		Ret += PLh;
+	}
 
 	if(Opt->EstDelta == TRUE)
-		Ret += CaclPriorCost(Rates->Delta, Rates->PriorDelta, Opt->PriorCats);
+	{
+		Prior = GetPriorFromName("Delta", Rates->Priors, Rates->NoPriors);
+		PLh = CaclPriorCost(Rates->Delta, Prior, Opt->PriorCats);
+		if(PLh == ERRLH)
+			return ERRLH;
+		Ret += PLh;
+	}
 
 	if(Opt->EstOU == TRUE)
-		Ret += CaclPriorCost(Rates->OU, Rates->PriorOU, Opt->PriorCats);
+	{
+		Prior = GetPriorFromName("OU", Rates->Priors, Rates->NoPriors);
+		PLh = CaclPriorCost(Rates->OU, Prior, Opt->PriorCats);
+		if(PLh == ERRLH)
+			return ERRLH;
+		Ret += PLh;
+	}
 
 	if(Opt->EstGamma == TRUE)
-		Ret += CaclPriorCost(Rates->Gamma, Rates->PriorGamma, Opt->PriorCats);
+	{
+		Prior = GetPriorFromName("Gamma", Rates->Priors, Rates->NoPriors);
+		PLh = CaclPriorCost(Rates->Gamma, Prior, Opt->PriorCats);
+		if(PLh == ERRLH)
+			return ERRLH;
+		Ret += PLh;
+	}
 	
 	return Ret;
 }
@@ -738,7 +812,6 @@ double CalcRJDummyPriors(OPTIONS *Opt, RATES* Rates)
 	int		Index;
 	double	Ret, P;
 
-//	Testxx2();
 	Ret = 0;
 	RJDummy = Rates->RJDummy;
 
@@ -757,75 +830,92 @@ double CalcRJDummyPriors(OPTIONS *Opt, RATES* Rates)
 	return Ret;
 }
 
-void	CalcPriors(RATES* Rates, OPTIONS* Opt)
+double	CalcRatePrior(RATES* Rates, OPTIONS* Opt)
 {
-	PRIORS	*Prior;
-	int		PIndex, Err;
-	double	TLh;
-	double	Rate, VarRatesPLh;
-	int		NoPRates;
-	double	CalcP;
+	int NoRatePriors, Index;
+	double PLh, R, Ret;
+	PRIOR *Prior;
 
-	CalcP = 0;
-	Err = FALSE;
-
-	if(Opt->LoadModels == TRUE)
-		return;
-
+	Prior = NULL;
+	NoRatePriors = Rates->NoOfRates;
 	if(Opt->UseRJMCMC == TRUE)
-		NoPRates = Rates->NoOfRJRates;
-	else
-		NoPRates = Rates->NoOfRates;
-
-	for(PIndex=0;PIndex<NoPRates;PIndex++)
 	{
+		Prior = GetPriorFromName("RJRates", Rates->Priors, Rates->NoPriors);
+		NoRatePriors = Rates->NoOfRJRates;
+	}
+	
+	Ret = 0;
+
+	for(Index=0;Index<NoRatePriors;Index++)
+	{
+		R = Rates->Rates[Index];
 		if(Opt->UseRJMCMC == FALSE)
-		{
-			Prior = Rates->Prios[PIndex];
-			Rate = Rates->Rates[Prior->RateNo];
-		}
-		else
-		{
-			Prior = Rates->Prios[0];
-			Rate = Rates->Rates[PIndex];
-		}
+			Prior = GetPriorFromName(Rates->RateNames[Index], Rates->Priors, Rates->NoPriors);
+	
+		PLh = CaclPriorCost(R, Prior, Opt->PriorCats);
 
-		TLh = CaclPriorCost(Rate, Prior, Opt->PriorCats);
+		if(PLh == ERRLH || IsNum(PLh) == FALSE)
+			return ERRLH;
 
-		if(TLh == ERRLH || IsNum(TLh) == FALSE)
-		{
-			Rates->LhPrior = ERRLH;
-			return;
-		}
-
-		CalcP += TLh;
+		Ret += PLh;
 	}
 
-	CalcP += CalcTreeTransPrior(Rates, Opt);
+	return Ret;
+}
+
+void	CalcPriors(RATES* Rates, OPTIONS* Opt)
+{
+	double	PLh, Ret;
+		
+	Ret = 0;
+
+	Rates->LhPrior = ERRLH;
+
+	if(Opt->LoadModels == TRUE)
+	{
+		Rates->LhPrior = 0;
+		return;
+	}	
+
+	PLh = CalcRatePrior(Rates, Opt);
+	if(PLh == ERRLH)
+		return;
+
+	Ret += PLh;
+	
+	PLh = CalcTreeTransPrior(Rates, Opt);
+	if(PLh == ERRLH)
+		return;
+
+	Ret += PLh;
 
 	if(Opt->RJDummy == TRUE)
-		CalcP += CalcRJDummyPriors(Opt, Rates);
+	{
+		printf("Must check RJ dummy priors.\n");
+		exit(0);
+		PLh = CalcRJDummyPriors(Opt, Rates);
+		if(PLh == ERRLH)
+			return;
+		Ret += PLh;
+	}
+
 
 	if(UseNonParametricMethods(Opt) == TRUE)
 	{
-		VarRatesPLh = CalcVarRatesPriors(Rates, Opt, &Err);
+		PLh = CalcVarRatesPriors(Rates, Opt);
 
-		if(VarRatesPLh == ERRLH || CalcP == ERRLH)
-			CalcP = ERRLH;
-		else
-			CalcP += CalcVarRatesPriors(Rates, Opt, &Err);
-	}
-	
-	if(CalcP == ERRLH || IsNum(CalcP) == FALSE || Err == TRUE)
-	{
-		Rates->LhPrior = ERRLH;
-		return;
+		if(PLh == ERRLH)
+			return;
+
+		Ret += PLh;
 	}
 
-	Rates->LhPrior = CalcP;
+	Rates->LhPrior = Ret;
 }
 
-void	MutatePriors(RATES *Rates, PRIORS **PriosList, int NoOfPriors)
+
+
+void	MutatePriors(RATES *Rates, PRIOR **PriosList, int NoOfPriors)
 {
 	int PIndex;
 
@@ -848,11 +938,11 @@ double	ChangePriorNorm(RATES *Rates, double Val, double Dev, double Min, double 
 	return Ret;
 }
 
-void	MutatePriorsNormal(RATES *Rates, PRIORS **PriosList, int NoOfPriors, double Dev)
+void	MutatePriorsNormal(RATES *Rates, PRIOR **PriosList, int NoOfPriors, double Dev)
 {
 	int		PIndex;
 	int		RIndex;
-	PRIORS	*Prior;
+	PRIOR	*Prior;
 	double	Min;
 	double	Max;
 
@@ -886,11 +976,11 @@ double ChangePrior(RANDSTATES *RandStates, double Rate, double dev)
 }
 
 
-void	CopyMutPriors(RANDSTATES *RandStates, PRIORS **APriosList, PRIORS **BPriosList, int NoOfPriors, double Dev)
+void	CopyMutPriors(RANDSTATES *RandStates, PRIOR **APriosList, PRIOR **BPriosList, int NoOfPriors, double Dev)
 {
 	int		PIndex;
-	PRIORS *APrios=NULL;
-	PRIORS *BPrios=NULL;
+	PRIOR *APrios=NULL;
+	PRIOR *BPrios=NULL;
 
 	int		RIndex;
 
@@ -908,7 +998,7 @@ void	CopyMutPriors(RANDSTATES *RandStates, PRIORS **APriosList, PRIORS **BPriosL
 	}
 }
 
-void	CopyPrior(PRIORS *A, PRIORS *B)
+void	CopyPrior(PRIOR *A, PRIOR *B)
 {
 	A->Dist		= B->Dist;
 	A->NoOfCats	= B->NoOfCats;
@@ -920,15 +1010,6 @@ void	CopyPrior(PRIORS *A, PRIORS *B)
 	if(B->UseHP == TRUE)
 		memcpy(A->HP, B->HP, sizeof(double) * DISTPRAMS[A->Dist] * 2);
 }
-
-void	CopyRatePriors(PRIORS**APriosList, PRIORS **BPriosList, int NoOfPriors)
-{
-	int		PIndex;
-
-	for(PIndex=0;PIndex<NoOfPriors;PIndex++)
-		CopyPrior(APriosList[PIndex], BPriosList[PIndex]);
-}
-
 
 PRIORDIST	StrToPriorDist(char* Str)
 {
@@ -955,14 +1036,14 @@ int			CheckPriorDistVals(int Tokes, char **Passed)
 		if(IsValidDouble(Passed[Index]) == FALSE)
 		{
 			printf("Cannot convert %s to a valid prior parameter.\n", Passed[Index]);
-			return FALSE;
+			exit(1);
 		}
 
 		P = atof(Passed[Index]);
 		if(P < 0)
 		{
 			printf("Prior parameters values must be greater than 0, value %f is invalid.\n", P);
-			return FALSE;
+			exit(1);
 		}
 	}
 
@@ -974,9 +1055,7 @@ double*		MakePriorParam(int Tokes, char **Passed)
 	double *Ret;
 	int Index;
 
-	Ret = (double*)malloc(sizeof(double) * Tokes);
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (double*)SMalloc(sizeof(double) * Tokes);
 
 	for(Index=0;Index<Tokes;Index++)
 		Ret[Index] = atof(Passed[Index]);
@@ -984,60 +1063,164 @@ double*		MakePriorParam(int Tokes, char **Passed)
 	return Ret;
 }
 
-
-PRIORS*		CreatePrior(int Tokes, char **Passed)
+PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 {
 	PRIORDIST	PD;
 	double		*PVal;
-	PRIORS		*Ret;
+	PRIOR		*Ret;
 
 	Ret = NULL;
-	
+
 	if(Tokes != 2 && Tokes != 3)
 	{
 		printf("Prior requires a distribution name, (beta, gamma, uniform, chi, exp, invgamma) and distribution parameters.\n");
-		return NULL;
+		exit(1);
 	}
 
 	if(StrToPriorDist(Passed[0]) == -1)
 	{
 		printf("Invalid prior distribution name,. valid names are beta, gamma, uniform, chi, exp, invgamma.\n");
-		return NULL;
+		exit(1);
 	}
 
 	PD = StrToPriorDist(Passed[0]);
 
 	if(Tokes -1 != DISTPRAMS[PD])
 	{
-		printf("Prior %s requires %d parameters.\n", DISTNAMES[PD], DISTPRAMS[PD]);
-		return NULL;
+		printf("Prior %s (%s) requires %d parameters.\n", Name, DISTNAMES[PD], DISTPRAMS[PD]);
+		exit(0);
 	}
 
+	if(CheckPriorDistVals(Tokes-1, &Passed[1]) == FALSE)
+		exit(0);
+
+	PVal = MakePriorParam(Tokes-1, &Passed[1]);
+
+
+	if(PD == GAMMA)
+		Ret = CreateGammaPrior(Name, PVal[0], PVal[1]);
+
+	if(PD == UNIFORM)
+		Ret = CreateUniformPrior(Name, PVal[0], PVal[1]);
+
+	if(PD == CHI)
+		Ret = CreateChiPrior(Name, PVal[0], PVal[1]);
+
+	if(PD == EXP)
+		Ret = CreateExpPrior(Name, PVal[0]);
+
+	if(PD == INVGAMMA)
+		Ret = CreateInvGammaPrior(Name, PVal[0], PVal[1]);
+	
+	free(PVal);
+
+	return Ret;
+}
+
+
+PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed)
+{
+	PRIOR		*Ret;
+	PRIORDIST	PDist;
+	int			NoParam;
+	double		*PVal;
+
+	if(Tokes < 3)
+	{
+		printf("A hyper prior require a distribution and min max values for each parameters");
+		exit(0);
+	}
+
+	PDist = StrToPriorDist(Passed[0]);
+
+	if(PDist == -1)
+	{
+		printf("Invalid prior distribution name,. valid names are beta, gamma, uniform, chi, exp, invgamma.\n");
+		exit(1);
+	}
+
+	NoParam = DISTPRAMS[PDist] * 2;
+
+	if(NoParam != Tokes - 1)
+	{
+		printf("The %s hyper prior require %d distribution parameter %d supplied.\n", Passed[0], NoParam, Tokes - 1);
+		exit(0);
+	}
+	
 	if(CheckPriorDistVals(Tokes-1, &Passed[1]) == FALSE)
 		return NULL;
 
 	PVal = MakePriorParam(Tokes-1, &Passed[1]);
-
-	if(PD == BETA)
-		Ret = CreateBetaPrior(PVal[0], PVal[1]);
-
-	if(PD == GAMMA)
-		Ret = CreateGammaPrior(PVal[0], PVal[1]);
-
-	if(PD == UNIFORM)
-		Ret = CreateUniformPrior(PVal[0], PVal[1]);
-
-	if(PD == CHI)
-		Ret = CreateChiPrior(PVal[0], PVal[1]);
-
-	if(PD == EXP)
-		Ret = CreateExpPrior(PVal[0]);
-
-	if(PD == INVGAMMA)
-		Ret = CreateInvGammaPrior(PVal[0], PVal[1]);
+		
+	Ret = CreateHyperPrior(Name, PDist, PVal);
 
 	free(PVal);
 
 	return Ret;
 }
 
+PRIOR*		GetPriorFromName(char *Name, PRIOR** PList, int NoPrior)
+{
+	int Index;
+
+	for(Index=0;Index<NoPrior;Index++)
+		if(StrICmp(Name, PList[Index]->Name) == 0)
+			return PList[Index];
+
+	return NULL;
+}
+
+int		GetPriorPosFromName(char *Name, PRIOR** PList, int NoPrior)
+{
+	int Index;
+
+	for(Index=0;Index<NoPrior;Index++)
+		if(StrICmp(Name, PList[Index]->Name) == 0)
+			return Index;
+
+	return -1;
+}
+
+void		AddPriorToOpt(OPTIONS *Opt, PRIOR *Prior)
+{
+	if(GetPriorFromName(Prior->Name, Opt->AllPriors, Opt->NoAllPriors) != NULL)
+	{
+		printf("prior %s allready exists", Prior->Name);
+		exit(1);
+	}
+
+	Opt->AllPriors = (PRIOR**)AddToList(&Opt->NoAllPriors, (void**)Opt->AllPriors, (void*)Prior);
+}
+
+void		RemovePriorFormOpt(char *Name, OPTIONS *Opt)
+{
+	PRIOR **NPList;
+	int Index, Pos;
+
+	NPList = (PRIOR**)SMalloc(sizeof(PRIOR*) * Opt->NoAllPriors);
+
+	Pos = 0;
+	for(Index=0;Index<Opt->NoAllPriors;Index++)
+	{
+		if(strcmp(Name, Opt->AllPriors[Index]->Name) != 0)
+			NPList[Pos++] = Opt->AllPriors[Index];
+	}
+
+	free(Opt->AllPriors);
+	Opt->AllPriors = NPList;
+	Opt->NoAllPriors = Pos;
+}
+
+void	ReplacePrior(OPTIONS *Opt, PRIOR *Prior)
+{
+	int Pos;
+
+	Pos = GetPriorPosFromName(Prior->Name, Opt->AllPriors, Opt->NoAllPriors);
+	if(Pos != -1)
+		Opt->AllPriors[Pos] = Prior;
+	else
+	{
+		printf("Cannot find prior name %s.\n", Prior->Name);
+		exit(0);
+	}
+}

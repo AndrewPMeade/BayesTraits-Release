@@ -28,7 +28,7 @@ typedef struct
 	double	*PMin;
 	double	*PMax;
 	double	*PDef;
-	PRIORS	**Priors;
+	PRIOR	**Priors;
 
 } ML_MAP;
 

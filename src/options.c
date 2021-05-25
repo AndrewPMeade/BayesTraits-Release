@@ -23,6 +23,7 @@
 #define	RIGHT_INDENT	4
 
 void	FreeRecNodes(OPTIONS *Opt, int NoSites);
+void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type);
 
 char*	FormatStr(char* RateName)
 {
@@ -84,11 +85,17 @@ void	PrintOptRes(FILE* Str, OPTIONS *Opt)
 	}
 }
 
-void	PrintPriorVals(FILE *Str, PRIORS *P)
+void	PrintPriorVals(FILE *Str, PRIOR *P)
 {
 	int		VIndex;
 
+	fprintf(Str, "        %s - ", P->Name);
+	
+	if(P->UseHP == TRUE)
+		fprintf(Str, "Hyper Prior ");
+
 	fprintf(Str, "%s ", DISTNAMES[(int)P->Dist]);
+		
 
 	if(P->UseHP == FALSE)
 	{
@@ -103,57 +110,44 @@ void	PrintPriorVals(FILE *Str, PRIORS *P)
 	fprintf(Str, "\n");
 }
 
+int		RateNameToPos(char *Name, OPTIONS *Opt)
+{
+	int Index;
 
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+	{
+		if(strcmp(Name, Opt->RateName[Index]) == 0)
+			return Index;
+	}
+
+	return -1;
+}
 
 void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 {
 	int		Index;
-	PRIORS	*P;
-	char	*FRateName;
+	PRIOR	*Prior;
+	int		RatePos;
 
 	fprintf(Str, "Prior Information:\n");
-	fprintf(Str, "    Prior Categories:            %d\n", Opt->PriorCats);
+	if(Opt->ModelType == MT_DISCRETE)
+		fprintf(Str, "    Prior Categories:            %d\n", Opt->PriorCats);
 
-	if(Opt->UseRJMCMC == TRUE)
+	fprintf(Str, "    Priors\n");
+
+	for(Index=0;Index<Opt->NoAllPriors;Index++)
 	{
-		fprintf(Str, "    RJ Prior                     ");
-		PrintPriorVals(Str, Opt->RJPrior);
-	//	fprintf(Str, "\n");
-	}
+		Prior = Opt->AllPriors[Index];
+		RatePos = RateNameToPos(Prior->Name, Opt);
 
-	for(Index=0;Index<Opt->NoOfRates;Index++)
-	{
-		FRateName = FormatStr(Opt->RateName[Index]);
-		fprintf(Str, "%s", FRateName);
-		free(FRateName);
-
-		P = Opt->Priors[Index];
-
-		if((Opt->ResTypes[Index] == RESNONE) && (Opt->UseRJMCMC == FALSE))
-		{
-			PrintPriorVals(Str, P);
-		}
+		if(RatePos == -1)
+			PrintPriorVals(Str, Prior);
 		else
 		{
-			fprintf(Str, "N\\A\n");
+			if(Opt->ResTypes[RatePos] == RESNONE && Opt->UseRJMCMC == FALSE)
+				PrintPriorVals(Str, Prior);
 		}
 	}
-
-	if(Opt->EstGamma == TRUE)
-	{
-		fprintf(Str, "        Gamma                    ");
-	
-		PrintPriorVals(Str, Opt->PriorGamma);
-		fprintf(Str, "\n");
-	}
-
-	if(Opt->EstOU == TRUE)
-	{
-		fprintf(Str, "    OU                           ");
-		PrintPriorVals(Str, Opt->PriorOU);
-		fprintf(Str, "\n");
-	}
-
 }
 
 double	FindAveNodeDepth(RECNODE *RNode, OPTIONS *Opt)
@@ -395,15 +389,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		if(Opt->UseVarRates == TRUE)
 			fprintf(Str, "Using VarRates:                  True\n");
 
-
-		for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
-		{
-			if(Opt->UseRJLocalScalar[Index] == TRUE)
-			{
-				fprintf(Str, "RJ Local Scalar:                 %s prior ", RJ_LOCAL_SCALAR_NAMES[Index]);
-				PrintPriorVals(Str, Opt->RJLocalScalarPriors[Index]);
-			}
-		}
 	}
 	else
 	{
@@ -521,37 +506,16 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 		free(Opt->RateName);
 	}
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->AllPriors != NULL)
 	{
-		for(Index=0;Index<Opt->NoOfRates;Index++)
-			FreePrior(Opt->Priors[Index]);
-		
-		free(Opt->Priors);
-
-		FreePrior(Opt->RJPrior);
+		for(Index=0;Index<Opt->NoAllPriors;Index++)
+			FreePrior(Opt->AllPriors[Index]);
+		free(Opt->AllPriors);
 	}
-
-	if(Opt->PriorDelta != NULL)
-		FreePrior(Opt->PriorDelta);
-
-	if(Opt->PriorLambda!= NULL)
-		FreePrior(Opt->PriorLambda);
-
-	if(Opt->PriorKappa != NULL)
-		FreePrior(Opt->PriorKappa);
-
-	if(Opt->PriorOU != NULL)
-		FreePrior(Opt->PriorOU);
-
-	if (Opt->PriorGamma != NULL)
-		FreePrior(Opt->PriorGamma);
 
 	if(Opt->EstDataSites != NULL)
 		free(Opt->EstDataSites);
-
 	
-
-
 	free(Opt->DataFN);
 	free(Opt->TreeFN);
 	free(Opt->LogFN);
@@ -583,13 +547,6 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->Stones != NULL)
 		FreeStones(Opt->Stones);
-
-	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
-		if(Opt->RJLocalScalarPriors[Index] != NULL)
-			FreePrior(Opt->RJLocalScalarPriors[Index]);
-
-	if(Opt->RJLocalScalarPriors != NULL)
-		free(Opt->RJLocalScalarPriors);
 
 	for(Index=0;Index<Opt->NoLocalTransforms;Index++)
 		FreeLocalTransforms(Opt->LocalTransforms[Index]);
@@ -941,35 +898,38 @@ void		AllocRestictions(OPTIONS *Opt)
 void	SetFatTailPrior(OPTIONS *Opt)
 {
 	int Index, Pos;
+	PRIOR *Prior;
+
 
 	Pos = 0;
-
+	
 	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 	{
-		Opt->Priors[Pos++] = CreateUniformPrior(0.2, 2.0);
-//		Opt->Priors[Pos++] = CreateInvGammaPrior(2.0, 0.130435);
-		Opt->Priors[Pos++] = CreateUniformPrior(0.0, 100.0);
+		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.2, 2.0);
+		AddPriorToOpt(Opt, Prior);
+
+		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.0, 100.0);
+		AddPriorToOpt(Opt, Prior);
 	}
 }
 
 void	GetGeoPriors(OPTIONS *Opt)
 {
-	Opt->Priors[0] = CreateUniformPrior(0.2, 2.0);
-//	Opt->Priors[1] = CreateInvGammaPrior(2.0, 0.130435);
-	Opt->Priors[1] = CreateUniformPrior(0.0, 1000000.0);
+	PRIOR *Prior;
+
+	Prior = CreateUniformPrior(Opt->RateName[0], 0.2, 2.0);
+	AddPriorToOpt(Opt, Prior);
+
+	Prior = CreateUniformPrior(Opt->RateName[1], 0.0, 1000000.0);
+	AddPriorToOpt(Opt, Prior);
 }
 
 
 void	AllocRatePrios(OPTIONS *Opt)
 {
 	int		Index;
-
-	Opt->Priors		= (PRIORS**)malloc(sizeof(PRIORS*) * Opt->NoOfRates);
-	if(Opt->Priors == NULL)
-		MallocErr();
-
-	Opt->RJPrior = CreateUniformPrior(0, 100);
-
+	PRIOR	*Prior;
+	
 	if(Opt->Model == M_FATTAIL)
 	{
 		SetFatTailPrior(Opt);
@@ -985,26 +945,15 @@ void	AllocRatePrios(OPTIONS *Opt)
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
 		if(Opt->ModelType == DISCRETE)
-			Opt->Priors[Index] = CreateUniformPrior(0, 100);
+			Prior = CreateUniformPrior(Opt->RateName[Index], 0, 100);
 		else
-			Opt->Priors[Index] = CreateUniformPrior(-100, 100);
+			Prior = CreateUniformPrior(Opt->RateName[Index], -100, 100);
+				
+		if(Opt->Model == M_CONTRAST && Index >= Opt->Trees->NoOfSites)
+			Prior->DistVals[0] = 0;
 		
-		Opt->Priors[Index]->RateName = StrMake(Opt->RateName[Index]);
-
-		if((Opt->Model == M_CONTRAST) && (Index >= Opt->Trees->NoOfSites))
-			Opt->Priors[Index]->DistVals[0] = 0;
+		AddPriorToOpt(Opt, Prior);
 	}
-}
-
-void	SetGenPriors(OPTIONS *Opt)
-{
-	Opt->PriorDelta = CreateUniformPrior(MIN_DELTA, MAX_DELTA);
-	Opt->PriorKappa = CreateUniformPrior(MIN_KAPPA, MAX_KAPPA);
-	Opt->PriorLambda= CreateUniformPrior(MIN_LAMBDA, MAX_LAMBDA);
-
-	Opt->PriorOU	= CreateUniformPrior(MIN_OU, MAX_OU);
-	//	Opt->PriorOU	= CreateExpPrior(1.0);
-	Opt->PriorGamma	= CreateUniformPrior(MIN_GAMMA, MAX_GAMMA);
 }
 
 MODEL_TYPE	GetModelType(MODEL Model)
@@ -1106,22 +1055,18 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->MLTries		= 10;
 	Ret->MCMCMLStart	= FALSE; 
 
-	Ret->PriorGamma		= NULL;
-	Ret->PriorKappa		= NULL;
-	Ret->PriorLambda	= NULL;
-	Ret->PriorDelta		= NULL;
-	Ret->PriorOU		= NULL;
-	Ret->Priors			= NULL;
-	Ret->PriorCats		= -1;
+
+
+	Ret->NoAllPriors	= 0;
+	Ret->AllPriors		= NULL;
 	
-	SetGenPriors(Ret);
+	Ret->PriorCats		= -1;
 
 	if(Ret->Analsis == ANALML)
 	{
 		Ret->Itters		=	-1;
 		Ret->Sample		=	-1;
 		Ret->BurnIn		=	-1;
-		Ret->RJPrior	=	NULL;
 	}
 	
 	if(Ret->Analsis == ANALMCMC)
@@ -1215,15 +1160,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->FatTailNormal	=	FALSE;
 
-	Ret->RJLocalScalarPriors = (PRIORS**)malloc(sizeof(PRIORS*) * NO_RJ_LOCAL_SCALAR);
-	if(Ret->RJLocalScalarPriors == NULL)
-		MallocErr();
-
 	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
-	{
 		Ret->UseRJLocalScalar[Index] = FALSE;
-		Ret->RJLocalScalarPriors[Index] = NULL;
-	}
 
 	Ret->NoTags	= 0;
 	Ret->TagList = NULL;
@@ -1707,184 +1645,96 @@ void	UnRestictAll(OPTIONS *Opt)
 	}
 }
 
-
-
-int	SetPriorNo(OPTIONS *Opt, PRIORS *P, int Tokes, char *argv[])
+void	SetPrior(OPTIONS *Opt, char *Name, int Tokes, char **argv)
 {
-	PRIORDIST	Dist;
-	double		Num;
-	int			Index;
+	PRIOR	*CPrior, *NPrior;
 	
-	Dist = StrToPriorDist(argv[0]);
+	CPrior = GetPriorFromName(Name, Opt->AllPriors, Opt->NoAllPriors);
 
-	if(Dist == -1)
+	if(CPrior == NULL)
 	{
-		printf("Could not conver %s to a valid distriubntion\n", argv[0]);
-		printf("Valid distiubtions are 	beta, gamma, uniform, exp\n");
-		return FALSE;
+		printf("Cannot set prior on parameter %s.\n", Name);
+		exit(0);
 	}
 
-/*	if((Opt->DataType == CONTINUOUS) && (Dist != UNIFORM))
-	{
-		printf("Only uniform priors can be used with continuous data.\n");
-		return FALSE;				
-	}
-*/
-	if(Tokes!=DISTPRAMS[Dist]+1)
-	{
-		printf("Prior %s equires %d parmeters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
-		return FALSE;
-	}
+	NPrior = CreatePriorFromStr(Name, Tokes, argv);
 
-	for(Index=1;Index<Tokes;Index++)
-	{
-		Num = atof(argv[Index]);
-		if((Num == 0) && (strcmp(argv[Index], "0")!=0))
-		{
-			printf("Could not conver Prior paramiter %s to a valid number\n", argv[Index]);
-			return FALSE;
-		}
-	}
-	
-	free(P->DistVals);
+	ReplacePrior(Opt, NPrior);
 
-	P->DistVals = (double*)malloc(sizeof(double) * DISTPRAMS[Dist]);
-	if(P->DistVals == NULL)
-		MallocErr();
-
-	P->Dist = Dist;
-
-	for(Index=0;Index<DISTPRAMS[Dist];Index++)
-		P->DistVals[Index] = atof(argv[1+Index]);
-
-	if(P->UseHP == TRUE)
-	{
-		free(P->HP);
-		P->HP = NULL;
-		P->UseHP = FALSE;
-	}
-
-	return TRUE;
+	FreePrior(CPrior);
 }
 
 
-/*
-int	SetPriorNo(OPTIONS *Opt, int RateNo, int Tokes, char *argv[])
+void	SetPriorCmd(OPTIONS *Opt, int Tokes, char **argv)
 {
-	PRIORDIST	Dist;
-	double		Num;
-	int			Index;
-	PRIORS		*P;
+	char	*Name;
 
-	Dist = StrToPriorDist(argv[0]);
-
-	if(Dist == -1)
+	if(Tokes < 4)
 	{
-		printf("Could not conver %s to a valid distriubntion\n", argv[0]);
-		printf("Valid distiubtions are 	beta, gamma, uniform, exp\n");
-		return FALSE;
+		printf("The prior command must take a parameter name, distribution and distribution parameters.");
+		exit(0);
 	}
 
-	if((Opt->DataType == CONTINUOUS) && (Dist != UNIFORM))
-	{
-		printf("Only uniform priors can be used with continuous data.\n");
-		return FALSE;				
-	}
+	Name = argv[1];
 
-	if(Tokes!=DISTPRAMS[Dist]+1)
-	{
-		printf("Prior %s equires %d parmeters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
-		return FALSE;
-	}
-
-	for(Index=1;Index<Tokes;Index++)
-	{
-		Num = atof(argv[Index]);
-		if((Num == 0) && (strcmp(argv[Index], "0")!=0))
-		{
-			printf("Could not conver Prior paramiter %s to a valid number\n", argv[Index]);
-			return FALSE;
-		}
-	}
-
-	P = Opt->Priors[RateNo];
-
-	free(P->DistVals);
-
-	P->DistVals = (double*)malloc(sizeof(double) * DISTPRAMS[Dist]);
-	if(P->DistVals == NULL)
-		MallocErr();
-
-	P->Dist = Dist;
-
-	for(Index=0;Index<DISTPRAMS[Dist];Index++)
-		P->DistVals[Index] = atof(argv[1+Index]);
-
-	if(P->UseHP == TRUE)
-	{
-		free(P->HP);
-		P->HP = NULL;
-		P->UseHP = FALSE;
-	}
-
-	return TRUE;
-}
-*/
-void	SetOUPrior(OPTIONS *Opt, int Tokes, char **argv)
-{
-	char *PName;
-
-	if(Opt->EstOU == FALSE)
-		return;
-
-	PName = StrMake(argv[1]);
-	MakeUpper(PName);
-	if(strcmp(PName, "OU") == 0)
-	{
-		SetPriorNo(Opt, Opt->PriorOU, Tokes-2, &argv[2]);
-	}
-
-	free(PName);
-	return;
+	SetPrior(Opt, Name, Tokes-2, &argv[2]);
 }
 
-void	SetPrior(OPTIONS *Opt, int Tokes, char **argv)
+void	SetAllRatePriors(OPTIONS *Opt, int Tokes, char **argv)
 {
-	int			Rate;
+	int Index;
 
-	if(Opt->Analsis != ANALMCMC)
+	if(Tokes < 3)
 	{
-		printf("Priors can only be set of MCMC analis\n");
-		return;
-	}
-	
-	SetOUPrior(Opt, Tokes, argv);
-
-	Rate = StrToRate(Opt, argv[1]);
-	if(Rate == -1)
-	{
-		printf("Could not convert %s to a valid rate paramiter\n", argv[1]);
-		return;
-	}
-
-	SetPriorNo(Opt, Opt->Priors[Rate], Tokes-2, &argv[2]);
-}
-
-void	SetAllPriors(OPTIONS *Opt, int Tokes, char *argv[])
-{
-	int			Index;
-
-	if(Opt->Analsis != ANALMCMC)
-	{
-		printf("Priors can only be set of MCMC analis\n");
-		return;
+		printf("The set all prior command takes a prior.\n");
+		exit(0);
 	}
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
+		SetPrior(Opt, Opt->RateName[Index], Tokes-1, &argv[1]);
+}
+
+void	SetHyperPrior(OPTIONS *Opt, char *Name, int Tokes, char **argv)
+{
+	PRIOR	*CPrior, *NPrior;
+
+	CPrior = GetPriorFromName(Name, Opt->AllPriors, Opt->NoAllPriors);
+
+	if(CPrior == NULL)
 	{
-		SetPriorNo(Opt, Opt->Priors[Index], Tokes-1, &argv[1]);
+		printf("Cannot set prior on parameter %s.\n", Name);
+		exit(0);
 	}
 
+	NPrior = CreateHyperPriorFromStr(Name, Tokes, argv);
+
+	ReplacePrior(Opt, NPrior);
+
+	FreePrior(CPrior);
+}
+
+
+void	SetHyperPriorCmd(OPTIONS *Opt, int Tokes, char **argv)
+{
+	char *Name;
+
+	if(Tokes < 4)
+	{
+		printf("The Hyper prior command must take a parameter name, distribution and min / max valus for distribution parameters.");
+		exit(0);
+	}
+
+	Name = argv[1];
+
+	SetHyperPrior(Opt, Name, Tokes-2, &argv[2]);
+}
+
+void	SetHyperPriorAllCmd(OPTIONS *Opt, int Tokes, char **argv)
+{
+	int	Index;
+
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+		SetHyperPrior(Opt, Opt->RateName[Index], Tokes-1, &argv[1]);
 }
 
 void	PrintUnderNode(NODE N)
@@ -2348,7 +2198,6 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CNODEDATA)  ||
 			(Command == CDEPSITE)   ||
 			(Command == CRJDUMMY)	||
-		//	(Command == CVARRATES)	||
 			(Command == CRJLOCALTRANSFORM) ||
 			(Command == CDISTDATA)
 			)
@@ -2375,6 +2224,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command ==	CSAMPLE)		||
 			(Command ==	CHYPERPRIOR)	||
 			(Command ==	CHPRJ)			||
+			(Command == CPRIOR)			||
 			(Command ==	CHPALL)			||
 			(Command ==	CREVJUMP)		||
 			(Command == CMCMCMLSTART)	||
@@ -2429,6 +2279,170 @@ int		SetConVar(int Tokes, char** Passed, int *InUse, int *Est, double *Const)
 	return TRUE;
 }
 
+void	SetKappa(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	double Val;
+
+	if(Opt->Analsis == ANALMCMC)
+		RemovePriorFormOpt("Kappa", Opt);
+
+	if(Tokes == 2)
+	{
+		if(IsValidDouble(Passed[1]) == FALSE)
+		{
+			printf("Cannot convert %s to a valid kappa value", Passed[1]);
+			exit(1);
+		}
+
+		Val = atof(Passed[1]);
+		if(Val < MIN_KAPPA)
+		{
+			printf("%f is lower than the minium kappa %f", Val, MIN_KAPPA);
+			exit(1);
+		}
+
+		Opt->EstKappa = FALSE;
+		Opt->UseKappa = TRUE;
+		Opt->FixKappa = Val;
+		return;
+	}
+
+	if(Opt->UseKappa == TRUE)
+	{
+		Opt->UseKappa = FALSE;
+		Opt->EstKappa = FALSE;
+		return;
+	}
+
+	Opt->UseKappa = TRUE;
+	Opt->EstKappa = TRUE;
+	
+	SetLocalTransformPrior(Opt, VR_KAPPA);
+}
+
+void	SetLambda(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	double Val;
+
+	if(Opt->Analsis == ANALMCMC)
+		RemovePriorFormOpt("Lambda", Opt);
+
+	if(Tokes == 2)
+	{
+		if(IsValidDouble(Passed[1]) == FALSE)
+		{
+			printf("Cannot convert %s to a valid lambda value", Passed[1]);
+			exit(1);
+		}
+
+		Val = atof(Passed[1]);
+		if(Val < MIN_LAMBDA)
+		{
+			printf("%f is lower than the minium lambda %f", Val, MIN_LAMBDA);
+			exit(1);
+		}
+
+		Opt->EstLambda = FALSE;
+		Opt->UseLambda = TRUE;
+		Opt->FixLambda = Val;
+		return;
+	}
+
+	if(Opt->UseLambda == TRUE)
+	{
+		Opt->UseLambda = FALSE;
+		Opt->EstLambda = FALSE;
+		return;
+	}
+
+	Opt->UseLambda = TRUE;
+	Opt->EstLambda = TRUE;
+
+	SetLocalTransformPrior(Opt, VR_LAMBDA);
+}
+
+void	SetDelta(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	double Val;
+
+	if(Opt->Analsis == ANALMCMC)
+		RemovePriorFormOpt("Detla", Opt);
+
+	if(Tokes == 2)
+	{
+		if(IsValidDouble(Passed[1]) == FALSE)
+		{
+			printf("Cannot convert %s to a valid detla value", Passed[1]);
+			exit(1);
+		}
+
+		Val = atof(Passed[1]);
+		if(Val < MIN_DELTA)
+		{
+			printf("%f is lower than the minium detla %f", Val, MIN_DELTA);
+			exit(1);
+		}
+
+		Opt->EstDelta = FALSE;
+		Opt->UseDelta = TRUE;
+		Opt->FixDelta = Val;
+		return;
+	}
+
+	if(Opt->UseDelta == TRUE)
+	{
+		Opt->UseDelta = FALSE;
+		Opt->EstData = FALSE;
+		return;
+	}
+
+	Opt->UseDelta = TRUE;
+	Opt->EstDelta = TRUE;
+
+	SetLocalTransformPrior(Opt, VR_DELTA);
+}
+
+void	SetOU(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	double Val;
+
+	if(Opt->Analsis == ANALMCMC)
+		RemovePriorFormOpt("OU", Opt);
+
+	if(Tokes == 2)
+	{
+		if(IsValidDouble(Passed[1]) == FALSE)
+		{
+			printf("Cannot convert %s to a valid OU value", Passed[1]);
+			exit(1);
+		}
+
+		Val = atof(Passed[1]);
+		if(Val < MIN_OU)
+		{
+			printf("%f is lower than the minium OU %f", Val, MIN_OU);
+			exit(1);
+		}
+
+		Opt->EstOU = FALSE;
+		Opt->UseOU = TRUE;
+		Opt->FixOU = Val;
+		return;
+	}
+
+	if(Opt->UseOU == TRUE)
+	{
+		Opt->UseOU = FALSE;
+		Opt->EstOU = FALSE;
+		return;
+	}
+
+	Opt->UseOU = TRUE;
+	Opt->EstOU = TRUE;
+
+	SetLocalTransformPrior(Opt, VR_OU);
+}
+
 void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	int		Index;
@@ -2455,150 +2469,68 @@ void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed)
 	SetParts(Opt->Trees);
 }
 
+void	RemoveRatePriors(OPTIONS *Opt)
+{
+	int Index;
+
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+		RemovePriorFormOpt(Opt->RateName[Index], Opt);
+}
+
 void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
 {
-	PRIORS		*P;
+	PRIOR		*Prior;
 
-	if(Opt->UseRJMCMC == TRUE)
+	RemoveRatePriors(Opt);
+
+	RemovePriorFormOpt("RJRates", Opt);
+
+	Opt->UseRJMCMC = TRUE;
+
+	Prior = CreatePriorFromStr("RJRates", Tokes, Passed);
+	AddPriorToOpt(Opt, Prior);
+
+	if(Prior->Dist == INVGAMMA)
 	{
-		if(Opt->RJPrior != NULL)
-			FreePrior(Opt->RJPrior);
-		Opt->RJPrior = NULL;
-
-		Opt->UseRJMCMC = FALSE;
-		return;
-	}
-
-	if(Tokes < 1)
-	{
-		printf("To turn RJ MCMC on prior distrusions has to be spesified\n");
+		printf("Inverse gamma cannot be used as rj prior.\n");
 		exit(0);
 	}
+		
+	Opt->UseRJMCMC = TRUE;
+}
 
-	P = CreatePrior(Tokes, Passed);
+void	SetRJMCMCHP(OPTIONS *Opt, int Tokes, char** Passed)
+{
+	PRIOR		*Prior;
 
-	if(P == NULL)
-		exit(0);
+	RemoveRatePriors(Opt);
 
-	if(P->Dist == INVGAMMA)
+	RemovePriorFormOpt("RJRates", Opt);
+
+	Opt->UseRJMCMC = TRUE;
+
+	Prior = CreateHyperPriorFromStr("RJRates", Tokes, Passed);
+	AddPriorToOpt(Opt, Prior);
+
+	if(Prior->Dist == INVGAMMA)
 	{
 		printf("Inverse gamma cannot be used as rj prior.\n");
 		exit(0);
 	}
 
-	Opt->RJPrior = P;
 	Opt->UseRJMCMC = TRUE;
-
-
 }
 
-PRIORS*	NameToPrior(OPTIONS *Opt, char* Name)
-{
-	int	Index;
 
-
-	for(Index=0;Index<Opt->NoOfRates;Index++)
-		if(strcmp(Opt->RateName[Index], Name)==0)
-			return Opt->Priors[Index];
-
-	return NULL;
-}
-
-void	SetHyperPrior(OPTIONS *Opt, char* PName, char** Passed, int Tokes, PRIORS*	P)
-{
-	PRIORS*		Prior;
-	PRIORDIST	Dist;
-	int			Index;
-	int			PIndex;
-	double		Low, High;
-
-	if(P == NULL)
-		Prior = NameToPrior(Opt, PName);
-	else
-		Prior = P;
-
-	if(Prior == NULL)
-	{
-		printf("Could not convert %s to a valid rate name\n", PName);
-		return;
-	}
-
-	Dist = StrToPriorDist(Passed[0]);
-
-	if(Dist == -1)
-	{
-		printf("Could not convert %s to a valid distibution type\n", Passed[0]);
-		return;
-	}
-
-	if(Tokes - 1 != DISTPRAMS[Dist] * 2)
-	{
-		printf("The hyper prior command require an upper and lower bound for each paramtier in the distribution\n");
-		return;
-	}
-
-	for(Index=0;Index<DISTPRAMS[Dist] * 2;Index++)
-	{
-		if(IsValidDouble(Passed[Index+1]) == FALSE)
-		{
-			printf("Could not convert %s to a valid double\n", Passed[Index+1]);
-		}
-	}
-	
-	PIndex=1;
-	for(Index=0;Index<DISTPRAMS[Dist];Index++)
-	{
-		Low		= atof(Passed[PIndex]);
-		High	= atof(Passed[PIndex+1]);
-		
-		if(High <= Low)
-		{
-			printf("%f must be grater than %f\n", High, Low);
-			return;
-		}
-
-		PIndex+=2;
-	}
-	
-	free(Prior->DistVals);
-
-	Prior->UseHP = TRUE;
-	if(Prior->HP != NULL)
-		free(Prior->HP);
-	Prior->HP = (double*)malloc(sizeof(double) * (DISTPRAMS[Dist] * 2));
-	Prior->DistVals = (double*)malloc(sizeof(double) * DISTPRAMS[Dist]);
-
-	if((Prior->HP == NULL) || (Prior->DistVals == NULL))
-		MallocErr();
-
-	for(Index=0;Index<DISTPRAMS[Dist] * 2;Index++)
-		Prior->HP[Index] = atof(Passed[Index+1]);
-
-	for(Index=0;Index<DISTPRAMS[Dist];Index++)
-	{
-		Prior->DistVals[Index] = Prior->HP[(Index * 2) + 1] - Prior->HP[(Index * 2)];
-		Prior->DistVals[Index] = Prior->DistVals[Index] / 2;
-		Prior->DistVals[Index] += Prior->HP[(Index * 2)];
-	}
-
-	Prior->Dist		= Dist;
-	Prior->UseHP	= TRUE;
-}
-
-void	SetHPAll(OPTIONS *Opt, char** Passed, int NoOfTokes)
-{
-	int	Index;
-
-	for(Index=0;Index<Opt->NoOfRates;Index++)
-	{
-		SetHyperPrior(Opt, Opt->RateName[Index], Passed, NoOfTokes, NULL);
-	}
-}
 
 void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 {
 	int		GammaCats;
 	double	Value;
+	PRIOR	*Prior;
+
+	if(Opt->Analsis == ANALMCMC)
+		RemovePriorFormOpt("Gamma", Opt);
 
 	if(Tokes == 1)
 	{
@@ -2607,24 +2539,19 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 			Opt->UseGamma	= FALSE;
 			Opt->FixGamma	= -1;
 			Opt->EstGamma	= FALSE;
-			if(Opt->PriorGamma != NULL)
-			{
-				FreePrior(Opt->PriorGamma);
-				Opt->PriorGamma = NULL;
-			}
 			return;
 		}
 		else
 		{
 			printf("The Gamma command take 0, 1 or 2 parameters.\n 0 to turn Gamma off\n1 to estermate Gamma\n 2 to fix it to a constant\n");
-			return;
+			exit(0);
 		}
 	}
 
 	if(IsValidInt(Passed[1]) == FALSE)
 	{
 		printf("Could not convert %s to a valid number of categories to divide the gamma disruption up into.\n", Passed[1]);
-		return;
+		exit(0);
 	}
 
 	GammaCats = atoi(Passed[1]);
@@ -2632,7 +2559,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 	if((GammaCats < 2) || (GammaCats > 8))
 	{
 		printf("The number of gamma catergoires must be grater than 1 and less than 8\n");
-		return;
+		exit(0);
 	}
 
 	if(Tokes == 2)
@@ -2642,6 +2569,12 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 		Opt->FixGamma = -1;
 	
 		Opt->GammaCats = GammaCats;
+
+		if(Opt->Analsis == ANALMCMC)
+		{
+			Prior	= CreateUniformPrior("Gamma", MIN_GAMMA, MAX_GAMMA);
+			AddPriorToOpt(Opt, Prior);
+		}
 		
 		return;
 	}
@@ -2651,7 +2584,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 		if(IsValidDouble(Passed[2]) == FALSE)
 		{
 			printf("Could not convert %s to a valid gamma shapre parmiter\n", Passed[2]);
-			return;
+			exit(0);
 		}
 		Value = atof(Passed[2]);
 
@@ -2672,6 +2605,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 	}
 
 	printf("The Gamma command take 0, 1 or 2 parameters.\n 0 to turn Gamma off\n1 to estermate Gamma\n 2 to fix it to a constant\n");
+	exit(0);
 }
 
 void	SetCI(OPTIONS *Opt, char *Rate)
@@ -3063,10 +2997,20 @@ void	LineAddErr(TREES *Trees, char *Line)
 	free(Buffer);	
 }
 
-void	LoadAddErr(OPTIONS *Opt, char *FName)
+void	LoadAddErr(OPTIONS *Opt, int Tokes, char **argv)
 {
 	TEXTFILE *TF;
 	int	Index;
+	char *FName;
+
+	if(Tokes != 2)
+	{
+		printf("AddErr requires one parameter, a file with taxa names and error.\n");
+		printf("File names cannot contain spaces.\n");
+		exit(0);
+	}
+
+	FName = argv[1];
 
 	TF = LoadTextFile(FName, FALSE);
 
@@ -3208,9 +3152,9 @@ void	SetScaleTree(OPTIONS *Opt, char **Passed, int Tokes)
 
 int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 {
-	if(Tokes != 4 && Tokes != 5)
+	if(Tokes != 3)
 	{
-		printf("RJ Local Scalar take a scalar names (kappa, lambda, delta, OU) and a prior.\n");
+		printf("RJ Local Scalar take a scalar names (kappa, lambda, delta, OU).\n");
 		return FALSE;
 	}
 
@@ -3237,31 +3181,69 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 	return TRUE;
 }
 
+void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
+{
+	PRIOR *Prior;
+
+	if(Opt->Analsis == ANALML)
+		return;
+
+	if(Type == VR_KAPPA)
+	{
+		RemovePriorFormOpt("Kappa", Opt);
+		Prior = CreateUniformPrior("Kappa", MIN_KAPPA, MAX_KAPPA);
+		AddPriorToOpt(Opt, Prior);
+	}
+	
+	if(Type == VR_LAMBDA)
+	{
+		RemovePriorFormOpt("Lambda", Opt);
+		Prior = CreateUniformPrior("Lambda", MIN_LAMBDA, MAX_LAMBDA);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+	if(Type == VR_DELTA)
+	{
+		RemovePriorFormOpt("Delta", Opt);
+		Prior = CreateUniformPrior("Delta", MIN_DELTA, MAX_DELTA);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+	if(Type == VR_OU)
+	{
+		RemovePriorFormOpt("OU", Opt);
+		Prior = CreateUniformPrior("OU", MIN_OU, MAX_OU);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+	if(Type == VR_BL)
+	{
+		RemovePriorFormOpt("VRBL", Opt);
+		Prior = CreateSGammaPrior("VRBL", VARRATES_ALPHA, VARRATES_BETA);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+	if(Type == VR_NODE)
+	{
+		RemovePriorFormOpt("VRNode", Opt);
+		Prior = CreateSGammaPrior("VRNode", VARRATES_ALPHA, VARRATES_BETA);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+}
+
 void	SetRJLocalTransform(OPTIONS *Opt, char **Passed, int Tokes)
 {
-	PRIORS *P;
 	TRANSFORM_TYPE	Type;
 
 	if(ValidRJLocalScalarModel(Opt, Passed, Tokes) == FALSE)
 		return;
 
-	P = CreatePrior(Tokes-2, &Passed[2]);
-	if(P == NULL)
-		return;
-
-	if(P->Dist == INVGAMMA)
-	{
-		printf("Inverse gamma cannot be used as rj prior.\n");
-		exit(0);
-	}
-
 	Type = NameToRJLocalType(Passed[1]);
 
-	if(Opt->RJLocalScalarPriors[Type] != NULL)
-		FreePrior(Opt->RJLocalScalarPriors[Type]);
-
-	Opt->RJLocalScalarPriors[Type] = P;
 	Opt->UseRJLocalScalar[Type]	= TRUE;
+
+	SetLocalTransformPrior(Opt, Type);
 }
 
 void	SetFatTailNormal(OPTIONS *Opt)
@@ -3337,7 +3319,7 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 	TAG					**Tags;
 	LOCAL_TRANSFORM		*UVR;
 
-	if(Tokes <= 4)
+	if(Tokes < 4)
 	{
 		printf("LocalTransform takes a name, a list of tags, A transform type (node, bl, kappa, lambda, delta, OU) and an optional fixed scalar");
 		exit(1);
@@ -3349,7 +3331,6 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 	Est = TRUE;
 
 	NoTags = Tokes;
-//	Tags = GetTagListFromName(Opt, Passed[1], &NoTags);
 
 	Tags = GetTagListFromNames(Opt, &Passed[2], Tokes, &NoTags);
 
@@ -3367,6 +3348,7 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 	UVR = CreateLocalTransforms(Name, Tags, NoTags, Type, Est, Scale);
 	Opt->LocalTransforms = (LOCAL_TRANSFORM**)AddToList(&Opt->NoLocalTransforms, (void**)Opt->LocalTransforms, UVR);
 
+	SetLocalTransformPrior(Opt, Type);
 }
 
 void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)
@@ -3437,6 +3419,29 @@ void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
 	Opt->Itters = TItter;
 }
 
+void	SetVarRatesOpt(OPTIONS *Opt)
+{
+	if(Opt->Trees->NoOfTrees > 1)
+	{
+		printf("VarRates can only be used on a single tree.\n");
+		exit(0);
+	}
+
+	if(Opt->UseVarRates == TRUE)
+	{
+		RemovePriorFormOpt("VRNode", Opt);
+		RemovePriorFormOpt("VRBL", Opt);
+		Opt->UseVarRates = FALSE;
+		return;
+	}
+
+	Opt->UseVarRates = TRUE;
+
+
+	SetLocalTransformPrior(Opt, VR_BL);
+	SetLocalTransformPrior(Opt, VR_NODE);
+}
+
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 {
 	int			Tokes;
@@ -3500,21 +3505,20 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CUNRESALL)
-	{
 		UnRestictAll(Opt);
-	}
-
+	
 	if(Command == CPRIOR)
-	{
-		if(Tokes >= 4)
-			SetPrior(Opt, Tokes, Passed);
-		else
-		{
-			printf("Prior set the prior values, requires a rate parmeters, adistribution type and a number of parmeters\n");
-			printf("E.G., Prior q01 Beta 6 24.5\n");
-		}
-	}	
+		SetPriorCmd(Opt, Tokes, Passed);
 
+	if(Command == CPRIORALL)
+		SetAllRatePriors(Opt, Tokes, Passed);
+	
+	if(Command == CHYPERPRIOR)
+		SetHyperPriorCmd(Opt, Tokes, Passed);
+
+	if(Command == CHPALL)
+		SetHyperPriorAllCmd(Opt, Tokes, Passed);
+	
 	if(Command == CITTERS)
 	{
 		SetItters(Opt, Tokes, Passed);
@@ -3566,18 +3570,8 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 		
 	if(Command == CINFO)
-	{
 		PrintOptions(stdout, Opt);
-	}
 		
-	if(Command == CPRIORALL)
-	{
-		if(Tokes >= 3)
-			SetAllPriors(Opt, Tokes, Passed);
-		else
-			printf("Set all prionrs take a prior distruntion and a number of paramter\n");
-	}
-	
 	if(Command == CHELP)
 	{
 		Index=0;
@@ -3609,27 +3603,19 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CADDTAXA)
 	{
 		printf("The AddTaxa command is no longer supported.\n");
-	
-	/*	if(Tokes >= 3)
-			AddToRecNode(Opt, Tokes, Passed);
-		else
-			printf("The AddNode command takes at least two parmeters a Node Name and taxa number/s\n");*/
+		exit(0);
 	}
 
 
 	if(Command == CDELTAXA)
 	{
 		printf("The DelTaxa command is no longer supported.\n");
-/*		if(Tokes >= 3)
-			DelToRecNode(Opt, Tokes, Passed);
-		else
-			printf("The DelTaxa command requies 2 or more parmeters and Node Name and a list of taxa numbers to remove from that node\n");*/
+		exit(0);
 	}
 
 	if(Command == CEVENROOT)
-	{
 		SetEvenRoot(Opt->Trees);
-	}
+	
 
 	if(Command == CLOGFILE)
 	{
@@ -3659,9 +3645,8 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CBURNIN)
-	{
 		SetBurnIn(Opt, Tokes, Passed);
-	}
+	
 
 	if(Command == CPIS)
 	{
@@ -3674,30 +3659,16 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CKAPPA)
-	{
-		if(SetConVar(Tokes, Passed, &Opt->UseKappa, &Opt->EstKappa, &Opt->FixKappa ) == FALSE)
-			printf("The Kappa command take 0 or 1 parameters, 0 to toggle kappa (on / off) and 1 to fix it to a constant\n");
-				
-	}
-
+		SetKappa(Opt, Tokes, Passed);
+	
 	if(Command == CDELTA)
-	{
-		if(SetConVar(Tokes, Passed, &Opt->UseDelta, &Opt->EstDelta, &Opt->FixDelta ) == FALSE)
-			printf("The Delta command take 0 or 1 parameters, 0 to toggle Delta (on / off) and 1 to fix it to a constant\n");
-				
-	}
+		SetDelta(Opt, Tokes, Passed);
 
 	if(Command == CLAMBDA)
-	{
-		if(SetConVar(Tokes, Passed, &Opt->UseLambda, &Opt->EstLambda, &Opt->FixLambda ) == FALSE)
-			printf("The Lambda command take 0 or 1 parameters, 0 to toggle Lambda (on / off) and 1 to fix it to a constant\n");
-	}
+		SetLambda(Opt, Tokes, Passed);
 
 	if(Command == COU)
-	{
-		if(SetConVar(Tokes, Passed, &Opt->UseOU, &Opt->EstOU, &Opt->FixOU) == FALSE)
-			printf("The OU command take 0 or 1 parameters, 0 to toggle OU (on / off) and 1 to fix it to a constant\n");
-	}
+		SetOU(Opt, Tokes, Passed);
 
 	if(Command == CEXTTAXA)
 	{
@@ -3717,10 +3688,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CSAVETREES)
 	{
 		if(Tokes == 2)
-		{
 			Opt->SaveTrees = StrMake(Passed[1]);
-		//	PrintTree(Passed[1], Opt->Trees, Opt);
-		}
 		else
 		{
 			if(Opt->SaveTrees != NULL)
@@ -3738,10 +3706,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetTestCorrel(Opt);
 	}
 
-	if(Command == CSURFACE)
-	{
-	}
-
 	if(Command == CCOVARION)
 	{
 		if(Opt->UseCovarion == TRUE)
@@ -3751,10 +3715,12 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CREVJUMP)
-	{
 		SetRJMCMC(Opt, Tokes-1, &Passed[1]);
-	}
+	
 
+	if(Command == CHPRJ)
+		SetRJMCMCHP(Opt, Tokes-1, &Passed[1]);
+	
 	if(Command == CEXIT)
 	{
 		exit(0);
@@ -3797,43 +3763,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 			Opt->AlphaZero = FALSE;
 	}
 
-	if(Command == CHYPERPRIOR)
-	{
-		if(Tokes > 4)
-		{
-			SetHyperPrior(Opt, Passed[1], &Passed[2], Tokes-2, NULL);
-		}
-		else
-			printf("HyperPrior requires a rate, a distrubion and a set of upper and lower values for the paramtiers\n");
-	}
 
-	if(Command == CHPRJ)
-	{
-		if(Tokes > 3)
-		{
-			SetHyperPrior(Opt, NULL, &Passed[1], Tokes-1, Opt->RJPrior);
-			Opt->UseRJMCMC = TRUE;
-		}
-		else
-		{
-			if(Opt->UseRJMCMC == TRUE)
-				Opt->UseRJMCMC = FALSE;
-			else
-				printf("HPRevJump rquires a distrubion and a set of upper and lower values for the paramtiers\n");
-		}
-	}
-
-	if(Command == CHPALL)
-	{
-		if(Tokes > 3)
-		{
-			SetHPAll(Opt, &Passed[1], Tokes-1);	
-		}
-		else
-		{
-			printf("HyperPriorAll rquires a distrubion and a set of upper and lower values for the paramtiers\n");
-		}
-	}
 
 	if(Command == CNODEBLDATA)
 	{
@@ -3847,9 +3777,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CGAMMA)
-	{
 		SetGamma(Opt, Passed, Tokes);
-	}
 
 	if(Command == CCI)
 	{
@@ -3920,36 +3848,14 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CMAKEUM)
-	{
 		MakeUM(Opt->Trees);
-	/*	if(Opt->MakeUM == TRUE)
-			Opt->MakeUM = FALSE;
-		else
-			Opt->MakeUM = TRUE;
-	*/
-	}
 
 	if(Command == CVARRATES)
-	{
-		if(Opt->Trees->NoOfTrees > 1)
-		{
-			printf("VarRates can only be used on a single tree.\n");
-			
-		}
-		else
-		{
-			if(Opt->UseVarRates == FALSE)
-				Opt->UseVarRates = TRUE;
-			else
-				Opt->UseVarRates = FALSE;
-		}
-	}
-
+		SetVarRatesOpt(Opt);
+	
 	if(Command == CEQUALTREES)
-	{
 		SetEqualTrees(Opt, Tokes, Passed);
-	}
-
+	
 	if(Command == CPRECISION)
 	{
 #ifndef BIG_LH
@@ -3960,54 +3866,26 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CCORES)
-	{
 		SetCores(Opt, Tokes, Passed);
-	
-		return FALSE;
-	}
 
 	if(Command == CSYMMETRICAL)
-	{
 		SetSymmetrical(Opt);
-		return FALSE;
-	}
 
 	if(Command == CMCMCMLSTART)
-	{
 		SetMCMCMLStart(Opt);
-		return FALSE;
-	}
 
 	if(Command == CCAPRJRATES)
-	{
 		CapRJRatesNo(Opt, Tokes ,Passed);
-		return FALSE;
-	}
 
 	if(Command == CSAVEMODELS)
-	{
 		SetSaveModels(Opt, Tokes, Passed);
-		return FALSE;
-	}
 
 	if(Command == CLOADMODELS)
-	{
 		SetLoadModels(Opt, Tokes, Passed);
-		return FALSE;
-	}
 
 	if(Command == CADDERR)
-	{
-		if(Tokes != 2)
-		{
-			printf("AddErr requires one parameter, a file with taxa names and error.\n");
-			printf("File names cannot contain spaces.\n");
-			return FALSE;
-		}
-		
-		LoadAddErr(Opt, Passed[1]);
-	}
-
+		LoadAddErr(Opt, Tokes, Passed);
+	
 	if(Command == CSTONES)
 		SetSteppingstone(Opt, Passed, Tokes);
 	
@@ -4022,17 +3900,13 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CRJDUMMY)
 		SetRJDummy(Opt, Passed, Tokes);
-	
-	
+		
 	if(Command == CSCALETREES)
 		SetScaleTree(Opt, Passed, Tokes);
 	
-
 	if(Command == CRJLOCALTRANSFORM)
 		SetRJLocalTransform(Opt, Passed, Tokes);
 	
-
-
 	if(Command == CFATTAILNORMAL)
 		SetFatTailNormal(Opt);
 

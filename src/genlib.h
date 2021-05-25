@@ -99,4 +99,6 @@ int			CountChar(char *Str, char C);
 void		CalcRSqr(double *x, double *y, int Size, double *R2, double *Slope, double *Intercept);
 
 
+int			StrICmp(char const *a, char const *b);
+
 #endif

@@ -2,6 +2,8 @@
 #define RATESHEADDER
 
 RATES*		CreatRates(OPTIONS *Opt);
+void		FreeRates(RATES *Rates, TREES *Trees);
+
 void		MapMCMCConRates(RATES* Rates, OPTIONS *Opt);
 void		MapRates(RATES* Rates, OPTIONS *Opt);
 
@@ -15,7 +17,7 @@ int			FindNoOfRates(OPTIONS *Opt);
 int			FindRatePos(int Rate, OPTIONS *Opt);
 void		MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It);
 void		MutateHetero(RATES *Rates);
-void		FreeRates(RATES *Rates, TREES *Trees);
+
 
 
 SUMMARY*	CreatSummary(OPTIONS *Opt);

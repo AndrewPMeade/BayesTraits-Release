@@ -974,18 +974,16 @@ void	TestLhNorm(RATES *Rates)
 void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 {
 	int Pos;
-	PRIORS *P;
+	PRIOR *P;
 
 	Pos = SiteNo * 2;
 		
-	P = Rates->Prios[Pos];
+	P = Rates->Priors[Pos];
 	Rates->Rates[Pos] = FAT_TAIL_NORMAL_VAL;
 	Pos++;
 
-	P = Rates->Prios[Pos];
+	P = Rates->Priors[Pos];
 	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 100);
-
-//	Rates->Rates[Pos] = 500.0;
 }
 
 

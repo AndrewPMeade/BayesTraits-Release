@@ -25,7 +25,7 @@ void	InitVarRatesFiles(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 void	FinishVarRatesFiles(OPTIONS *Opt);
 void	PrintVarRatesOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It);
 
-double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt, int *Err);
+double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt);
 void	ChangeVarRatesHyperPrior(RATES *Rates, OPTIONS *Opt);
 
 void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt);

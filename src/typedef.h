@@ -99,11 +99,11 @@
 /*	Modify the prior cost adding a VarRates scalar */
 #define PPPRIORSCALE 1
 
-/* Value of the PP alpha gamma */
-#define	PPALPHA		1.1
-#define PPBETA		1
+/* Value of the VarRates alpha beta*/
+#define	VARRATES_ALPHA		1.1
+#define VARRATES_BETA		1
 
-#define PPALPHASCLAE 0.1
+#define VARRATES_HP_ALPHA_SCLAE 0.1
 
 // Only allow one type (Node, BL, Kappa ect) of variables rates operator per node 
 #define VARRATES_ONE_OP_PER_NODE
@@ -444,13 +444,12 @@ static char    *DEPHETROPRAMS[] =
 
 static char    *DISTNAMES[] =
 {
-	"beta",
 	"gamma",
 	"uniform",
 	"chi",
 	"exp",
 	"invgamma",
-	""
+	"sgamma"
 };
 
 static int	DISTPRAMS[] =
@@ -458,20 +457,20 @@ static int	DISTPRAMS[] =
 	2,
 	2,
 	2,
-	2,
 	1,
+	2,
 	2
 };
 
 
 typedef enum
 {
-	BETA,
 	GAMMA,
 	UNIFORM,
 	CHI,
 	EXP,
-	INVGAMMA
+	INVGAMMA,
+	SGAMMA
 } PRIORDIST;
 
 typedef enum
@@ -793,8 +792,8 @@ typedef struct
 	double		OffSet;
 	int			UseHP;
 	int			NoOfCats;
-	char		*RateName;
-} PRIORS;
+	char		*Name;
+} PRIOR;
 
 typedef	struct
 {
@@ -998,7 +997,6 @@ typedef struct
 	TRANSFORM_TYPE	Type;
 	double			Scale;
 	int				Est;
-//	TAG				*Tag;
 	TAG				**TagList;
 	int				NoTags;
 } LOCAL_TRANSFORM;
@@ -1017,8 +1015,7 @@ typedef struct
 	int			*ResNo;
 	double		*ResConst;
 	
-	PRIORS		**Priors;
-
+	
 	int			PriorCats;
 
 	long long	Itters;
@@ -1068,11 +1065,8 @@ typedef struct
 
 	int			InvertV;
 
-	PRIORS		*PriorKappa;
-	PRIORS		*PriorDelta;
-	PRIORS		*PriorLambda;
-	PRIORS		*PriorGamma;
-	PRIORS		*PriorOU;
+	PRIOR		**AllPriors;
+	int			NoAllPriors;
 
 	char		*SaveTrees;
 
@@ -1089,9 +1083,7 @@ typedef struct
 	int			UseRJMCMC;
 	int			CapRJRatesNo;
 	int			MCMCMLStart;
-
-	PRIORS		*RJPrior;
-
+	
 	int			NodeData;
 	int			NodeBLData;
 	int			AlphaZero;
@@ -1124,7 +1116,6 @@ typedef struct
 	long		Seed;
 	int			MakeUM;
 
-//	int			UsePhyloPlasty;
 	int			UseVarRates;
 
 	int			UseEqualTrees;
@@ -1149,7 +1140,7 @@ typedef struct
 	double		ScaleTrees;
 
 	int			UseRJLocalScalar[NO_RJ_LOCAL_SCALAR];
-	PRIORS		**RJLocalScalarPriors;
+//	PRIOR		**RJLocalScalarPriors;
 
 //	int			UseGeoData;
 	int			FatTailNormal;
@@ -1248,13 +1239,12 @@ typedef struct
 
 	// RJ number of rates used currently
 	int		NoOfRJRates;
-
-	// Number of Priors. 
-//	int		NoOfRatePriors;
-	int		NoOfPriors;
-
+	
 	// Values for the rates being estimated. 
 	double	*Rates;
+
+	// The names of the paramters being estmated
+	char	**RateNames;
 
 	// Values for the all rates, inc constants and resections.  
 	double	*FullRates;
@@ -1272,16 +1262,13 @@ typedef struct
 	double	LnHastings;
 	double	LnJacobion;
 
-	PRIORS		**Prios;
-	PRIORS		*PriorKappa;
-	PRIORS		*PriorDelta;
-	PRIORS		*PriorLambda;
-	PRIORS		*PriorGamma;
-	PRIORS		*PriorOU;
 
-	double	*Means;
+	PRIOR		**Priors;
+	int			NoPriors;	
 
-	double	*Beta;
+	double		*Means;
+
+	double		*Beta;
 
 	double	Delta;
 	double	Lambda;
@@ -1393,7 +1380,7 @@ typedef enum
 	SHETERO, 
 	STREEMOVE,
 	SOU,
-	SGAMMA,
+	SGAMMAMOVE,
 	SRJDUMMY, 
 	SRJDUMMYMOVE,
 	SRJDUMMYCHANGEBETA,

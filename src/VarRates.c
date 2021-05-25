@@ -14,6 +14,8 @@
 #include "priors.h"
 #include "TransformTree.h"
 
+#include "gsl\gsl_cdf.h"
+
 
 extern double gamma(double x);
 extern double ndtr(double a);
@@ -86,28 +88,13 @@ char* VarRatesTypeToStr(TRANSFORM_TYPE Type)
 
 double	CalcNormalHasting(double x, double SD)
 {
-	return log(ndtr(x/SD));
+	double Ret;
+
+	Ret = gsl_cdf_gaussian_P(x, SD);
+//	Ret = ndtr(x/SD);
+
+	return log(Ret);
 }
-
-double	PPSGammaPDF(double x, double Alpha, double Beta)
-{
-	double Ret, s, T1, T2;
-
-	s = 1 / ((Alpha - 1) * Beta);
-
-	T1 = exp(-(x/s) / Beta);
-	T2 = pow(x/s, -1 + Alpha);
-	T2 = T1 * T2 * pow(Beta, -Alpha);
-	Ret = T2 / gamma(Alpha);
-
-	Ret = Ret / s;
-	
-	Ret = Ret * PPPRIORSCALE;
-
-	return Ret;
-}
-
-
 
 double	RandGamma(double Shape, double Scale)
 {
@@ -206,7 +193,7 @@ VARRATES*	CreatVarRates(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 #ifdef PPUNIFORM
 	Ret->Alpha = -1;
 #else
-	Ret->Alpha = PPALPHA;
+	Ret->Alpha = VARRATES_ALPHA;
 #endif
 
 	return Ret;
@@ -230,51 +217,6 @@ void	FreeVarRates(VARRATES* Plasty)
 	free(Plasty);
 }
 
-
-void	ScaledGammaTest(RANDSTATES *RS)
-{
-	double C, N;
-	double pC, pN, Heat;
-	int Index;
-
-	C = 1;
-	for(Index=0;Index<10000000;Index++)
-	{
-			
-		do
-		{
-			N = C;
-			N += (RandDouble(RS) * 0.5) - 0.25;
-//			N = C + (RandDouble(RS) - 0.5);
-		} while(N < 0);
-
-		pC = log(PPSGammaPDF(C, PPALPHA, PPBETA));
-		pN = log(PPSGammaPDF(N, PPALPHA, PPBETA));
-
-		Heat = pN - pC;
-
-		if(log(RandDouble(RS)) <= Heat)
-		{
-			C = N;
-			pC = pN;
-		}
-		
-		if(Index % 100 == 0)
-			printf("%d\t%f\t%f\n", Index, pC, C);
-	}
-
-	exit(0);
-
-}
-
-void	ScaleTest()
-{
-	double x;
-
-	for(x=0.0000001;x<20;x+=0.0001)
-		printf("%f\t%f\n", x, log(PPSGammaPDF(x, PPALPHA, PPBETA)));
-	exit(0);
-}
 
 VAR_RATES_NODE*	CreateVarRatesNode(long long It, NODE N)
 {
@@ -315,13 +257,13 @@ void	SetVRNodeBLRates(VAR_RATES_NODE *PNode, RANDSTATES *RS)
 #ifdef PPUNIFORM
 	PNode->Scale = RandDouble(RS) * PPMAXSCALE;
 #else
-	PNode->Scale = RandGamma(PPALPHA, PPBETA);
+	PNode->Scale = RandGamma(VARRATES_ALPHA, VARRATES_BETA);
 #endif
 }
 
 void	SetVRScalar(OPTIONS *Opt, RATES *Rates, VAR_RATES_NODE *PNode)
 {
-	PRIORS *Prior;
+	PRIOR *Prior;
 
 	Prior = GetPriorFromRJRatesScalar(Opt, PNode->Type);
 
@@ -467,6 +409,24 @@ double	ChangePlastyRateLambda(RANDSTATES	*RS, double Scale, double SD)
 	return Ret;
 }
 
+void	TestNormHasting(void)
+{
+	double X, Dev;
+	double LhP;
+	double LhG;
+
+	Dev = 2.0;
+	X = 0.1;
+
+	LhP = CalcNormalHasting(X, Dev);
+	LhP = exp(LhP);
+
+	LhG = gsl_cdf_gaussian_P(X, Dev);
+	LhG = gsl_cdf_gaussian_Q(X, Dev);
+
+	exit(0);
+}
+
 void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* Shed)
 {
 	VARRATES	*VarRates;
@@ -481,6 +441,9 @@ void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* She
 
 	No = RandUSLong(Rates->RS) % VarRates->NoNodes;
 	Node = VarRates->NodeList[No];
+
+//	TestNormHasting();
+
 
 	Rates->LnHastings = CalcNormalHasting(Node->Scale, Dev);
 //	Rates->LnHastings = 0;
@@ -1133,44 +1096,64 @@ void	ChangeVarRatesHyperPrior(RATES *Rates, OPTIONS *Opt)
 
 	VarRates = Rates->VarRates;
 
-	Rates->LnHastings = CalcNormalHasting(VarRates->Alpha - 1, PPALPHASCLAE);
+	Rates->LnHastings = CalcNormalHasting(VarRates->Alpha - 1, VARRATES_HP_ALPHA_SCLAE);
 	
 	do
 	{
-		NAlpha = RandNormal(Rates->RS, VarRates->Alpha, PPALPHASCLAE);
+		NAlpha = RandNormal(Rates->RS, VarRates->Alpha, VARRATES_HP_ALPHA_SCLAE);
 	} while(NAlpha <= 1);
 
 	VarRates->Alpha = NAlpha;
 }
 
-double	CaclVRPrior(VAR_RATES_NODE *PNode, double Alpha, double Beta, int *Err)
+PRIOR*	GetVRPrior(TRANSFORM_TYPE Type, RATES *Rates)
+{
+	if(Type == VR_BL)
+		return GetPriorFromName("VRBL", Rates->Priors, Rates->NoPriors);
+
+	if(Type == VR_NODE)
+		return GetPriorFromName("VRNode", Rates->Priors, Rates->NoPriors);
+
+	if(Type == VR_KAPPA)
+		return GetPriorFromName("Kappa", Rates->Priors, Rates->NoPriors);
+
+	if(Type == VR_DELTA)
+		return GetPriorFromName("Delta", Rates->Priors, Rates->NoPriors);
+
+	if(Type == VR_LAMBDA)
+		return GetPriorFromName("Lambda", Rates->Priors, Rates->NoPriors);
+
+	if(Type == VR_OU)
+		return GetPriorFromName("OU", Rates->Priors, Rates->NoPriors);
+
+	return NULL;
+}
+
+double	CaclVRPrior(VAR_RATES_NODE *PNode, RATES *Rates)
 {
 	double Ret;
+	PRIOR *Prior;
 
 	if(PNode->Type == VR_KAPPA && PNode->Scale >= MAX_VR_KAPPA)
-		*Err = TRUE;
+		return ERRLH;
 
 	if(PNode->Type == VR_DELTA && PNode->Scale >= MAX_VR_DELTA)
-		*Err = TRUE;
+		return ERRLH;
 
 	if(PNode->Type == VR_LAMBDA && PNode->Scale >= MAX_VR_LAMBDA)
-		*Err = TRUE;
+		return ERRLH;
 
 	if(PNode->Type == VR_OU && PNode->Scale >= MAX_VR_OU)
-		*Err = TRUE;
+		return ERRLH;
 	
-	if(*Err == TRUE)
-		return 0.0;
-
-//	if(PNode->Type == VR_DELTA)
-//		Ret = 1.0 / MAX_VR_DELTA;
-//	else
-		Ret = PPSGammaPDF(PNode->Scale, Alpha, Beta);
-
+	Prior = GetVRPrior(PNode->Type, Rates);
+	
+	Ret = CalcPriorPDFLh(PNode->Scale, Prior);
+	
 	return Ret;
 }
 
-double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt, int *Err)
+double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 {
 	double		Ret;
 	int			Index;
@@ -1178,26 +1161,19 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt, int *Err)
 	VAR_RATES_NODE	*PNode;
 	double		PVal;
 
-//	return Rates->Plasty->NoNodes * -2.302585093;
-
 	VarRates = Rates->VarRates;
 	Ret = 0;
-
-#ifdef PPUNIFORM
-	Ret = Plasty->NoNodes * -PPUNICOST;
-	return Ret;
-#endif
 
 	for(Index=0;Index<VarRates->NoNodes;Index++)
 	{
 		PNode = VarRates->NodeList[Index];
-//		PVal = PPSGammaPDF(PNode->Scale, Plasty->Alpha, PPBETA);
-		PVal = CaclVRPrior(PNode, VarRates->Alpha, PPBETA, Err);
 
-		if(*Err == TRUE)
+		PVal = CaclVRPrior(PNode, Rates);
+
+		if(PVal == ERRLH)
 			return ERRLH;
 
-		Ret += log(PVal);
+		Ret += PVal;
 	}
 
 	return Ret;
@@ -1328,9 +1304,6 @@ double	LhVarRatesList(OPTIONS *Opt, RATES *Rates, TREES *Trees, VAR_RATES_NODE**
 
 	return Ret;
 }
-
-
-
 
 void	RemoveEachVarRate(OPTIONS *Opt, RATES *Rates)
 {

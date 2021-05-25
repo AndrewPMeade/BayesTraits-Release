@@ -1078,3 +1078,14 @@ void*		CloneMem(size_t Size, void *Mem)
 
 	return Ret;
 }
+
+int StrICmp(char const *a, char const *b)
+{
+	int d;
+
+	for (;; a++, b++) {
+		d = tolower(*a) - tolower(*b);
+		if (d != 0 || !*a)
+			return d;
+	}
+}

@@ -3,11 +3,11 @@
 
 double		PDFNorm(double X, double Mean, double Var);
 double		PDFExp(double X, double Mean);
-double		PDFGamma(double X, double Alpha, double Beta);
+double		PDFGamma(double X, double Shape, double Scale);
 double		PDFBeta(double X, double Alpha, double Beta);
 double		PDFChi(double X, double Alpha, double Beta);
 double		PDFInvGamma(double X, double Alpha, double Beta);
-
+double		PDFSGamma(double x, double Alpha, double Beta);
 
 double		CDFNorm(double X, double Mean, double Var);
 double		CDFExp(double X, double Alpha);

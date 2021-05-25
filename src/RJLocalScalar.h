@@ -7,6 +7,6 @@ TRANSFORM_TYPE			NameToRJLocalType(char *Name);
 
 int						UseRJLocalScalars(OPTIONS *Opt);
 
-PRIORS*					GetPriorFromRJRatesScalar(OPTIONS *Opt, TRANSFORM_TYPE Type);
+PRIOR*					GetPriorFromRJRatesScalar(OPTIONS *Opt, TRANSFORM_TYPE Type);
 
 #endif

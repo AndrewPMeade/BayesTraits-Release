@@ -117,6 +117,25 @@ double		PDFChi(double X, double Alpha, double Beta)
 	return 1.0;
 }
 
+
+double	PDFSGamma(double x, double Alpha, double Beta)
+{
+	double Ret, s, T1, T2;
+
+	s = 1 / ((Alpha - 1) * Beta);
+
+	T1 = exp(-(x/s) / Beta);
+	T2 = pow(x/s, -1 + Alpha);
+	T2 = T1 * T2 * pow(Beta, -Alpha);
+	Ret = T2 / gamma(Alpha);
+
+	Ret = Ret / s;
+
+	Ret = Ret * PPPRIORSCALE;
+
+	return Ret;
+}
+
 double		PDFInvGamma(double X, double Alpha, double Beta)
 {
 	double Ret;

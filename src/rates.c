@@ -106,6 +106,25 @@ int		FindNoOfRates(OPTIONS *Opt)
 	return Ret;
 }
 
+char**	GetRateNames(OPTIONS *Opt)
+{
+	char **Ret;
+	int No, Index, Pos;
+
+	No = FindNoOfRates(Opt);
+
+	Ret = (char**)SMalloc(sizeof(char*) * No);
+
+	Pos = 0;
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+	{
+		if(Opt->ResTypes[Index] == RESNONE)
+			Ret[Pos++] = StrMake(Opt->RateName[Index]);
+	}
+
+	return Ret;
+}
+
 
 double	FindRateVal(int Pos, RATES *Rates, OPTIONS *Opt)
 {
@@ -414,7 +433,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	TREES	*Trees;
 
 	Rates->NoOfRates = 0;
-	Rates->Prios = NULL;
+
 	Rates->Means = NULL;
 	Rates->Rates = NULL;
 	Rates->Beta = NULL;
@@ -653,9 +672,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	RATES*	Ret;
 	int		Index;
 
-	Ret = (RATES*)malloc(sizeof(RATES));
-	if(Ret==NULL)
-		MallocErr();
+	Ret = (RATES*)SMalloc(sizeof(RATES));
 
 	Ret->NoOfFullRates	= Opt->NoOfRates;
 
@@ -663,17 +680,11 @@ RATES*	CreatRates(OPTIONS *Opt)
 		Ret->NoOfFullRates = 1;
 
 	Ret->NoOfRates		= FindNoOfRates(Opt);
+	Ret->RateNames		= GetRateNames(Opt);
 	Ret->NoOfRJRates	= -1;
 	Ret->TreeNo			= 0;
-	Ret->Prios			= NULL;
 	Ret->Rates			= NULL;
 
-	Ret->PriorGamma		= NULL;
-	Ret->PriorDelta		= NULL;
-	Ret->PriorKappa		= NULL;
-	Ret->PriorLambda	= NULL;
-	Ret->PriorOU		= NULL;
-	
 	Ret->Pis			= NULL;
 	Ret->FullRates		= NULL;
 	Ret->Means			= NULL;
@@ -722,12 +733,14 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	if(Opt->UseDistData == TRUE)
 		Ret->DistDataRates = CreateDistDataRates(Opt->DistData, Ret->RS);
+
+	if(Opt->Analsis == ANALMCMC)
+		CrateRatePriors(Opt, Ret);
 	
 	if(Opt->UseGamma == TRUE)
 	{
-		Ret->GammaMults= (double*)malloc(sizeof(double) * Opt->GammaCats);
-		if(Ret->GammaMults == NULL)
-			MallocErr();
+		Ret->GammaMults= (double*)SMalloc(sizeof(double) * Opt->GammaCats);
+
 		Ret->GammaCats = Opt->GammaCats;
 		
 		if(Opt->EstGamma == FALSE)
@@ -756,22 +769,14 @@ RATES*	CreatRates(OPTIONS *Opt)
 	}
 
 	if(Ret->NoOfRates > 0)
-	{
-		Ret->Rates = (double*)malloc(sizeof(double)*Ret->NoOfRates);
-		if(Ret->Rates == NULL)
-			MallocErr();
-	}
+		Ret->Rates = (double*)SMalloc(sizeof(double)*Ret->NoOfRates);
 
-	Ret->FullRates = (double*)malloc(sizeof(double)*Ret->NoOfFullRates);
-	if(Ret->FullRates == NULL)
-		MallocErr();
-
+	Ret->FullRates = (double*)SMalloc(sizeof(double)*Ret->NoOfFullRates);
+	
 	for(Index=0;Index<Ret->NoOfRates;Index++)
 		Ret->Rates[Index] = 1;
 
-	Ret->Pis = (double*)malloc(sizeof(double)*Opt->Trees->NoOfStates);
-	if(Ret->Pis == NULL)
-		MallocErr();
+	Ret->Pis = (double*)SMalloc(sizeof(double)*Opt->Trees->NoOfStates);
 
 	SetPiValues(Ret, Opt);
 
@@ -787,9 +792,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	{	
 		Ret->NoOfRJRates	= Ret->NoOfRates;
 
-		Ret->MappingVect = (int*)malloc(sizeof(int) * Ret->NoOfRates);
-		if(Ret->MappingVect == NULL)
-			MallocErr();
+		Ret->MappingVect = (int*)SMalloc(sizeof(int) * Ret->NoOfRates);
 
 		/* Inishal all rates to be in unique rate classes */
 		if(Opt->CapRJRatesNo == -1)
@@ -813,9 +816,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 	if(Ret->NoEstData > 0)
 	{
 		Ret->UseEstData = TRUE;
-		Ret->EstDescData = (int*)malloc(sizeof(int) * Ret->NoEstData);
-		if(Ret->EstDescData == NULL)
-			MallocErr();
+		Ret->EstDescData = (int*)SMalloc(sizeof(int) * Ret->NoEstData);
+
 		for(Index=0;Index<Ret->NoEstData;Index++)
 		{
 			if(Opt->Model == M_MULTISTATE)
@@ -1983,8 +1985,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 
 	if(Opt->Analsis == ANALMCMC)
 	{
-		A->NoOfPriors = B->NoOfPriors;
-		CopyRatePriors(A->Prios, B->Prios, B->NoOfPriors);
+		A->NoPriors = A->NoPriors;
+		for(Index=0;Index<A->NoPriors;Index++)
+			CopyPrior(A->Priors[Index], B->Priors[Index]);
 	}
 
 	if(Opt->UseGamma == TRUE)
@@ -1993,8 +1996,6 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 		A->GammaCats= B->GammaCats;
 
 		memcpy(A->GammaMults, B->GammaMults, sizeof(double) * A->GammaCats);
-
-		CopyPrior(A->PriorGamma, B->PriorGamma);
 	}
 
 	if(B->UseEstData == TRUE)
@@ -2603,13 +2604,11 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case SPPROR:
-			MutatePriorsNormal(Rates, Rates->Prios, Rates->NoOfPriors, Opt->HPDev);
+			MutatePriorsNormal(Rates, Rates->Priors, Rates->NoPriors, Opt->HPDev);
 		break;
 
 		case SESTDATA:
 			MutateEstRates(Opt, Rates, Shed);
-		/*	for(Index=0;Index<Rates->NoEstData;Index++)
-				Rates->EstData[Index] += (GenRandState(Rates->RandStates) * Opt->EstDataDev) - (Opt->EstDataDev / 2.0);*/
 		break;
 
 		case SSOLOTREEMOVE:
@@ -2640,7 +2639,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 			Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoOfTrees;
 		break;
 		
-		case SGAMMA:
+		case SGAMMAMOVE:
 			ChangeGammaRates(Rates, Shed);
 		break;
 
@@ -2686,6 +2685,10 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 
 	if(Rates->Rates != NULL)
 		free(Rates->Rates);
+
+	for(Index=0;Index<Rates->NoOfRates;Index++)
+		free(Rates->RateNames[Index]);
+	free(Rates->RateNames);
 
 	if(Rates->Pis != NULL)
 		free(Rates->Pis);

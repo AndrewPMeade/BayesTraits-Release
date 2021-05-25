@@ -37,55 +37,26 @@
 void	PrintPriorHeadder(FILE* Str, OPTIONS *Opt, RATES* Rates)
 {
 	int		PIndex;
-	PRIORS	*Prios;
+	PRIOR	*Prior;
 
-	if(Opt->UseRJMCMC == FALSE)
+	for(PIndex=0;PIndex<Rates->NoPriors;PIndex++)
 	{
-		for(PIndex=0;PIndex<Rates->NoOfRates;PIndex++)
+		Prior = Rates->Priors[PIndex];
+
+		if(Prior->UseHP == TRUE)
 		{
-			Prios = Rates->Prios[PIndex];
-
-			if(Prios->UseHP == TRUE)
+			switch(Prior->Dist)
 			{
-				switch(Prios->Dist)
-				{
-					case UNIFORM:
-						fprintf(Str, "%s-Min\t%s-Max\t", Opt->RateName[Prios->RateNo], Opt->RateName[Prios->RateNo]);
-						break;
-				
-					case EXP:
-						fprintf(Str, "%s-Mean\t", Opt->RateName[Prios->RateNo]);
-						break;
-
-					default:
-						fprintf(Str, "%s-Mean\t%s-Var\t", Opt->RateName[Prios->RateNo], Opt->RateName[Prios->RateNo]);
-				}
-			}
-		}
-	}
-	else
-	{
-		Prios = Opt->RJPrior;
-
-		if(Prios->UseHP == TRUE)
-		{
-			switch(Prios->Dist)
-			{
-				case UNIFORM:
-					fprintf(Str, "RJ Prior Min\tRJ Prior Max\t");
-				break;
-
 				case EXP:
-					fprintf(Str, "RJ Prior Mean\t");
+					fprintf(Str, "%s - Mean\t", Prior->Name);
 				break;
 
 				case GAMMA:
-					fprintf(Str, "RJ Alpha\tRJ Beta\t");
-				break;
-
+					fprintf(Str, "%s - Shape\t%s - Scale\t", Prior->Name, Prior->Name);
+	
 				default:
-					fprintf(Str, "RJ Mean\tRJ-Var\t");
-				break;
+					printf("%s::%d Hyper Prior not supported.", __FILE__, __LINE__);
+					exit(0);
 			}
 		}
 	}
@@ -93,16 +64,6 @@ void	PrintPriorHeadder(FILE* Str, OPTIONS *Opt, RATES* Rates)
 	fprintf(Str, "\n");
 }
 
-void	PrintPrior(FILE* Str, PRIORS *Prior)
-{
-	int	Index;
-
-	if(Prior->UseHP == FALSE)
-		return;
-
-	for(Index=0;Index<DISTPRAMS[Prior->Dist];Index++)
-		fprintf(Str, "%f\t", Prior->DistVals[Index]);
-}
 
 void	UpDateHMean(OPTIONS *Opt, RATES *Rates)
 {
@@ -131,11 +92,20 @@ void	UpDateHMean(OPTIONS *Opt, RATES *Rates)
 #endif
 }
 
+void	PrintPrior(FILE* Str, PRIOR *Prior)
+{
+	int	Index;
+
+	for(Index=0;Index<DISTPRAMS[Prior->Dist];Index++)
+		fprintf(Str, "%f\t", Prior->DistVals[Index]);
+}
+
 void	PrintMCMCSample(long long Itters, SCHEDULE* Shed, OPTIONS *Opt, RATES *Rates, FILE* Str)
 {
 	TREES*	Trees;
 	int		PIndex;
 	double	HMean;
+	PRIOR	*Prior;
 
 	Trees = Opt->Trees;
 
@@ -144,18 +114,16 @@ void	PrintMCMCSample(long long Itters, SCHEDULE* Shed, OPTIONS *Opt, RATES *Rate
 		
 	PrintRates(Str, Rates, Opt, Shed);
 
-	if(Opt->UseRJMCMC == FALSE)
+	for(PIndex=0;PIndex<Rates->NoPriors;PIndex++)
 	{
-		for(PIndex=0;PIndex<Rates->NoOfRates;PIndex++)
-			PrintPrior(Str, Rates->Prios[PIndex]);
+		Prior = Rates->Priors[PIndex];
+		if(Prior->UseHP == TRUE)
+			PrintPrior(Str, Rates->Priors[PIndex]);
 	}
-	else
-		PrintPrior(Str, Rates->Prios[0]);
 
 	fprintf(Str, "\n");
 
-//	fflush(stdout);
-
+	fflush(stdout);
 }
 
 void	PrintTest(int Itters, RATES* Rates)
@@ -285,6 +253,10 @@ int	FindValidStartRateAllSame(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	double CRate, BRate;
 	double CLh, BLh;
 
+	SetAllMCMCRates(1.0, Rates);
+	CLh = ValidMCMCParameters(Opt, Trees, Rates);
+
+
 	CRate = 100000;
 	BRate = -1.0;
 	BLh = ERRLH;
@@ -299,6 +271,7 @@ int	FindValidStartRateAllSame(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		}		
 
 		CRate = CRate * 0.1;
+
 	} while(CRate > 1E-20);
 
 	if(BLh == ERRLH)
@@ -306,19 +279,17 @@ int	FindValidStartRateAllSame(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	SetAllMCMCRates(BRate, Rates);
 	Rates->Lh = ValidMCMCParameters(Opt, Trees, Rates);
+
 	return TRUE;
 }
 
-double	RandFromPrior(RANDSTATES *RS, PRIORS *P)
+double	RandFromPrior(RANDSTATES *RS, PRIOR *P)
 {
 	double Mean, SD;
 	int Err;
 	double Ret;
 
 	Err = TRUE;	
-
-	if(P->Dist == BETA)
-		return RandDouble(RS);
 
 	if(P->Dist == UNIFORM)
 		return RandUniDouble(RS, P->DistVals[0], P->DistVals[1]);
@@ -332,7 +303,6 @@ double	RandFromPrior(RANDSTATES *RS, PRIORS *P)
 		SD = P->DistVals[0] * pow(P->DistVals[1], 2.0);
 		SD = sqrt(SD);
 	}
-		
 
 	if(P->Dist == INVGAMMA)
 	{
@@ -350,12 +320,12 @@ double	RandFromPrior(RANDSTATES *RS, PRIORS *P)
 
 double	RandFromPriorPosition(int Pos, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	PRIORS *P;
+	PRIOR *P;
 
 	if(Opt->UseRJMCMC == TRUE)
-		P = Rates->Prios[0];
+		P = GetPriorFromName("RJRates", Rates->Priors, Rates->NoPriors);
 	else
-		P =  Rates->Prios[Pos];
+		P =  GetPriorFromName(Rates->RateNames[Pos], Rates->Priors, Rates->NoPriors);;
 
 	return RandFromPrior(Rates->RS, P);
 }
@@ -388,8 +358,8 @@ void FindValidStartLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	}
 	
 	RandRatesFromPrior(Opt, Trees, Rates);
-
 }
+
 void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 #ifdef PHONEIM_RUN
@@ -413,8 +383,8 @@ void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		exit(0);
 		MLTree(Opt, Trees, Rates);
 	}
-	else
-		FindValidStartLh(Opt, Trees, Rates);
+	
+	FindValidStartLh(Opt, Trees, Rates);
 }
 
 void	ShowTimeSec(double StartT, double EndT)
@@ -471,23 +441,6 @@ int		ExitMCMC(OPTIONS *Opt, long long Itters)
 		return TRUE;	
 
 	return FALSE;
-}
-
-void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
-{
-	int Index;
-	PRIORS *P;
-
-	for(Index=0;Index<Rates->NoOfRates;Index++)
-	{
-		if(Opt->UseRJMCMC == FALSE)
-		{
-			P = Rates->Prios[Index];
-
-			if(P->Dist == UNIFORM)
-				Rates->Rates[Index] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
-		}
-	}
 }
 
 
@@ -574,23 +527,16 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	long		FP;
 #endif
 	
-	Shed		= NULL;
+	
+
 	ShedFile	= NULL;
-	CRates = NRates = NULL;
 	SaveModelF	= NULL;
 			
 	CRates	=	CreatRates(Opt);
 	NRates	=	CreatRates(Opt);
-		
-	CreatPriors(Opt, CRates);
-	CreatPriors(Opt, NRates);
-
 
 	Shed = CreatSchedule(Opt, CRates->RS);
 	
-	SetRatesToPriors(Opt, CRates);
-	SetRatesToPriors(Opt, NRates);
-
 	if(Opt->ModelType == MT_FATTAIL)
 	{
 		InitFatTailRates(Opt, Trees, CRates);
@@ -637,18 +583,11 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 //	SetVarRatesFromStr("64680000	456.345426	338.643858	16	2.631978	0.003743	1.100000	11	3.101924	23747469	Kappa	20	4.834260	23802931	Branch	23	3.525218	23803910	Branch	15	633.971682	23803921	Kappa	164	9.358599	64526669	Kappa	84	3.034389	64677737	Node	431	6.568727	64678104	Node	181	5.733636	64678397	Node	244	5.479540	64679268	Branch	26	1.634304	64679343	Node	100	1.204039	64679581	Node	233	7.079552	64679638	Branch	59	6.473202	64679780	Node	195	5.609137	64679832	Branch	325	9.689859	64679865	Branch	45	0.975597	64679910	Kappa	\0", CRates, Opt);
 //	SetVarRatesFromStr("1286940000	462.782556	341.393881	32	3.408467	0.003828	1.100000	164	19.825595	1285507302	Kappa	10	3.641360	1285543613	Kappa	16	14.043385	1285676718	Node	20	6.311118	1285677152	Branch	23	61.092926	1285677605	Branch	15	24.752145	1285677829	Kappa	11	16.287350	1285834783	Kappa	12	28.561212	1285919910	Node	14	33.714321	1286035856	Branch	19	0.127157	1286248466	Branch	13	44.946621	1286777888	Branch	395	11.139661	1286922071	Branch	161	0.396306	1286931542	Kappa	87	5.562612	1286934136	Branch	433	10.474905	1286935635	Node	120	6.248020	1286938212	Branch	284	3.690947	1286938845	Branch	374	3.322525	1286939083	Kappa	116	3.098829	1286939439	Kappa	221	2.047578	1286939463	Node	256	20.416036	1286939504	Node	107	0.358568	1286939650	Kappa	136	0.897210	1286939678	Branch	377	1.832391	1286939727	Kappa	398	0.119313	1286939755	Branch	57	16.939028	1286939782	Branch	287	2.412661	1286939786	Node	194	7.603891	1286939858	Branch	125	0.126994	1286939920	Kappa	220	8.858728	1286939933	Branch	320	7.863254	1286939974	Node	208	0.625917	1286939977	Kappa", CRates, Opt);
-
 //	LoadGeoData("11807000	-60.858809	1.663948	0.317928	-1.808946	-1.155580	-1.755331	-1.377126	1.149021	1.370203	-1.076007	1.017187	2.139111	0.541804	0.251747	0.508075	0.182317	", Opt, Trees, CRates);
 	
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
 
-	if(CRates->LhPrior == ERRLH)
-	{
- 		SetValidStartingPriors(Opt, Trees, CRates);
-		CRates->Lh	=	Likelihood(CRates, Trees, Opt);
-		CalcPriors(CRates, Opt);
-	}
 
 	if(Opt->UseSchedule == TRUE)
 		ShedFile = SetScheduleFile(Opt, Shed);
