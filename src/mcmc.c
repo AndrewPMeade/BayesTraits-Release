@@ -233,7 +233,7 @@ void	SetDefMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates, 	gsl_rng *RN
 			LR->Scale = GetRandValFromType(LR->Type, Rates, RNG);
 	}
 
-	if(Rates->NoEstData > 0)
+	if(Rates->NoEstData > 0 && Opt->DataType == CONTINUOUS)
 		SetEstDataFromPrior(Rates);
 }
 

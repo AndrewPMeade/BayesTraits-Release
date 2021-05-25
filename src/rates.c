@@ -2386,13 +2386,12 @@ void	MutateEstRatesDiscrete(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 
 	Site = RandUSLong(Rates->RS) % Rates->NoEstData;
 	Old = Rates->EstDescData[Site];
-//	do
-//	{
-		if(Opt->Model == M_MULTISTATE)
-			New = RandUSLong(Rates->RS) % Opt->Trees->NoStates;
-		else
-			New = RandUSLong(Rates->RS) % 2;
-//	} while(New == Old);
+
+	if(Opt->Model == M_MULTISTATE)
+		New = RandUSLong(Rates->RS) % Opt->Trees->NoStates;
+	else
+		New = RandUSLong(Rates->RS) % 2;
+
 	Rates->EstDescData[Site] = New;
 }
 
@@ -2412,8 +2411,6 @@ void	MutateEstRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 		MutateEstRatesDiscrete(Opt, Rates, Shed);
 		return;
 	}
-
-//	printf("Hello\n");
 
 //	Change1EstData(Opt, Rates); return;
 
@@ -2742,7 +2739,6 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 			ChangeTreeDistData(Opt, Rates);
 		break;
 
-
 		case S_TIME_SLICE_TIME:
 			ChangeTimeSliceTime(Rates, Shed);
 		break;
@@ -2962,6 +2958,7 @@ void	SetEstDataFromPrior(RATES *Rates)
 {
 	int Index, SiteNo;
 	PRIOR *Prior;
+
 
 	for(Index=0;Index<Rates->NoEstData;Index++)
 	{

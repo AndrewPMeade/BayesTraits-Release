@@ -285,7 +285,7 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 	FATTAILRATES *FTR;
 	double NLh, CLh, X, Y, Z, RX, RY, RZ;
 	STABLEDIST *SD;
-	int Changed;
+	int Changed, Tried;
 
 
 	FTR = Rates->FatTailRates;
@@ -295,14 +295,17 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 
 	CLh = GeoCalcAnsStateLh(X, Y, Z, N, SD);
 	Changed = FALSE;
+	Tried = 0;
 	do
 	{
 		GetRandXYZPoint(RS, X, Y, Z, &RX, &RY, &RZ, 2000);
+
 		NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
 
 		if(log(RandDouble(Rates->RS)) < (NLh - CLh))
 			Changed = TRUE;
-
+		else
+			Tried++;
 	} while(Changed == FALSE);
 
 	XYZToNode(N, RX, RY, RZ);

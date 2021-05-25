@@ -373,7 +373,7 @@ static char    *COMMANDSTRINGS[] =
 	"LocalTransform",	"lt",
 	"DistData",			"dd",
 	"NoLh",			"nl",
-	"SaveTrees",	"st",
+	"SaveTrees",	"savetree",
 	"CustomSchedule", "csched", 
 	"AddTimeSlice", "ats",
 	"AddPattern", "ap",
@@ -923,8 +923,6 @@ typedef struct
 	int			*NOSList;
 	char		**SiteSymbols;
 	TEMPCONVAR	*TempConVars;
-
-	double		NormConst;
 
 	int			JStop;
 

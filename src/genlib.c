@@ -471,6 +471,14 @@ void		MakeLower(char* Str)
 		Str[Index] = tolower(Str[Index]);
 }
 
+int	IsSapce(char C)
+{
+	if(C == ' ' || C == '\t')
+		return 1;
+
+	return 0;
+}
+
 int	MakeArgv(char*	string, char *argv[], int argvsize)
 {
 	char*	p = string;
@@ -480,7 +488,7 @@ int	MakeArgv(char*	string, char *argv[], int argvsize)
 	for(i=0; i<argvsize; i++)
 	{
 		/* Skip Leading whitespace */
-		while(isspace(*p)) p++;
+		while(IsSapce(*p)) p++;
 
 		if(*p != '\0')
 			argv[argc++] = p;
@@ -491,13 +499,12 @@ int	MakeArgv(char*	string, char *argv[], int argvsize)
 		}
 
 		/* Scan over arg */
-		while(*p != '\0' && !isspace(*p))
+		while(*p != '\0' && !IsSapce(*p))
 			p++;
 
 		/* Terminate argv */
 		if(*p != '\0' && i < argvsize - 1)
 			*p++ = '\0';
-
 	}
 
 	return argc;

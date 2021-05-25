@@ -246,7 +246,7 @@ void		PrintDistDataTaxa(FILE *Out, DIST_DATA_TAXA *TData, int NoSites)
 
 	if(TData->Linked == TRUE)
 	{
-		fprintf(Out, "%d Linked sites\n", TData->NoSites[0]);
+		fprintf(Out, "%d Linked samples\n", TData->NoSites[0]);
 		return;
 	}
 
@@ -254,7 +254,7 @@ void		PrintDistDataTaxa(FILE *Out, DIST_DATA_TAXA *TData, int NoSites)
 		fprintf(Out, "%d,", TData->NoSites[Index]);
 	fprintf(Out, "%d ", TData->NoSites[Index]);
 
-	fprintf(Out, "Unlinked sites\n");
+	fprintf(Out, "Unlinked samples\n");
 }
 
 void		PrintDistData(FILE *Out, DIST_DATA *DistData)

@@ -723,7 +723,6 @@ TREES*	LoadTrees(char* FileName)
 
 	FreeNTrees(PTrees);
 	
-	Ret->NormConst = FindTreeNormalise(Ret);
 
 	Ret->JStop	=	FALSE;
 
@@ -1871,13 +1870,12 @@ double	FindTreeNormalise(TREES *Trees)
 	TREE *T;
 	
 	Ret = 0;
-	
-	
+	NoBL = 0;
+	SumBL = 0;
+
 	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		T = Trees->Tree[TIndex];
-		SumBL = 0;
-		NoBL = 0;
 		for(Index=0;Index<T->NoNodes;Index++)
 		{
 			N = T->NodeList[Index];
@@ -1888,11 +1886,11 @@ double	FindTreeNormalise(TREES *Trees)
 			}
 		}
 
-		SumBL = SumBL / NoBL;
-		Ret += SumBL * (1.0 / Trees->NoTrees); 
+//		SumBL = SumBL / NoBL;
+//		Ret += SumBL * (1.0 / Trees->NoTrees); 
 	}
 
-//	Ret = SumBL / NoBL;
+	Ret = SumBL / NoBL;
 	
 	Ret = NORM_MEAN_BL / Ret;
 

@@ -851,6 +851,9 @@ double	CaclAnsStatePriors(RATES *Rates, OPTIONS *Opt)
 	PRIOR *Prior;
 	double Ret, PLh;
 
+	if(Opt->DataType == DISCRETE)
+		return 0.0;
+
 	Ret = 0;
 	for(Index=0;Index<Rates->NoEstData;Index++)
 	{

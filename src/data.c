@@ -205,22 +205,14 @@ int		EstData(TREES *Trees)
 {
 	TAXA	*Taxa;
 	int	TIndex;
-	int	SIndex;
-
+	
 	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
 	{
 		Taxa  = Trees->Taxa[TIndex];
 
-		if(Taxa->EstDepData == TRUE)
+		if(Taxa->EstData == TRUE)
 			return TRUE;
-
-		for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
-		{
-			if(Taxa->EstDataP[SIndex] == TRUE)
-				return TRUE;
-		}
 	}
-
 	return FALSE;
 }
 
@@ -336,13 +328,12 @@ int		IsSymbolInList(char Symbol, char* List)
 
 void	BildSymbolList(TREES *Trees)
 {
-	char*	Temp=NULL;
+	char*	Temp;
 	int		TIndex,SIndex,TokeIndex;
 
-	Temp = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Temp == NULL)
-		MallocErr();
-	Temp[0]='\0';
+	Temp = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
+	for(TIndex=0;TIndex<BUFFERSIZE;TIndex++)
+		Temp[TIndex] = '\0';
 
 	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
 	{
@@ -351,26 +342,21 @@ void	BildSymbolList(TREES *Trees)
 			for(TokeIndex=0;TokeIndex<(int)strlen(Trees->Taxa[TIndex]->DesDataChar[SIndex]);TokeIndex++)
 			{
 				if(IsSymbolInList(Trees->Taxa[TIndex]->DesDataChar[SIndex][TokeIndex], Temp) == FALSE)
-				{
-					Temp[strlen(Temp)+1] = '\0';
 					Temp[strlen(Temp)] = Trees->Taxa[TIndex]->DesDataChar[SIndex][TokeIndex];
-				}
 			}
 		}
 	}
 
 	/* To add a hiden state */
-/*	Temp[2] = '\0';
-	if(Temp[0] == '0')
-		Temp[1] = '1';
-	else
-		Temp[1] = '0';
+/*	if(strlen(Temp) == 1)
+	{
+		if(IsSymbolInList('0', Temp) == FALSE)
+			Temp[strlen(Temp)] = '0';
+		else
+			Temp[strlen(Temp)] = '1';
+	}
 */
-	Trees->SymbolList = (char*)malloc(sizeof(char)*strlen(Temp)+1);
-	
-	if(Trees->SymbolList == NULL)
-		MallocErr();
-	strcpy(Trees->SymbolList, Temp);
+	Trees->SymbolList = StrMake(Temp);
 
 	Trees->NoStates = (int)strlen(Trees->SymbolList);
 
@@ -549,6 +535,9 @@ void	FreeTaxa(TAXA *Taxa, int NoSites)
 	if(Taxa->EstDataP != NULL)
 		free(Taxa->EstDataP);
 
+	if(Taxa->RealData != NULL)
+		free(Taxa->RealData);
+
 	free(Taxa->Name);
 
 	free(Taxa);
@@ -689,9 +678,8 @@ void	SquashDep(TREES	*Trees)
 		
 		if(Taxa->EstData == TRUE)
 		{
-			Taxa->RealData = (char*)malloc(sizeof(char) * 3);
-			if(Taxa->RealData == NULL)
-				MallocErr();
+			Taxa->RealData = (char*)SMalloc(sizeof(char) * 3);
+			
 			Taxa->RealData[0] = Taxa->DesDataChar[0][0];
 			Taxa->RealData[1] = Taxa->DesDataChar[1][0];
 			Taxa->RealData[2] = '\0';
@@ -896,15 +884,11 @@ void	SetNewConTaxaData(TAXA *Taxa, RECNODE *RNode, TREES* Trees)
 {
 	int	Index;
 
-	Taxa->ConData		= (double*)malloc(sizeof(double) * Trees->NoSites);
-	if(Taxa->ConData == NULL)
-		MallocErr();
+	Taxa->ConData		= (double*)SMalloc(sizeof(double) * Trees->NoSites);
 
 /* Will have to chagne */
 
-	Taxa->EstDataP		= (char*)malloc(sizeof(char) * Trees->NoSites);
-	if(Taxa->EstDataP == NULL)
-		MallocErr();
+	Taxa->EstDataP		= (char*)SMalloc(sizeof(char) * Trees->NoSites);
 
 	Taxa->EstData		= FALSE;
 	

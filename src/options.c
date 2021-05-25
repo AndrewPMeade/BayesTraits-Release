@@ -1299,11 +1299,11 @@ void	PrintModelChoic(TREES *Trees)
 	#endif
 	}
 
-	if(Trees->ValidCData == TRUE)
-		printf("12)\tFat Tail\n");
+//	if(Trees->ValidCData == TRUE)
+//		printf("12)\tFat Tail\n");
 	
 	if(Trees->ValidCData == TRUE && Trees->NoSites == 2)
-		printf("13)\tGeo Data\n");
+		printf("13)\tGeo\n");
 }
 
 int		GetModelInt()
@@ -1420,8 +1420,8 @@ MODEL	IntToModel(int No)
 	if(No == 11)
 		return M_DESCHET;
 
-	if(No == 12)
-		return M_FATTAIL;
+//	if(No == 12)
+//		return M_FATTAIL;
 
 	if(No == 13)
 		return M_GEO;
@@ -1734,7 +1734,7 @@ void	SetPrior(OPTIONS *Opt, char *Name, int Tokes, char **argv)
 
 	if(CPrior == NULL)
 	{
-		printf("Cannot set prior on parameter %s.\n", Name);
+		printf("Cannot find prior %s, priors are case sensitive.\n", Name);
 		exit(0);
 	}
 
@@ -1783,7 +1783,8 @@ void	SetHyperPrior(OPTIONS *Opt, char *Name, int Tokes, char **argv)
 
 	if(CPrior == NULL)
 	{
-		printf("Cannot set prior on parameter %s.\n", Name);
+
+		printf("Cannot find prior %s, priors are case sensitive.\n", Name);
 		exit(0);
 	}
 
@@ -3294,9 +3295,15 @@ void	SetScaleTree(OPTIONS *Opt, char **Passed, int Tokes)
 {
 	double S;
 
-	if(Tokes != 2)
+	if(Tokes == 1)
 	{
-		printf("Scale Tree take a scale to change the tree length by.\n");
+		Opt->ScaleTrees = FindTreeNormalise(Opt->Trees);
+		return;
+	}
+
+	if(Tokes > 2)
+	{
+		printf("Scale Tree take a scale to multiple the branch lengths by.\n");
 		return;
 	}
 
