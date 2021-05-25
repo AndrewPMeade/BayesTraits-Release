@@ -491,9 +491,15 @@ int GetPlastyNode(int ID, PLASTY *Plasty, RJ_VARRATE_TYPE Type)
 
 	for(Index=0;Index<Plasty->NoNodes;Index++)
 	{
+
+#ifdef VARRATES_ONE_OP_PER_NODE
+		if(	Plasty->NodeList[Index]->Node->ID == ID)
+			return Index;
+#else
 		if(	Plasty->NodeList[Index]->Node->ID == ID && 
 			Plasty->NodeList[Index]->Type == Type)
 		return Index;
+#endif
 	}
 
 	return -1;
@@ -595,7 +601,6 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	NODE		N;
 	RJ_VARRATE_TYPE		Type;
 	
-
 	Type = GetVarRatesType(Rates->RS, Shed);
 		
 	Plasty = Rates->Plasty;
@@ -674,7 +679,7 @@ void	VarRatesCopy(RATES *R1, RATES *R2)
 	P1->Alpha = P2->Alpha;
 }
 
-void	ScaleNode(NODE N, PLASTYNODE *P)
+void	ScaleNode(NODE N,  PLASTYNODE *P)
 {
 	int Index;
 
@@ -689,7 +694,7 @@ void	ScaleNode(NODE N, PLASTYNODE *P)
 
 void	VarRatesNode(TREE *Tree, NODE N, PLASTYNODE *P)
 {
-
+	int Index;
 	int Norm;
 
 //	Norm = FALSE;
@@ -699,7 +704,7 @@ void	VarRatesNode(TREE *Tree, NODE N, PLASTYNODE *P)
 		N->Length = N->Length * P->Scale;
 
 	if(P->Type == VR_NODE)
-		ScaleNode(N, P);
+		ScaleNode(N,  P);	
 
 	if(P->Type == VR_KAPPA)
 		TransContNodeKappa(N, P->Scale, Norm);

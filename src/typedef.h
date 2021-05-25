@@ -102,6 +102,9 @@
 
 #define PPALPHASCLAE 0.1
 
+// Only allow one type (Node, BL, Kappa ect) of variables rates operator per node 
+#define VARRATES_ONE_OP_PER_NODE
+
 // use ML paramter for indpedent contrast MCMC / Var Rates
 //#define CONTRAST_ML_PARAM
 
