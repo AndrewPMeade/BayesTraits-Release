@@ -111,8 +111,6 @@
 // use ML paramter for indpedent contrast MCMC / Var Rates
 //#define CONTRAST_ML_PARAM
 
-
-
 // No kappa, lambda, delta, OU. 
 #define	NO_RJ_LOCAL_SCALAR	4
 
@@ -138,7 +136,6 @@
 //#define ID_MATRIX
 
 //extern double LhPraxis(LhPraxisdouble *);
-
 
 #define	LOGFILEBUFFERSIZE	65536
 
@@ -173,7 +170,7 @@
 #define MAX_GAMMA	100
 
 #define MIN_LOCAL_RATE 1E-07
-#define MAX_LOCAL_RATE 3
+#define MAX_LOCAL_RATE 10
 
 #define	NORM_MEAN_BL	0.1
 
@@ -184,7 +181,6 @@
 
 // Minimum number of taxa to transform a node. 
 #define MIN_TAXA_VR_TRANS	5
-
 
 // Value for a normal distribution for a fat tail model
 #define FAT_TAIL_NORMAL_VAL 2.0
@@ -244,7 +240,6 @@ typedef enum
 	CDELTA,
 	CLAMBDA,
 	CEXTTAXA,
-	CTAXAINFO,
 	CSAVETREES,
 	CTESTCORREL,
 	CSURFACE,
@@ -322,7 +317,6 @@ static char    *COMMANDSTRINGS[] =
 	"delta",		"dl",
 	"lambda",		"la", 
 	"excludetaxa",	"et",
-	"taxainfo",		"ti",
 	"savetrees",	"st",
 	"testcorrel",	"tc",
 	"surface",		"su",
@@ -545,8 +539,6 @@ typedef struct
 	// User supplied taxa number, may not be continues  
 	int		No;
 
-	// Index giving the position in the taxa array
-	int		Index;
 
 	char*	Name;
 	char**	DesDataChar;
@@ -655,10 +647,7 @@ struct INODE
 #endif
 
 	TAXA		*Taxa;
-
-//	int			*Part;
-//	int			PSize;
-
+	
 	PART		*Part;
 	
 	int			FossilState;
@@ -775,7 +764,7 @@ typedef	struct
 	FATTAILTREE*	FatTailTree;
 
 	double			AveBL;
-
+	
 // information needed to traverse the tree and accumulate partial results
 #ifdef BTOCL
     int* groups;

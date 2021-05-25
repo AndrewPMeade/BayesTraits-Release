@@ -143,7 +143,7 @@ void	SetTreePart(NODE N)
 	if(N->Tip == TRUE)
 	{
 		N->Part = CreatPart(1);
-		N->Part->Taxa[0] = N->Taxa->Index;
+		N->Part->Taxa[0] = N->Taxa->No;
 		return;
 	}
 
@@ -156,7 +156,6 @@ void	SetTreePart(NODE N)
 
 	N->Part = CreatPart(NoTaxa);
 	SetIntPart(N);
-//	PrintPart(N->Part);
 }
 
 void	FreeParts(TREES *Trees)
@@ -193,7 +192,7 @@ void	SetRecNodePart(RECNODE RNode)
 	Part = RNode->Part;
 
 	for(Index=0;Index<RNode->Part->NoTaxa;Index++)
-		Part->Taxa[Index] = RNode->Taxa[Index]->Index;
+		Part->Taxa[Index] = RNode->Taxa[Index]->No;
 
 	qsort(Part->Taxa, Part->NoTaxa, sizeof(int), PartCompID);
 }
@@ -315,7 +314,7 @@ PART*	CreatePart(TREES *Trees, int NoTaxa, char **TaxaList)
 			exit(0);
 		}
 		
-		Ret->Taxa[Index] = Taxa->Index;
+		Ret->Taxa[Index] = Taxa->No;
 	}
 
 	qsort(Ret->Taxa, Ret->NoTaxa, sizeof(int), PartCompID);

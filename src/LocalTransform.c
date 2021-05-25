@@ -100,7 +100,7 @@ void	ApplyLocalTransforms(RATES *Rates, TREES *Trees, OPTIONS *Opt, int Norm)
 		LRate = Rates->LocalTransforms[Index];
 		N = LRate->Tag->NodeList[Rates->TreeNo];
 		
-		VarRatesNode(Tree, N, LRate->Scale, LRate->Type);
+		VarRatesNode(Trees, Tree, N, LRate->Scale, LRate->Type);
 	}
 
 //	SaveTrees("sout.trees", Trees);exit(0);

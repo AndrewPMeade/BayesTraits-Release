@@ -493,8 +493,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	
 	if(Opt->Model == M_DESCHET)
 		PrintHetMap(Str, Opt, Opt->Trees);
-
-
+	
 	if(Opt->DistData != NULL)
 		PrintDistData(Str, Opt->DistData);
 
@@ -2473,7 +2472,7 @@ int		SetConVar(int Tokes, char** Passed, int *InUse, int *Est, double *Const)
 	return TRUE;
 }
 
-void	ExcludeTaxa(OPTIONS *Opt, int	Tokes, char **Passed)
+void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	int		Index;
 	int		No;
@@ -2482,52 +2481,27 @@ void	ExcludeTaxa(OPTIONS *Opt, int	Tokes, char **Passed)
 
 	for(Index=0;Index<Tokes;Index++)
 	{
-		
-		if(IsValidInt(Passed[Index]))
-		{
-			No	 = atoi(Passed[Index]);
-			Taxa = GetTaxaFromID(No, Opt->Trees->Taxa, Opt->Trees->NoOfTaxa);
-		}
-		else
-			Taxa = GetTaxaFromName(Passed[Index], Opt->Trees->Taxa, Opt->Trees->NoOfTaxa);
+		Taxa = GetTaxaFromName(Passed[Index], Opt->Trees->Taxa, Opt->Trees->NoOfTaxa);
 
 		if(Taxa == NULL)
 		{
-			printf("Paramiter %s cannot be converted to a valid taxa number of name\n", Passed[Index]);
-			return;
+			printf("Exclude Taxa, invalid taxa name %s\n", Passed[Index]);
+			exit(0);
 		}
+
+		CheckDelTaxa(Opt, Opt->Trees, Passed[Index]);
 
 		Name = Taxa->Name;
 
-		if(RemoveTaxa(Opt, Opt->Trees, Name) == FALSE)
-			return;
+		RemoveTaxa(Opt->Trees, Name);
 	}
-}
 
-void	PrintTaxaInfo(OPTIONS *Opt)
-{
-	int		TIndex;
-	TREES	*Trees;
-	char	Buffer[64];
-
-	Trees = Opt->Trees;
-
-	printf("Taxa Info\n");
-
-	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
-	{
-		printf("    ");
-		sprintf(&Buffer[0], "%d", Trees->Taxa[TIndex]->No);
-		PrintFixSize(&Buffer[0], 5, stdout);
-		printf("%s", Trees->Taxa[TIndex]->Name);
-		printf("\n");
-	}
+	SetParts(Opt->Trees);
 }
 
 void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
 {
 	PRIORS		*P;
-
 
 	if(Opt->UseRJMCMC == TRUE)
 	{
@@ -3402,13 +3376,13 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 	int				Est;
 	TAG				*Tag;
 	LOCAL_TRANSFORM		*UVR;
-
+/*
 	if(Opt->ModelType == MT_CONTINUOUS)
 	{
 		printf("Local Rates not not compatable with model.\n");
 		exit(1);
 	}
-	
+*/
 	if(!(Tokes == 3 || Tokes == 4))
 	{
 		printf("UserVarRates takes a tag, rate type (node, bl, kappa, lambda, delta, OU).\n");
@@ -3789,11 +3763,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		{
 			printf("The exclude taxa (et) command requires one or more taxa names or numbers\n");
 		}
-	}
-
-	if(Command == CTAXAINFO)
-	{
-		PrintTaxaInfo(Opt);
 	}
 
 	if(Command == CSAVETREES)

@@ -720,7 +720,7 @@ void	ScaleNode(NODE N,  double Scale)
 		ScaleNode(N->NodeList[Index], Scale);
 }
 
-void	VarRatesNode(TREE *Tree, NODE N, double Scale, TRANSFORM_TYPE Type)
+void	VarRatesNode(TREES *Trees, TREE *Tree, NODE N, double Scale, TRANSFORM_TYPE Type)
 {
 	int Norm;
 
@@ -747,7 +747,7 @@ void	VarRatesNode(TREE *Tree, NODE N, double Scale, TRANSFORM_TYPE Type)
 	if(Type == VR_OU)
 	{
 		SetTreeDistToRoot(Tree);
-		TransformTreeOU(N, Scale, Norm);
+		TransformTreeOU(Trees, N, Scale, Norm);
 	}
 }
 
@@ -796,7 +796,7 @@ void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 		SumBL = SumNodeBL(Tree->Root);
 
 	for(Index=0;Index<VarRates->NoNodes;Index++)
-		VarRatesNode(Tree, VarRates->NodeList[Index]->Node, VarRates->NodeList[Index]->Scale, VarRates->NodeList[Index]->Type);
+		VarRatesNode(Trees, Tree, VarRates->NodeList[Index]->Node, VarRates->NodeList[Index]->Scale, VarRates->NodeList[Index]->Type);
 
 	if(Normalise == FALSE)
 		return;

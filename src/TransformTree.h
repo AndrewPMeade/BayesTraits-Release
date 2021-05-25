@@ -9,7 +9,7 @@ void	TransformTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm);
 
 void	TransformTreeDelta(NODE N, double Delta, int Norm);
 void	TransformTreeKappa(NODE N, double Kappa, int Norm);
-void	TransformTreeOU(NODE N, double OU, int Norm);
+void	TransformTreeOU(TREES *Trees, NODE N, double OU, int Norm);
 void	TransformTreeLambda(NODE N, double Lambda, int Norm);
 
 int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates);

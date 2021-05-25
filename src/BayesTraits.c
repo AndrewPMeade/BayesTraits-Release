@@ -230,8 +230,6 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // ./Seq/Bug/Lloydcroptyrannonotmt.trees ./Seq/Bug/ConSim-000001.txt < ./Seq/Bug/in.txt > ./Seq/Bug/sout.txt
 // ./Seq/Lloydcroptyrannonotmt.trees ./Seq/ConSim-000001.txt < ./Seq/in.txt > ./Seq/sout.txt
 
-// 1.0 0.5 -10 10 1000 > sout.txt
-
 // ./Seq/Testing/Lloydcroptyrannonotmt.trees ./Seq/Testing/Lloydcroptyrannonotmt.txt < ./Seq/Testing/in.txt > ./Seq/Testing/sout.txt
 
 // ./Seq/Primates1.trees ./Seq/Primates.txt < in.txt > sout.txt
@@ -241,6 +239,8 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
 // ./Seq/MamTrees.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
+// ./Seq/MamTrees.trees ./Seq/MammalBody.txt < in.txt > sout.txt
+
 
 // ./Seq/StartLHTest/Somebird_tree_ladder.trees ./Seq/StartLHTest/song_coop_1.txt < in.txt > sout.txt
 // ./Seq/Testing/HTest/prim10k.trees ./Seq/Testing/HTest/l-lambdatest_1.txt < ./Seq/Testing/HTest/in.txt > ./Seq/Testing/HTest/sout.txt
@@ -248,10 +248,12 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // ./Seq/Mammal.trees ./Seq/MammalBrainBody.txt < in.txt > sout.txt
 
 // ./Seq/OUTest.trees ./Seq/OUTest.txt < in.txt > sout.txt
+// ./Seq/OUOut.trees ./Seq/OUTest.txt < in.txt > sout.txt
+
 int main(int argc, char** argv)
 {
 	TREES*		Trees;
-	OPTIONS*	Opt; 
+	OPTIONS*	Opt;
 	char		*TreeFN, *DataFN; 
 	int			NoSites;
 

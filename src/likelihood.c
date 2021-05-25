@@ -1129,11 +1129,11 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
 	if(Opt->ModelType == MT_CONTINUOUS)
 		return;
-
+	
 	if(NeedToReSetBL(Opt, Rates) == TRUE)
 	{
 		ReSetBranchLength(Trees->Tree[Rates->TreeNo]);
-
+				
 		TransformTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
 		ApplyLocalTransforms(Rates, Trees, Opt, NORMALISE_TREE_CON_SCALING);
@@ -1141,7 +1141,7 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		if(Rates->VarRates != NULL)
 			VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 		
-	//		SaveTrees("DTest.trees", Trees); exit(0);
+	//	SaveTrees("DTest.trees", Trees); exit(0);
 	}
 }
 

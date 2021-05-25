@@ -720,8 +720,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	if(Opt->UseDistData == TRUE)
 		Ret->DistDataRates = CreateDistDataRates(Opt->DistData, Ret->RS);
-
-
+	
 	if(Opt->UseGamma == TRUE)
 	{
 		Ret->GammaMults= (double*)malloc(sizeof(double) * Opt->GammaCats);
@@ -1210,6 +1209,8 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 	if(Opt->UseGamma == TRUE)
 		fprintf(Str, "Gamma\t");
 
+	PrintLocalRateHeader(Str, Opt);
+
 	PrintEstDataHeader(Str, Opt);
 
 	for(SiteIndex=0;SiteIndex<Opt->Trees->NoOfSites;SiteIndex++)
@@ -1498,6 +1499,15 @@ void	PrintLocalTransformNo(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_OU, Rates));
 }
 
+void	PrintRateLocalTransform(FILE *Str, RATES *Rates)
+{
+	int Index;
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+		if(Rates->LocalTransforms[Index]->Est == TRUE)
+			fprintf(Str, "%0.12f\t", Rates->LocalTransforms[Index]->Scale);
+}
+
 void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
 	int		Index;
@@ -1615,9 +1625,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	if(Opt->FixOU != -1)
 		fprintf(Str, "%0.12f\t", Opt->FixOU);
 
-	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
-		if(Rates->LocalTransforms[Index]->Est == TRUE)
-			fprintf(Str, "%0.12f\t", Rates->LocalTransforms[Index]->Scale);
+	PrintRateLocalTransform(Str, Rates);
 
 	if(Opt->NodeBLData == TRUE)
 	{
@@ -1910,6 +1918,8 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 
 	if(Opt->UseGamma == TRUE)
 		fprintf(Str, "%f\t", Rates->Gamma);
+
+	PrintRateLocalTransform(Str, Rates);
 
 	for(Index=0;Index<Rates->NoEstData;Index++)
 		fprintf(Str, "%c\t", Opt->Trees->SymbolList[Rates->EstDescData[Index]]);

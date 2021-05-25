@@ -20,6 +20,11 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates, int AlphaZero);
 
 void	FreeTempConVars(TEMPCONVAR* TempCon);
 
+void	SetNodesVPos(TREES *Trees, TREE *Tree);
+
 void	MapPartID(TREES* Trees, PART *Part, int *Map);
 int		GetMapID(TREES *Trees, int ID);
+
+void	VToTree(MATRIX *V, TREE *Tree);
+void	TreeToV(TREES* Trees, TREE *Tree, MATRIX *V);
 #endif

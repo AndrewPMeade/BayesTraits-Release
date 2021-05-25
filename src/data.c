@@ -753,7 +753,7 @@ void	RemoveConMissingData(TREES* Trees)
 	{
 		if(Trees->Taxa[Index]->Exclude == TRUE)
 		{
-			RemoveTaxa(NULL, Trees, Trees->Taxa[Index]->Name);
+			RemoveTaxa(Trees, Trees->Taxa[Index]->Name);
 			Index=-1;
 		}
 	}
@@ -959,8 +959,6 @@ void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
 		AddNewConTaxa(Trees, RNode);
 		AddNewRecNode(Trees, RNode);
 	}
-
-	SetTaxaIndex(Trees);
 
 	FreeParts(Trees);
 	SetParts(Trees);

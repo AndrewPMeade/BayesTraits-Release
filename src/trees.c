@@ -540,7 +540,6 @@ int		FindMaxPoly(TREES *Trees)
 
 	Ret->No				=	No;
 	Ret->Name			=	StrMake(Name);
-	Ret->Index			=	-1;
 
 	Ret->DesDataChar	=	NULL;
 	Ret->ConData		=	NULL;
@@ -554,13 +553,6 @@ int		FindMaxPoly(TREES *Trees)
 	 return Ret;
  }
 
- void	SetTaxaIndex(TREES *Trees)
- {
-	 int Index;
-
-	 for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		 Trees->Taxa[Index]->Index = Index;
- }
 
  double	CaclAveBL(TREE *Tree)
  {
@@ -611,6 +603,31 @@ int		FindMaxPoly(TREES *Trees)
 	return Ret;
  }
 
+
+ void	ReSetTreeTaxaID(TREE *Tree)
+ {
+	int Index;
+	NODE N;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+		if(N->Tip == TRUE)
+			N->TipID = N->Taxa->No;
+	}
+ }
+
+ void	ReSetTaxaID(TREES *Trees)
+ {
+	int Index;
+	
+	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+		Trees->Taxa[Index]->No = Index;
+	
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
+		ReSetTreeTaxaID(Trees->Tree[Index]);
+ }
+
 void	InitialTrees(TREES *Trees, NTREES *PTrees)
 {
 	int		Index;
@@ -626,18 +643,18 @@ void	InitialTrees(TREES *Trees, NTREES *PTrees)
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 		Trees->Taxa[Index] = InitTaxa(PTrees->Taxa[Index].No, PTrees->Taxa[Index].Name);
 
-	SetTaxaIndex(Trees);
-
 	Trees->Tree = (TREE**)malloc(sizeof(TREE*) * PTrees->NoOfTrees);
 	if(Trees->Tree == NULL)
 		MallocErr();
 
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 		Trees->Tree[Index] = InitTree(Trees, PTrees, Index);
+	
+	Trees->MaxNodes = FindMaxNodes(Trees);
+
+	ReSetTaxaID(Trees);
 
 	SetParts(Trees);
-
-	Trees->MaxNodes = FindMaxNodes(Trees);
 }
 
 void	TestTreeLoad(TREES *Trees)
@@ -1462,27 +1479,9 @@ int	RemoveTaxa(OPTIONS *Opt, TREES *Trees, char *TName)
 }
 */
 
-int	CheckDelTaxa(OPTIONS *Opt, TREES *Trees, char *TName)
-{
-	if(Trees->NoOfTaxa <= 2)
-	{
-		printf("There must be two or more taxa in a tree\n");
-		return FALSE;
-	}
 
-	if(Opt != NULL)
-	{
-		if(Opt->NoOfRecNodes != 0)
-		{
-			printf("There must be no node to reconsutct befor a taxa can be removed for a tree\n");
-			return FALSE;
-		}
-	}
 
-	return TRUE;
-}
-
-int	GetTaxaPos(OPTIONS *Opt, TREES *Trees, char *TName)
+int	GetTaxaPos(TREES *Trees, char *TName)
 {
 	int TIndex;
 
@@ -1602,7 +1601,7 @@ void	RemoveTaxaFromTree(TREES *Trees, TREE *Tree, char *TName)
 	SetNodeList(Tree);
 }
 
-void	RemoveTaxaRec(OPTIONS *Opt, TREES *Trees, int TaxaPos)
+void	RemoveTaxaRec(TREES *Trees, int TaxaPos)
 {
 	TAXA	**NewTaxaList;
 	char	**NewUsedTaxa;
@@ -1621,17 +1620,6 @@ void	RemoveTaxaRec(OPTIONS *Opt, TREES *Trees, int TaxaPos)
 		if(OldTIndex != TaxaPos)
 		{
 			NewTaxaList[NewTIndex] = Trees->Taxa[OldTIndex];
-/*
-			NewTaxaList[NewTIndex].Name			= Trees->Taxa[OldTIndex].Name;
-			NewTaxaList[NewTIndex].ConData		= Trees->Taxa[OldTIndex].ConData;
-			NewTaxaList[NewTIndex].DesDataChar	= Trees->Taxa[OldTIndex].DesDataChar;
-			NewTaxaList[NewTIndex].No			= Trees->Taxa[OldTIndex].No;
-			NewTaxaList[NewTIndex].Exclude		= Trees->Taxa[OldTIndex].Exclude;
-			NewTaxaList[NewTIndex].EstData		= Trees->Taxa[OldTIndex].EstData;
-			NewTaxaList[NewTIndex].EstDataP		= Trees->Taxa[OldTIndex].EstDataP;
-			NewTaxaList[NewTIndex].EstDepData	= Trees->Taxa[OldTIndex].EstDepData;
-			NewTaxaList[NewTIndex].Dependant	= Trees->Taxa[OldTIndex].Dependant;
-			NewTaxaList[NewTIndex].RealData		= Trees->Taxa[OldTIndex].RealData;*/
 			NewTIndex++;
 		}
 	}
@@ -1644,8 +1632,7 @@ void	RemoveTaxaRec(OPTIONS *Opt, TREES *Trees, int TaxaPos)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 		LinkTipsToTaxa(Trees->Tree[TIndex]->Root, Trees->Taxa, Trees->NoOfTaxa);
-
-
+	
 	NewUsedTaxa = (char**)malloc(sizeof(char*) * (Trees->NoOfRemovedTaxa + 1));
 	if(NewUsedTaxa == NULL)
 		MallocErr();
@@ -1660,29 +1647,53 @@ void	RemoveTaxaRec(OPTIONS *Opt, TREES *Trees, int TaxaPos)
 	Trees->NoOfRemovedTaxa++;
 }
 
-int	RemoveTaxa(OPTIONS *Opt, TREES *Trees, char *TName)
+void	CheckDelTaxa(OPTIONS *Opt, TREES *Trees, char *TName)
 {
-	int TaxaPos, TIndex;
+	int TaxaPos;
 
-	if(CheckDelTaxa(Opt, Trees, TName) == FALSE)
-		return FALSE;
+	if(Trees->NoOfTaxa <= 2)
+	{
+		printf("There must be two or more taxa in a tree\n");
+		exit(0);
+	}
 
-	TaxaPos = GetTaxaPos(Opt, Trees, TName);
+	TaxaPos = GetTaxaPos(Trees, TName);
 
 	if(TaxaPos == -1)
 	{
 		printf("Could not find taxa %s for deleting\n", TName);
-		return FALSE;
+		exit(0);
 	}
+	
+	if(Opt == NULL)
+		return;
+
+	if(Opt->NoOfRecNodes != 0)
+	{
+		printf("There must be no node to reconstruct before a taxa can be removed for a tree \n");
+		exit(0);
+	}
+
+
+	if(Opt->NoLocalTransforms != 0)
+	{
+		printf("There must be no local transforms before a taxa can be removed.");
+		exit(0);
+	}
+}
+
+void	RemoveTaxa(TREES *Trees, char *TName)
+{
+	int TaxaPos, TIndex;
+
+	TaxaPos = GetTaxaPos(Trees, TName);
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 		RemoveTaxaFromTree(Trees, Trees->Tree[TIndex], TName);
 
-	RemoveTaxaRec(Opt, Trees, TaxaPos);
-	
-	SetTaxaIndex(Trees);
-
-	return TRUE;
+	RemoveTaxaRec(Trees, TaxaPos);
+		
+	ReSetTaxaID(Trees);
 }
 
 void WriteTreeToFile(NODE n, NODE Root, FILE *F)
@@ -2222,36 +2233,7 @@ char*	GetTName(FILE *Str, TREES *Trees, int TNo)
 
 	return NULL;
 }
-/*
-void	PrintTreePart(FILE *Str, TREES *Trees, int TNo)
-{
-	int i, Index, Pos;
-	TREE *Tree;
-	NODE N;
 
-	Tree = Trees->Tree[TNo];
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-
-		if(N->Tip == TRUE)
-			fprintf(Str, "[%s]\t", N->Taxa->Name);
-		else
-		{
-			fprintf(Str, "[");
-			for(i=0;i<N->PSize-1;i++)
-			{
-				Pos = N->Part[i];
-				fprintf(Str, "%s,", GetTName(Str, Trees, Pos));
-			}
-			Pos = N->Part[i];
-			fprintf(Str, "%s", GetTName(Str, Trees, Pos));
-			fprintf(Str, "]\t");
-		}
-	}
-}
-*/
 void	NormaliseTrees(double NormC, TREES *Trees)
 {
 	int Index, TIndex;

@@ -5,6 +5,8 @@
 
 TREES*	LoadTrees(char* FileName);
 
+void	ReSetTaxaID(TREES *Trees);
+
 void	FreeTrees(TREES* Trees, OPTIONS *Opt);
 void	AllocPartial(OPTIONS *Opt, TREES* Trees, int Gamma);
 TAXA*	GetTaxaFromID(int ID, TAXA **Taxa, int NoOfTaxa);
@@ -18,8 +20,8 @@ double	GetStateProbPct(int State, int NoOfStates, double *Part);
 
 int		SymbolToPos(char Symbol, char *List);
 int		SiteHadUnKnownState(char *StatList);
-void	AllocConVarCoVar(TREES* Trees);
-int		RemoveTaxa(OPTIONS *Opt, TREES *Trees, char *TName);
+void	RemoveTaxa(TREES *Trees, char *TName);
+void	CheckDelTaxa(OPTIONS *Opt, TREES *Trees, char *TName);
 
 void	SaveTrees(char	*FileName, TREES* Trees);
 
@@ -37,8 +39,6 @@ void	SetNodeIDs(TREE* Tree);
 
 void	ListOddPPTaxa(TREES *Trees);
 
-void	PrintTreePart(FILE *Str, TREES *Trees, int TNo);
-
 double	FindTreeNormalise(TREES *Trees);
 void	NormaliseTrees(double NormC, TREES *Trees);
 
@@ -55,7 +55,6 @@ int		TaxaIndexToNo(TREES *Trees, int Index);
 int		TaxaNoToIndex(TREES *Trees, int ID);
 
 void	ReSetBranchLength(TREE *Tree);
-void	SetAsUserBranchLength(TREE *Tree);
 void	SetTreesDistToRoot(TREES *Trees);
 void	SetTreeDistToRoot(TREE *Tree);
 void	RecSetDistToRoot(NODE N);
@@ -66,5 +65,4 @@ void	ScaleSubTree(NODE N, double Scale);
 void	ScaleTrees(TREES *Trees, double Scale);
 void	ScaleUserTrees(TREES *Trees, double Scale);
 
-void	SetTaxaIndex(TREES *Trees);
 #endif
