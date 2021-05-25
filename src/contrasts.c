@@ -271,13 +271,15 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	CalcContrast(Trees, Rates);	
 	
-//	if(Opt->Analsis == ANALML)
+	if(Opt->Analsis == ANALML)
 	{
 		CalcContLh(Opt, Trees, Rates);
 		Con->EstAlpha[0] = Con->Alpha[0];
 		Con->EstSigma[0] = Con->Sigma[0];
 		return Rates->Lh;
 	}
+
+//	Con->EstSigma[0] = Con->Sigma[0];
 
 	Con->AlphaErr = CalcMCMCAlpha(Trees->Tree[0].Root, Con->EstAlpha[0]);
 	CalcContrastMCMC(Opt, Trees, Rates);
@@ -346,13 +348,13 @@ double	MLContrastPraxis(void* P, double *List)
 	return -PState->Rates->Lh;
 }
 
-double	ChangeContrastRate(double Rate, double dev, RANDSTATES *RS)
+double	ChangeContrastRate(double Rate, double Dev, RANDSTATES *RS)
 {
 	double Ret;
 	
 	do
 	{
-		Ret = (GenRandState(RS) * dev) - (dev / 2.0); 
+		Ret = (GenRandState(RS) * Dev) - (Dev / 2.0); 
 		Ret += Rate;
 	} while(Ret <= 0);
 
@@ -363,20 +365,24 @@ void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 	int			Index;
 	CONTRASTR*	Con;
+	double		Dev;
 
 	Con = Rates->Contrast;
 
 	if(GenRandState(Rates->RandStates) < 0.5)
 	{
-		for(Index=0;Index<Trees->NoOfSites;Index++)
-			Con->EstAlpha[Index] += (GenRandState(Rates->RandStates) * Opt->RateDev) - (Opt->RateDev / 2.0);
-	}	else
-	{
-		for(Index=0;Index<Trees->NoOfSites;Index++)
-			Con->EstSigma[Index] = ChangeContrastRate(Con->EstSigma[Index], Opt->RateDev, Rates->RandStates);
-	}
-}
+		Dev = Opt->RateDevList[0];
 
+		for(Index=0;Index<Trees->NoOfSites;Index++)
+			Con->EstAlpha[Index] += (GenRandState(Rates->RandStates) * Dev) - (Dev / 2.0);
+	}	
+	else
+	{
+		Dev = Opt->RateDevList[1];
+		for(Index=0;Index<Trees->NoOfSites;Index++)
+			Con->EstSigma[Index] = ChangeContrastRate(Con->EstSigma[Index], Dev, Rates->RandStates);
+	} 
+}
 
 void	CopyContrastRates(RATES* R1, RATES* R2, int NoSites)
 {

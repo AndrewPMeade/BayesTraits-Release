@@ -23,7 +23,8 @@
 */
 #endif
 
-#define PPCOST 3
+#define PPMASSDEL 10
+#define PPCOST 2
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000

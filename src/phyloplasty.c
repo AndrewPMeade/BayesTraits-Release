@@ -131,11 +131,10 @@ void	FreePlasty(PLASTY* Plasty)
 	free(Plasty);
 }
 
-void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+
+void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N)
 {
 	PLASTYNODE	*PNode;
-	TREE		*T;
-	NODE		N;
 	PLASTY		*Plasty;
 
 	Plasty = Rates->Plasty;
@@ -146,12 +145,9 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 
 	PNode->NodeID = Plasty->NoID++;
 
-	T = &Trees->Tree[0];
-	N = Plasty->ValidNode[rand() % Plasty->NoValidNode];
-
 	PNode->Node = N;
 
-	if(GenRandState(Rates->RandStates) < 0.20)
+	if(GenRandState(Rates->RandStates) < 0.1)
 		PNode->Type = PPBRANCH;
 	else
 		PNode->Type = PPNODE;
@@ -163,15 +159,64 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 
 	Plasty->NodeList = (PLASTYNODE**) AddToList(&Plasty->NoNodes, Plasty->NodeList, (void*)PNode);
 
-//	Rates->LhPrior = 300;
 	Rates->LogHRatio= -PPCOST;
 }
 
-void	PlastyDel(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+void	DelNNodes(PLASTY *Plasty, int NoDel)
+{
+	int No;
+	int Pos;
+
+	No = 0;
+	do
+	{
+		do
+		{
+			Pos = rand() % Plasty->NoNodes;
+		}while(Plasty->NodeList[Pos] == NULL);
+
+		free(Plasty->NodeList[Pos]);
+		Plasty->NodeList[Pos] = NULL;
+		No++;
+	} while(No != NoDel);
+}
+
+void	MassRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
 	PLASTY		*Plasty;
 	PLASTYNODE	**NList;
-	int			Index, No;
+	int			Index;
+	int			No;
+
+	Plasty = Rates->Plasty;
+
+	if(Plasty->NoNodes <= PPMASSDEL)
+		return;
+
+	DelNNodes(Plasty, PPMASSDEL);
+
+	NList = (PLASTYNODE**)malloc(sizeof(PLASTYNODE*) * (Plasty->NoNodes - PPMASSDEL));
+	if(NList == NULL) MallocErr();
+
+	No = 0;
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+	{
+		if(Plasty->NodeList[Index] != NULL)
+			NList[No++] = Plasty->NodeList[Index];
+	}
+
+	free(Plasty->NodeList);
+	Plasty->NodeList = NList;
+	Plasty->NoNodes = Plasty->NoNodes - PPMASSDEL;
+
+	Rates->LogHRatio= PPCOST * PPMASSDEL;
+}
+
+void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
+{
+	PLASTY		*Plasty;
+	PLASTYNODE	**NList;
+	int			Index;
 	
 	Plasty = Rates->Plasty;
 
@@ -181,10 +226,9 @@ void	PlastyDel(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 		free(Plasty->NodeList);
 		Plasty->NodeList = NULL;
 		Plasty->NoNodes = 0;
+		Rates->LogHRatio= PPCOST;
 		return;
 	}
-
-	No = rand() % Plasty->NoNodes;
 
 	free(Plasty->NodeList[No]);
 	Plasty->NodeList[No] = NULL;
@@ -295,29 +339,75 @@ void	MutatePlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 		Node->Scale = ChangePlastyRate(Node->Scale, Opt->RateDev, Rates->RandStates);
 }
 
+int GetPlastyNode(int ID, PLASTY *Plasty)
+{
+	int Index;
+
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+		if(Plasty->NodeList[Index]->Node->ID == ID)
+			return Index;
+
+	return -1;
+}
+
 void	PlastyMove(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
-	PLASTY *Plasty;
+	PLASTY *	Plasty;
+	int			PNodeID;
+	NODE		N;
 
 	Plasty = Rates->Plasty;
 
-	if(Plasty->NoNodes == 0)
+	if((Plasty->NoNodes > 0) && (GenRandState(Rates->RandStates) < 0.3))
 	{
-		PlastyAdd(Rates, Trees, Opt);
+		MutatePlasty(Rates, Trees, Opt);
 		return;
 	}
-
-	if(GenRandState(Rates->RandStates) < 0.2)
+/*
+	if((Plasty->NoNodes > PPMASSDEL) && (GenRandState(Rates->RandStates) < 0.01))
 	{
-		PlastyDel(Rates, Trees, Opt);
+		MassRemove(Rates, Trees, Opt);
 		return;
 	}
+*/
+	N = Plasty->ValidNode[rand() % Plasty->NoValidNode];
+	PNodeID = GetPlastyNode(N->ID, Plasty);
 
-	if(GenRandState(Rates->RandStates) < 0.5)
-		PlastyAdd(Rates, Trees, Opt);
+	if(PNodeID == -1)
+		PlastyAdd(Rates, Trees, Opt, N);		
 	else
-		MutatePlasty(Rates, Trees, Opt);	
+		DelPlastyNode(Rates, Trees, Opt, PNodeID);		
 }
+
+/*
+void	PlastyMove(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+{
+	PLASTY *	Plasty;
+	int			PNodeID;
+	NODE		N;
+
+	Plasty = Rates->Plasty;
+
+	if( (Plasty->NoNodes > 0) && 
+		(GenRandState(Rates->RandStates) < 0.3))
+	{
+		MutatePlasty(Rates, Trees, Opt);
+		return;
+	}
+
+	
+	if((GenRandState(Rates->RandStates) < 0.2) && (Plasty->NoNodes > 0))
+	{
+		PNodeID = rand() % Plasty->NoNodes;		
+		DelPlastyNode(Rates, Trees, Opt, PNodeID);
+	}
+	else
+	{
+		N = Plasty->ValidNode[rand() % Plasty->NoValidNode];
+		PlastyAdd(Rates, Trees, Opt, N);	
+	}
+}
+*/
 
 PLASTYNODE *ClonePlastyNode(PLASTYNODE *N2)
 {
@@ -508,7 +598,7 @@ void	GetNodeIDList(NODE N, int *Size, int *List)
 
 void	InitPPFiles(OPTIONS *Opt, TREES *Trees, RATES* Rates)
 {
-	InitPPTreeFile(Opt, Trees);
+//	InitPPTreeFile(Opt, Trees);
 	IntiPPLogFile(Opt, Trees, Rates);
 }
 
@@ -558,7 +648,6 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 	Out = Opt->PPLog;
 
 	fprintf(Out, "%d\t%f\t%d\t", It, Rates->Lh, P->NoNodes);
-
 	fprintf(Out, "%f\t%f\t", Rates->Contrast->EstAlpha[0], Rates->Contrast->EstSigma[0]);
 
 	for(Index=0;Index<P->NoNodes;Index++)
@@ -582,6 +671,6 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 
 void	PrintPPOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 {
-	PrintPPTree(Opt, Trees, Rates, It);
+//	PrintPPTree(Opt, Trees, Rates, It);
 	LogPPResults(Opt, Trees, Rates, It);
 }

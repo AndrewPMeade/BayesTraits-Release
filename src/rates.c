@@ -2242,10 +2242,10 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 			if(Opt->ResTypes[Index] == RESNONE)
 				Rates++;
 
-//	if(Rates == 0)
+	if(Rates == 0)
 		Shed->OptFreq[0] = 0;
-//	else
-//		Shed->OptFreq[0] = Left;
+	else
+		Shed->OptFreq[0] = Left;
 	
 	if(Opt->UseModelFile == TRUE)
 		Shed->OptFreq[0] = 0.3;
