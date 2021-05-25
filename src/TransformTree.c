@@ -72,7 +72,7 @@ void	TransformTreeKappa(NODE N, double Kappa, int Norm)
 
 	for(Index=0;Index<N->NoNodes;Index++)
 		RecTransContNodeKappa(N->NodeList[Index], Kappa, 0);
-		
+
 	if(Norm == FALSE)
 		return;
 
@@ -103,11 +103,11 @@ double GetOUTaxaDist(TREES *Trees, NODE N, double PathLen)
 	double Ret, XDist, YDist;
 
 	if(N->Tip == TRUE)
-		return 0;	
+		return 0;
 
 	if(N->Ans == NULL)
 		return N->Length;
-	
+
 
 	XID = Trees->Taxa[N->VPosX]->No;
 	YID = Trees->Taxa[N->VPosY]->No;
@@ -147,7 +147,7 @@ void	RecTransContNodeOU(TREES *Trees, NODE N, double OU, double T, double PathLe
 	TLen = N->Length + PathLen;
 	Dist1 = GetOUTaxaDist(Trees, N, TLen);
 	Dist2 = GetOUTaxaDist(Trees, N->Ans, PathLen);
-	
+
 //	N->Length = CaclOU(PathLen+N->Length, OU, T, Dist) - CaclOU(PathLen, OU, T, Dist);
 	N->Length = CaclOU(PathLen+N->Length, OU, T, Dist1) - CaclOU(PathLen, OU, T, Dist2);
 
@@ -190,7 +190,7 @@ void	TransformTreeOU(TREES *Trees, NODE N, double OU, int Norm)
 {
 	double SumBL,Scale, T;
 	int Index;
-	
+
 //	TestNOUT(N);	exit(0);
 
 	if(Norm == TRUE)
@@ -204,7 +204,7 @@ void	TransformTreeOU(TREES *Trees, NODE N, double OU, int Norm)
 
 	MATRIX *V;
 
-	V = AllocMatrix(Trees->NoOfTaxa, Trees->NoOfTaxa);
+	V = AllocMatrix(Trees->NoTaxa, Trees->NoTaxa);
 	RecSetDistToRoot(N);
 	TreeToV(Trees, Trees->Tree[0], V);
 //	VToTree(V, Trees->Tree[0]);
@@ -220,7 +220,7 @@ void	TransformTreeOU(TREES *Trees, NODE N, double OU, int Norm)
 	Scale = SumBL / SumNodeBL(N);
 	ScaleSubTree(N, Scale);
 
-	
+
 }
 */
 
@@ -243,7 +243,7 @@ void	RecTransContNodeOU(NODE N, double OU, double T, double PathLen)
 	double TLen;
 
 	TLen = N->Length + PathLen;
-	
+
 	N->Length = CaclOU(PathLen+N->Length, OU, T) - CaclOU(PathLen, OU, T);
 
 	if(N->Tip == TRUE)
@@ -275,7 +275,7 @@ void	TestNOUT(NODE N)
 	if(N->Tip == TRUE)
 		return;
 
-	
+
 
 	for(Index=0;Index<N->NoNodes;Index++)
 		TestNOUT(N->NodeList[Index]);
@@ -310,7 +310,7 @@ void	RecTransContNodeLambda(NODE N, double Lambda,  double PathLen)
 {
 	double	TLen;
 	int		Index;
-	
+
 	if(N->Tip == TRUE)
 	{
 		N->Length = N->DistToRoot - PathLen;
@@ -329,13 +329,13 @@ void	TransformTreeLambda(NODE N, double Lambda, int Norm)
 {
 	double SumBL, Scale;
 	int Index;
-		
+
 	if(Norm == TRUE)
 		SumBL = SumNodeBL(N);
-	
+
 	for(Index=0;Index<N->NoNodes;Index++)
 		RecTransContNodeLambda(N->NodeList[Index], Lambda,  N->DistToRoot);
-	
+
 	if(Norm == FALSE)
 		return;
 
@@ -362,10 +362,10 @@ int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates)
 
 	if(Opt->UseDelta == TRUE)
 		return TRUE;
-	
+
 	if(Opt->UseLambda == TRUE)
 		return TRUE;
-	
+
 	return FALSE;
 }
 
@@ -376,7 +376,7 @@ void	TransformTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 
 	Tree = Trees->Tree[Rates->TreeNo];
 	Root = Tree->Root;
-	
+
 	if(Opt->UseKappa == TRUE)
 	{
 		if(Opt->EstKappa == TRUE)
@@ -399,10 +399,10 @@ void	TransformTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Norm)
 	{
 		if(Opt->EstDelta == TRUE)
 			TransformTreeDelta(Root, Rates->Delta, Norm);
-		else 
+		else
 			TransformTreeDelta(Root, Opt->FixDelta, Norm);
 	}
-		
+
 	if(Opt->UseLambda == TRUE)
 	{
 //		return;

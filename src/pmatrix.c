@@ -564,7 +564,7 @@ double	CreateDiscretePMat(double t, INVINFO *InvInfo, MATRIX *Mat, TREES* Trees,
 	double	*Val;
 	double	**Vec, **InvVec, **M, **Am;
 	
-	NOS		= Trees->NoOfStates;
+	NOS		= Trees->NoStates;
 	Val		= InvInfo->val;
 	Vec		= InvInfo->vec->me;
 	InvVec	= InvInfo->inv_vec->me;
@@ -735,7 +735,7 @@ double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, M
 	double	t1, t2;
 	int		NOS;
 	
-	NOS		= Trees->NoOfStates;
+	NOS		= Trees->NoStates;
 	
 	for(i=0;i<NOS;i++)
 		Et[i] = exp(t*InvInfo->val[i]);

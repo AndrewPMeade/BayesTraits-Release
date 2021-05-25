@@ -59,7 +59,7 @@ int		ValidTaxa(NODE N)
 		return TRUE;
 
 	Ans = N->Ans;
-	
+
 	for(Index=0;Index<Ans->NoNodes;Index++)
 	{
 		NN = Ans->NodeList[Index];
@@ -89,7 +89,7 @@ void	TestTreeLh(OPTIONS *Opt, TREES *Trees)
 		N = Tree->NodeList[Index];
 		if(N->Tip == TRUE)
 		{
-			
+
 			if(ValidTaxa(N) == FALSE)
 			{
 				printf("%s\t%f\tNo\n", N->Taxa->Name, N->Taxa->ConData[0]);
@@ -118,7 +118,7 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 		(*DataFN) = StrMake(argv[2]);
 		return;
 	}
-	
+
 	printf("BayesTraits take a tree file and a data file, it is run form the command line.\nPlease read the manual for more information.\n");
 	printf("Press enter to leave.\n");
 	fgets(&Line[0], 64, stdin);
@@ -128,11 +128,11 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // Full optermisation
 //	cl /Ox /Oi /Ob2 /Ot /Oy /GL /w *.c ./MathLib/*.c
 
-// gcc -O3 -fomit-frame-pointer -lm 
+// gcc -O3 -fomit-frame-pointer -lm
 
 // Big Lh + OpenMP
 // gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DOPENMP_THR -fopenmp
-// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DOPENMP_THR -fopenmp -Dwarn _unused_result 
+// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DOPENMP_THR -fopenmp -Dwarn _unused_result
 
 
 // Threaded + quad math
@@ -144,7 +144,7 @@ int main(int argc, char** argv)
 {
 	TREES*		Trees;
 	OPTIONS*	Opt;
-	char		*TreeFN, *DataFN; 
+	char		*TreeFN, *DataFN;
 	int			NoSites;
 
 //	FatTailTest(argc, argv);
@@ -172,31 +172,31 @@ int main(int argc, char** argv)
 
 	Trees  = LoadTrees(TreeFN);
 
-	if(Trees->NoTrees == 0) 
+	if(Trees->NoTrees == 0)
 	{
 		printf("Could not load any valid trees\n");
 		exit(0);
 	}
 
 	LoadData(DataFN, Trees);
-	
+
 	Opt = SetUpOptions(Trees, TreeFN, DataFN);
 
 	PrintOptions(stdout, Opt);
 
 	GetOptions(Opt);
 	CheckOptions(Opt);
-	
+
 	#ifdef BTOCL
 	btocl_init_runtime(CL_DEVICE_TYPE_GPU);
 	//btocl_load_all(Opt,Trees);
-	if (btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE,
-			Trees->NoOfStates, Trees->NoOfSites) != 0) {
+	if (btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE, Trees->NoStates, Trees->NoSites) != 0)
+	{
 		printf("Error: Couldn't load OpenCL kernels\n");
 		return 1;
 	}
 	#endif
-	
+
 	PreProcess(Opt, Trees);
 
 	if(Opt->Analsis == ANALMCMC)
@@ -213,12 +213,12 @@ int main(int argc, char** argv)
 
 	free(DataFN);
 	free(TreeFN);
-	
+
 	#ifdef BTOCL
 	btocl_free_runtime();
 	#endif
 
-	return 0;	
+	return 0;
 }
 
 #endif

@@ -836,59 +836,7 @@ void	SetTipData(OPTIONS *Opt, TREE *Tree, TREES *Trees)
 	}
 }
 
-/*
-void	SetTipData(TREE *Tree, TREES *Trees)
-{
-	int		NIndex;
-	int		SiteIndex;
-	int		StateIndex;
-	int		Pos;
-	NODE	N;
-	int		StrLen;
-	int		NOS;
 
-	NOS = Trees->NoOfStates;
-	if(Trees->UseCovarion == TRUE)
-		NOS = NOS / 2;
-
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
-	{
-		N = &Tree->NodeList[NIndex];
-		if(N->Tip == TRUE)
-		{
-			for(SiteIndex=0;SiteIndex<Trees->NoOfSites;SiteIndex++)
-			{
-				if(SiteHadUnKnownState(N->Taxa->DesDataChar[SiteIndex]) == FALSE)
-				{
-					
-					for(StateIndex=0;StateIndex<NOS;StateIndex++)
-						N->Partial[SiteIndex][StateIndex] = 0;
-					
-					StrLen = (int)strlen(N->Taxa->DesDataChar[SiteIndex]);
-
-					for(StateIndex=0;StateIndex<StrLen;StateIndex++)
-					{
-						Pos = SymbolToPos(N->Taxa->DesDataChar[SiteIndex][StateIndex], Trees->SymbolList);
-						N->Partial[SiteIndex][Pos] = 1;
-					}
-				}
-				else
-				{
-					for(StateIndex=0;StateIndex<NOS;StateIndex++)
-						N->Partial[SiteIndex][StateIndex] = 1;
-				}
-
-				
-				if(Trees->UseCovarion == TRUE)
-				{
-					for(StateIndex=0;StateIndex<NOS;StateIndex++)
-						N->Partial[SiteIndex][StateIndex+NOS] = N->Partial[SiteIndex][StateIndex];
-				}
-			}
-		}
-	}
-}
-*/
 void	SetNOSPerSiteTipData(TREE *Tree, TREES *Trees)
 {
 	int		NIndex;
@@ -942,61 +890,6 @@ void	SetNOSPerSiteTipData(TREE *Tree, TREES *Trees)
 	}
 }
 
-/*
-void	AllocNodePartial(NODE N, TREES *Trees, int Gamma)
-{
-	int		Outter;
-
-	N->GammaPartial = NULL;
-
-	N->Partial = (double**)malloc(sizeof(double*)*Trees->NoOfSites);
-	if(N->Partial == NULL)
-		MallocErr();
-
-	for(Outter=0;Outter<Trees->NoOfSites;Outter++)
-	{
-		N->Partial[Outter] = (double*)malloc(sizeof(double) * Trees->NoOfStates);
-		if(N->Partial[Outter] == NULL)
-			MallocErr();
-	}
-
-	if(Gamma == FALSE)
-		return;
-
-	if(N->Tip == TRUE)
-		return;
-	
-	N->GammaPartial = (double**)malloc(sizeof(double*)*Trees->NoOfSites);
-	if(N->GammaPartial == NULL)
-		MallocErr();
-
-	for(Outter=0;Outter<Trees->NoOfSites;Outter++)
-	{
-		N->GammaPartial[Outter] = (double*)malloc(sizeof(double) * Trees->NoOfStates);
-		if(N->GammaPartial[Outter] == NULL)
-			MallocErr();
-	}
-}
-
-void	AllocPartial(OPTIONS *Opt, TREES* Trees, int Gamma)
-{
-	int		TIndex;
-	int		NIndex;
-	NODE	N;
-
-	
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
-	{
-		for(NIndex=0;NIndex<Trees->Tree[TIndex]->NoNodes;NIndex++)
-		{
-			N = Trees->Tree[TIndex]->NodeList[NIndex];
-			AllocNodePartial(N, Trees, Gamma);
-		}
-
-		SetTipData(Opt, Trees->Tree[TIndex], Trees);
-	}
-}
-*/
 
 void	AllocNodePartial(NODE N, TREES *Trees, int Gamma)
 {

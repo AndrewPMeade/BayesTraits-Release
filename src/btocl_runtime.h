@@ -4,7 +4,7 @@
 #ifdef BTOCL
 
 
-#ifdef MAC
+#ifdef __APPLE__
 #include "OpenCL/cl.h"
 #else
 #include "CL/cl.h"
@@ -38,7 +38,7 @@ typedef struct {
 	size_t program_size[NUM_KERNELS];
 
   // Info selected GPU
-   
+
 
    cl_int err;
 } BTOCL_RUNTIME;

@@ -52,7 +52,7 @@ void btocl_AllocPMatrixInfo(TREES* Trees) {
 	cl_int err;
 
 	context = btocl_getContext();
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 	max_nnodes = Trees->MaxNodes;
 
 	//printf("**********************************\n");
@@ -199,7 +199,7 @@ void printSetPMatrixResults(RATES *Rates, TREES *Trees, OPTIONS *Opt, double Rat
 	I = Trees->InvInfo;
 	Tree = Trees->Tree[Rates->TreeNo];
 	pmatrix = Trees->PList[0]->me[0];
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 
 	//printf("Result=\n");
 	//btlin_printR(I->vect_test+1*NOS*NOS,NOS,NOS);
@@ -220,7 +220,7 @@ void printPMatrixNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult,
 	I = Trees->InvInfo;
 	Tree = Trees->Tree[Rates->TreeNo];
 	pmatrix = Trees->PList[0]->me[0];
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 
 	//printf("Result=\n");
 	//btlin_printR(I->vect_test+1*NOS*NOS,NOS,NOS);
@@ -251,7 +251,7 @@ void printPMatrixCell(TREES *Trees, TREE* Tree,int node,int row,int col) {
 
 	I = Trees->InvInfo;
 	pmatrix = Trees->PList[0]->me[0];
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 
 	//printf("Result=\n");
 	//btlin_printR(I->vect_test+1*NOS*NOS,NOS,NOS);
@@ -396,7 +396,7 @@ int setExpqtArgs(cl_kernel kernel, TREES* Trees, TREE* Tree, KernelInfo k, cl_us
 	int argnum, local_memSize, num_cells;
 
 	I = Trees->InvInfo;
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 	NoNodes =  Tree->NoNodes;
 
 	argnum = 0;
@@ -496,7 +496,7 @@ int setExpqtArgs(cl_kernel kernel, TREES* Trees, TREE* Tree, KernelInfo k, cl_us
 void setExpqtKernelInfo(TREES* Trees,TREE* Tree,cl_ushort kernel_type,KernelInfo* k) {
 	int NOS,NoNodes;
 	int wg_size;
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 	NoNodes =  Tree->NoNodes;
 	// IMPORTANT - check before compiling
 
@@ -593,7 +593,7 @@ void copy_pmatrix(TREES* Trees) {
 	int nos, max_nnodes;
 	double *pmatrix,*p;
 
-	nos = Trees->NoOfStates;
+	nos = Trees->NoStates;
 	pmatrix = Trees->PList[0]->me[0];
 	p = Trees->check_pmatrix;
 	max_nnodes = Trees->MaxNodes;
@@ -626,7 +626,7 @@ void compare_pmatrix(TREES* Trees, TREE* Tree) {
 
 	IVect = Trees->InvInfo->vect_id;
 
-	nos = Trees->NoOfStates;
+	nos = Trees->NoStates;
 	pmatrix = Trees->PList[0]->me[0];
 	p = Trees->check_pmatrix;
 	max_nnodes = Trees->MaxNodes;
@@ -720,7 +720,7 @@ int	btocl_SetAllPMatriCPU(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateM
 	double **TempM;
 
 	//btdebug_enter("pmatrix");
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 
 	TempM = AllocMatMem(NOS, NOS);
 
@@ -760,7 +760,7 @@ int	btocl_SetAllPMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMul
 	TREE* Tree;
 	//int standard_err;
 
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 
 	switch(NOS) {
 		case 2:
@@ -848,7 +848,7 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 
 	//btdebug_enter("pmatrix");
 	I = Trees->InvInfo;
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 	MaxNodes = Trees->MaxNodes;
 
 	Tree = Trees->Tree[Rates->TreeNo];
@@ -1012,7 +1012,7 @@ int btocl_computeExpComponent(TREES *Trees, TREE *Tree) {
 
 	// ** end variable declaration
 
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 	NoNodes =  Tree->NoNodes;
 	I = Trees->InvInfo;
 	MaxNodes = Trees->MaxNodes;  // real size of pmatrix

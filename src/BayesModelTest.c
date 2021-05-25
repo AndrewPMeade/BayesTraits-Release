@@ -27,7 +27,7 @@ void	GenDataFormModel(OPTIONS *Opt, TREES *Trees, double *Model, double *Error)
 	Tree = Trees->Tree[0];
 
 /*	printf("{");
-	for(NIndex=0;NIndex<Trees->NoOfTaxa;NIndex++)
+	for(NIndex=0;NIndex<Trees->NoTaxa;NIndex++)
 	{
 		Taxa = &Trees->Taxa[NIndex];
 		printf("\"%s\",", Taxa->Name);
@@ -35,7 +35,7 @@ void	GenDataFormModel(OPTIONS *Opt, TREES *Trees, double *Model, double *Error)
 	printf("}\n");
 
 	printf("{");
-	for(NIndex=0;NIndex<Trees->NoOfTaxa;NIndex++)
+	for(NIndex=0;NIndex<Trees->NoTaxa;NIndex++)
 	{
 		Taxa = &Trees->Taxa[NIndex];
 		printf("%f,", Taxa->ConData[0]);
@@ -48,13 +48,13 @@ void	GenDataFormModel(OPTIONS *Opt, TREES *Trees, double *Model, double *Error)
 	{
 		Taxa = Trees->Taxa[NIndex];
 		printf("%f\t", Taxa->ConData[0]);
-		
+
 
 		Y = Model[0] + (Taxa->ConData[0] * Model[1]);
-		Err = Error[NIndex]; 
+		Err = Error[NIndex];
 		Taxa->Dependant = Y + Err;
-		
-		
+
+
 	}
 
 
@@ -65,17 +65,17 @@ void	SetData(OPTIONS *Opt, TREES *Trees, RATES *Rates, double *Data)
 	int		NIndex;
 	TAXA	*Taxa;
 	TREE	*Tree;
-	
+
 	Tree = Trees->Tree[0];
 
 	Rates->Rates[0] = Data[0];
-	Rates->Rates[1] = Data[1];	
-	
+	Rates->Rates[1] = Data[1];
+
 	for(NIndex=2;NIndex<Trees->NoTaxa;NIndex++)
 	{
 		Taxa = Trees->Taxa[NIndex];
 		Taxa->Dependant = Data[NIndex];
-	}	
+	}
 }
 
 void	BayesModeTest(OPTIONS *Opt, TREES *Trees)

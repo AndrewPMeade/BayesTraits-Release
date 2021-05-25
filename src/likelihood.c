@@ -144,54 +144,7 @@ void	AllocLHInfo(TREES *Trees, OPTIONS *Opt)
 
 	Trees->PList = AllocMultiMatrixLinMem(Trees->MaxNodes, NOS, NOS);
 }
-/*
-void	SumLikeDep(NODE N, TREES *Trees, int SiteNo, double Kappa, int *Err)
-{
-	int		Inner;
-	int		Outter;
-	double	Lr;
-	double	Ll;
-	double	Len;
-	double	Val;
 
-	if(N->Left->Tip == FALSE)
-		SumLikeDep(N->Left, Trees, SiteNo, Kappa, Err);
-
-	if(N->Right->Tip == FALSE)
-		SumLikeDep(N->Right, Trees, SiteNo, Kappa, Err);
-
-	Len = N->Left->Length;
-	if(Kappa != -1)
-		Len = pow(Len, Kappa);	
-
-	Val = CreatFullPMatrix(Len, Trees->PLeft, Trees);
-	if(Val > 0.001)
-		(*Err) = TRUE;
-
-	Len = N->Right->Length;
-	if(Kappa != -1)
-		Len = pow(Len , Kappa);
-
-	Val = CreatFullPMatrix(Len, Trees->PRight, Trees);
-	if(Val > 0.001)
-		(*Err) = TRUE;
-
-
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-	{
-		Ll = 0;
-		Lr = 0;
-
-		for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-		{
-			Ll += N->Left->Partial[SiteNo][Inner] * Trees->PLeft->me[Outter][Inner];
-			Lr += N->Right->Partial[SiteNo][Inner] * Trees->PRight->me[Outter][Inner];
-		}
-
-		N->Partial[SiteNo][Outter] = Ll * Lr;
-	}
-}
-*/
 
 /*
 X 	Likilhood values unchanged
@@ -246,57 +199,7 @@ double	CreatFullAP(double T, double Mue, int K, MATRIX *Mat)
 
 	return 0;
 }
-/*
-void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
-{
-	int		Inner, Outter, NIndex;
-	double	Lh;
-	double	**Mat, **Partial;
-	
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-	{
-		N->Partial[SiteNo][Outter] = 1;
 
-		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-		{
-			Mat = Trees->PList[N->NodeList[NIndex]->ID]->me;
-			Partial = N->NodeList[NIndex]->Partial;
-		
-			Lh = 0;
-			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-				Lh += Partial[SiteNo][Inner] * Mat[Outter][Inner];
-			
-			N->Partial[SiteNo][Outter] *= Lh;
-		}
-	}
-
-	if(N->FossilMask != NULL)
-		FossilLh(N, Opt, Trees, SiteNo);
-}
-*/
-/*
-void	CheckBigLh(NODE N, int SiteNo, TREES *Trees)
-{
-	int Index, NOS, UnderFlow;
-	
-	
-	NOS = Trees->NoOfStates;
-
-	UnderFlow = FALSE;
-	for(Index=0;Index<NOS;Index++)
-	{
-		if(N->Partial[SiteNo][Index] < LH_UNDER_FLOW)
-			UnderFlow = TRUE;
-	}
-
-	if(UnderFlow == FALSE)
-		return;
-
-	N->NoUnderFlow++;
-	for(Index=0;Index<NOS;Index++)
-		N->Partial[SiteNo][Index] = N->Partial[SiteNo][Index] / LH_UNDER_FLOW;
-}
-*/
 
 void	CheckBigLh(NODE N, int SiteNo, TREES *Trees)
 {
@@ -373,13 +276,13 @@ void	SumLikeRModel(NODE N, TREES *Trees, int SiteNo, RATES *Rates)
 	if(N->Right->Tip == FALSE)
 		SumLikeRModel(N->Right, Trees, SiteNo, Rates);
 
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
+	for(Outter=0;Outter<Trees->NoStates;Outter++)
 	{
 		Ll = 0;
 		Lr = 0;
 		PiT = 0;
 
-		for(Inner=0;Inner<Trees->NoOfStates;Inner++)
+		for(Inner=0;Inner<Trees->NoStates;Inner++)
 		{
 			if(Inner != Outter)
 			{
@@ -389,8 +292,8 @@ void	SumLikeRModel(NODE N, TREES *Trees, int SiteNo, RATES *Rates)
 			}
 		}
 	
-		Ll = Ll / (Trees->NoOfStates-1);
-		Lr = Lr / (Trees->NoOfStates-1);
+		Ll = Ll / (Trees->NoStates-1);
+		Lr = Lr / (Trees->NoStates-1);
 
 		LP[0] = exp(-(Rates->FullRates[0]*N->Left->Length*PiT));
 		LP[1] = 1 - LP[0];
@@ -427,70 +330,7 @@ void	CreatIndepPMatrix(double t, MATRIX *Mat, double Alpha, double Beta)
 	Mat->me[1][1] = 1 - Mat->me[1][0];
 
 }
-/*
-void	SumLikeInDep(NODE N, TREES *Trees, double *Rates, int SiteNo)
-{
-	int		Inner;
-	int		Outter;
-	double	Lr;
-	double	Ll;
 
-
-	if(N->Left->Tip == FALSE)
-		SumLikeInDep(N->Left, Trees, Rates, SiteNo);
-
-	if(N->Right->Tip == FALSE)
-		SumLikeInDep(N->Right, Trees, Rates, SiteNo);
-
-	
-		CreatIndepPMatrix(N->Left->Length, Trees->PLeft, Rates[0], Rates[1]);
-	CreatIndepPMatrix(N->Right->Length, Trees->PRight, Rates[0], Rates[1]);
-
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-	{
-		Ll = 0;
-		Lr = 0;
-
-		for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-		{
-			Ll += N->Left->Partial[SiteNo][Inner] * Trees->PLeft->me[Outter][Inner];
-			Lr += N->Right->Partial[SiteNo][Inner] * Trees->PRight->me[Outter][Inner];
-		}
-
-		N->Partial[SiteNo][Outter] = Ll * Lr;
-	}
-}
-*/
-/*
-void	SumLikeInDep(NODE N, TREES *Trees, double *Rates, int SiteNo)
-{
-	int		Inner, Outter, Index;
-	double	Lh;
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		if(N->NodeList[Index]->Tip == FALSE)
-			SumLikeInDep(N->NodeList[Index], Trees, Rates, SiteNo);
-
-	for(Index=0;Index<N->NoNodes;Index++)
-	{
-		CreatIndepPMatrix(N->NodeList[Index]->Length, Trees->PList[Index], Rates[0], Rates[1]);
-	}
-
-
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-	{
-		N->Partial[SiteNo][Outter] = 1;
-
-		for(Index=0;Index<N->NoNodes;Index++)
-		{
-			Lh = 0;
-			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-				Lh += N->NodeList[Index]->Partial[SiteNo][Inner] * Trees->PList[Index]->me[Outter][Inner];
-			N->Partial[SiteNo][Outter] *= Lh;
-		}
-	}
-}
-*/
 
 /* Only for first site */
 void	PrintTipData(TREES* Trees, int TreeNo)

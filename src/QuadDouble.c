@@ -12,7 +12,7 @@ void	InitQuadDoubleLh(OPTIONS *Opt, TREES *Trees) {}
 void	FreeQuadLh(OPTIONS *Opt, TREES *Trees) {}
 
 void	NodeLhQuadDouble(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo) {}
-		
+
 
 double	CombineQuadDoubleLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS) {return -1;}
 
@@ -30,11 +30,11 @@ void	AllocNodeQuadMem(NODE N, OPTIONS *Opt, TREES *Trees)
 
 	for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 	{
-		N->BigPartial[SIndex] = (QDOUBLE*)malloc(sizeof(QDOUBLE) * Trees->NoOfStates);
+		N->BigPartial[SIndex] = (QDOUBLE*)malloc(sizeof(QDOUBLE) * Trees->NoStates);
 		if(N->BigPartial[SIndex] == NULL)
 			MallocErr();
 
-		for(Index=0;Index<Trees->NoOfStates;Index++)
+		for(Index=0;Index<Trees->NoStates;Index++)
 			N->BigPartial[SIndex][Index] = N->Partial[SIndex][Index];
 	}
 }
@@ -45,7 +45,7 @@ void	InitQuadDoubleLh(OPTIONS *Opt, TREES *Trees)
 	TREE *Tree;
 	NODE N;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		Tree = Trees->Tree[TIndex];
 		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
@@ -61,8 +61,8 @@ void	FreeQuadLh(OPTIONS *Opt, TREES *Trees)
 	int TIndex, NIndex, Index;
 	NODE N;
 	TREE *T;
-	
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		T = Trees->Tree[TIndex];
 		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
@@ -82,7 +82,7 @@ void	NodeLhQuadDouble(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 	QDOUBLE **TBigLh;
 	double **Mat;
 
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
+	for(Outter=0;Outter<Trees->NoStates;Outter++)
 	{
 		N->BigPartial[SiteNo][Outter] = 1.0;
 
@@ -90,15 +90,15 @@ void	NodeLhQuadDouble(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 		{
 			Mat = Trees->PList[N->NodeList[NIndex]->ID]->me;
 			TBigLh = N->NodeList[NIndex]->BigPartial;
-			
+
 			Lh = 0;
-			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
+			for(Inner=0;Inner<Trees->NoStates;Inner++)
 				Lh += TBigLh[SiteNo][Inner] * (QDOUBLE)Mat[Outter][Inner];
 
 			N->BigPartial[SiteNo][Outter] *= Lh;
 		}
 	}
-	
+
 	if(N->FossilMask != NULL)
 		FossilLh(N, Opt, Trees, SiteNo);
 }
@@ -123,7 +123,7 @@ double	CombineQuadDoubleLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo,
 	}
 
 	Ret = (double)logq(Sum);
-	
+
 
 	return Ret;
 }

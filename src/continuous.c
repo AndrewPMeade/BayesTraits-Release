@@ -261,12 +261,12 @@ void	MapPartID(TREES* Trees, PART *Part, int *Map)
 void	RecCalcV(TREES* Trees, double **Mat, NODE N, PART *DiffPart)
 {
 	int x,y, XPos, YPos;
-	
+
 	double Dist;
 
-	
+
 	Dist = N->Ans->DistToRoot;
-		
+
 	GetPartDiff(N->Ans->Part, N->Part, DiffPart);
 
 	for(x=0;x<N->Part->NoTaxa;x++)
@@ -310,7 +310,7 @@ int		GetVPosNode(NODE N, TREES *Trees)
 {
 	if(N->Tip == TRUE)
 		return GetMapID(Trees, N->Taxa->No);
-	
+
 	return GetVPosNode(N->NodeList[0], Trees);
 }
 
@@ -359,7 +359,7 @@ void	VToTree(MATRIX *V, TREE *Tree)
 	NODE N;
 	double AnsLen;
 
-	
+
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		N = Tree->NodeList[Index];
@@ -383,8 +383,8 @@ void	TreeToV(TREES* Trees, TREE *Tree, MATRIX *V)
 		return;
 	#endif
 
-// Fast method to find V. 
-	CaclPVarCoVarRec(Trees, Tree, V); 
+// Fast method to find V.
+	CaclPVarCoVarRec(Trees, Tree, V);
 //	PrintMatrix(Tree->ConVars->V, "V=", stdout);exit(0);
 	return;
 
@@ -397,9 +397,9 @@ void	TreeToV(TREES* Trees, TREE *Tree, MATRIX *V)
 	int	Ret;
 
 
-	for(x=0;x<Trees->NoOfTaxa;x++)
+	for(x=0;x<Trees->NoTaxa;x++)
 	{
-		for(y=x;y<Trees->NoOfTaxa;y++)
+		for(y=x;y<Trees->NoTaxa;y++)
 		{
 			if(x!=y)
 			{
@@ -512,7 +512,7 @@ double	CalcCoVar(TREES* Trees, int T1, int T2)
 		Ret = Ret + (Trees->Taxa[Index]->ConData[T1] * Trees->Taxa[Index]->ConData[T2]);
 
 	Ret = Ret - ((Sum1 * Sum2) / (double)Trees->NoTaxa);
-/*	Ret = Ret / (double)(Trees->NoOfTaxa - 1); */
+/*	Ret = Ret / (double)(Trees->NoTaxa - 1); */
 	Ret = Ret / (double)(Trees->NoTaxa);
 
 	return Ret;
@@ -584,7 +584,7 @@ void	FreeConVar(CONVAR* ConVar, int NoTaxa)
 
 	if(ConVar->MultiVarNormTemp != NULL)
 		free(ConVar->MultiVarNormTemp);
-		
+
 	#ifdef BTOCL
 	btocl_FreeConVar(ConVar);
 	#endif
@@ -642,15 +642,15 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
-//		Ret->KProd		= AllocMatrix(Trees->NoOfTaxa, Trees->NoOfTaxa);
-//		Ret->InvKProd	= AllocMatrix(Trees->NoOfTaxa, Trees->NoOfTaxa);
+//		Ret->KProd		= AllocMatrix(Trees->NoTaxa, Trees->NoTaxa);
+//		Ret->InvKProd	= AllocMatrix(Trees->NoTaxa, Trees->NoTaxa);
 		Ret->Sigma		= AllocMatrix(1, 1);
 		Ret->InvSigma	= AllocMatrix(1, 1);
 	}
 	else
 	{
-//		Ret->KProd		= AllocMatrix(Trees->NoOfSites * Trees->NoOfTaxa, Trees->NoOfSites * Trees->NoOfTaxa);
-//		Ret->InvKProd	= AllocMatrix(Trees->NoOfSites * Trees->NoOfTaxa, Trees->NoOfSites * Trees->NoOfTaxa);
+//		Ret->KProd		= AllocMatrix(Trees->NoOfSites * Trees->NoTaxa, Trees->NoOfSites * Trees->NoTaxa);
+//		Ret->InvKProd	= AllocMatrix(Trees->NoOfSites * Trees->NoTaxa, Trees->NoOfSites * Trees->NoTaxa);
 		Ret->Sigma		= AllocMatrix(Trees->NoSites, Trees->NoSites);
 		Ret->InvSigma	= AllocMatrix(Trees->NoSites, Trees->NoSites);
 	}
@@ -702,7 +702,7 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 
 	Ret->LogDetOfSigma	= 1;
 	Ret->LogDetOfV		= 1;
-	
+
 	#ifdef BTOCL
 	btocl_AllocConVar(Ret,Trees);
 	#endif
@@ -867,15 +867,15 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 //	PrintMatrix(TempCon->NX, "NX=",stdout);
 
 	Err = InvertMatrix(TempCon->NX->me, TempCon->NX->NoOfCols, CV->TVect1, (int*)CV->TVect3, CV->InvXVX->me);
-	
+
 	if(Err != FALSE)
 	{
 		printf("Error inverting sigma matrix, matrix is singular\n");
 		exit(0);
 	}
-	
+
 	MatrixByVectMult(CV->InvXVX, CV->TVect2, CV->TVect1);
-	
+
 	if(Opt->AlphaZero == FALSE)
 	{
 		CV->Alpha[0] = CV->TVect1[0];
@@ -907,7 +907,7 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 /*	To Check With Mathematica.
 	PrintMathematicaMatrix(X, "X = ", stdout);
 	PrintMathematicaMatrix(CV->InvV, "InvV = ", stdout);
-	PrintMathematicaVect(Y, Trees->NoOfTaxa, "Y = ", stdout);
+	PrintMathematicaVect(Y, Trees->NoTaxa, "Y = ", stdout);
 	printf("B1 = Inverse[Transpose[X].InvV.X]\n");
 	printf("B2 = Transpose[X].InvV.Y\n");
 	printf("B = B1.B2\n");
@@ -1008,22 +1008,22 @@ double	MLFindAlphaReg(TREES* Trees, TREE *Tree)
 	double	ColTemp;
 	int		x,y;
 
-	for(x=0;x<Trees->NoOfTaxa;x++)
+	for(x=0;x<Trees->NoTaxa;x++)
 	{
-		for(y=x+1;y<Trees->NoOfTaxa;y++)
+		for(y=x+1;y<Trees->NoTaxa;y++)
 			P1 = P1 + (2 * Tree->ConVars->InvV->me[x][y]);
 	}
 
-	for(x=0;x<Trees->NoOfTaxa;x++)
+	for(x=0;x<Trees->NoTaxa;x++)
 		P1 = P1 + Tree->ConVars->InvV->me[x][x];
 
 	P1 = 1 / P1;
 
 	P2 = 0;
-	for(y=0;y<Trees->NoOfTaxa;y++)
+	for(y=0;y<Trees->NoTaxa;y++)
 	{
 		ColTemp = 0;
-		for(x=0;x<Trees->NoOfTaxa;x++)
+		for(x=0;x<Trees->NoTaxa;x++)
 			ColTemp = ColTemp + Tree->ConVars->InvV->me[x][y];
 		P2 += ColTemp * Trees->Taxa[y].Dependant;
 	}
@@ -1107,7 +1107,7 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 	#pragma omp parallel for private(x, Ret) num_threads(4)
 #endif
 	for(y=0;y<Trees->NoTaxa;y++)
-	{ 
+	{
 		Ret = 0;
 		for(x=0;x<Trees->NoTaxa;x++)
 			Ret = Ret + (CV->TVect1[x] * CV->InvV->me[x][y]);
@@ -1121,10 +1121,10 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 
 	// Use sum of least squares, should not be used.
 //	if(SLS == TRUE)
-//		return Ret * (1.0/(Trees->NoOfTaxa - (Trees->NoOfSites+1)));
+//		return Ret * (1.0/(Trees->NoTaxa - (Trees->NoOfSites+1)));
 
-	Ret = Ret * (1.0/Trees->NoTaxa);  
-	
+	Ret = Ret * (1.0/Trees->NoTaxa);
+
 	return Ret;
 }
 
@@ -1342,7 +1342,7 @@ void	CalcOU(MATRIX *V,  double Alpha)
 		Alpha = MIN_OU;
 
 	Scale = 1.0 / (2.0 * Alpha);
-			
+
 	for(x=0;x<V->NoOfCols;x++)
 	{
 		for(y=x+1;y<V->NoOfRows;y++)
@@ -1355,12 +1355,12 @@ void	CalcOU(MATRIX *V,  double Alpha)
 			if(T < V->me[x][y])
 				T = V->me[x][y];
 
-			// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know. 
+			// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know.
 			T1 = exp(-2.0 * Alpha * (T - V->me[x][y]));
 			T2 = 1.0 - exp(-2.0 * Alpha * V->me[x][y]);
 
 			T1 = T1 * T2;
-		
+
 	//		for the sig^2 / 2 alpha multiplyer
 			T1 = T1 * Scale;
 
@@ -1411,12 +1411,12 @@ void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 	{
 		for(y=x+1;y<V->NoOfRows;y++)
 		{
-			// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know. 
+			// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know.
 			T1 = exp(-2.0 * Alpha * (T - V->me[x][y]));
 			T2 = 1.0 - exp(-2.0 * Alpha * V->me[x][y]);
 
 			T1 = T1 * T2;
-		
+
 	//		for the sig^2 / 2 alpha multiplyer
 			T1 = T1 * Scale;
 
@@ -1429,7 +1429,7 @@ void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 	{
 		T1 = 1.0 - exp(-2 * Alpha * V->me[x][x]);
 //		T1 = 1.0 - exp(-2 * Alpha * T);
-		
+
 //		for the sig^2 / 2 alpha multiplyer
 		T1 = T1 * Scale;
 		V->me[x][x] = T1;
@@ -1462,14 +1462,14 @@ double	GetOUSharedPath(TREES *Trees, TREE *Tree, double Shared, int X, int Y)
 	return Ret;
 }
 /*
-// Have to be careful. 
-// Function uses both tree BL and V, nothing can be applied beforehand. 
+// Have to be careful.
+// Function uses both tree BL and V, nothing can be applied beforehand.
 void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 {
 	int x,y;
 	double RPath, T, T1, T2;
 	double Scale;
-		
+
 //		PrintMatrix(V, "V=", stdout);exit(0);
 	//	Alpha = 0.1;
 
@@ -1479,7 +1479,7 @@ void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 	Scale = 1.0 / (2.0 * Alpha);
 	T = FindT(V);
 
-	// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know. 
+	// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know.
 	for(x=0;x<V->NoOfCols;x++)
 	{
 		for(y=x;y<V->NoOfRows;y++)
@@ -1493,12 +1493,12 @@ void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 
 			// For the sig^2 / 2 alpha multiplyer
 			T1 = T1 * Scale;
-			
+
 			V->me[x][y] = T1;
 			V->me[y][x] = T1;
 		}
 	}
-		
+
 //	VToTree(V, Tree);
 //	SaveTrees("vtree.trees", Trees);
 	PrintMatrix(V, "V=", stdout);exit(0);
@@ -1510,9 +1510,9 @@ void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 double	CalcOUCell(double Alpha, double Scale, double XPath, double YPath, double Shared)
 {
 	double RPath, T1, T2;
-	
+
 	RPath = (XPath - Shared) + (YPath - Shared);
-	
+
 	T1 = exp(-Alpha * RPath);
 	T2 = 1.0 - exp(-2.0 * Alpha * Shared);
 
@@ -1534,8 +1534,8 @@ void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 
 	Scale = 1.0 / (2.0 * Alpha);
 
-	// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know. 
-	// Off diag must be done first. 
+	// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know.
+	// Off diag must be done first.
 	for(x=0;x<V->NoOfCols;x++)
 	{
 		for(y=x+1;y<V->NoOfRows;y++)
@@ -1573,16 +1573,16 @@ void	CalcOU(MATRIX *V,  double Alpha)
 	T = FindT(V);
 
 
-	// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know. 
+	// T may be < V->me[x][y], for non ultrametic trees. Possibly an issue, don't know.
 	for(x=0;x<V->NoOfCols;x++)
 	{
 		for(y=x;y<V->NoOfRows;y++)
-		{			
+		{
 			T1 = exp(-2.0 * Alpha * (T - V->me[x][y]));
 			T2 = 1.0 - exp(-2.0 * Alpha * V->me[x][y]);
 
 			T1 = T1 * T2;
-		
+
 	//		for the sig^2 / 2 alpha multiplyer
 			T1 = T1 * Scale;
 			V->me[x][y] = T1;
@@ -1657,12 +1657,12 @@ MATRIX*	FindRegVar(TREES *Trees, RATES* Rates)
 
 	if(X == NULL)
 	{
-		X		= AllocMatrix(Trees->NoOfTaxa, Trees->NoOfSites+1);
-		XT		= AllocMatrix(Trees->NoOfSites+1, Trees->NoOfTaxa);
-		TempV1	= AllocMatrix(Trees->NoOfSites+1, Trees->NoOfTaxa);
+		X		= AllocMatrix(Trees->NoTaxa, Trees->NoOfSites+1);
+		XT		= AllocMatrix(Trees->NoOfSites+1, Trees->NoTaxa);
+		TempV1	= AllocMatrix(Trees->NoOfSites+1, Trees->NoTaxa);
 		TempV2	= AllocMatrix(Trees->NoOfSites+1, Trees->NoOfSites+1);
 
-		for(x=0;x<Trees->NoOfTaxa;x++)
+		for(x=0;x<Trees->NoTaxa;x++)
 		{
 			Taxa = &Trees->Taxa[x];
 			X->me[x][0] = 1;
@@ -1773,17 +1773,17 @@ void	PrintMathmatCode(void)
 {
 /*	printf("Part3 = -0.5*ZA.Inverse[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]].ZA\n");
 	printf("Part2 = Log[Det[BlockMatrix[Outer[Times, (Sigma), (V^Delta)]]]^-0.5]\n");
-	printf("Part1 = 1.8378770664093453 ((-(NoOfTaxa*NoOfSites))/2)\n");
+	printf("Part1 = 1.8378770664093453 ((-(NoTaxa*NoOfSites))/2)\n");
 	printf("Lh = Part1 + Part2 + Part3\n");
-	printf("Lh = (Log[2 Pi] ((-(NoOfTaxa*NoOfSites))/2)) + (Log[Det[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]]^-0.5]) + (-0.5*ZA.Inverse[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]].ZA)\n");
-*/	
+	printf("Lh = (Log[2 Pi] ((-(NoTaxa*NoOfSites))/2)) + (Log[Det[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]]^-0.5]) + (-0.5*ZA.Inverse[BlockMatrix[Outer[Times, Sigma, (V^Delta)]]].ZA)\n");
+*/
 //return;
 	printf("Part3 = -0.5*ZA.Inverse[ArrayFlatten[Outer[Times, Sigma, V]]].ZA;\n");
 //	printf("Part2 = Log[Det[ArrayFlatten[Outer[Times, (Sigma), V]]]^-0.5];\n");
-	printf("Part2 = ((NoOfSites * Log[Det[V]]) + (NoOfTaxa * Log[Det[Sigma]]) * -0.5;\n");
-	printf("Part1 = 1.8378770664093453 ((-(NoOfTaxa*NoOfSites))/2);\n");
+	printf("Part2 = ((NoOfSites * Log[Det[V]]) + (NoTaxa * Log[Det[Sigma]]) * -0.5;\n");
+	printf("Part1 = 1.8378770664093453 ((-(NoTaxa*NoOfSites))/2);\n");
 	printf("Lh = Part1 + Part2 + Part3;\n");
-	printf("Lh = (Log[2 Pi] ((-(NoOfTaxa*NoOfSites))/2)) + (Log[Det[ArrayFlatten[Outer[Times, Sigma, V]]]^-0.5]) + (-0.5*ZA.Inverse[ArrayFlatten[Outer[Times, Sigma, V]]].ZA)\n");
+	printf("Lh = (Log[2 Pi] ((-(NoTaxa*NoOfSites))/2)) + (Log[Det[ArrayFlatten[Outer[Times, Sigma, V]]]^-0.5]) + (-0.5*ZA.Inverse[ArrayFlatten[Outer[Times, Sigma, V]]].ZA)\n");
 
 }
 
@@ -1791,7 +1791,8 @@ void	PrintMathmatCode(void)
 int	CalcInvV(TREES *Trees, TREE *Tree)
 {
 #ifdef BTOCL
-	return btocl_FindInvV(Trees, Tree);
+	btocl_FindInvV(Trees, Tree);
+	return  FALSE;
 #endif
 
 #ifdef BTLAPACK
@@ -1833,7 +1834,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	printf("(* **************** Start Tree %d *********************** *)\n", Rates->TreeNo);
 	printf("NoOfSites = %d;\n", Trees->NoOfSites);
-	printf("NoOfTaxa = %d;\n", Trees->NoOfTaxa);
+	printf("NoTaxa = %d;\n", Trees->NoTaxa);
 
 	if(Tree->ConVars->TrueV != NULL)
 		PrintMathematicaTFMatrix(Tree->ConVars->TrueV, "V = ", stdout);
@@ -1895,13 +1896,13 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 #ifdef MATHMAT
 	PrintMathematicaMatrix(Tree->ConVars->Sigma, "Sigma = ", stdout);
 #endif
-	
+
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		CV->InvSigma->me[0][0] = 1.0 / CV->Sigma->me[0][0];
-		
+
 		CV->LogDetOfSigma = log(CV->Sigma->me[0][0]);
-		
+
 	}
 	else
 	{
@@ -1914,14 +1915,14 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		{
 			return ERRLH;
 			printf("Error inverting matrix, matrix is singular, %s::%d\n", __FILE__, __LINE__);
-			exit(0); 
+			exit(0);
 		}
 	}
 
 	CalcZAlpha(Trees, Tree, Opt->Model);
-	
+
 #ifdef MATHMAT
-	PrintMathematicaVect(Tree->ConVars->ZA, Trees->NoOfSites * Trees->NoOfTaxa, "ZA = ", stdout);
+	PrintMathematicaVect(Tree->ConVars->ZA, Trees->NoOfSites * Trees->NoTaxa, "ZA = ", stdout);
 #endif
 
 
@@ -1935,7 +1936,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	VectByKroneckerMult(Tree->ConVars->ZA, Tree->ConVars->InvSigma, Tree->ConVars->InvV,Tree->ConVars->ZATemp);
 #endif
 //	btdebug_exit("kronecker");
-	
+
 	if(Opt->Model == M_CONTINUOUS_REG)
 		Len = Trees->NoTaxa;
 	else
@@ -1967,18 +1968,18 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	printf("(* Part1 = %f *)\n", Ret);
 	printf("(* Part2 = %f *)\n", Det);
 	printf("(* Part3 = %f *)\n", Val);
-	
+
 	printf("(* LH = %f *)\n", Ret + Det + Val);
 
 	printf("(* **************** End Tree %d *********************** *)\n", Rates->TreeNo);
 	exit(0);
 #endif
-	
+
 	Ret = Ret + Det + Val;
-	
+
 	if(ValidLh(Ret, Opt->ModelType) == FALSE)
 		Ret = ERRLH;
-	
+
 	Rates->Lh = Ret;
 
 	return Ret;
@@ -2003,7 +2004,7 @@ void	InitMultiVarCV(OPTIONS *Opt, TREES* Trees, int TreeNo)
 	CONVAR *CV;
 	int Index, Size;
 	double *FV, *Mean;
-	
+
 	Tree = Trees->Tree[TreeNo];
 	CV = Tree->ConVars;
 
@@ -2017,7 +2018,7 @@ void	InitMultiVarCV(OPTIONS *Opt, TREES* Trees, int TreeNo)
 	Size = (Trees->NoTaxa * Trees->NoTaxa) + (Trees->NoTaxa + 1);
 	CV->MultiVarNormState = (double*)SMalloc(sizeof(double) * Size);
 	CV->MultiVarNormTemp = (double*)SMalloc(sizeof(double) * Size);
-	
+
 	setgmn(Mean, FV, Trees->NoTaxa, CV->MultiVarNormState);
 
 	free(Mean);
@@ -2068,7 +2069,7 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 	TreeToV(Trees, Tree, CV->V);
 
 	SetNodesVPos(Trees, Tree);
-	
+
 	if(EstData(Trees) == TRUE)
 		InitMultiVarCV(Opt, Trees, TreeNo);
 
@@ -2085,13 +2086,13 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 		CalcLambda(CV->V, Opt->FixLambda);
 
 //	VTest(Trees, Trees->Tree[TreeNo]);
-	
+
 	CalcZ(Trees, Tree, Opt);
-	
+
 
 
 	CalcInvV(Trees, Trees->Tree[TreeNo]);
-	
+
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
 		for(Index=0;Index<Trees->NoTaxa;Index++)
@@ -2127,11 +2128,11 @@ TEMPCONVAR* AllocTempConVars(OPTIONS *Opt, TREES* Trees)
 	int			x,y;
 
 	Ret = (TEMPCONVAR*) SMalloc(sizeof(TEMPCONVAR));
-	
+
 	Ret->T1 = (double*)SMalloc(sizeof(double)*Trees->NoTaxa);
 	Ret->T2 = (int*)SMalloc(sizeof(int)*Trees->NoTaxa);
 	Ret->TMat = AllocMatrix(Trees->NoTaxa, Trees->NoTaxa);
-		
+
 	if(Opt->AlphaZero == FALSE)
 	{
 		Ret->X		= AllocMatrix(Trees->NoTaxa, Trees->NoSites + 1);
@@ -2191,13 +2192,13 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 
 	if(Opt->Model == M_CONTINUOUS_REG)
 		RemoveDependantData(Opt, Trees);
-	
+
 	AddRecNodes(Opt, Trees);
 
 	Trees->TempConVars = AllocTempConVars(Opt, Trees);
 
 	InitEstData(Opt, Trees);
-	
+
 	Opt->InvertV = FALSE;
 	if(	Opt->EstDelta == TRUE ||
 		Opt->EstKappa == TRUE ||

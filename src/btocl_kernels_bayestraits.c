@@ -67,12 +67,12 @@ cl_int btocl_load_all(int continuous,int discrete, int nos, int nsites) {
   BTOCL_RUNTIME* rt = btocl_getruntime();
 
 
-  
+
   options[0] = '\0';
-  //nos = Trees->NoOfStates;   // BTOCL_NOS
+  //nos = Trees->NoStates;   // BTOCL_NOS
   nos2 = nos*nos;            // BTOCL_NOS2
-  //nsites = Trees->NoOfSites; // BTOCL_NSITES
-  
+  //nsites = Trees->NoSites; // BTOCL_NSITES
+
   //if (Opt->ModelType == MT_CONTINUOUS) {
   if (continuous) {
 	//printf("kernels continuous\n");
@@ -81,17 +81,17 @@ cl_int btocl_load_all(int continuous,int discrete, int nos, int nsites) {
     if (err != 0)
       return err;
   }
-  
+
   //	if (Opt->ModelType == MT_DISCRETE) {
   if (discrete) {
 	//printf("kernels discrete\n");
     err = btocl_load_discreteKernels(rt);
 	//printf("....done\n");
-    if (err != 0) 
+    if (err != 0)
       return err;
   }
-  
-  if (discrete) {	
+
+  if (discrete) {
     // load constants
     sprintf(number,"%d",nos);
     strcpy(options,"-D BT_NOS=");
@@ -110,7 +110,7 @@ cl_int btocl_load_all(int continuous,int discrete, int nos, int nsites) {
     strcat(options," -D USE_BTEXP=");
     strcat(options,number);
 #endif
-    
+
     //printf("%s \n",options);
     //exit(0);
   }
@@ -118,16 +118,16 @@ cl_int btocl_load_all(int continuous,int discrete, int nos, int nsites) {
   //printf("loading kernrels\n");
   err = btocl_build_load_kernels(options);
   //printf("....done\n");
-  
+
   return err;
-  
+
 
 }
 
 
 int btocl_load_continuousKernels(BTOCL_RUNTIME* rt) {
   cl_int err;
-  
+
   // kernel_index, kernel_name, program file name
 //  err = load_kernel_file(&BTOCL_CHOLUPDCOL_PURE,"btocl_cholupdcol_pure",
 //		   BTOCL_KERNELS_DIR "kernel_cholupdcol_pure.cl",rt);
@@ -153,7 +153,7 @@ int btocl_load_continuousKernels(BTOCL_RUNTIME* rt) {
   err = load_kernel_file(&BTOCL_CHOLUPDMAT_P128,"btocl_cholupdmat_p128",
 		   BTOCL_KERNELS_DIR "kernel_cholupdmat_p128.cl",rt);
   if (err != 0) return err;
-  
+
   err = load_kernel_file(&BTOCL_CHOLUPDCOL,"btocl_cholupdcol",
 		   BTOCL_KERNELS_DIR "kernel_cholupdcol.cl",rt);
   if (err != 0) return err;
@@ -224,13 +224,13 @@ int btocl_load_continuousKernels(BTOCL_RUNTIME* rt) {
 		   BTOCL_KERNELS_DIR "kernel_kron_accum_sigma1.cl",rt);
   if (err != 0) return err;
   */
-  
+
 
   //err = load_kernel_file(&BTOCL_LTRI_LTBYL,"btocl_ltri_LTbyL",
 //		   BTOCL_KERNELS_DIR "kernel_ltri_LTbyL.cl",rt);
   //if (err != 0) return err;
- 
- 
+
+
   return 0;
 
 }
@@ -249,7 +249,7 @@ int btocl_load_discreteKernels(BTOCL_RUNTIME* rt) {
 		   BTOCL_KERNELS_DIR "kernel_expqt.cl",rt);
   if (err != 0) return err;
   printf("laoded btocl_expqt\n");
- 
+
   err = load_kernel_file(&BTOCL_EXPQT_LOCAL,"btocl_expqt_local",
 		   BTOCL_KERNELS_DIR "kernel_expqt_local.cl",rt);
   if (err != 0) return err;
@@ -265,9 +265,9 @@ int btocl_load_discreteKernels(BTOCL_RUNTIME* rt) {
   err = load_kernel_file(&BTOCL_EXPQT3_LOCAL,"btocl_expqt3_local",
 		   BTOCL_KERNELS_DIR "kernel_expqt3_local.cl",rt);
   if (err != 0) return err;
-  
+
   err = load_kernel_file(&BTOCL_EXPQT3_NOS4,"btocl_expqt3_nos4",
-		   BTOCL_KERNELS_DIR "kernel_expqt3_nos4.cl",rt);  
+		   BTOCL_KERNELS_DIR "kernel_expqt3_nos4.cl",rt);
   if (err != 0) return err;
   err = load_kernel_file(&BTOCL_EXPQT_LOCALERR,"btocl_expqt_localerr",
 		   BTOCL_KERNELS_DIR "kernel_expqt_localerr.cl",rt);

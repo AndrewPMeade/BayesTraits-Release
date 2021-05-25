@@ -20,7 +20,7 @@ char**	MakeCommands(char *Command, int *NoC)
 {
 	char **Ret;
 	int Len;
-	
+
 	Len = (int)strlen(Command);
 	*NoC = 0;
 
@@ -51,7 +51,7 @@ MODEL	GetBatchModel(TREES *Trees, char *MLine)
 	{
 		printf("%s is not a valid model\n", MLine);
 		exit(0);
-	}	
+	}
 
 	return Ret;
 }
@@ -77,7 +77,7 @@ void	SetLogFName(OPTIONS *Opt, int BNo)
 	char *Buffer;
 
 	Buffer = (char*)SMalloc(sizeof(char) * 64);
-	
+
 	sprintf(Buffer, "BTBatchLog-%06d.txt", BNo);
 	free(Opt->BaseOutputFN);
 
@@ -89,7 +89,7 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 {
 	int			NoSites;
 	TREES*		Trees;
-	OPTIONS*	Opt; 
+	OPTIONS*	Opt;
 	MODEL		Model;
 	ANALSIS		Analsis;
 
@@ -97,11 +97,11 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	LoadData(DataFN, Trees);
 
 	Model = GetBatchModel(Trees, Coms[0]);
-	
+
 	Analsis = GetBatchAnalsis(Coms[1]);
-	
+
 	CheckDataWithModel(DataFN, Trees, Model);
-	
+
 	PreProcessDataWithModel(Trees, Model);
 
 	Opt = CreatOptions(Model, Analsis, Trees->NoStates, TreeFN, DataFN, Trees->SymbolList, Trees);
@@ -112,11 +112,11 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	PrintOptions(stdout, Opt);
 
 	CheckOptions(Opt);
-	
+
 	#ifdef BTOCL
 	//printf("Loading kernels\n");
-	if (btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE,
-			Trees->NoOfStates, Trees->NoOfSites) != 0) {
+	if (btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE, Trees->NoStates, Trees->NoSites) != 0)
+	{
 		printf("Error: Couldn't load OpenCL kernels\n");
 		exit(0);
 	}
@@ -133,7 +133,7 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	NoSites = Trees->NoSites;
 	FreeTrees(Trees, Opt);
 	FreeOptions(Opt, NoSites);
-	
+
 	#ifdef BTOCL
 	//printf("Removing kernels\n");
 	btocl_clear_kernels(btocl_getruntime());
@@ -199,7 +199,7 @@ void	BatchRun(char *BatchFN)
 	for(Index=0;Index<TF->NoOfLines;Index++)
 	{
 
-		PassBatchLine(TF->Data[Index], 
+		PassBatchLine(TF->Data[Index],
 		Tokes = MakeArgvChar(TF->Data[Index], Buffer, TF->MaxLine, '\t');
 		if(Tokes == 3)
 		{
