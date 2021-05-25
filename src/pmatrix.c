@@ -696,6 +696,7 @@ double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, M
 		for(j=0;j<NOS;j++)
 		{
 			M[i][j]=0.0;
+
 			for(k=0;k<NOS;k++)
 				M[i][j] += Am[i][k] * InvVec[k][j];
 

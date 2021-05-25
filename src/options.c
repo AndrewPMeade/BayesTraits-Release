@@ -2034,7 +2034,6 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 
 	if(RNode->NodeType == FOSSIL)
 	{
-//		RNode->NodeType = MRCA;
 		RNode->FossilStates = FStates;
 		RNode->NoFossilStates = NoFStates;
 		NoTaxa = Tokes - 3;
@@ -3478,12 +3477,15 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	Command = StringToCommand(Passed[0]);
 
 	if(Command == CUNKNOWN)
+	{
 		printf("Unknown command: %s\n",Passed[0]);
+		exit(1);
+	}
 
 	if(CmdVailWithDataType(Opt,Command) == FALSE)
 	{
 		printf("Command is not valid with data / model.\n");
-		exit(0);
+		exit(1);
 		return FALSE;
 	}
 
@@ -3613,19 +3615,18 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CADDTAXA)
 	{
 		printf("The AddTaxa command is no longer supported.\n");
-		exit(0);
+		exit(1);
 	}
 
 
 	if(Command == CDELTAXA)
 	{
 		printf("The DelTaxa command is no longer supported.\n");
-		exit(0);
+		exit(1);
 	}
 
 	if(Command == CEVENROOT)
 		SetEvenRoot(Opt->Trees);
-	
 
 	if(Command == CLOGFILE)
 	{
