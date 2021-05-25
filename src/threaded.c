@@ -40,7 +40,7 @@ void	SetNoOfThreads(int No)
 #ifdef CLIK_P
 	char *TStr;
 
-	TStr = (char*)malloc(sizeof(char) * 64);
+	TStr = (char*)SMalloc(sizeof(char) * 64);
 	sprintf(TStr, "%d", No);
 
 	if (0 != __cilkrts_set_param("nworkers",TStr))

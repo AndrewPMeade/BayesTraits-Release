@@ -1,5 +1,5 @@
-#if !defined (TYPEDEFS)
-#define TYPEDEFS
+#ifndef TYPEDEFS_H
+#define TYPEDEFS_H
 
 //#define BTLAPACK
 
@@ -73,6 +73,8 @@
 
 // #define NO_GSL
 
+//#define LH_UNDER_FLOW 1.9152E-174 
+#define LH_UNDER_FLOW 9.9296E-153
 
 // #define RATE_CHANGE_ONE
 
@@ -644,7 +646,8 @@ struct INODE
 	double		**Partial;
 	double		**GammaPartial;
 	char		*Tag;
-
+	int			NoUnderFlow;
+	
 #ifdef BIG_LH
 	mpfr_t		**BigPartial;
 	mpfr_t		t1, t2, t3;
@@ -660,8 +663,6 @@ struct INODE
 	
 	int			*FossilMask;
 
-//	int			NoFossilStates;
-//	int			*FossilStates;
 
 	CONDATA		*ConData;
 	FATTAILNODE	*FatTailNode;

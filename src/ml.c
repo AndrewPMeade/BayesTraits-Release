@@ -347,6 +347,20 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FreeMLMap(BMap);
 }
 
+void	MLTest2(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double R, Lh;
+
+	for(R=0.0001;R<1;R+=0.0001)
+	{
+		Rates->Rates[0] = R;
+		Lh = Likelihood(Rates, Trees, Opt);
+		printf("%f\t%f\n", R, Lh);
+	}
+
+	exit(0);
+}
+
 
 void	FindML(OPTIONS *Opt, TREES *Trees)
 {
@@ -365,6 +379,8 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 	fflush(stdout);
 	fflush(Opt->LogFile);
+
+//	MLTest2(Opt, Trees, Rates);
 
 	TStart = GetSeconds();
 

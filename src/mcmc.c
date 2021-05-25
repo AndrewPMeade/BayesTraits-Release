@@ -192,6 +192,12 @@ double	GetRandValFromType(TRANSFORM_TYPE Type, RATES *Rates, gsl_rng *RNG)
 	if(Type == VR_OU)
 		Prior = GetPriorFromName("OU", Rates->Priors, Rates->NoPriors);
 
+	if(Type == VR_NODE)
+		Prior = GetPriorFromName("VRNode", Rates->Priors, Rates->NoPriors);
+
+	if(Type == VR_BL)
+		Prior = GetPriorFromName("VRBL", Rates->Priors, Rates->NoPriors);
+
 	return RandFromPrior(RNG, Prior);
 }
 

@@ -258,22 +258,13 @@ double	CreatFullAP(double T, double Mue, int K, MATRIX *Mat)
 
 	return 0;
 }
-
-void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo,  int Rec)
+/*
+void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 {
 	int		Inner, Outter, NIndex;
 	double	Lh;
 	double	**Mat, **Partial;
-
-	if(Rec == TRUE)
-	{
-		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-		{
-			if(N->NodeList[NIndex]->Tip == FALSE)
-				SumLikeMultiState(N->NodeList[NIndex], Opt, Trees, SiteNo, Rec);
-		}
-	}
-
+	
 	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
 	{
 		N->Partial[SiteNo][Outter] = 1;
@@ -294,7 +285,81 @@ void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo,  int Rec)
 	if(N->FossilMask != NULL)
 		FossilLh(N, Opt, Trees, SiteNo);
 }
+*/
+/*
+void	CheckBigLh(NODE N, int SiteNo, TREES *Trees)
+{
+	int Index, NOS, UnderFlow;
+	
+	
+	NOS = Trees->NoOfStates;
 
+	UnderFlow = FALSE;
+	for(Index=0;Index<NOS;Index++)
+	{
+		if(N->Partial[SiteNo][Index] < LH_UNDER_FLOW)
+			UnderFlow = TRUE;
+	}
+
+	if(UnderFlow == FALSE)
+		return;
+
+	N->NoUnderFlow++;
+	for(Index=0;Index<NOS;Index++)
+		N->Partial[SiteNo][Index] = N->Partial[SiteNo][Index] / LH_UNDER_FLOW;
+}
+*/
+
+void	CheckBigLh(NODE N, int SiteNo, TREES *Trees)
+{
+	int Index, NOS, UnderFlow;
+
+
+	NOS = Trees->NoOfStates;
+
+	UnderFlow = FALSE;
+	for(Index=0;Index<NOS;Index++)
+	{
+		if(N->Partial[SiteNo][Index] < LH_UNDER_FLOW)
+			UnderFlow = TRUE;
+	}
+
+	if(UnderFlow == FALSE)
+		return;
+
+	N->NoUnderFlow++;
+	for(Index=0;Index<NOS;Index++)
+		N->Partial[SiteNo][Index] = N->Partial[SiteNo][Index] / LH_UNDER_FLOW;
+}
+
+void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
+{
+	int		Inner, Outter, NIndex;
+	double	Lh;
+	double	**Mat, **Partial;
+
+	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
+	{
+		N->Partial[SiteNo][Outter] = 1;
+
+		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
+		{
+			Mat = Trees->PList[N->NodeList[NIndex]->ID]->me;
+			Partial = N->NodeList[NIndex]->Partial;
+
+			Lh = 0;
+			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
+				Lh += Partial[SiteNo][Inner] * Mat[Outter][Inner];
+
+			N->Partial[SiteNo][Outter] *= Lh;
+		}
+	}
+	
+	CheckBigLh(N, SiteNo, Trees);
+
+	if(N->FossilMask != NULL)
+		FossilLh(N, Opt, Trees, SiteNo);
+}
 
 void	SumLikeRModel(NODE N, TREES *Trees, int SiteNo, RATES *Rates)
 {
@@ -762,16 +827,13 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 	NoErr = 0;
 	Err = FALSE;
 	Tree = Trees->Tree[Rates->TreeNo];
-	/* No need to compute P for root */
-
 	
 #ifdef OPENMP_THR
-	#pragma omp parallel for private(N, Err) num_threads(Opt->Cores)
+	#pragma omp parallel for private(N, Err)
 #endif	
 	for(NIndex=1;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = Tree->NodeList[NIndex];
-
 	
 		Err = FALSE;
 		if(NoErr == 0)
@@ -805,30 +867,12 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 	return FALSE;
 }
 
-void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Trees, OPTIONS *Opt, int SiteNo)
+void	RunNodeGroup(int GroupNo, RATES* Rates, TREE *Tree, TREES *Trees, OPTIONS *Opt, int SiteNo)
 {
 	int NIndex;
 
-	if(Parallel == FALSE)
-	{
-		for(NIndex=0;NIndex<Tree->NoFNodes[GroupNo];NIndex++)
-		{
-			#ifdef BIG_LH
-				LhBigLh(Tree->FNodes[GroupNo][NIndex], Opt, Trees, Opt->Precision, SiteNo);
-			#else
-				#ifdef QUAD_DOUBLE
-					NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
-				#else
-					SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo, FALSE);	
-				#endif
-			#endif
-		}
-
-		return;
-	}
-
 #ifdef OPENMP_THR
-	#pragma omp parallel for num_threads(Opt->Cores)
+	#pragma omp parallel for
 #endif
 	for(NIndex=0;NIndex<Tree->NoFNodes[GroupNo];NIndex++)
 	{
@@ -838,7 +882,7 @@ void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Tr
 			#ifdef QUAD_DOUBLE
 				NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
 			#else
-				SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo, FALSE);
+				SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
 			#endif
 		#endif
 	}
@@ -850,21 +894,27 @@ void	SumLhLiner(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
 	TREE	*Tree;
 
 	NIndex = 0;
-	
 
 	Tree = Trees->Tree[Rates->TreeNo];
 	
 	for(GIndex=0;GIndex<Tree->NoFGroups;GIndex++)
-	{
-#ifndef OPENMP_THR
-		RunNodeGroup(GIndex, FALSE, Rates, Tree, Trees, Opt, SiteNo);
-#else
-		if(Opt->Cores == 1)
-			RunNodeGroup(GIndex, FALSE, Rates, Tree, Trees, Opt, SiteNo);
-		else
-			RunNodeGroup(GIndex, TRUE, Rates, Tree, Trees, Opt, SiteNo);
-#endif
-	}
+		RunNodeGroup(GIndex, Rates, Tree, Trees, Opt, SiteNo);
+}
+
+double AddBigLh(RATES *Rates, TREES *Trees, OPTIONS *Opt)
+{
+	int NoUnderFlow, Index;
+	TREE	*Tree;
+	NODE N;
+
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	NoUnderFlow = 0;
+	for(Index=0;Index<Tree->NoNodes;Index++)
+		NoUnderFlow += Tree->NodeList[Index]->NoUnderFlow;
+
+//	printf("No Under:\t%d\n", NoUnderFlow);
+	return NoUnderFlow * log(LH_UNDER_FLOW);
 }
 
 double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
@@ -915,6 +965,8 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 #endif
 	}
 
+	Ret += AddBigLh(Rates, Trees, Opt);
+
 	return Ret;
 }
 
@@ -944,6 +996,14 @@ int		ValidLh(double LH)
 		return FALSE;
 
 	return TRUE;
+}
+
+void	ZeroNoUnderFlow(TREE *Tree)
+{
+	int Index;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+		Tree->NodeList[Index]->NoUnderFlow = 0;
 }
 
 double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
@@ -996,6 +1056,8 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	if(Opt->UseGamma == TRUE)
 		SetUpGamma(Rates, Opt);
+
+	ZeroNoUnderFlow(Tree);
 
 	for(GammaCat=0;GammaCat<Rates->GammaCats;GammaCat++)
 	{
