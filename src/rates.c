@@ -2727,9 +2727,7 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 
 	if(Rates->Priors != NULL)
 		FreePriors(Rates);
-
-
-
+	
 	if(Rates->DistDataRates != NULL)
 		FreeDistDataRates(Rates->DistDataRates);
 

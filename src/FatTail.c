@@ -399,8 +399,12 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FTR = Rates->FatTailRates;
 
 	UseGeoModel = FALSE;
+	
 	if(Opt->Model == M_GEO)
+	{
 		UseGeoModel = TRUE;
+		Rates->Rates[0] = 2.0;
+	}
 
 	FatTailSetAnsSates(Tree, NoSites, FTR);
 
@@ -732,6 +736,9 @@ void	AllSliceSampleFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 int	GetMutateFatTailRatesPos(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE* Shed)
 {
 	int Pos;
+
+	if(Opt->Model == M_GEO)
+		return 1;
 	
 	if(Opt->FatTailNormal == FALSE)
 		return RandUSInt(Rates->RS) % Shed->NoParm;

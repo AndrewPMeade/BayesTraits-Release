@@ -368,7 +368,11 @@ void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	GeoUpDateNode(N, Rates, Rates->RS);
 
+
+
 	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
+	
+
 
 //	Rates->AutoAccept = TRUE;
 }

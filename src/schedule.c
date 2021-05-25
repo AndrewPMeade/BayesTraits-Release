@@ -16,9 +16,7 @@ void	AddToFullATList(SCHEDULE* Shed, AUTOTUNE *AT)
 {
 	AUTOTUNE **NList;
 
-	NList = (AUTOTUNE**)malloc(sizeof(AUTOTUNE*) * (Shed->NoFullATList + 1));
-	if(NList == NULL)
-		MallocErr();
+	NList = (AUTOTUNE**)SMalloc(sizeof(AUTOTUNE*) * (Shed->NoFullATList + 1));
 
 	if(Shed->FullATList != NULL)
 	{
@@ -97,29 +95,7 @@ void	NormaliseVector(double *Vect, int Size)
 	for(Index=0;Index<Size;Index++)
 		Vect[Index] *= SF;
 }
-/*
-void		ScaleVect(double *Vect, int VectSize)
-{
-	double	SF=0;
-	int		Index=0;
 
-	for(Index=0;Index<VectSize;Index++)
-		SF += Vect[Index];
-
-
-	SF = 1 / SF;
-
-	for(Index=0;Index<VectSize;Index++)
-		Vect[Index] *= SF;
-
-	SF = 0;
-	for(Index=0;Index<VectSize;Index++)
-	{
-		Vect[Index] = Vect[Index] + SF;
-		SF = Vect[Index];
-	}
-}
-*/
 int		MultiTree(OPTIONS *Opt)
 {
 	if(Opt->UseEqualTrees == TRUE)
@@ -237,7 +213,11 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	if(Rates == 0)
 		Shed->OptFreq[SRATES] = 0;
 	else
+	{
 		Shed->OptFreq[SRATES] = 0.5;
+		if(Opt->ModelType == MT_FATTAIL)
+			Shed->OptFreq[SRATES] = 0.05;
+	}
 	
 #ifdef CONTRAST_ML_PARAM
 	if(Opt->ModelType == MT_CONTRAST)
