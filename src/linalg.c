@@ -4,8 +4,6 @@
 #include "linalg.h"
 #include "genlib.h"
 
-/*#include "jph.h" */
-
 
 static void     LUBackSubst (double **a, int n, int *indx, double *b);
 static int      EigenRG (int n, double **a, double *wr, double *wi, double **z, int *iv1, double *fv1);
@@ -1373,52 +1371,6 @@ double D_sign (double a, double b)
 	return (b >= 0 ? x : -x);
 }
 
-
-/* Stuff taken form MrBays 2. */
-
-void CalcCijk (double *c_ijk, int n, double **u, double **v)
-{
-
-	register int 	i, j, k;
-	double 			*pc;
-
-		/* precalculate values for faster matrix mult in GTRChangeMatrix and GTRDerivatives */
-		pc = c_ijk;
-		for (i=0; i<n; i++)
-			for (j=0; j<n; j++)
-				for (k=0; k<n; k++)
-				 	*pc++ = u[i][k] * v[k][j];	/* (note: pc = &c[i][j][k]) */
-
-}
-
-/* Stuff taken form MrBays 2. */
-/*
-void CalcPij (double *c_ijk, int n, double *eigenValues, double v, double r, double **p)
-
-{
-
-	register int		i, j, k;
-	double				vr, *ptr, *g, sum;
-
-	vr = v * r;
-	g = EigValexp;
-	for (k=0; k<n; k++)
-		*g++ = exp(*eigenValues++ * vr);
-
-	ptr = c_ijk;
-	for(i=0; i<n; i++)
-		{
-		for(j=0; j<n; j++)
-			{
-			g = EigValexp;
-			sum = 0.0;
-			for(k=0; k<n; k++)
-				sum += (*ptr++) * (*g++);
-			p[i][j] = (sum < 0.0) ? 0.0 : sum;
-			}
-		}
-}
-*/
 
 int MatrixDeterminant(double **a, int n, double *vv, int *indx, double *Det)
 {

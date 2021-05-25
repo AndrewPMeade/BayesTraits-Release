@@ -17,9 +17,6 @@ extern int  EigenRealGeneral (int n, double **a, double *v, double *vi, double *
 extern int	MatrixDeterminant(double **a, int n, double *vv, int *indx, double *Det);
 extern int	InvertMatrixAndDet (double **a, int n, double *col, int *indx, double **a_inv, double *Det);
 
-/* Stuff taken form MrBays 2 */
-extern void CalcCijk(double *c_ijk, int n, double **u, double **v);
-
 #ifndef NO_ERROR
 	#define NO_ERROR	0
 #endif

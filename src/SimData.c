@@ -86,13 +86,16 @@ int		EndState(int StartS, MATRIX *P, RANDSTATES *RS)
 	return Index;
 }
 
-void	RecSimData(int StartS, NODE N, TREES *Trees, RANDSTATES *RS, FILE *Out)
+void	RecSimData(int StartS, NODE N, TREES *Trees, RANDSTATES *RS, FILE *Out, int *NoChange)
 {
 	MATRIX *P;
 	int Index, EndS;
 
 	P = Trees->PList[N->ID];
 	EndS = EndState(StartS, P, RS);
+
+	if(EndS != StartS)
+		(*NoChange)++;
 
 	if(N->Tip == TRUE)
 	{
@@ -101,7 +104,7 @@ void	RecSimData(int StartS, NODE N, TREES *Trees, RANDSTATES *RS, FILE *Out)
 	}
 
 	for(Index=0;Index<N->NoNodes;Index++)
-		RecSimData(EndS, N->NodeList[Index], Trees, RS, Out);
+		RecSimData(EndS, N->NodeList[Index], Trees, RS, Out, NoChange);
 }
 
 FILE*	OpenSimOutFile(char *BaseFN)
@@ -119,6 +122,26 @@ FILE*	OpenSimOutFile(char *BaseFN)
 
 	return Ret;
 }
+
+int PrintNoChanges(NODE *NList, int NoNodes)
+{
+	int Index, Ret;
+	NODE N;
+
+	Ret = 0;
+
+	for(Index=0;Index<NoNodes;Index++)
+	{
+		N = NList[Index];
+
+		if(N->Ans != NULL)
+		{
+		
+		}
+	}
+
+	return Ret;
+}
 // ./Seq/CommunalSongSubSet.trees ./Seq/Sim.data.txt < in.txt > sout.txt 
 // ./Seq/CommunalSongSubSet.trees ./Seq/MattingSystem.txt < in.txt > sout.txt
 // ./Seq/BirdTreeSubSet.trees ./Seq/MediumCommunalTerritory.txt < in.txt > sout.txt
@@ -130,53 +153,71 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	double	Lh;
 	int		Err;
 	RANDSTATES *RS;
-	int		Index, RootS;
+	int		Index, RootS, SNo, NoChanges, No0;
 	NODE	Root;
 	FILE	*OutF;
 
-	return;
+//	return;
 //	BuildAllSateDS(Trees);
 
 	OutF = OpenSimOutFile(Opt->LogFN);
 	
 	RS = CreateSeededRandStates(Opt->Seed);
 
-	Rates->Rates[0] = 0.5;
-	Rates->Rates[1] = 1;
-
-//	for(Index=0;Index<Rates->NoOfRates;Index++)
-//		Rates->Rates[Index] = 1.0;
-
-	Rates->TreeNo = 0;
-
-	Lh = Likelihood(Rates, Trees, Opt);
-	printf("SimTreeLh:\t%f\n", Lh);
-
-	Err = SetUpAllAMatrix(Rates, Trees, Opt);
-
-	if(Err > 0)
+	No0 = 0;
+	for(SNo=0;SNo<100000;SNo++)
 	{
-		printf("A matrix err\n");
-		exit(0);
-	}
+		Rates->Rates[0] = RandDouble(RS) * 0.0001;
+	//	Rates->Rates[0] = 0.00002169;
+		Rates->Rates[0] = 0.00001;
+		Rates->Rates[0] = 0.000009;
 
-	Err = SetAllPMatrix(Rates, Trees, Opt, 1.0);
-	if(Err == TRUE)
-	{
-		printf("P matrix err\n");
-		exit(0);
-	}
+	//	Rates->Rates[1] = 1;
+
+	//	for(Index=0;Index<Rates->NoOfRates;Index++)
+	//		Rates->Rates[Index] = 1.0;
+		Rates->TreeNo = 0;
+
+		Lh = Likelihood(Rates, Trees, Opt);
+	//	printf("SimTreeLh:\t%f\n", Lh);
+
+		Err = SetUpAllAMatrix(Rates, Trees, Opt);
+
+		if(Err > 0)
+		{
+			printf("A matrix err\n");
+			exit(0);
+		}
+
+		Err = SetAllPMatrix(Rates, Trees, Opt, 1.0);
+		if(Err == TRUE)
+		{
+			printf("P matrix err\n");
+			exit(0);
+		}
 	
-	RootS = GetRootRates(Trees, RS);
+		RootS = GetRootRates(Trees, RS);
+		RootS = 0;
 
-	Root = Trees->Tree[0]->Root;
+		Root = Trees->Tree[0]->Root;
 
-	printf("Root State = %d\t%c\n", RootS, Trees->SymbolList[RootS]);
+	//	printf("Root State = %d\t%c\n", RootS, Trees->SymbolList[RootS]);
+		
 
-	for(Index=0;Index<Root->NoNodes;Index++)
-	{
-		RecSimData(RootS, Root->NodeList[Index], Trees, RS, OutF);
+		NoChanges = 0;
+		for(Index=0;Index<Root->NoNodes;Index++)
+		{
+			RecSimData(RootS, Root->NodeList[Index], Trees, RS, OutF, &NoChanges);
+		}
+
+		printf("Sim:\t%d\t%.012f\t%d\n", SNo, Rates->Rates[0], NoChanges);
+		fflush(stdout);
+
+		if(NoChanges == 0)
+			No0++;
 	}
+
+	printf("No0\t%d\n", No0);
 
 	fclose(OutF);
 

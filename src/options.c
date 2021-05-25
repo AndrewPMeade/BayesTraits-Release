@@ -271,6 +271,53 @@ void	PrintRecNodes(FILE* Str, OPTIONS *Opt)
 	}
 }
 
+void	PrintRJLocalTrans(FILE* Str, OPTIONS *Opt)
+{
+	fprintf(Str, "Min Trans Taxa No:               %d\n", Opt->MinTransTaxaNo);
+	
+
+	fprintf(Str, "RJ Local Kappa:                  ");
+	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
+		fprintf(Str, "True\n");
+	else
+		fprintf(Str, "False\n");
+			
+	fprintf(Str, "RJ Local Lambda:                 ");
+	if(Opt->UseRJLocalScalar[VR_LAMBDA] == TRUE)
+		fprintf(Str, "True\n");
+	else
+		fprintf(Str, "False\n");
+		
+	fprintf(Str, "RJ Local Delta:                  ");
+	if(Opt->UseRJLocalScalar[VR_DELTA] == TRUE)
+		fprintf(Str, "True\n");
+	else
+		fprintf(Str, "False\n");
+		
+	fprintf(Str, "RJ Local OU:                     ");
+	if(Opt->UseRJLocalScalar[VR_OU] == TRUE)
+		fprintf(Str, "True\n");
+	else
+		fprintf(Str, "False\n");	
+}
+
+void	PrintEmpPis(FILE* Str, OPTIONS *Opt)
+{
+	int NOS, Index;
+	double *Pis;
+	
+	NOS = Opt->Trees->NoStates;
+
+	Pis = GetEmpPis(Opt);
+
+	fprintf(Str, "(");
+	for(Index=0;Index<NOS-1;Index++)
+		fprintf(Str, "%f,", Pis[Index]);
+	fprintf(Str, "%f)", Pis[Index]);
+
+	free(Pis);
+}
+
 void	PrintOptions(FILE* Str, OPTIONS *Opt)
 {
 	int		Index, NOS;
@@ -370,7 +417,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 				fprintf(Str, "None\n");
 				break;
 			case PI_EMP:
-				fprintf(Str, "Empirical\n");
+				fprintf(Str, "Empirical: ");
+				PrintEmpPis(Str, Opt);
+				fprintf(Str, "\n");
 				break;
 			case PI_UNI:
 				fprintf(Str, "Uniform\n");
@@ -403,18 +452,21 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		else
 			fprintf(Str, "False\n");
 
-		fprintf(Str, "Kappa:                            ");
+		fprintf(Str, "Kappa:                           ");
 		PrintConPar(Str, Opt->UseKappa, Opt->EstKappa, Opt->FixKappa);
 
-		fprintf(Str, "Delta:                            ");
+		fprintf(Str, "Delta:                           ");
 		PrintConPar(Str, Opt->UseDelta, Opt->EstDelta, Opt->FixDelta);
 
-		fprintf(Str, "Lambda:                           ");
+		fprintf(Str, "Lambda:                          ");
 		PrintConPar(Str, Opt->UseLambda, Opt->EstLambda, Opt->FixLambda);
 
-		fprintf(Str, "OU:                               ");
+		fprintf(Str, "OU:                              ");
 		PrintConPar(Str, Opt->UseOU, Opt->EstOU, Opt->FixOU);
-				
+		
+		if(Opt->Analsis == ANALMCMC)
+			PrintRJLocalTrans(Str, Opt);
+
 		if(Opt->AlphaZero == TRUE)
 			fprintf(Str, "Alpha through zero:              True\n");
 
@@ -455,6 +507,15 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			if(Opt->RModelP != -1)
 				fprintf(Str, "R Model Rates fixed to:          %f", Opt->RModelP);
 		}
+	}
+	
+	if(Opt->DataType == DISCRETE)
+	{
+		fprintf(Str, "Normalise Q Matrix:              ");
+		if(Opt->NormQMat == TRUE)
+			fprintf(Str, "True\n");
+		else
+			fprintf(Str, "False\n");
 	}
 
 	PrintTags(Str, Opt);
@@ -501,6 +562,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	
 	if(Opt->DistData != NULL)
 		PrintDistData(Str, Opt->DistData);
+
 
 
 	if(Opt->NoCShed > 0)
@@ -1256,6 +1318,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->MinTransTaxaNo = 10;
 
+	Ret->NormQMat = FALSE;
+
 	free(Buffer);
 
 	return Ret; 
@@ -1293,10 +1357,8 @@ void	PrintModelChoic(TREES *Trees)
 	if((Trees->NoSites == 2) && (Trees->NoStates == 2))
 	{
 		printf("10)\tDiscrete: Covarion\n");
-	#ifndef PUBLIC_BUILD
 		if(Trees->NoTrees == 1)
 			printf("11)	Discrete: Heterogeneous \n");
-	#endif
 	}
 
 //	if(Trees->ValidCData == TRUE)
@@ -2270,40 +2332,54 @@ void	LogFile(OPTIONS *Opt, char *LogFN)
 	Opt->LogFN = StrMake(LogFN);
 }
 
-void	PreSet(OPTIONS *Opt, char* Set)
+void	PreSet(OPTIONS *Opt, int Tokes, char **Passed)
 {
-	MakeLower(Set);
+	char *PSet;
 
-	if(strcmp(Set, "m1p")==0)
+	if(Tokes != 2)
+	{
+		printf("The PreSet command take a preset\n");
+		exit(0);
+	}
+	
+	PSet = Passed[1];
+
+	MakeLower(PSet);
+
+	if(strcmp(PSet , "m1p")==0)
 	{
 		RestrictAll(Opt, Opt->RateName[0]);
 		Opt->AnalyticalP = TRUE;
+		return;
 	}
+
+	printf("Unknown preset.\n");
+	exit(0);
 }
 
 void	GetBasePis(OPTIONS *Opt, char* Type)
 {
 	MakeLower(Type);
 
-	if(strcmp(Type, "emp")==0)
+	if(strcmp(Type, "emp")==0 || strcmp(Type, "empirical") == 0)
 	{
 		Opt->PiTypes = PI_EMP;
 		return;
 	}
 
-	if(strcmp(Type, "uni")==0)
+	if(strcmp(Type, "uni") == 0 || strcmp(Type, "uniform") == 0)
 	{
 		Opt->PiTypes = PI_UNI;
 		return;
 	}
 
-	if(strcmp(Type, "none")==0)
+	if(strcmp(Type, "none") == 0)
 	{
 		Opt->PiTypes = PI_NONE;
 		return;
 	}
 
-	printf("The option %s, is unknown. Valid options are est, uni and none\n", Type);
+	printf("The option %s, is unknown. Valid options are empirical, uni and none\n", Type);
 	exit(0);
 }
 
@@ -3346,11 +3422,9 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 
 	if(NameToRJLocalType(Passed[1]) == -1)
 	{
-		printf("invalid scaler name, valid scalars are (kappa, lambda, delta, OU).\n");
+		printf("invalid transform name, valid scalars are (kappa, lambda, delta, OU).\n");
 		return FALSE;
 	}
-
-
 
 	return TRUE;
 }
@@ -3410,7 +3484,7 @@ void	SetRJLocalTransform(OPTIONS *Opt, char **Passed, int Tokes)
 	TRANSFORM_TYPE	Type;
 
 	if(ValidRJLocalScalarModel(Opt, Passed, Tokes) == FALSE)
-		return;
+		exit(1);
 
 	Type = NameToRJLocalType(Passed[1]);
 
@@ -3904,9 +3978,9 @@ void	SetMLMaxEval(OPTIONS *Opt, int Tokes, char **Passed)
 
 	Opt->MLMaxEVals = atoi(Passed[1]);
 
-	if(Opt->MLMaxEVals <= 0)
+	if(Opt->MLMaxEVals <= -1 || Opt->MLMaxEVals == 0)
 	{
-		printf("maximum number of evaluations must be greater than zero.\n");
+		printf("maximum number of evaluations must be greater than zero, or -1 for no limit.\n");
 		exit(1);
 	}
 }
@@ -3987,6 +4061,26 @@ void SetMinMaxRate(OPTIONS *Opt, int Tokes, char **Passed)
 
 	Opt->RateMin = Min;
 	Opt->RateMax = Max;
+}
+
+void	SetNormQMatrix(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Opt->Model != M_MULTISTATE)
+	{
+		printf("Only multistate models can be normalised.\n");
+		exit(0);
+	}
+
+	if(Tokes != 1)
+	{
+		printf("Normalise Q Matrix does not take any parameters.\n");
+		exit(0);
+	}
+
+	if(Opt->NormQMat == TRUE)
+		Opt->NormQMat = FALSE;
+	else
+		Opt->NormQMat = TRUE;
 }
 
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
@@ -4174,14 +4268,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 
 	if(Command == CPRESET)
-	{
-		if(Tokes == 2)
-		{
-			PreSet(Opt, Passed[1]);
-		}
-		else
-			printf("The PreSet command take a preset\n");
-	}
+		PreSet(Opt, Tokes, Passed);
 
 	if(Command == CSUMMARY)
 	{
@@ -4460,6 +4547,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CSETMINMAXRATE)
 		SetMinMaxRate(Opt, Tokes, Passed);
+
+	if(Command == CNORMQMAT)
+		SetNormQMatrix(Opt, Tokes, Passed);
 
 	return FALSE;
 }

@@ -308,10 +308,10 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 	}
 }
 
-void	FindEmpPis(RATES *Rates, OPTIONS *Opt)
+double* GetEmpPis(OPTIONS *Opt)
 {
 	TREES	*Trees;
-	double	*TempPis;
+	double	*Ret, *TempPis;
 	int		State;
 	double	Weight;
 	double	Total;
@@ -321,6 +321,7 @@ void	FindEmpPis(RATES *Rates, OPTIONS *Opt)
 	Trees = Opt->Trees;
 
 	TempPis = (double*)SMalloc(sizeof(double)*Trees->NoStates);
+	Ret = (double*)SMalloc(sizeof(double)*Trees->NoStates);
 
 	for(SIndex=0;SIndex<Trees->NoStates;SIndex++)
 		TempPis[SIndex] = 0;
@@ -333,7 +334,7 @@ void	FindEmpPis(RATES *Rates, OPTIONS *Opt)
 
 			if(SiteHadUnKnownState(Taxa->DesDataChar[SIndex]) == FALSE)
 			{
-				Weight = (double)1/(double)strlen(Taxa->DesDataChar[SIndex]);
+				Weight = 1.0/strlen(Taxa->DesDataChar[SIndex]);
 
 				for(SymbolIndex=0;SymbolIndex<(int)strlen(Taxa->DesDataChar[SIndex]);SymbolIndex++)
 				{
@@ -343,20 +344,26 @@ void	FindEmpPis(RATES *Rates, OPTIONS *Opt)
 			}
 			else
 			{
-				Weight = (double)1/(double)Trees->NoStates;
 				for(SymbolIndex=0;SymbolIndex<Trees->NoStates;SymbolIndex++)
-					TempPis[SymbolIndex] += Weight;
+					TempPis[SymbolIndex] += 1.0/Trees->NoStates;
 			}
 		}
 	}
 
-	Total = (double)Trees->NoSites * (double)Trees->NoTaxa;
+	Total = 0;
 
 	for(SIndex=0;SIndex<Trees->NoStates;SIndex++)
-		Rates->Pis[SIndex] = TempPis[SIndex] / Total;
+		Total += TempPis[SIndex];
+
+	for(SIndex=0;SIndex<Trees->NoStates;SIndex++)
+		Ret[SIndex] = TempPis[SIndex] / Total;
 
 	free(TempPis);
+
+	return Ret;
 }
+
+
 
 void	SetPiValues(RATES *Rates, OPTIONS *Opt)
 {
@@ -369,19 +376,16 @@ void	SetPiValues(RATES *Rates, OPTIONS *Opt)
 	{
 		for(Index=0;Index<Trees->NoStates;Index++)
 			Rates->Pis[Index] = (double)1/Trees->NoStates;
-
-		return;
 	}
 
 	if(Opt->PiTypes == PI_NONE)
 	{
 		for(Index=0;Index<Trees->NoStates;Index++)
 			Rates->Pis[Index] = 1;
-
-		return;
 	}
 
-	FindEmpPis(Rates, Opt);
+	if(Opt->PiTypes == PI_EMP)
+		Rates->Pis = GetEmpPis(Opt);
 }
 
 double	GetHMean(OPTIONS *Opt, RATES *Rates)
@@ -774,9 +778,12 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
 	Ret->RNG			=	gsl_rng_alloc(gsl_rng_mt19937);
 	gsl_rng_set(Ret->RNG, Opt->Seed);
-
+	
+	Ret->NormConst		=	-1;
+	Ret->GlobablRate	=	1.0;
 
 	SetRatesLocalRates(Ret, Opt);
+
 
 
 	if(Opt->UseDistData == TRUE)
@@ -1213,8 +1220,6 @@ void	PrintRecNodeHeadder(FILE* Str, OPTIONS *Opt, char* Name, int SiteNo)
 	}
 }
 
-
-
 void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 {
 	int			Index;
@@ -1226,6 +1231,8 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 	else
 		fprintf(Str, "Tree No\tLh\t");
 
+	if(Opt->NormQMat == TRUE)
+		fprintf(Str, "Global Rate\t");
 
 	if(Opt->DataType == CONTINUOUS)
 	{
@@ -1925,6 +1932,7 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 	int		Index;
 	RECNODE	*RNode;
 	NODE	Node;
+	double  NormC;
 	
 
 	if(Opt->Analsis == ANALML)
@@ -1935,6 +1943,9 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 		PrintRatesCon(Str, Rates, Opt);
 		return;
 	}
+
+	if(Opt->NormQMat == TRUE)
+		fprintf(Str, "%f\t", Rates->GlobablRate);
 	
 	if(Opt->UseRJMCMC == TRUE)
 	{
@@ -1972,8 +1983,13 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 	{
 		if(Opt->NOSPerSite == FALSE)
 		{
+			if(Opt->NormQMat == FALSE)
+				NormC = 1;
+			else
+				NormC = Rates->NormConst;
+
 			for(Index=0;Index<Opt->NoOfRates;Index++)
-				fprintf(Str, "%f\t", Rates->FullRates[Index]);
+				fprintf(Str, "%f\t", Rates->FullRates[Index] * NormC);
 		}
 		else
 			fprintf(Str, "%f\t", Rates->FullRates[0]);
@@ -2109,6 +2125,9 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 
 	if(A->TimeSlices != NULL)
 		CopyTimeSlices(A->TimeSlices, B->TimeSlices);
+
+	A->NormConst = B->NormConst;
+	A->GlobablRate = B->GlobablRate;
 } 
 
 double ChangeRate(RATES *Rates, double RateV, double dev)
@@ -2615,7 +2634,7 @@ void	ChangeLambda(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 		Rates->Lambda = RandUniDouble(Rates->RS, MIN_LAMBDA, MAX_LAMBDA);
 	else
 		Rates->Lambda = MultePram(Rates, Rates->Lambda, MIN_LAMBDA, MAX_LAMBDA, Dev);
-}
+} 
 
 void	ChangeOU(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 {
@@ -2628,6 +2647,19 @@ void	ChangeOU(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 		Rates->OU = RandUniDouble(Rates->RS, MIN_OU, MAX_OU);
 	else
 		Rates->OU = MultePram(Rates, Rates->OU, MIN_OU, MAX_OU, Dev);
+}
+
+void	ChangeGlobalRate(RATES* Rates, SCHEDULE* Shed)
+{
+	double Dev, NRate;
+
+	Dev = Shed->GlobalRateAT->CDev;
+
+	NRate = ChangeLocalScale(Rates->RS, Rates->GlobablRate, Dev);
+
+	Rates->LnHastings = CalcNormalHasting(Rates->GlobablRate, Dev);
+
+	Rates->GlobablRate = NRate;
 }
 
 void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
@@ -2745,6 +2777,10 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 
 		case S_TIME_SLICE_SCALE:
 			ChangeTimeSliceScale(Rates, Shed);
+		break;
+
+		case S_GLOBAL_RATE:
+			ChangeGlobalRate(Rates, Shed);
 		break;
 	}
 }

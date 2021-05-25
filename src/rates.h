@@ -46,4 +46,6 @@ void		PrintAutoTune(FILE* Str, OPTIONS *Opt, SCHEDULE* Shed);
 int			FindNoConRates(OPTIONS *Opt);
 
 void		SetEstDataFromPrior(RATES *Rates);
+
+double*		GetEmpPis(OPTIONS *Opt);
 #endif

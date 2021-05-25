@@ -71,6 +71,12 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		if(Opt->TestCorrel == FALSE)
 			SetDataRegTC(Opt);
 	}
+
+	if(Opt->NormQMat == TRUE && Opt->NoPatterns > 0)
+	{
+		printf("Normalisation and multiple patters are not supported together.\n");
+		exit(0);
+	}
 	
 	SetNoOfThreads(Opt->Cores);
 
@@ -141,7 +147,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		//btocl_AllocLhInfo(Trees);
 #endif
 	}
-	
+		
 	if(FindNoEstDataPoint(Trees) > 0)
 		Opt->EstData = TRUE;
 	else

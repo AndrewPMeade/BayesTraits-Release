@@ -132,7 +132,7 @@
 // Minimum number of taxa to Var Rate a ndoe
 #define MIN_TAXA_VR_NODE	0
 
-#define RATE_MIN 1.0e-16
+#define RATE_MIN 1.0e-32
 #define RATE_MAX 1000
 
 /*	#define MAXRATE	100 */
@@ -293,6 +293,7 @@ typedef enum
 	CADDPATTERN,
 	CSETMINTAXATRANS,
 	CSETMINMAXRATE, 
+	CNORMQMAT, 
 	CUNKNOWN,
 } COMMANDS;
 
@@ -362,7 +363,7 @@ static char    *COMMANDSTRINGS[] =
 	"loadmodels",	"lm", 
 	"ou",			"ou",
 	"varrates",		"vr",
-	"stones",		"st",
+	"stones",		"ss",
 	"adderr",		"er",
 	"schedule",		"sh", 
 	"rjdummy",		"rjd",
@@ -379,6 +380,7 @@ static char    *COMMANDSTRINGS[] =
 	"AddPattern", "ap",
 	"SetMinTransTaxaNo", "smttn",
 	"SetMinMaxRate", "smmr",
+	"NormaliseQMatrix", "nqm",
 	""
 };
 
@@ -1222,6 +1224,8 @@ typedef struct
 	
 	double		RateMin, RateMax;
 
+	int			NormQMat;
+
 } OPTIONS;
 
 typedef struct
@@ -1392,6 +1396,9 @@ typedef struct
 
 	int				AutoAccept;
 	int				CalcLh;
+
+	double			GlobablRate;
+	double			NormConst;
 } RATES;
 
 typedef struct
@@ -1408,7 +1415,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NO_SCHEDULE_OPT	25
+#define NO_SCHEDULE_OPT	26
 
 static char    *SHEDOP[] =
 {
@@ -1436,7 +1443,8 @@ static char    *SHEDOP[] =
 	"Local Rates",
 	"Data Dist",
 	"Time Slice - Time",
-	"Time Slice - Scale"
+	"Time Slice - Scale",
+	"Global Rate"
 };
 
 typedef enum
@@ -1465,10 +1473,9 @@ typedef enum
 	S_LOCAL_RATES,
 	S_DATA_DIST,
 	S_TIME_SLICE_TIME,
-	S_TIME_SLICE_SCALE
+	S_TIME_SLICE_SCALE,
+	S_GLOBAL_RATE
 } OPERATORS;
-
-
 
 typedef struct
 {
@@ -1513,6 +1520,9 @@ typedef struct
 	AUTOTUNE	*TimeSliceScaleAT;
 
 	AUTOTUNE	*CurrentAT;
+
+	AUTOTUNE	*GlobalRateAT;
+
 
 	int				NoCShed;
 	CUSTOM_SCHEDULE	**CShedList;

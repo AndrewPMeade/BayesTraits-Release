@@ -226,6 +226,9 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	
 	if(TimeSliceEstScale(Opt->TimeSlices) == TRUE)
 		Shed->OptFreq[S_TIME_SLICE_SCALE] = 0.1;
+
+	if(Opt->NormQMat == TRUE)
+		Shed->OptFreq[S_GLOBAL_RATE] = 0.1;
 		
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 
@@ -349,6 +352,8 @@ SCHEDULE*	AllocSchedule()
 
 	Ret->TimeSliceTimeAT = NULL;
 	Ret->TimeSliceScaleAT= NULL;
+
+	Ret->GlobalRateAT	= NULL;
 	
 	return Ret;
 }
@@ -620,8 +625,6 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 		AddToFullATList(Ret, Ret->LocalRatesAT);
 	}
 
-
-
 	if(TimeSliceEstTime(Opt->TimeSlices) == TRUE)
 	{
 		Ret->TimeSliceTimeAT = CreatAutoTune("Time Slice Time", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
@@ -636,6 +639,12 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 		AddToFullATList(Ret, Ret->TimeSliceScaleAT);
 	}
 
+	if(Opt->NormQMat == TRUE)
+	{
+		Ret->GlobalRateAT = CreatAutoTune("Global Rate", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->GlobalRateAT, 10000.0);
+		AddToFullATList(Ret, Ret->GlobalRateAT);
+	}
 
 	return Ret;
 }
@@ -700,6 +709,8 @@ void		FreeeSchedule(SCHEDULE* Sched)
 	if(Sched->TimeSliceTimeAT != NULL)
 		FreeAutoTune(Sched->TimeSliceTimeAT);
 
+	if(Sched->GlobalRateAT != NULL)
+		FreeAutoTune(Sched->GlobalRateAT);
 
 	if(Sched->NoCShed > 0)
 	{

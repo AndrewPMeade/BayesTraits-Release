@@ -33,7 +33,6 @@
 #endif
 
 
-//double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et);
 
 int		IsNum(double n)
 {
@@ -580,54 +579,104 @@ int		SetUpAMatrixOld(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 }
 */
 
-int		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *InvInfo, double *RateP, double *Pi)
+void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *InvInfo, double *RateP, double *Pi)
 {
-	int Err;
 
 	if(Model == M_MULTISTATE)
 	{
 		if(Trees->UseCovarion == FALSE)
-			return CreateMSAMatrix(InvInfo, NOS, RateP, Pi);
+			CreateMSAMatrix(InvInfo, NOS, RateP, Pi);
 		else
-			return CreateMSAMatrixCoVar(InvInfo, Rates, Trees, RateP, Pi);
+			CreateMSAMatrixCoVar(InvInfo, Rates, Trees, RateP, Pi);
 	}
 	
 	if(Model == M_DESCDEP)
 	{
 		if(Trees->UseCovarion == FALSE)
-			return CreateDEPAMatrix(InvInfo, Rates, Trees, RateP);
+			CreateDEPAMatrix(InvInfo, Rates, Trees, RateP);
 		else
-			return CreateDEPAMatrixCoVar(InvInfo, Rates, Trees, RateP);
+			CreateDEPAMatrixCoVar(InvInfo, Rates, Trees, RateP);
 	}
 
 	if(Model == M_DESCINDEP)
 	{
 		if(Trees->UseCovarion == FALSE)
-			return CreateInDEPAMatrix(InvInfo, Rates, Trees, RateP);
+			CreateInDEPAMatrix(InvInfo, Rates, Trees, RateP);
 		else
-			return CreateInDEPAMatrixCoVar(InvInfo, Rates, Trees, RateP);
+			CreateInDEPAMatrixCoVar(InvInfo, Rates, Trees, RateP);
 	}
 
 	if(Model == M_DESCCV)
-		return CreateDepCVAMatrix(InvInfo, Rates, Trees, RateP);
+		CreateDepCVAMatrix(InvInfo, Rates, Trees, RateP);
 
 	if(Model == M_DESCHET)
 	{
 		if(Trees->UseCovarion == FALSE)
 		{
-			Err = CreateInDEPAMatrix(Rates->Hetero->ModelInv[0], Rates, Trees, RateP);
-			Err += CreateDEPAMatrix(Rates->Hetero->ModelInv[1], Rates, Trees, &RateP[4]);
+			CreateInDEPAMatrix(Rates->Hetero->ModelInv[0], Rates, Trees, RateP);
+			CreateDEPAMatrix(Rates->Hetero->ModelInv[1], Rates, Trees, &RateP[4]);
 		}
 		else
 			exit(0);
-		if(Err > 1)
-			return 1;
 	}
-
-	return 0;
 }
 
-int		SetUpAllAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
+
+
+int		SetInvMat(MODEL Model, RATES *Rates, int NOS, INVINFO *InvInfo)
+{
+	int Err; 
+
+	if(Model != M_DESCHET)
+		return InvMat(InvInfo, NOS);
+
+		if(InvMat(Rates->Hetero->ModelInv[0], NOS) == ERROR)
+		return ERROR;
+
+	return InvMat(Rates->Hetero->ModelInv[1], NOS);
+}
+
+double CaclNormConst(MATRIX *A, double *Pi)
+{
+	double Ret;
+	int Index;
+
+	Ret = 0;
+	for(Index=0;Index<A->NoOfCols;Index++)
+		Ret += Pi[Index] * A->me[Index][Index];
+
+	return -1.0 / Ret;
+}
+
+void NormAMatrix(double NormC, MATRIX *A)
+{
+	int Index, No;
+
+	No = A->NoOfCols * A->NoOfRows;
+
+	for(Index=0;Index<No;Index++)
+		A->me[0][Index] = A->me[0][Index] * NormC;
+}
+
+void	NormaliseAMatrix(RATES *Rates, MATRIX *A)
+{
+	int Index;
+
+	Index = 0;
+	Rates->NormConst = CaclNormConst(A, Rates->Pis);
+	NormAMatrix(Rates->NormConst, A);
+
+
+	// Will need to normalise the rates, not just the matrix. 
+
+//	for(Index=0;Index<Rates->NoOfFullRates;Index++)
+//		Rates->FullRates[Index] = Rates->FullRates[Index] * Rates->NormConst;
+
+//	PrintMatrix(A, "A=", stdout);
+//	exit(0);
+}
+
+int		SetUpAllAMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
 	int PIndex, Pos, Err;
 
@@ -635,11 +684,16 @@ int		SetUpAllAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	for(PIndex=0;PIndex<Rates->NoPatterns;PIndex++)
 	{
-		//SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *InvInfo, double *RateP, double *Pi)
-		Err = SetUpAMatrix(Opt->Model, Rates, Trees, Trees->NoStates, Trees->InvInfo[PIndex], &Rates->FullRates[Pos], Rates->Pis);
-		if(Err != 0)
-			return Err;
+		SetUpAMatrix(Opt->Model, Rates, Trees, Trees->NoStates, Trees->InvInfo[PIndex], &Rates->FullRates[Pos], Rates->Pis);
 
+		if(Opt->NormQMat == TRUE)
+			NormaliseAMatrix(Rates, Trees->InvInfo[PIndex]->A);
+
+		Err = SetInvMat(Opt->Model, Rates, Trees->NoStates, Trees->InvInfo[PIndex]); 
+
+		if(Err == ERROR)
+			return Err;
+		
 		Pos += Opt->DefNoRates;
 	}
 
@@ -825,13 +879,13 @@ void SetDiscEstData(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	}
 }
 
-int		SetStdPMatrix(INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gamma)
+int		SetStdPMatrix(RATES *Rates, INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gamma)
 {
 	double Len;
 	double ErrVal;
 	int		ThrNo;
 
-	Len = N->Length * Gamma;
+	Len = N->Length * Gamma * Rates->GlobablRate;
 
 	ThrNo = GetThreadNo();
 	
@@ -849,7 +903,7 @@ int		SetStdPMatrix(INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gam
 			ErrVal = CreatFullPMatrix(Len, InvInfo, P, Trees->NoStates, ThrNo);
 		break;
 	}
-	
+		
 	if(ErrVal > 0.001)
 		return TRUE;
 
@@ -891,7 +945,6 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 	for(NIndex=1;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = Tree->NodeList[NIndex];
-	
 		Err = FALSE;
 		if(NoErr == 0)
 		{
@@ -911,7 +964,7 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 						InvInfo = Rates->Hetero->ModelInv[PMatNo];
 					}
 
-					Err = SetStdPMatrix(InvInfo, Trees, N, Trees->PList[N->ID], Gamma);
+					Err = SetStdPMatrix(Rates, InvInfo, Trees, N, Trees->PList[N->ID], Gamma);
 				}
 			}
 		}
@@ -1094,8 +1147,6 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		MapModelFile(Opt, Rates);
 	
 	LhTransformTree(Rates, Trees, Opt);
-//	PrintTreeBL(Trees->Tree[Rates->TreeNo]);
-//	exit(0);
 	
 	if(Opt->NoLh == TRUE)
 		return -1.0;
@@ -1195,8 +1246,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		FinishUpGamma(Rates, Opt, Trees);
 
 	Ret = CombineLh(Rates, Trees, Opt);
-
-	
+		
 	if(ValidLh(Ret, Opt->ModelType) == FALSE)
 		return ERRLH;
 

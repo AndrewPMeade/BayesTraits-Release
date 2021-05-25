@@ -348,14 +348,14 @@ void	BildSymbolList(TREES *Trees)
 	}
 
 	/* To add a hiden state */
-/*	if(strlen(Temp) == 1)
+	if(strlen(Temp) == 1)
 	{
 		if(IsSymbolInList('0', Temp) == FALSE)
 			Temp[strlen(Temp)] = '0';
 		else
 			Temp[strlen(Temp)] = '1';
 	}
-*/
+
 	Trees->SymbolList = StrMake(Temp);
 
 	Trees->NoStates = (int)strlen(Trees->SymbolList);
