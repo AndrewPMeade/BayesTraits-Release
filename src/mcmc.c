@@ -16,6 +16,10 @@
 #include "gamma.h"
 #include "ml.h"
 
+#ifdef	 JNIRUN
+	extern	void JavaProgress(int No);
+#endif
+
 void	PrintPriorHeadder(FILE* Str, OPTIONS *Opt, RATES* Rates)
 {
 	int		PIndex;
@@ -181,19 +185,20 @@ void	MCMC(OPTIONS *Opt, TREES *Trees)
 	SetRatesToPriors(Opt, CRates);
 	SetRatesToPriors(Opt, NRates);
 
-	PrintOptions(stdout, Opt);
+	#ifndef JNIRUN
+		PrintOptions(stdout, Opt);
+		PrintRatesHeadder(stdout, Opt);
+		PrintPriorHeadder(stdout, Opt, CRates);
+		fflush(stdout);
+	#endif
+
 	PrintOptions(Opt->LogFile, Opt); 
-	
-	PrintRatesHeadder(stdout, Opt);
 	PrintRatesHeadder(Opt->LogFile, Opt);
-
-
-	PrintPriorHeadder(stdout, Opt, CRates);
 	PrintPriorHeadder(Opt->LogFile, Opt, CRates);
 
 	InitMCMC(Opt, Trees, CRates);
 
-	fflush(stdout);
+	
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
 
@@ -232,10 +237,12 @@ void	MCMC(OPTIONS *Opt, TREES *Trees)
 			{
 				if(Itters >= Opt->BurnIn)
 				{
-					PrintMCMCSample(Itters, Acc, Opt, CRates, stdout);
-					PrintMCMCSample(Itters, Acc, Opt, CRates, Opt->LogFile);
+					#ifndef JNIRUN
+						PrintMCMCSample(Itters, Acc, Opt, CRates, stdout);
+						fflush(stdout);
+					#endif
 
-					fflush(stdout);
+					PrintMCMCSample(Itters, Acc, Opt, CRates, Opt->LogFile);
 					fflush(Opt->LogFile);
 
 					if(Opt->Summary == TRUE)
@@ -246,6 +253,10 @@ void	MCMC(OPTIONS *Opt, TREES *Trees)
 
 					BlankSchedule(Shed);
 				}
+
+				#ifdef JNIRUN
+					JavaProgress(Itters);
+				#endif
 
 				Acc=0;
 			}

@@ -2,9 +2,10 @@
 #define TYPEDEFS
 
 #pragma warning(disable : 4996)
-
 #include <stdio.h>
 #include "matrix.h"
+
+#define	JNIRUN	TRUE
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000 
@@ -88,6 +89,7 @@ typedef enum
 	CNOSPERSITE,
 	CSCHEDULE,
 	CSTREEMOVE,
+	CSETSEED,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -150,6 +152,7 @@ static char    *COMMANDSTRINGS[] =
 	"fitnospersite","nps",
 	"schedule",		"sch",
 	"solotreemove",	"stree",
+	"setseed",		"ss",
 	""
 };
 
@@ -561,6 +564,7 @@ typedef struct
 	char		*ScheduleFile;
 
 	int			SoloTreeMove;
+	long		Seed;
 } OPTIONS;
 
 

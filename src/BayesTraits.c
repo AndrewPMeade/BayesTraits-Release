@@ -16,69 +16,14 @@
 #include "ml.h"
 #include "genlib.h"
 #include "continuous.h"
+#include "initialise.h"
 
 #include "./MathLib/dcalc.h"
 #include "./MathLib/mconf.h"
 
 extern void BayesModeTest(OPTIONS *Opt, TREES *Trees);
-
 extern void PMatrixTest(void);
 
-
-OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char	*DataFN)
-{
-	OPTIONS*	Opt=NULL;
-	MODEL		Model;
-	ANALSIS		Analsis;
-
-
-	Model	= GetModel(Trees);
-	Analsis = GetAnalsis(Trees);
-
-	CheckDataWithModel(DataFN, Trees, Model);
-
-	if((Model == DESCDEP) || (Model == DESCINDEP))
-		SquashDep(Trees);
-
-	if((Model == CONTINUOUSRR) || (Model == CONTINUOUSDIR) || (Model == CONTINUOUSREG))
-		RemoveConMissingData(Trees);
-
-	Opt = CreatOptions(Model, Analsis, Trees->NoOfStates, TreeFN, DataFN, Trees->SymbolList, Trees);
-
-	return Opt;
-}
-
-void	PreProcess(OPTIONS *Opt, TREES* Trees)
-{
-	int		Index;
-	
-	Opt->LogFile		= OpenWrite(Opt->LogFN);
-	Trees->UseCovarion	= Opt->UseCovarion;
-
-	if(Opt->DataType == CONTINUOUS)
-		InitContinus(Opt, Trees);
-	else
-	{
-		if(Opt->UseCovarion == TRUE)
-			Trees->NoOfStates = Trees->NoOfStates * 2;
-
-		if((Opt->UseKappa == TRUE) && (Opt->FixKappa != -1))
-		{
-			for(Index=0;Index<Trees->NoOfTrees;Index++)
-				TreeBLToPower(Trees, &Trees->Tree[Index], Opt->FixKappa);
-
-			Opt->FixKappa = -1;
-			Opt->UseKappa = FALSE;
-		}
-
-		AllocPartial(Trees, Opt->UseGamma);
-		AllocLHInfo(Trees, Opt);
-
-		SetFossiles(Trees, Opt);
-
-		SetNOSPerSite(Opt);
-	}
-}
 
 /*
 	./Seq/AllDiono.trees ./Seq/AllDiono.txt < in.txt
@@ -132,7 +77,6 @@ int main(int argc, char** argv)
 
 	SetSeed();
 
-
 	if(argc != 3)
 	{
 		printf("The program takes 2 paramiters a tree file and a data file\n");
@@ -148,7 +92,6 @@ int main(int argc, char** argv)
 	}
 
 	LoadData(argv[2], Trees);
-
 	
 	Opt = SetUpOptions(Trees, argv[1], argv[2]);
 	
@@ -167,7 +110,6 @@ int main(int argc, char** argv)
 		FindML(Opt, Trees);
 
 	FreeTrees(Trees, Opt);
-
 	FreeOptions(Opt);
 
 	return 0;

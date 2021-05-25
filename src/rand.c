@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "rand.h"
+#include "typedef.h"
 
 #define		N		25
 #define		MAGIC	7
@@ -63,7 +64,9 @@ int SetSeed(void)
 	
 	S =  (unsigned)time(NULL);
 
-	printf("Rand Seed\t%d\n", S);
+	#ifndef JNIRUN
+		printf("Rand Seed\t%d\n", S);
+	#endif
 	
 	srand(S);
 	KeepSeed = Seed = S;

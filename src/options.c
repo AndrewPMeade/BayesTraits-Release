@@ -9,6 +9,7 @@
 #include "trees.h"
 #include "priors.h"
 #include "treenode.h"
+#include "rand.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHTINDENT		4
@@ -271,6 +272,8 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	else
 		fprintf(Str, "True\n");
 	
+	fprintf(Str, "Seed                             %lu\n", Opt->Seed);
+
 	if(Opt->Analsis == ANALML)
 	{
 		fprintf(Str, "Analsis Type:                    Maximum Likelihood\n" );
@@ -736,6 +739,12 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	OPTIONS *Ret=NULL;
 	char	Buffer[1024];
 
+	if((Model == DESCDEP) || (Model == DESCINDEP))
+		SquashDep(Trees);
+
+	if((Model == CONTINUOUSRR) || (Model == CONTINUOUSDIR) || (Model == CONTINUOUSREG))
+		RemoveConMissingData(Trees);
+
 
 	Ret = (OPTIONS*)malloc(sizeof(OPTIONS));
 	if(Ret == NULL)
@@ -887,7 +896,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->ScheduleFile	=	NULL;
 
 	Ret->SoloTreeMove	=	FALSE;
-
+	Ret->Seed			=	GetSeed();
 	return Ret; 
 }
 
@@ -2537,6 +2546,19 @@ void	SetConRateDev(OPTIONS *Opt, char *PName, char *PRateDev)
 	Opt->RateDevList[RPos] = RD;
 }
 
+void	OptSetSeed(OPTIONS *Opt, char	*CSeed)
+{
+	if(IsValidInt(CSeed) == FALSE)
+	{
+		printf("%s is not a valid Unsigned integer.\n", CSeed);
+		return;
+	}
+
+	IntSetSeed(atoi(CSeed));
+	Opt->Seed = GetSeed();
+}
+
+
 int		PassLine(OPTIONS *Opt, char *Buffer)
 {
 	char		*Passed[1024];
@@ -3067,7 +3089,24 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 			Opt->SoloTreeMove = TRUE;
 	}
 
+	if(Command == CSETSEED)
+	{
+		if(Tokes == 2)
+			OptSetSeed(Opt, Passed[1]);
+		else
+			printf("SetSeed take an unsinged intger.\n");
+		
+	}
+
 	return FALSE;
+}
+
+void	GetOptionsArry(OPTIONS *Opt, int Size, char** OptStr)
+{
+	int	Index;
+
+	for(Index=0;Index<Size;Index++)
+		PassLine(Opt, OptStr[Index]);
 }
 
 void	GetOptions(OPTIONS *Opt)
@@ -3083,8 +3122,6 @@ void	GetOptions(OPTIONS *Opt)
 		printf("> ");
 		fgets(Buffer, BUFFERSIZE, stdin); 
 	} while(PassLine(Opt,Buffer) == FALSE);
-
-	FlattenRecNode(Opt);
-
+	
 	free(Buffer);
 }

@@ -15,6 +15,11 @@
 
 double	Min1D(RATES* Rates, TREES *Trees, OPTIONS *Opt, double From, double To, int Steps);
 
+#ifdef	 JNIRUN
+	extern	void JavaProgress(int No);
+#endif
+
+
 void	FindValidStartSet(double *Vec, RATES *Rates, TREES *Trees, OPTIONS *Opt)
 {
 	double	Lh;
@@ -141,8 +146,10 @@ void	FindML(OPTIONS *Opt, TREES* Trees)
 	if(BRates==NULL)
 		MallocErr();
 
-	PrintOptions(stdout, Opt);
-	PrintRatesHeadder(stdout, Opt);
+	#ifndef JNIRUN
+		PrintOptions(stdout, Opt);
+		PrintRatesHeadder(stdout, Opt);
+	#endif
 
 	if(Opt->Headers == TRUE)
 	{
@@ -197,9 +204,13 @@ void	FindML(OPTIONS *Opt, TREES* Trees)
 		if(Opt->Summary == TRUE)
 			UpDataSummary(Summary, Rates, Opt);
 
-		PrintRates(stdout, Rates, Opt);
-		printf("\n");
-		fflush(stdout);
+		#ifndef JNIRUN
+			PrintRates(stdout, Rates, Opt);
+			printf("\n");
+			fflush(stdout);
+		#else
+			JavaProgress(TIndex);
+		#endif
 
 		PrintRates(Opt->LogFile, Rates, Opt);
 		fprintf(Opt->LogFile, "\n");
