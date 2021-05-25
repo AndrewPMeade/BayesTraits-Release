@@ -30,7 +30,7 @@ void	InitCKappaTree(TREES* Trees, TREE* Tree)
 		TaxaDist[TIndex].NoOfBLVect = (int*)malloc(sizeof(int) * Trees->NoOfTaxa);
 		if(TaxaDist == NULL)
 			MallocErr();
-	} 
+	}
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
@@ -74,10 +74,10 @@ void	FreeCKappaTree(CONVAR *ConVar, int NoOfTaxa)
 				free(TaxaDist[TIndex].TToTPath[Index]);
 		}
 		free(TaxaDist[TIndex].TToTPath);
-		free(TaxaDist[TIndex].NoOfBLVect);	
+		free(TaxaDist[TIndex].NoOfBLVect);
 	}
 
-	free(ConVar->TaxaDist);	
+	free(ConVar->TaxaDist);
 }
 
 void	NodesBelowNode(TREE *Tree, NODE N, int *Count)
@@ -119,18 +119,18 @@ void	KappaTaxaVarCoVar(TREES* Trees, TREE* Tree, TAXA* Taxa, int TNo)
 
 	MyNode = TaxaToNode(Trees, Tree, Taxa);
 	TaxaDist = &Tree->ConVars->TaxaDist[TNo];
-	
+
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
 		CTaxa = &Trees->Taxa[TIndex];
-		
+
 		BlankVisited(Trees, Tree);
 		SetUpTrace(MyNode, Tree);
 
 		TNode = TaxaToNode(Trees, Tree, CTaxa);
 		while(TNode->Visited == FALSE)
 			TNode = TNode->Ans;
-	
+
 		CNode = TNode;
 		NodesBlow = 0;
 		NodesBelowNode(Tree, TNode, &NodesBlow);
