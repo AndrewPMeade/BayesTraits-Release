@@ -159,7 +159,7 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N)
 
 	Plasty->NodeList = (PLASTYNODE**) AddToList(&Plasty->NoNodes, Plasty->NodeList, (void*)PNode);
 
-	Rates->LogHRatio= -PPCOST;
+	Rates->LogHRatio += -PPCOST + log(PPJACOBIAN);
 }
 
 void	DelNNodes(PLASTY *Plasty, int NoDel)
@@ -249,7 +249,8 @@ void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
 	Plasty->NodeList = NList;
 	Plasty->NoNodes--;
 
-	Rates->LogHRatio= PPCOST;
+
+	Rates->LogHRatio = PPCOST + log(1.0 / PPJACOBIAN);
 }
 
 double	ChangePlastyRate(double Rate, double dev, RANDSTATES *RS)
@@ -598,7 +599,7 @@ void	GetNodeIDList(NODE N, int *Size, int *List)
 
 void	InitPPFiles(OPTIONS *Opt, TREES *Trees, RATES* Rates)
 {
-//	InitPPTreeFile(Opt, Trees);
+	InitPPTreeFile(Opt, Trees);
 	IntiPPLogFile(Opt, Trees, Rates);
 }
 
@@ -671,6 +672,6 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 
 void	PrintPPOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 {
-//	PrintPPTree(Opt, Trees, Rates, It);
+	PrintPPTree(Opt, Trees, Rates, It);
 	LogPPResults(Opt, Trees, Rates, It);
 }
