@@ -183,7 +183,7 @@ void	RecCalcContrast(NODE N, int NoSites)
 	
 	if(N->NoNodes == 1)
 	{
-		printf("nodes with only one descente caouse problems. \n");
+		printf("nodes with only one descente causes problems. \n");
 		exit(0);
 	}
 

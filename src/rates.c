@@ -22,6 +22,15 @@
 double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
 
+void	SetRegBetaZero(int NoSites, RATES *Rates)
+{
+	int Index;
+
+	for(Index=0;Index<NoSites;Index++)
+		Rates->Beta[Index] = 0;
+}
+
+
 int		FindNoOfRates(OPTIONS *Opt)
 {
 	int	Index;
@@ -103,7 +112,12 @@ void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 	}
 
 	for(Index=1;Index<Rates->NoOfRates;Index++)
-		Rates->Beta[Index - 1] = Rates->Rates[Index];
+	{
+		if(Opt->TestCorrel == FALSE)
+			Rates->Beta[Index - 1] = Rates->Rates[Index] = 0;
+		else
+			Rates->Beta[Index - 1] = Rates->Rates[Index];
+	}
 }
 
 int		FindRatePos(int Rate, OPTIONS *Opt)

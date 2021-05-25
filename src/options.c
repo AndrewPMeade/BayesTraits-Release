@@ -2970,6 +2970,14 @@ void	SetMCMCMLStart(OPTIONS *Opt)
 		Opt->MCMCMLStart = TRUE;	
 }
 
+void	SetTestCorrel(OPTIONS *Opt)
+{
+	if(Opt->TestCorrel == FALSE)
+		Opt->TestCorrel = TRUE;
+	else
+		Opt->TestCorrel = FALSE;
+}
+
 int		PassLine(OPTIONS *Opt, char *Buffer)
 {
 	char		*Passed[1024];
@@ -3295,10 +3303,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 
 	if(Command == CTESTCORREL)
 	{
-		if(Opt->TestCorrel == FALSE)
-			Opt->TestCorrel = TRUE;
-		else
-			Opt->TestCorrel = FALSE;
+
+		SetTestCorrel(Opt);
+
 	}
 
 	if(Command == CSURFACE)

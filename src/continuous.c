@@ -705,6 +705,12 @@ void	FindMLRagVals(TREES* Trees, TREE *Tree, OPTIONS *Opt)
 			CV->Beta[x] = CV->TVect1[x];
 	}
 
+	if(Opt->TestCorrel == FALSE)
+	{
+		for(x=0;x<Trees->NoOfSites;x++)
+			CV->Beta[x] = 0;
+	}
+
 /*
 	printf("ML Vals\n");
 	for(x=0;x<Trees->NoOfSites+1;x++)

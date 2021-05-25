@@ -260,10 +260,7 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	Rates->Lh = Likelihood(Rates, Trees, Opt);
 }
 
-void	Test(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
 
-}
 
 #ifdef	 JNIRUN
 	void	FindML(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
@@ -287,8 +284,7 @@ void	Test(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	Rates = CreatRates(Opt);
 
-	Test(Opt, Trees, Rates);
-	
+		
 	#ifndef JNIRUN
 		PrintOptions(stdout, Opt);
 		PrintRatesHeadder(stdout, Opt);
