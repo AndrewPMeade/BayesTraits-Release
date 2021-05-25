@@ -210,7 +210,7 @@ void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, int It)
 	Plasty->NodeList = (PLASTYNODE**) AddToList(&Plasty->NoNodes, (void**)Plasty->NodeList, (void*)PNode);
 
 	Rates->LnHastings = 0;
-	Rates->LogJacobion = 0;
+	Rates->LnJacobion = 0;
 }
 
 void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
@@ -251,7 +251,7 @@ void	DelPlastyNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, int No)
 	Plasty->NoNodes--;
 	
 	Rates->LnHastings = 0;
-	Rates->LogJacobion = 0;
+	Rates->LnJacobion = 0;
 }
 
 double	ChangePlastyRate(RATES *Rates, double Scale, double SD)
@@ -286,9 +286,9 @@ void	PPChangeScale(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	No = RandUSLong(Rates->RS) % Plasty->NoNodes;
 	Node = Plasty->NodeList[No];
 
-	Rates->LnHastings = CalcNormalHasting(Node->Scale, PPSCALEDEV);
+	Rates->LnHastings = CalcNormalHasting(Node->Scale, Opt->VarRatesScaleDev);
 //	Rates->LnHastings = 0;
-	Node->Scale = ChangePlastyRate(Rates, Node->Scale, PPSCALEDEV);
+	Node->Scale = ChangePlastyRate(Rates, Node->Scale, Opt->VarRatesScaleDev);
 }
 
 
@@ -677,7 +677,9 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 	Out = Opt->PPLog;
 
 	fprintf(Out, "%d\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, P->NoNodes);
-	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->EstAlpha[0], Rates->Contrast->EstSigma[0], P->Alpha);
+
+
+	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Rates->Contrast->Sigma->me[0][0], P->Alpha);
 
 	for(Index=0;Index<P->NoNodes;Index++)
 	{

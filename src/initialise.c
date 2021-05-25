@@ -20,12 +20,17 @@
 #include "initialise.h"
 #include "phyloplasty.h"
 #include "BigLh.h"
+#include "ptrees.h"
+#include "threaded.h"
+#include "QuadDouble.h"
+#include "contrasts.h"
 
 OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 {
-	OPTIONS*	Opt=NULL;
+	OPTIONS		*Opt;
 	MODEL		Model;
 	ANALSIS		Analsis;
+
 
 	Model	= GetModel(Trees);
 	Analsis = GetAnalsis(Trees);
@@ -40,16 +45,20 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 {
 	int		Index;
 	int		ID;
+	
+	SetNoOfThreads(Opt->Cores);
 
+	if(Opt->LoadModels == TRUE)
+		Opt->AutoTuneRD = FALSE;
+		
 	FlattenRecNode(Opt);
 	
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 	{
 		ID = 0;
-		SetNodeIDs(Trees->Tree[Index]->Root, &ID);
+		SetNodeIDs(Trees->Tree[Index]);
 	}
-	
-
+		
 	Opt->LogFile		= OpenWrite(Opt->LogFN);
 
 	#ifdef JNIRUN
@@ -64,14 +73,22 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 	Trees->UseCovarion	= Opt->UseCovarion;
 
-	if(Opt->DataType == CONTINUOUS)
+	SetPTrees(Opt, Trees);
+
+	if(Opt->ModelType == MT_CONTINUOUS)
 		InitContinus(Opt, Trees);
-	else
+
+	if(Opt->ModelType == MT_CONTRAST)
+		InitContrastAll(Opt, Trees);
+
+	if(Opt->ModelType == MT_DISCRETE)
 	{
+//		NormaliseTrees(Trees->NormConst, Trees);
+		
 		if(Opt->UseCovarion == TRUE)
 			Trees->NoOfStates = Trees->NoOfStates * 2;
 
-		if(Opt->Model == DESCCV)
+		if(Opt->Model == M_DESCCV)
 			Trees->NoOfStates = Trees->NoOfStates * 2;
 
 		if((Opt->UseKappa == TRUE) && (Opt->FixKappa != -1))
@@ -91,5 +108,18 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		SetNOSPerSite(Opt);
 
 		InitTreeBigLh(Opt, Trees);
+
+#ifdef QUAD_DOUBLE
+		InitQuadDoubleLh(Opt, Trees);
+#endif
+
 	}
+
+	if(Opt->SaveTrees != NULL)
+		SaveTrees(Opt->SaveTrees, Opt->Trees);
+
+	if(FindNoEstDataPoint(Opt, Trees) > 0)
+		Opt->AutoTuneDD	= TRUE;
+	else
+		Opt->AutoTuneDD = FALSE;
 }

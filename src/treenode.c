@@ -6,8 +6,7 @@
 #include "typedef.h"
 #include "trees.h"
 #include "genlib.h"
-
-
+/*
 void	SetNodePartition(NODE N, int* List, int *No)
 {
 	int Index;
@@ -39,31 +38,7 @@ int PartComp(const void *av, const void *bv)
 
 	return 0;
 }
-/*
-void	SetPartition(NODE N, TAXA *Taxa)
-{
-	int	No;
 
-	if(N->Tip == TRUE)
-		return;
-
-	N->PSize = 0;
-	
-	SetNodePartition(N, NULL, &N->PSize);
-
-	N->Part = (int*)malloc(sizeof(int) * (N->PSize));
-	if(N->Part == NULL)
-		MallocErr();
-
-	No = 0;
-	SetNodePartition(N, N->Part, &No);
-
-	qsort(N->Part, N->PSize, sizeof(int), (void*)PartComp);
-
-	SetPartition(N->Left, Taxa);
-	SetPartition(N->Right, Taxa);
-}
-*/
 void	SetPart(NODE N)
 {
 	int	No;
@@ -256,44 +231,4 @@ void	SetRecNodes(RECNODE RNode, OPTIONS *Opt)
 	}
 }
 
-/*
-
-struct RNODE
-{
-	NODETYPE	NodeType;
-	char*		Name;
-	
-	int			NoOfTaxa;
-	int			PresInTrees;
-	int			FossilState;
-
-	TAXA		**Taxa;
-
-	int			Hits;
-	NODE*		TreeNodes;
-
-	struct		RNODE *Next;
-};
-
-  
-void	FindAllINodes(RECNODE RNode, OPTIONS *Opt)
-{
-	int	Index;
-	int	Depth;
-	
-	RNode->Hits= 0;
-	for(Index=0;Index<Opt->Trees->NoOfTrees;Index++)
-	{
-		Depth = 0;
-		RNode->TreeNodes[Index] = FindRecNode(RNode, Opt, Index, &Depth);
-		if(RNode->TreeNodes[Index] != NULL)
-		{
-			if((RNode->NodeType == MRCA) ||(RNode->NodeType == FOSSIL))
-				RNode->Hits += Depth;
-
-			if(RNode->NodeType == NODEREC)
-				RNode->Hits++;
-		}
-	}
-}
-*/
+ */

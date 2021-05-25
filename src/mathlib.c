@@ -827,13 +827,13 @@ extern double polevl ( double, void *, int );
 extern double p1evl ( double, void *, int );
 extern double floor ( double );
 extern double fabs ( double );
-extern int isnan ( double );
+extern int isnan2 ( double );
 extern int isfinite ( double );
 static double stirf ( double );
 double lgam ( double );
 #else
 double pow(), log(), exp(), sin(), polevl(), p1evl(), floor(), fabs();
-int isnan(), isfinite();
+int isnan2(), isfinite();
 static double stirf();
 double lgam();
 #endif
@@ -877,7 +877,7 @@ int i;
 
 sgngam = 1;
 #ifdef NANS
-if( isnan(x) )
+if( isnan2(x) )
 	return(x);
 #endif
 #ifdef INFINITIES
@@ -1129,7 +1129,7 @@ int i;
 
 sgngam = 1;
 #ifdef NANS
-if( isnan(x) )
+if( isnan2(x) )
 	return(x);
 #endif
 
@@ -2154,8 +2154,9 @@ else
 
 /* Return 1 if x is a number that is Not a Number, else return 0.  */
 
-int isnan(x)
-double x;
+
+#ifndef isnan 
+int isnan2(double x)
 {
 #ifdef NANS
 union
@@ -2189,7 +2190,7 @@ if( sizeof(int) == 4 )
 	return(0);
 	}
 else
-	{ /* size int not 4 */
+	{ 
 #ifdef IBMPC
 	if( (u.s[3] & 0x7ff0) == 0x7ff0)
 		{
@@ -2212,13 +2213,16 @@ else
 		}
 #endif
 	return(0);
-	} /* size int not 4 */
+	} 
 
 #else
-/* No NANS.  */
+
 return(0);
 #endif
+
 }
+
+#endif
 
 
 /* Return 1 if x is not infinite and is not a NaN.  */

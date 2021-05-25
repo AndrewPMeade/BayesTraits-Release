@@ -6,6 +6,7 @@
 #include "typedef.h"
 #include "genlib.h"
 #include "BigLh.h"
+#include "likelihood.h"
 
 #ifndef BIG_LH
 void	InitTreeBigLh(OPTIONS *Opt, TREES *Trees) { }
@@ -79,7 +80,6 @@ void	SetTipDataNodeBigLh(NODE N, OPTIONS *Opt, TREES *Trees)
 	{
 		for(j=0;j<Trees->NoOfStates;j++)
 			mpfr_set_d(N->BigPartial[i][j], N->Partial[i][j], DEF_ROUND);
-
 	}
 }
 
@@ -206,7 +206,7 @@ void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo)
 	}
 
 	if(N->FossilState != -1)
-		FossilLhBig(N, Trees, SiteNo);
+		FossilLh(N, Trees, SiteNo);
 }
 
 double CombineBigLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS)

@@ -18,6 +18,8 @@
 #include "ml.h"
 #include "phyloplasty.h"
 #include "threaded.h"
+#include "schedule.h"
+#include "modelfile.h"
 
 #ifdef	 JNIRUN
 //	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
@@ -80,7 +82,7 @@ void	PrintPriorHeadder(FILE* Str, OPTIONS *Opt, RATES* Rates)
 		}
 	}
 
-	fprintf(Str, "Acceptance\n");
+	fprintf(Str, "\n");
 }
 
 void	PrintPrior(FILE* Str, PRIORS *Prior)
@@ -121,16 +123,18 @@ void	UpDateHMean(OPTIONS *Opt, RATES *Rates)
 #endif
 }
 
-void	PrintMCMCSample(int Itters, int Acc, OPTIONS *Opt, RATES *Rates, FILE* Str)
+void	PrintMCMCSample(int Itters, SCHEDULE* Shed, OPTIONS *Opt, RATES *Rates, FILE* Str)
 {
 	TREES*	Trees;
 	int		PIndex;
+	double	HMean;
 
 	Trees = Opt->Trees;
 
-	fprintf(Str, "%d\t", Itters);
-
-	PrintRates(Str, Rates, Opt);
+	HMean = GetHMean(Opt, Rates);
+	fprintf(Str, "%d\t%f\t%f\t%d\t", Itters, Rates->Lh, HMean, Rates->TreeNo+1);
+		
+	PrintRates(Str, Rates, Opt, Shed);
 
 	if(Opt->UseRJMCMC == FALSE)
 	{
@@ -140,7 +144,10 @@ void	PrintMCMCSample(int Itters, int Acc, OPTIONS *Opt, RATES *Rates, FILE* Str)
 	else
 		PrintPrior(Str, Rates->Prios[0]);
 
-	fprintf(Str, "%f\n", (double)Acc/(double)Opt->Sample);
+	fprintf(Str, "\n");
+
+//	fflush(stdout);
+
 }
 
 void	PrintTest(int Itters, RATES* Rates)
@@ -272,6 +279,42 @@ void	STest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	exit(0);
 }
 
+FILE*	SetScheduleFile(OPTIONS *Opt, SCHEDULE*	Shed)
+{
+	FILE *Ret;
+	char	*Buffer;
+
+	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
+	if(Buffer == NULL)
+		MallocErr();
+
+	sprintf(Buffer, "%s.Schedule.txt", Opt->LogFN);
+
+	Ret = OpenWrite(Buffer);
+
+	PrintShedHeadder(Opt, Shed, Ret);
+
+	free(Buffer);
+
+	return Ret;
+}
+
+void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *NRates, RATES *CRates)
+{
+	int Index;
+	double Alpha;
+
+
+	for(Alpha=-10;Alpha<10;Alpha+=0.1)
+	{
+		CRates->Rates[0] = Alpha;
+		CRates->Lh = Likelihood(CRates, Trees, Opt);
+		printf("%f\t%f\t%f\n", Alpha, CRates->Lh, Trees->Tree[0]->ConVars->Sigma->me[0][0]);
+	}
+
+	exit(0);
+}
+
 
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
@@ -279,13 +322,13 @@ void	STest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	void	MCMC(OPTIONS *Opt, TREES *Trees)
 #endif
 {
-	RATES*		CRates=NULL;
-	RATES*		NRates=NULL;
+	RATES*		CRates;
+	RATES*		NRates;
 	int			Itters;
 	double		Heat, StartT, EndT;
-	int			Acc;
 	SCHEDULE*	Shed;
 	FILE*		ShedFile;
+	FILE*		SaveModelF;
 	int			BurntIn, GBurntIn;
 #ifdef	JNIRUN
 	long		FP;
@@ -293,30 +336,26 @@ void	STest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	Shed		= NULL;
 	ShedFile	= NULL;
-	Acc			= 0;
 	CRates = NRates = NULL;
-
-	if(Opt->UseSchedule == TRUE)
-		ShedFile = OpenWrite(Opt->ScheduleFile);
-	
-	Shed = CreatSchedule(Opt);
-
-	if(Opt->UseSchedule == TRUE)
-		PrintShedHeadder(Opt, Shed, ShedFile);
-	
+	SaveModelF	= NULL;
+			
 	CRates	=	CreatRates(Opt);
 	NRates	=	CreatRates(Opt);
 
 	CreatPriors(Opt, CRates);
 	CreatPriors(Opt, NRates);
 
+	Shed = CreatSchedule(Opt, CRates->RS);
+
+//	if(CRates->ModelFile != NULL)
+//		TestModelFile(Opt, Trees, CRates);
+	
 	SetRatesToPriors(Opt, CRates);
 	SetRatesToPriors(Opt, NRates);
 
-	if(Opt->UsePhyloPlasty == TRUE)
+	if(Opt->UseVarRates == TRUE)
 		InitPPFiles(Opt, Trees, CRates);
-
-
+	
 	#ifndef JNIRUN
 		PrintOptions(stdout, Opt);
 		PrintRatesHeadder(stdout, Opt);
@@ -344,185 +383,176 @@ void	STest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	//	STest(Opt, Trees, CRates);
 
+	if(Opt->SaveModels == TRUE)
+		SaveModelF = InitSaveModelFile(Opt->SaveModelsFN, Opt, Trees, CRates);
+
+//	if(Opt->LoadModels == TRUE)
+//		TestModelFile(Opt, Trees, CRates);
+
 	InitMCMC(Opt, Trees, CRates);
 
-//	MCTest(Opt, Trees, CRates);
-	
-//	TestLHSurface(Opt, Trees, CRates);
+	if(Opt->UseSchedule == TRUE)
+	{
+		ShedFile = SetScheduleFile(Opt, Shed);
+//		ShedFile = OpenWrite(Opt->ScheduleFile);
+	}
 
+
+	
+		
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
 
-/*	FindNoBL(Opt, Trees, CRates);  */
+	MCMCTest(Opt, Trees, NRates, CRates);
 
 	GBurntIn = BurntIn = FALSE;
-
+	if(Opt->BurnIn == 0)
+		BurntIn = TRUE;
 // PrintTime(stdout); printf("\n");
 
 	StartT = GetSeconds();	
-
-	for(Itters=0;;Itters++)
+	for(Itters=1;;Itters++)
 	{ 
-		CopyRates(NRates, CRates, Opt);
+ 		CopyRates(NRates, CRates, Opt);
 		MutateRates(Opt, NRates, Shed, Itters);
 
 		if(Opt->NodeData == TRUE)
 			SetTreeAsData(Opt, Trees, NRates->TreeNo);
 
 		NRates->Lh = Likelihood(NRates, Trees, Opt);
-
-		CalcPriors(NRates, Opt);
-
-		Heat = NRates->Lh - CRates->Lh;
-		Heat += NRates->LhPrior - CRates->LhPrior;
-		Heat += NRates->LnHastings;
 		
-		if((log(RandDouble(CRates->RS)) <= Heat) && (NRates->Lh != ERRLH))
-		{
-			Swap((void**)&NRates, (void**)&CRates);
-			Acc++;
-			Shed->Accepted[Shed->Op]++;	
-		}
-
 		if(NRates->Lh == ERRLH)
 			Itters--;
 		else
 		{
+			CalcPriors(NRates, Opt);		
+		
+			Heat = NRates->Lh - CRates->Lh;
+	//		printf("LH:\t%f\t%f\t%f\n", Heat, NRates->Lh , CRates->Lh);
+			Heat += NRates->LhPrior - CRates->LhPrior;
+			Heat += NRates->LnHastings;
+
+			if(log(RandDouble(CRates->RS)) <= Heat)
+			{
+				Swap((void**)&NRates, (void**)&CRates);
+				UpDateShedAcc(TRUE, Shed);
+			}
+			else
+				UpDateShedAcc(FALSE, Shed);
+
 			if((Itters%Opt->Sample==0) && (BurntIn == TRUE))
 			{
 				UpDateHMean(Opt, CRates);
 				CRates->Lh = Likelihood(CRates, Trees, Opt);
 
 				#ifndef JNIRUN
-					PrintMCMCSample(Itters, Acc, Opt, CRates, stdout);
+					PrintMCMCSample(Itters, Shed, Opt, CRates, stdout);
 					fflush(stdout);
 				#endif
 
-				PrintMCMCSample(Itters, Acc, Opt, CRates, Opt->LogFile);
+				PrintMCMCSample(Itters, Shed, Opt, CRates, Opt->LogFile);
 				fflush(Opt->LogFile);
 
 				if(Opt->UseSchedule == TRUE)
 					PrintShed(Opt, Shed, ShedFile);
 
-				if(Opt->UsePhyloPlasty == TRUE)
+				if(Opt->UseVarRates == TRUE)
 					PrintPPOutput(Opt, Trees, CRates, Itters);
-					
-				BlankSchedule(Shed);
+
 				#ifdef JNIRUN
 					fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
 					AddResults(Env, Obj, Opt);
 				#endif
-
-			Acc=0;
+				
 			#ifdef JNIRUN
 				SetProgress(Env, Obj, Itters);
 			#endif
-			}
-		}
 
-//		CRates->LhPrior		= NRates->LhPrior = 0;
-		CRates->LnHastings	= NRates->LnHastings = 0;
-		CRates->LogJacobion = NRates->LogJacobion = 0;
-
-		if((Opt->Itters == Itters) && (Opt->Itters != -1))
-		{
-//			PrintTime(stdout); printf("\n");
-
-			if((Opt->UseEqualTrees == FALSE) || (CRates->TreeNo == Trees->NoOfTrees - 1))
-			{	
-				FreePriors(CRates);
-				FreePriors(NRates);
-
-				FreeRates(CRates);
-				FreeRates(NRates);
-
-				free(Shed);
-
-				if(Opt->UseSchedule == TRUE)
-					fclose(ShedFile);
-
-				EndT = GetSeconds();
-
-				printf("Sec:\t%f\n", EndT - StartT);
-				return;
+				if(Opt->SaveModels == TRUE)
+					SaveModelFile(SaveModelF, Opt, Trees, CRates);
 			}
 
-			if(GBurntIn == TRUE)
+			if(Itters%Opt->Sample==0)
 			{
-				CRates->TreeNo++;
-				CRates->Lh = Likelihood(CRates, Trees, Opt);
-				Itters = 0;
-				BurntIn = FALSE;
+				UpDateSchedule(Opt, Shed, CRates->RS);
+				BlankSchedule(Shed);
 			}
 
-		}
-
-		#ifdef JNIRUN
-			if(Itters%100==0)
+			if((Opt->Itters == Itters) && (Opt->Itters != -1))
 			{
-				CheckStop(Env, Obj, Trees);
-				if(Trees->JStop == TRUE)
-				{
+				if((Opt->UseEqualTrees == FALSE) || (CRates->TreeNo == Trees->NoOfTrees - 1))
+				{	
 					FreePriors(CRates);
 					FreePriors(NRates);
 
 					FreeRates(CRates);
 					FreeRates(NRates);
 
-					free(Shed);
+					FreeeSchedule(Shed);
+				
+					if(Opt->UseSchedule == TRUE)
+						fclose(ShedFile);
 
+					EndT = GetSeconds();
+
+					printf("Sec:\t%f\n", EndT - StartT);
+
+					if(SaveModelF != NULL)
+						fclose(SaveModelF);
 					return;
 				}
-			}
-		#endif
 
-
-		if(Itters == Opt->BurnIn)
-		{
-			if(Opt->UseEqualTrees == TRUE)
-			{
-				if(GBurntIn == FALSE)
+				if(GBurntIn == TRUE)
 				{
-					GBurntIn = TRUE;
+					CRates->TreeNo++;
+					CRates->Lh = Likelihood(CRates, Trees, Opt);
 					Itters = 0;
+					BurntIn = FALSE;
+					BlankSchedule(Shed);
+					Shed->GNoAcc = Shed->GNoTried = 0;
 				}
 			}
-			else
-				BurntIn = TRUE;
-		}
 
-		if(Opt->UseEqualTrees == TRUE)
-		{
-			if((Itters == Opt->ETreeBI) && (GBurntIn == TRUE))
-				BurntIn = TRUE;
+			#ifdef JNIRUN
+				if(Itters%100==0)
+				{
+					CheckStop(Env, Obj, Trees);
+					if(Trees->JStop == TRUE)
+					{
+						FreePriors(CRates);
+						FreePriors(NRates);
+
+						FreeRates(CRates);
+						FreeRates(NRates);
+
+						free(Shed);
+
+						return;
+					}
+				}
+			#endif
+
+
+			if(Itters == Opt->BurnIn)
+			{
+				if(Opt->UseEqualTrees == TRUE)
+				{
+					if(GBurntIn == FALSE)
+					{
+						GBurntIn = TRUE;
+						Itters = 1;
+					}
+				}
+				else
+					BurntIn = TRUE;
+			}
+
+			if(Opt->UseEqualTrees == TRUE)
+			{
+				if((Itters == Opt->ETreeBI) && (GBurntIn == TRUE))
+					BurntIn = TRUE;
+			}
 		}
 	}
-
-
 }
 
-void	LhOverAllModels(OPTIONS *Opt, TREES *Trees)
-{
-	RATES	*Rates;
-	int		Index;
-
-	Rates = CreatRates(Opt);
-
-	CreatPriors(Opt, Rates);
-	SetRatesToPriors(Opt, Rates);
-
-	InitHMean(Rates, Opt);
-	printf("\n");
-	
-	for(Index=0;Index<Rates->NoOfModels;Index++)
-	{
-		Rates->ModelNo = Index;
-		memcpy(Rates->Rates, Rates->FixedModels[Index], sizeof(double) * Rates->NoOfRates);
-		Rates->Lh = Likelihood(Rates, Trees, Opt);
-	
-		if(Rates->Lh != ERRLH)
-			PrintMCMCSample(Index, 1, Opt, Rates, stdout);
-	}
-
-	exit(0);
-}

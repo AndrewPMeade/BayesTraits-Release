@@ -5,6 +5,7 @@
 
 #include "genlib.h"
 #include "matrix.h"
+#include "linalg.h"
 
 /* Some matrix manipulasion rotueses */
 /* The representatin of me is Row By Coloum*/
@@ -55,6 +56,62 @@ MATRIX*	AllocMatrix(int NoOfRows, int NoOfCols)
 			Ret->me[RIndex][CIndex] = 0;
 	
 	return Ret;
+}
+
+MATRIX**	AllocMultiMatrixLinMem(int NoMat, int NoRows, int NoCols)
+{
+	MATRIX **Ret;
+	MATRIX *Mat;
+	double *Mem;
+	int		Index, RIndex;
+	
+	Ret = (MATRIX**)malloc(sizeof(MATRIX*) * NoMat);
+	if(Ret == NULL)
+		MallocErr();
+
+	Mem = (double*)malloc(sizeof(double) * NoRows * NoCols * NoMat);
+	if(Mem == NULL)
+		MallocErr();	
+	
+	for(Index=0;Index<NoMat;Index++)
+	{
+		Ret[Index] = (MATRIX*)malloc(sizeof(MATRIX));
+		if(Ret[Index] == NULL)
+			MallocErr();
+
+		Mat = Ret[Index];
+		Mat->NoOfCols = NoCols;
+		Mat->NoOfRows = NoRows;
+
+		Mat->me = (double**)malloc(sizeof(double*) * NoRows);
+		if(Mat->me == NULL)
+			MallocErr();
+
+		Mat->me[0] = &Mem[Index * NoRows * NoCols];
+		for(RIndex=1;RIndex<NoRows;RIndex++)
+			Mat->me[RIndex] = Mat->me[0] + (RIndex * NoCols);
+	}
+
+	return Ret;
+}
+
+void		FreeMultiMatrixLinMem(MATRIX **MList, int NoMat)
+{
+	MATRIX	*Mat;
+	double *Mem;
+	int		MIndex;
+
+	Mem = MList[0]->me[0];
+
+	for(MIndex=0;MIndex<NoMat;MIndex++)
+	{
+		Mat = MList[MIndex];
+
+		free(Mat->me);
+		free(Mat);
+	}
+
+	free(Mem);
 }
 
 void	FreeMatrix(MATRIX *Matrix)
@@ -193,6 +250,103 @@ void	KroneckerProduct(MATRIX *A, MATRIX *B, MATRIX *C)
 	}
 }
 
+// Helper function used by VectByKroneckerMult below.
+// Assumptions: sigma and mat are square matrices, column-major.
+// However, since sigma and mat are both symmetric, this is not a problem - both (linear)buffers are the same.
+// vres: pointer to result vector buffer, size = sigma_dim*mat_dim
+// v: pointer to vector buffer, size = sigma_dim*mat_dim
+// sigma: pointer to buffer storing a sigma_dim by sigma_dim matrix
+// 
+// vres = v x (sigma kx mat)
+int kronecker_vectmultColumn(double* vres, double* v, double* sigma, int sigma_dim,double*  mat, int mat_dim) {
+	
+	double *pmat;	
+	int mat_col, mat_row;
+	double *psigma;
+	double *pvres_start, *pvres;
+	double *pv, *pv_start;
+	int sumacc_idx, extra_idx;
+	double* sumacc, a, sum;
+//	double *vstart;
+	
+	sumacc = (double*)malloc(sizeof(double)*sigma_dim);
+		
+	pmat = mat;
+	pvres_start = vres;
+	
+	for(mat_col=0; mat_col < mat_dim; mat_col++) {	
+		for(sumacc_idx=0; sumacc_idx < sigma_dim; sumacc_idx++) 
+			sumacc[sumacc_idx] = 0.0;
+		pv_start = v;
+		for(mat_row=0; mat_row < mat_dim; mat_row++) {
+			a = *pmat;
+			pv = pv_start;
+			for(sumacc_idx=0; sumacc_idx < sigma_dim; sumacc_idx++) {	
+				sumacc[sumacc_idx] += a*(*pv);
+				pv += mat_dim;
+			}	
+			pv_start++;
+			pmat++;
+		}
+				
+		// update result
+		pvres = pvres_start;
+		psigma = sigma; 
+		for(extra_idx=0; extra_idx < sigma_dim; extra_idx++) {
+			sum = 0.0;
+			for(sumacc_idx=0; sumacc_idx < sigma_dim; sumacc_idx++) {
+				sum+= *psigma*sumacc[sumacc_idx];
+				psigma++;
+			}
+			*pvres = sum;
+			pvres += mat_dim;
+		}	
+		pvres_start++;
+	}
+	
+	
+	free(sumacc);
+	return 0;
+}
+
+// Simpler version (column major) for sigma_dim = 1
+int kronecker_vectmultColumnOne(double* vres, double* v, double* sigma, int sigma_dim,double*  mat, int mat_dim) {
+	int mat_col, mat_row;     // included for clarity - no need
+	double *pvres, *pv;
+//	double sum;
+	double *pmat;
+	
+	double sigma_constant;
+	
+	if (sigma_dim > 1) {
+		return kronecker_vectmultColumn(vres, v, sigma, sigma_dim, mat, mat_dim);
+	}
+	
+	sigma_constant = *sigma;	
+	pvres = vres;
+	pmat = mat;		
+	for(mat_col=0; mat_col < mat_dim; mat_col++) {	
+		pv = v;
+		*pvres = 0.0;	
+		for(mat_row = 0; mat_row < mat_dim; mat_row++) {
+			*pvres += (*pmat)*(*pv);
+			pv++;
+			pmat++;
+		}
+		(*pvres) *= sigma_constant;
+		pvres++;
+	}
+	return 0;
+}
+
+void	VectByKroneckerMult(double *Vect, MATRIX *A, MATRIX* B, double *Ret) 
+{
+	if (A->NoOfRows == 1)
+		kronecker_vectmultColumnOne(Ret, Vect, A->me[0], A->NoOfRows, B->me[0], B->NoOfRows);
+	else
+		kronecker_vectmultColumn(Ret, Vect, A->me[0], A->NoOfRows, B->me[0], B->NoOfRows);
+}
+
 void	VectByMatrixMult(double *Vect, MATRIX *Mat, double *Ret)
 {
 	int		x,y;
@@ -263,6 +417,20 @@ void	MatrixMult(MATRIX *A, MATRIX *B, MATRIX *Prod)
 }
 */
 
+void	MatrixSelfMult(MATRIX *A, MATRIX *Prod)
+{
+	int		k,i,j;
+
+	for (k=0; k<A->NoOfRows; k++)
+	{
+		for (i=0; i<A->NoOfRows; i++) 
+		{
+			Prod->me[i][k] = 0.0;
+			for (j=0; j<A->NoOfCols; j++)
+				Prod->me[i][k] += A->me[i][j] * A->me[k][j];
+		}
+	}	
+}
 
 void	MatrixMult(MATRIX *A, MATRIX *B, MATRIX *Prod)
 {
@@ -398,4 +566,36 @@ void	FillMatrix(MATRIX *M, double Value)
 		for(y=0;y<M->NoOfCols;y++)
 			M->me[x][y] = Value;
 	
+}
+
+MATRIX_INVERT*	CreatMatInvertInfo(int N)
+{
+	MATRIX_INVERT*	Ret;
+
+	Ret = (MATRIX_INVERT*)malloc(sizeof(MATRIX_INVERT));
+	if(Ret == NULL)
+		MallocErr();
+
+	Ret->Inv = AllocMatrix(N, N);
+	Ret->TempD = (double*)malloc(sizeof(double) * N);
+	Ret->TempI = (int*)malloc(sizeof(double) * N);
+
+	return Ret;
+}
+
+void			FreeMatInvertInfo(MATRIX_INVERT *M)
+{
+	FreeMatrix(M->Inv);
+	free(M->TempD);
+	free(M->TempI);
+}
+
+int				Matrix_Invert(MATRIX *Mat, MATRIX_INVERT *Info)
+{
+	int Ret;
+
+	Ret = InvertMatrixAndDet(Mat->me, Mat->NoOfCols, Info->TempD, Info->TempI, Info->Inv->me, &Info->Det);
+	Info->Det = exp(Info->Det);
+	
+	return Ret;
 }

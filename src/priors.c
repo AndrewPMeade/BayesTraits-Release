@@ -88,6 +88,11 @@ void		CreatPriors(OPTIONS *Opt, RATES* Rates)
 	int			Index;
 	int			RIndex;
 
+	if(Opt->UseGamma == TRUE)
+		Rates->GammaPrior = CreatPrior(Opt->PriorGamma, -1);
+	else
+		Rates->GammaPrior = NULL;
+
 	if(Opt->UseRJMCMC == TRUE)
 	{
 		Ret = (PRIORS**)malloc(sizeof(PRIORS*));
@@ -132,10 +137,7 @@ void		CreatPriors(OPTIONS *Opt, RATES* Rates)
 		}
 	}
 
-	if(Opt->UseGamma == TRUE)
-		Rates->GammaPrior = CreatPrior(Opt->PriorGamma, -1);
-	else
-		Rates->GammaPrior = NULL;
+
 	Rates->Prios = Ret;
 }
 
@@ -155,8 +157,11 @@ void	SetRatesToPriors(OPTIONS *Opt, RATES* Rates)
 		
 		if(Prior->Dist == UNIFORM)
 		{
-			if(Opt->UseModelFile == FALSE)
-				Rates->Rates[PIndex] = Prior->DistVals[0]+((Prior->DistVals[1]-Prior->DistVals[0])/2.0);
+			if(Opt->LoadModels == FALSE)
+			{
+				if(Opt->ModelType != MT_CONTRAST)
+					Rates->Rates[PIndex] = Prior->DistVals[0]+((Prior->DistVals[1]-Prior->DistVals[0])/2.0);
+			}
 		}
 	}	
 }
@@ -415,7 +420,6 @@ double	LnGamaP(double Rate, double Mean, double Var, double CatSize)
 	return log(P1 - P2);
 }	
 
-
 void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 {
 	PRIORS	*Prior;
@@ -427,7 +431,10 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	Rates->LhPrior = 0;
 	NLh = 0;
 
-	if(Opt->UsePhyloPlasty == TRUE)
+	if(Opt->LoadModels == TRUE)
+		return;
+
+	if(Opt->UseVarRates == TRUE)
 		Rates->LhPrior += CalcPPPriors(Rates, Opt);
 
 	if(Opt->UseRJMCMC == TRUE)

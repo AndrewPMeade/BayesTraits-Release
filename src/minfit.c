@@ -95,7 +95,7 @@ TestFsplitting:
 	   if (fabs(q[l-1]) <= eps)
    	      break;	/* goto Cancellation; */
        }
-Cancellation:
+//Cancellation:
        c = 0.0; s = 1.0;
        for (i=l; i<=k; i++) {
            f = s * e[i]; e[i] *= c;

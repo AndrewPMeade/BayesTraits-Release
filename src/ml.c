@@ -14,12 +14,18 @@
 #include "data.h"
 #include "continuous.h"
 #include "contrasts.h"
+#include "threaded.h"
 
 double	Min1D(RATES* Rates, TREES *Trees, OPTIONS *Opt, double From, double To, int Steps);
 
 #ifdef	 JNIRUN
 	#include "BayesTraitsJNI.h"
 //	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
+#endif
+
+#ifdef	NLOPT_BT
+//	#include "nlopt.h"
+	#include "NLOptBT.h"
 #endif
 
 void	SetRatesVecFixed(double *Vec, double Val, int Size)
@@ -60,6 +66,21 @@ double	RandMag(double Min, double Max, RANDSTATES *RS)
 	return Ret;
 }
 
+void SetOtherRandRates(OPTIONS *Opt, TREES *Trees, RATES *Rates, double Mag)
+{
+	if(Opt->UseCovarion == TRUE)
+	{
+		Rates->OffToOn = RandDouble(Rates->RS) * Mag;
+		Rates->OnToOff = Rates->OffToOn;
+	}
+
+	if(Opt->EstKappa == TRUE)
+	{
+		Rates->Kappa = RandDouble(Rates->RS);
+	}
+}
+
+
 int		SetRandStart(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Index;
@@ -71,6 +92,8 @@ int		SetRandStart(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		Mag = RandMag(0.001, 1000, Rates->RS);
 		
 		SetRatesVec(Rates->Rates, Mag, Rates->RS, Rates->NoOfRates);
+
+		SetOtherRandRates(Opt, Trees, Rates, Mag);
 
 		Rates->Lh = Likelihood(Rates, Trees, Opt);
 
@@ -102,11 +125,68 @@ int		Set1RandRate(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	return FALSE;	
 }
 
+void	SetRandStaes(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int NoRates;
+	double Mag;
+
+	NoRates = Rates->NoOfRates;
+	if(Opt->UseRJMCMC == TRUE)
+		NoRates = Rates->NoOfRJRates;
+
+	Mag = RandMag(0.001, 1000, Rates->RS);
+
+	SetRatesVecFixed(Rates->Rates, RandDouble(Rates->RS) * Mag, NoRates);
+}
+
+void	FindRandConSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int Pos;
+	
+	do
+	{
+		Pos = 0;
+		if(Opt->EstKappa == TRUE)
+			Rates->Rates[Pos++] = RandDouble(Rates->RS) * (MAX_KAPPA - MIN_KAPPA);
+
+		if(Opt->EstDelta == TRUE)
+			Rates->Rates[Pos++] = RandDouble(Rates->RS) * (MAX_DELTA - MIN_DELTA);
+
+		if(Opt->EstLambda == TRUE)
+			Rates->Rates[Pos++] = RandDouble(Rates->RS) * (MAX_LAMBDA - MIN_LAMBDA);
+
+		if(Opt->EstOU == TRUE)
+//			Rates->Rates[Pos++] = RandDouble(Rates->RS) * (MAX_OU - MIN_OU);
+			Rates->Rates[Pos++] = RandDouble(Rates->RS) * 1.0;
+//			Rates->Rates[Pos++] = 0;
+
+		MapConParams(Opt, Rates, Rates->Rates);
+		Rates->Lh = Likelihood(Rates, Trees, Opt);
+
+	}while(Rates->Lh == ERRLH);
+}
 
 void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
+	double Lh;
 	if(Rates->NoOfRates == 0)
 		return;
+
+	if(Opt->ModelType == MT_CONTRAST)
+	{
+		Lh = Likelihood(Rates, Trees, Opt);
+		if(Lh == ERRLH)
+		{
+			printf("starting lh for contrast is invalid.\n");
+			exit(0);
+		}
+	}
+
+	if(Opt->DataType == CONTINUOUS)
+	{
+		FindRandConSet(Opt, Trees, Rates);
+		return;
+	}
 
 	/* Set a fully random set of rates */
 	if(SetRandStart(Opt, Trees, Rates) == TRUE)
@@ -124,23 +204,17 @@ void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 double	PraxisGo(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 {
 	double		*TempVec;
-	int			Index;
 	double		Ret;
 	PRAXSTATE*	PState;
 
 	TempVec = (double*)malloc(sizeof(double)*Rates->NoOfRates);
 	if(TempVec == NULL)
 		MallocErr();
-
+	
 	FindValidStartSet(Opt, Trees, Rates);
 
 	memcpy(TempVec, Rates->Rates, sizeof(double)*Rates->NoOfRates);
-	/*
-	printf("Start Vect:\t%d\t%f\t", Rates->TreeNo, Rates->Lh);
-	for(Index=0;Index<Rates->NoOfRates;Index++)
-		printf("%f\t", Rates->Rates[Index]);
-	printf("\n");
-	*/
+
 	if(Rates->NoOfRates > 0)
 	{
 		if(Rates->NoOfRates > 1)
@@ -148,24 +222,33 @@ double	PraxisGo(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 			PState = IntiPraxis(LhPraxis, TempVec, Rates->NoOfRates, 0, 0, 4, 5000);	
 		else
 			PState = IntiPraxis(LhPraxis, TempVec, Rates->NoOfRates, 0, 0, 4, 250);
+			
 
 		PState->Opt		= Opt;
 		PState->Trees	= Trees;
 		PState->Rates	= Rates;
 
-		Ret = praxis(PState);
+//		Ret = praxis(PState);
 
+#ifndef NLOPT_BT
+		Ret = praxis(PState);
+		Ret = LhPraxis((void*)PState, TempVec);
+#else
+		Ret = NLOptBT(TempVec, PState);
+#endif
+				
 		FreePracxStates(PState);		
 	}
 
-
+#ifndef NLOPT_BT
 	CheckRatesVec(TempVec, Rates->NoOfRates);
 	memcpy(Rates->Rates, TempVec, sizeof(double)*Rates->NoOfRates);
+	
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+#endif
 
-	Rates->Lh = Ret;
 	free(TempVec);
-
-	return Ret;
+	return Rates->Lh;
 }
 
 void	TestCL(OPTIONS *Opt, TREES* Trees, RATES *Rates)
@@ -179,70 +262,48 @@ void	TestCL(OPTIONS *Opt, TREES* Trees, RATES *Rates)
 	}
 }
 
-void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
-{
-	double d;
-	int		i;
-
-	InitContinusTree(Opt, Trees, 0);
-
-
-	Rates->Lambda = 0;
-	printf("\n");
-	d = 0.000001;
-	for(i=0;i<1001;i++)
-	{		
-		Rates->Lambda = d;
-		printf("%d\t%f\t", i, Rates->Lambda);
-		Rates->Lh = Likelihood(Rates, Trees, Opt);
-		printf("%f\n", Rates->Lh);
-		fflush(stdout);
-		d += 0.001;
-	}
-
-	exit(0);
-	return;
-}
 
 void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	int OIndex, Index;
-	double CLh, BLh;
+	int Index;
+	double CLh, BLh, TLh;
 	double *BRates;
+
 	
 	if(Rates->NoOfRates == 0)
 	{
 		Rates->Lh = Likelihood(Rates, Trees, Opt);
 		return;
 	}
-
+	
 	if(Rates->NoOfRates == 1)
 	{
 		Opt1D(Opt, Rates, Trees);
 		Rates->Lh = Likelihood(Rates, Trees, Opt);
 		return;
 	}
-
+	
 	FindValidStartSet(Opt, Trees, Rates);
 
 	BRates = (double*)malloc(sizeof(double)*Rates->NoOfRates);
 	if(BRates == NULL)
 		MallocErr();
 	memcpy(BRates, Rates->Rates, sizeof(double)*Rates->NoOfRates);
-	BLh = -Likelihood(Rates, Trees, Opt);;
+	BLh = Likelihood(Rates, Trees, Opt);
 	
-	for(OIndex=0;OIndex<Opt->MLTries;OIndex++)
+	for(Index=0;Index<Opt->MLTries;Index++)
 	{
 		CLh = PraxisGo(Opt, Rates, Trees);
-
-	//	printf("BestLh\t%f\n", CLh);
-	//	exit(0);		
-
-		if(CLh < BLh)
+		TLh = Likelihood(Rates, Trees, Opt);
+		
+		if(CLh > BLh)
 		{
 			BLh = CLh;
 			memcpy(BRates, Rates->Rates, sizeof(double)*Rates->NoOfRates);
+
 		}
+
+//		printf("%d\tCLh:\t%f\tBLh:\t%f\n", Index, CLh, BLh);fflush(stdout);
 
 		#ifdef JNIRUN
 			CheckStop(Env, Obj, Trees);
@@ -255,11 +316,40 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	}
 
 	memcpy(Rates->Rates, BRates, sizeof(double)*Rates->NoOfRates);
+	if(Opt->DataType == CONTINUOUS)
+		MapConParams(Opt, Rates, BRates);
 	free(BRates);
 
 	Rates->Lh = Likelihood(Rates, Trees, Opt);
+/*	printf("My Lh:\t%f\n", Rates->Lh);
+	printf("%f\t%f\n", Rates->Rates[0], Rates->Rates[1]);
+	fflush(stdout); exit(0);*/
 }
 
+void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
+{
+	double d;
+	int		i;
+//	return;
+	InitContinusTree(Opt, Trees, 0);
+
+
+	Rates->Lambda = 1;
+	printf("\n");
+	d = 1;
+	for(i=0;i<100001;i++)
+	{		
+		Rates->Lambda = d;
+		printf("%d\t%f\t", i, Rates->Lambda);
+		Rates->Lh = Likelihood(Rates, Trees, Opt);
+		printf("%f\n", Rates->Lh);
+		fflush(stdout);
+		d -= 0.0001;
+	}
+
+	exit(0);
+	return;
+}
 
 
 #ifdef	 JNIRUN
@@ -269,12 +359,11 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 #endif
 {
 	int		TIndex;
-	int		OIndex;
 	RATES	*Rates;
 	FILE	*SumOut;
 	SUMMARY	*Summary;
 	char	Buffer[1024];
-	int		ti;
+	double	StartT, EndT;
 #ifdef JNIRUN
 	long	FP;
 #endif
@@ -282,8 +371,9 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->Summary == TRUE)
 		Summary = CreatSummary(Opt);
 
-	Rates = CreatRates(Opt);
+	StartT = GetSeconds();	
 
+	Rates = CreatRates(Opt);
 		
 	#ifndef JNIRUN
 		PrintOptions(stdout, Opt);
@@ -308,11 +398,12 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);
 			ProcessHeaders(Env, Obj, Opt);
 		#endif
-	}
-
+	} 
+	
+//	Test(Opt, Trees, Rates);
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		if(Opt->DataType == CONTINUOUS)
+		if(Opt->ModelType == MT_CONTINUOUS)
 			InitContinusTree(Opt, Trees, TIndex);
 
 		Rates->TreeNo = TIndex;
@@ -327,12 +418,12 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		if(Opt->Summary == TRUE)
 			UpDataSummary(Summary, Rates, Opt);
 
-		PrintRates(Opt->LogFile, Rates, Opt);
+		PrintRates(Opt->LogFile, Rates, Opt, NULL);
 		fprintf(Opt->LogFile, "\n");
 		fflush(Opt->LogFile);
-
+	
 		#ifndef JNIRUN
-			PrintRates(stdout, Rates, Opt);
+			PrintRates(stdout, Rates, Opt, NULL);
 			printf("\n");
 			fflush(stdout);
 		#else
@@ -349,15 +440,16 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			SetProgress(Env, Obj, TIndex);
 		#endif
 
-		if(Opt->DataType == CONTINUOUS)
+		if(Opt->ModelType == MT_CONTINUOUS)
 		{
-			if(Opt->Model != CONTRASTM)
-			{
-				FreeConVar(Trees->Tree[TIndex]->ConVars, Trees->NoOfTaxa);
-				Trees->Tree[TIndex]->ConVars = NULL;
-			}
+			FreeConVar(Trees->Tree[TIndex]->ConVars, Trees->NoOfTaxa);
+			Trees->Tree[TIndex]->ConVars = NULL;
 		}
 	}
+
+	EndT = GetSeconds();
+
+	printf("Sec:\t%f\n", EndT - StartT);
 
 	FreeRates(Rates);
 
@@ -374,8 +466,6 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		FreeSummary(Summary);
 	}
 }
-
-
 
 double	Min1D(RATES* Rates, TREES *Trees, OPTIONS *Opt, double From, double To, int Steps)
 {

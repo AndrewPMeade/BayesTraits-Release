@@ -372,72 +372,56 @@ NNODE	AddDescendant(NNODE N)
 	return Ret;
 }
 
-double	GetLength(char *TreeString, int *Pos)
+double	GetLength(char *TreeString, int *Pos, char* Buffer)
 {
-	static char	*IDBuffer=NULL;
 	int		Index;
 	double	Ret;
-
-	if(IDBuffer == NULL)
-	{
-		IDBuffer = (char*)malloc(sizeof(char) * (BUFFERSIZE + 1));
-		if(IDBuffer == NULL)
-			MallocErr();
-	}
-
+	
 	Index=0;
 	do
 	{
-		IDBuffer[Index] = TreeString[*Pos];
+		Buffer[Index] = TreeString[*Pos];
 		(*Pos)++;
 		Index++;
 	} while((TreeString[*Pos] != ',') &&
 			(TreeString[*Pos] != ')') && 
 			(TreeString[*Pos] != ';'));
 
-	IDBuffer[Index] = '\0';
+	Buffer[Index] = '\0';
 
-	Ret = atof(&IDBuffer[0]);
+	Ret = atof(Buffer);
 
 	return Ret;
 }
 
-void	GetTip(NNODE Node, char *TreeString, int* Pos)
+void	GetTip(NNODE Node, char *TreeString, int* Pos, char *Buffer)
 {
-	static char	*IDBuffer=NULL;
 	int		Index;
-
-	if(IDBuffer == NULL)
-	{
-		IDBuffer = (char*)malloc(sizeof(char) * (BUFFERSIZE + 1));
-		if(IDBuffer == NULL)
-			MallocErr();
-	}
 
 	Node->Tip = TRUE;
 
 	Index=0;
 	do
 	{
-		IDBuffer[Index] = TreeString[*Pos];
+		Buffer[Index] = TreeString[*Pos];
 		(*Pos)++;
 		Index++;
 	} while((TreeString[*Pos] != ',') &&
 			(TreeString[*Pos] != ')') &&
 			(TreeString[*Pos] != ':'));
 
-	IDBuffer[Index] = '\0';
+	Buffer[Index] = '\0';
 
-	Node->TaxaID = atoi(&IDBuffer[0]);
+	Node->TaxaID = atoi(Buffer);
 
 	if(TreeString[*Pos] == ':')
 	{
 		(*Pos)++;
-		Node->Length = GetLength(TreeString, Pos);
+		Node->Length = GetLength(TreeString, Pos, Buffer);
 	}
 }
 
-void	PassTree(NNODE CNode, char *TreeString, int* Pos)
+void	PassTree(NNODE CNode, char *TreeString, int* Pos, char *Buffer)
 {
 	NNODE	NNode;
 
@@ -449,11 +433,11 @@ void	PassTree(NNODE CNode, char *TreeString, int* Pos)
 		
 		if(TreeString[(*Pos)] == '(')
 		{
-			PassTree(NNode, TreeString, Pos);
+			PassTree(NNode, TreeString, Pos, Buffer);
 		}
 		else
 		{
-			GetTip(NNode, TreeString , Pos);
+			GetTip(NNode, TreeString , Pos, Buffer);
 		}
 	} while (TreeString[*Pos] == ',') ;
 
@@ -461,7 +445,7 @@ void	PassTree(NNODE CNode, char *TreeString, int* Pos)
 	if(TreeString[(*Pos)] == ':')
 	{
 		(*Pos)++;
-		CNode->Length = GetLength(TreeString, Pos);
+		CNode->Length = GetLength(TreeString, Pos, Buffer);
 	}
 }
 
@@ -496,7 +480,7 @@ void	CheckBrackets(char* TreeString, int TreeNo)
 int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int TreeStart)
 {
 	int		Index;
-	char*	Buffer;
+	char	*Buffer, *PBuffer;
 	char**	Passed;
 	int		Tokes;
 	int		NoOfTrees;
@@ -507,8 +491,9 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 
 	Buffer = (char*)malloc(sizeof(char) * (MaxLine+1));
 	Passed = (char**)malloc(sizeof(char*) * (MaxLine));
+	PBuffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
 
-	if((Buffer == NULL) || (Passed == NULL))
+	if((Buffer == NULL) || (Passed == NULL) || (PBuffer == NULL))
 		MallocErr();
 
 
@@ -530,7 +515,7 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 					Trees->Trees[NoOfTrees].Root = AllocNodeI();
 
 					CheckBrackets(Passed[Tokes-1], NoOfTrees);
-					PassTree(Trees->Trees[NoOfTrees].Root, Passed[Tokes-1], &Pos);
+					PassTree(Trees->Trees[NoOfTrees].Root, Passed[Tokes-1], &Pos, PBuffer);
 
 					Trees->Trees[NoOfTrees].NoOfNodes = 0;
 					FindNoOfNodes(Trees->Trees[NoOfTrees].Root, &Trees->Trees[NoOfTrees].NoOfNodes);
@@ -543,6 +528,7 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 
 	free(Buffer);
 	free(Passed);
+	free(PBuffer);
 
 	return NoOfTrees;
 }
@@ -617,7 +603,7 @@ NTREES*	LoadNTrees(char* FileName, char** Err)
 	if(NexusStart == -1)		
 	{
 		FreeTextFile(TreeFile);
-		*Err = CopyStr("Does not have a #NEXUS tag in.");
+		*Err = CopyStr("Tree file does not have a valid nexus tag.\n");
 		return NULL;
 	}
 

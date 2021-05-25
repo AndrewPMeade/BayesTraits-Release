@@ -2,6 +2,12 @@
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
+#include <time.h>
+
+#ifdef CLIK_P
+	#include <cilk/cilk.h>
+	#include <cilk/cilk_api.h>
+#endif
 
 #include "typedef.h"
 #include "threaded.h"
@@ -9,35 +15,52 @@
 
 int		GetThreadNo(void)
 {
-#ifndef THREADED
-	return 0;
-#else
+#ifdef THREADED
 	return omp_get_thread_num();
 #endif	
+	return 0;
 }
 
 int		GetMaxThreads(void)
 {
-#ifndef THREADED
-	return 1;
-#else
+#ifdef THREADED
 	return omp_get_num_procs();
-#endif	
+#endif
+	
+	return 1;
+
 }
 
 void	SetNoOfThreads(int No)
 {
-#ifndef THREADED
-	return ;
-#else
+#ifdef THREADED
 	omp_set_num_threads(No);
 	return; 
 #endif	
-}
 
+#ifdef CLIK_P
+	char *TStr;
+
+	TStr = (char*)malloc(sizeof(char) * 64);
+	sprintf(TStr, "%d", No);
+
+	if (0 != __cilkrts_set_param("nworkers",TStr))
+	{
+		printf("Failed to set worker count\n");
+		exit(1);
+	}
+
+	free(TStr);
+	 __cilkrts_init();
+	return;
+#endif
+
+	return ;
+}
 
 double	GetSeconds(void)
 {
+
 #ifndef THREADED
 	return  (double)time(NULL);
 #else

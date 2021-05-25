@@ -2,12 +2,13 @@
 #define RATESHEADDER
 
 RATES*		CreatRates(OPTIONS *Opt);
+void		MapMCMCConRates(RATES* Rates, OPTIONS *Opt);
 void		MapRates(RATES* Rates, OPTIONS *Opt);
 
 void		InitHMean(RATES* Rates, OPTIONS *Opt);
 double		GetHMean(OPTIONS *Opt, RATES *Rates);
 void		PrintRatesHeadder(FILE* Str, OPTIONS *Opt);
-void		PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt);
+void		PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed);
 void		CopyRates(RATES *A, RATES *B, OPTIONS *Opt);
 
 int			FindNoOfRates(OPTIONS *Opt);
@@ -23,7 +24,7 @@ void		PrintSummaryHeadder(FILE* Str, SUMMARY	*Summary, OPTIONS *Opt);
 void		PrintSummary(FILE* Str, SUMMARY	*Summary, OPTIONS *Opt);
 void		UpDataSummary(SUMMARY *Summary, RATES* Rates, OPTIONS *Opt);
 
-SCHEDULE*	CreatSchedule(OPTIONS *Opt);
+//SCHEDULE*	CreatSchedule(OPTIONS *Opt);
 void		PrintShed(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str);
 void		PrintShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str);
 void		BlankSchedule(SCHEDULE*	Shed);
@@ -31,4 +32,12 @@ void		BlankSchedule(SCHEDULE*	Shed);
 char		RJModelType(int *ModelStr);
 
 void		FindRSquared(RATES* Rates, OPTIONS *Opt, double *R2, double *SSE, double *SST);
+
+int			FindNoEstDataPoint(OPTIONS *Opt, TREES *Trees);
+
+void		PrintAutoTune(FILE* Str, OPTIONS *Opt, SCHEDULE* Shed);
+int			FindNoConRats(OPTIONS *Opt);
+void		PrintAutoTuneHeader(FILE* Str, OPTIONS *Opt);
+
+int			FindNoConRates(OPTIONS *Opt);
 #endif

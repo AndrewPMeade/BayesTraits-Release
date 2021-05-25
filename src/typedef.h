@@ -8,14 +8,31 @@
 #include "matrix.h"
 #include "RandLib.h"
 
-// #define	JNIRUN
-// #define THREADED
-// #define BIG_LH
+//#define	JNIRUN
+//#define THREADED
+//#define BIG_LH
 
-//#define	PUBLIC_BUILD
+
+//#define BTOCL_CON
+//#define BTOCL_DSC
+// define BTOCL
+//#define BTLAPACK
+
+
+// #if defined (BTOCL_CON)  || defined (BTOCL_DSC)
+
+#ifdef BTOCL
+	#include "btocl_runtime.h"
+#endif
+
+//#define	CLIK_P
+#define	PUBLIC_BUILD
 
 // Information for the phomem cog est runs
 // #define	PHONEIM_RUN
+
+//#define NLOPT_BT
+//#define QUAD_DOBULE
 
 #ifdef BIG_LH
 	#include <gmp.h>
@@ -25,9 +42,13 @@
 	#define	DEF_PRE	256
 #endif
 
+#ifdef QUAD_DOUBLE
+	#include <quadmath.h>
+	#define QDOUBLE	__float128
+#endif
+
 #ifdef	THREADED
 	#include <omp.h>
-	#define MIN_NODES_PER_PROC	10
 #endif
 
 #ifdef	 JNIRUN
@@ -50,9 +71,7 @@
 //	#define	RATE_CHANGE_UNI
 #define RATE_CHANGE_NORM
 
-#define RATE_CHANGE_ALL
 // #define RATE_CHANGE_ONE
-
 
 /* If defined Sigma in indep contrast is restricted to a given value */
 //#define RES_SIGMA	0.0034
@@ -75,6 +94,9 @@
 #define PPBETA		1
 
 #define PPALPHASCLAE 0.1
+
+// use ML paramter for indpedent contrast MCMC / Var Rates
+//#define CONTRAST_ML_PARAM
 
 /* Use uniform or gamma value priors*/
 //#define PPUNIFORM
@@ -108,6 +130,8 @@
 
 #define	LOGFILEBUFFERSIZE	65536
 
+#define DISPLAY_INFO	printf("BayesTraits V2.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
+/*
 #define MIN_DELTA	1E-07
 #define MAX_DELTA	3
 
@@ -117,6 +141,23 @@
 #define MIN_KAPPA	1E-07
 #define MAX_KAPPA	3
 
+#define MIN_OU		1E-07
+#define MAX_OU		100
+*/
+
+#define MIN_DELTA	1E-07
+#define MAX_DELTA	3
+
+#define MIN_LAMBDA	1E-07
+#define MAX_LAMBDA	1
+
+#define MIN_KAPPA	1E-07
+#define MAX_KAPPA	3
+
+#define MIN_OU		1E-07
+#define MAX_OU		20
+
+#define	NORM_MEAN_BL	0.1
 
 typedef enum
 {
@@ -168,15 +209,12 @@ typedef enum
 	CCI,
 	CDEPSITE,
 	CHEADERS,
-	CMODELFILE,
 /*	CPREVAR, */
 	CVARDATA,
 	CRMODEL,
 	CDATADEV,
 	CCOMMENT,
 	CNOSPERSITE,
-	CSCHEDULE,
-	CSTREEMOVE,
 	CSETSEED,
 	CMAKEUM,
 	CPHYLOPLASTY,
@@ -185,6 +223,12 @@ typedef enum
 	CCORES,
 	CSYMMETRICAL,
 	CMCMCMLSTART,
+	CCAPRJRATES,
+	CSAVEMODELS,
+	CLOADMODELS,
+	COU,
+	CVARRATES,
+	CADDERR,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -218,7 +262,7 @@ static char    *COMMANDSTRINGS[] =
 	"pis",			"pi",
 	"kappa",		"ka",
 	"delta",		"dl",
-	"lambda",		"la",
+	"lambda",		"la", 
 	"excludetaxa",	"et",
 	"taxainfo",		"ti",
 	"savetrees",	"st",
@@ -238,15 +282,12 @@ static char    *COMMANDSTRINGS[] =
 	"confint",		"cf",
 	"depsite",		"ds",
 	"headers",		"hd",
-	"modelfile",	"mf",
 /*	"prevar",		"pv", */
 	"vardata",		"vd",
 	"rmodel",		"rm",
 	"datadev",		"dd",
 	"#",			"//",
 	"fitnospersite","nps",
-	"schedule",		"sch",
-	"solotreemove",	"stree",
 	"seed",			"se",
 	"makeum",		"mum",
 	"phyloplasty",	"pp",
@@ -255,6 +296,12 @@ static char    *COMMANDSTRINGS[] =
 	"cores",		"cor",
 	"symmetrical",	"sym", 
 	"mcmcmlstart",	"mls",
+	"caprjrates",	"cap", 
+	"savemodels",	"sm",
+	"loadmodels",	"lm", 
+	"ou",			"ou",
+	"varrates",		"vr",
+	"adderr",		"er",
 	""
 };
 
@@ -267,6 +314,7 @@ static char		*MODELNAMES[] =
 	"Continuous Directional",
 	"Continuous Regression",
 	"Independent Contrasts",
+	"Independent Contrasts Regression",
 	"Discrete Covarion", 
 	"Discrete Heterogeneous"
 };
@@ -369,16 +417,24 @@ typedef enum
 
 typedef enum
 {
-	MULTISTATE,
-	DESCINDEP,
-	DESCDEP,
-	CONTINUOUSRR,
-	CONTINUOUSDIR,
-	CONTINUOUSREG,
-	CONTRASTM,
-	DESCCV,
-	DESCHET
+	M_MULTISTATE,
+	M_DESCINDEP,
+	M_DESCDEP,
+	M_CONTINUOUSRR,
+	M_CONTINUOUSDIR,
+	M_CONTINUOUSREG,
+	M_CONTRAST_STD,
+	M_CONTRAST_REG,
+	M_DESCCV,
+	M_DESCHET
 } MODEL;
+
+typedef enum
+{
+	MT_DISCRETE,
+	MT_CONTINUOUS,
+	MT_CONTRAST
+} MODEL_TYPE;
 
 typedef enum
 {
@@ -396,7 +452,6 @@ typedef enum
 typedef enum
 {
 	PIUNI,
-	PIEST,
 	PIEMP,
 	PINONE,
 } PITYPES;
@@ -409,7 +464,12 @@ typedef enum
 
 typedef struct
 {
+	// User supplied taxa number, may not be continues  
 	int		No;
+
+	// Index giving the position in the taxa array
+	int		Index;
+
 	char*	Name;
 	char**	DesDataChar;
 	double*	ConData;
@@ -419,7 +479,7 @@ typedef struct
 	int		EstData;
 	char	*EstDataP;
 	int		EstDepData;
-	char	*RealData;
+	char	*RealData;	
 } TAXA;
 
 typedef struct
@@ -428,7 +488,25 @@ typedef struct
 	double	*Cont;
 	double	*Var;
 	double	*Err;
+
+	double	*v;
 } CONTRAST;
+
+typedef struct
+{
+	CONTRAST	**Contrast;
+	int			NoContrast;
+
+	double		*GVar;
+	double		*SumLogVar;
+} CONDATA;
+
+typedef struct
+{
+	int NoTaxa;
+	int *Taxa;
+} PART;
+
 
 struct INODE
 {
@@ -436,13 +514,18 @@ struct INODE
 	int		TipID;
 	int		ID;
 
-	double	Length;
+	double		Length;
+	double		DistToRoot;
+
+	double		UserLength;
+
+	int			VPosX, VPosY;
 
 	struct INODE	*Ans;
 
 	struct	INODE	**NodeList;
 	int				NoNodes;
-	char		Visited;
+	char			Visited;
 
 	double		**Partial;
 	double		**GammaPartial;
@@ -453,15 +536,21 @@ struct INODE
 	mpfr_t		t1, t2, t3;
 #endif
 
+#ifdef QUAD_DOUBLE
+	QDOUBLE		**BigPartial;
+#endif
+
+
 	TAXA		*Taxa;
 
-	int			*Part;
-	int			PSize;
+//	int			*Part;
+//	int			PSize;
 
+	PART		*Part;
+	
 	int			FossilState;
 
-	CONTRAST	**Contrast;
-	int			NoContrast;
+	CONDATA		*ConData;
 };
 
 typedef struct INODE*	NODE;
@@ -473,16 +562,20 @@ typedef enum
 	FOSSIL,
 } NODETYPE;
 
+
 struct RNODE
 {
 	NODETYPE	NodeType;
 	char*		Name;
 
-	int			NoOfTaxa;
 	int			PresInTrees;
 	int			FossilState;
 
-	int			*TaxaID;
+//	int			*TaxaID;
+//	int			NoOfTaxa;
+
+	PART		*Part;
+
 	TAXA		**Taxa;
 
 	int			Hits;
@@ -495,11 +588,6 @@ struct RNODE
 
 typedef struct RNODE*	RECNODE;
 
-typedef struct
-{
-	int		*NoOfBLVect;
-	double	**TToTPath;
-}  TAXADIST;
 
 typedef struct
 {
@@ -508,8 +596,11 @@ typedef struct
 	MATRIX		*InvV;
 	MATRIX		*Sigma;
 	MATRIX		*InvSigma;
-	MATRIX		*KProd;
-	MATRIX		*InvKProd;
+//	MATRIX		*KProd;
+//	MATRIX		*InvKProd;
+#ifdef BTOCL_CON
+	cl_mem      buffer_invV;
+#endif
 
 	MATRIX		*TVT;
 	MATRIX		*TVTTemp;
@@ -528,13 +619,16 @@ typedef struct
 	double		*TVect3;
 	double		*SVect;
 
-	TAXADIST	*TaxaDist;
+//	TAXADIST	*TaxaDist;
 
 	double		LogDetOfV;
 	double		LogDetOfSigma;
 
 	double		*DepVect;
 
+	double		*MultiVarNormState;
+	double		*MultiVarNormTemp;
+	
 } CONVAR;
 
 typedef	struct
@@ -543,9 +637,14 @@ typedef	struct
 	NODE		*NodeList;
 	NODE		Root;
 
-	NODE		**PNodes;
-	int			*NoPNodes;
-	int			NoPGroups;
+	NODE		**FNodes;
+	int			*NoFNodes;
+	int			NoFGroups;
+
+	int			NoPNodes;
+	NODE		*PNodes;
+
+	int			NoContrast;
 
 	CONVAR*		ConVars;
 } TREE;
@@ -601,7 +700,6 @@ typedef struct
 	MATRIX	*RVX;
 	MATRIX	*TempV1;
 	MATRIX	*TempV2;
-
 } TEMPCONVAR;
 
 typedef struct
@@ -613,6 +711,7 @@ typedef struct
 
 	INVINFO*	InvInfo;
 
+	double		*PMem;
 	MATRIX		**PList;
 	int			MaxNodes;
 
@@ -634,6 +733,8 @@ typedef struct
 	int			*NOSList;
 	char		**SiteSymbols;
 	TEMPCONVAR	*TempConVars;
+
+	double		NormConst;
 
 	int			JStop;
 } TREES;
@@ -674,19 +775,39 @@ typedef struct
 
 typedef struct
 {
+	MATRIX *Uy, *Ux, *TUx, *InvUx;
+	MATRIX *Prod1, *Prod2, *Prod3;
+	double	*TempDVect;
+	int		*TempIVect;
+	
+} REG_BETA_SPACE;
+
+typedef struct
+{
 	double*	Alpha;
-	double* Sigma;
+//	double* Sigma;
 
-	double*	EstAlpha;
-	double*	EstSigma;
+	MATRIX_INVERT	*SigmaInvInfo;
+	MATRIX*	Sigma;
+//	MATRIX*	EstSigma;
 
-	double*	AlphaErr;
+//	double*	EstAlpha;
+//	double*	EstSigma;
+//	double*	AlphaErr;
+	
+	double	RegSigma;
+	double	RegAlpha;
+	double	*RegBeta;
+	
+
+	REG_BETA_SPACE	*RegSapce;
 } CONTRASTR;
 
 typedef struct
 {
 	MODEL		Model;
 	ANALSIS		Analsis;
+	MODEL_TYPE	ModelType;
 
 	int			NoOfRates;
 	char		**RateName;
@@ -697,11 +818,23 @@ typedef struct
 
 	double		RateDev;
 	double		*RateDevList;
+	int			AutoTuneRD;
+	int			RateDevPerParm;
 
+
+	double		RateDevKappa;
+	double		RateDevLambda;
+	double		RateDevDelta;
+	double		RateDevOU;
 
 	double		EstDataDev;
-	double		PPScaleDev;
-//	PPSCALEDEV
+	int			AutoTuneDD;
+	
+	
+	double		VarRatesScaleDev;
+	int			AutoTuneVarRates;
+	
+	//	PPSCALEDEV
 
 	PRIORS		**Priors;
 
@@ -739,16 +872,19 @@ typedef struct
 	int			UseDelta;
 	int			UseLambda;
 	int			UseGamma;
+	int			UseOU;
 
 	int			EstKappa;
 	int			EstDelta;
 	int			EstLambda;
 	int			EstGamma;
+	int			EstOU;
 
 	double		FixKappa;
 	double		FixDelta;
 	double		FixLambda;
 	double		FixGamma;
+	double		FixOU;
 
 	int			InvertV;
 
@@ -756,6 +892,8 @@ typedef struct
 	PRIORS		*PriorDelta;
 	PRIORS		*PriorLambda;
 	PRIORS		*PriorGamma;
+
+	char		*SaveTrees;
 
 	int			GammaCats;
 
@@ -768,6 +906,7 @@ typedef struct
 	int			LMaxFun;
 
 	int			UseRJMCMC;
+	int			CapRJRatesNo;
 	int			MCMCMLStart;
 
 	PRIORS		*RJPrior;
@@ -781,11 +920,11 @@ typedef struct
 	int			FindCF;
 	char*		CFRate;
 
-	int			DependantSite;
+//	int			DependantSite;
 	int			Headers;
 
-	char*		ModelFile;
-	int			UseModelFile;
+//	char*		ModelFile;
+//	int			UseModelFile;
 
 	int			UseVarData;
 	char		*VarDataFile;
@@ -803,19 +942,25 @@ typedef struct
 	int			NOSPerSite;
 
 	int			UseSchedule;
-	char		*ScheduleFile;
+//	char		*ScheduleFile;
 
-	int			SoloTreeMove;
 	long		Seed;
 	int			MakeUM;
 
-	int			UsePhyloPlasty;
+//	int			UsePhyloPlasty;
+	int			UseVarRates;
 
 	int			UseEqualTrees;
 	int			ETreeBI;
 
 	int			Precision;
 	int			Cores;
+
+	int			SaveModels;
+	char		*SaveModelsFN;
+
+	int			LoadModels;
+	char		*LoadModelsFN;
 } OPTIONS;
 
 typedef struct
@@ -826,6 +971,15 @@ typedef struct
 	int			MListSize;
 	int			*MList;
 } HETERO;
+
+typedef struct
+{
+	int		NoModels;
+	int		NoParam;
+	char	*FName;
+	double	**ModelP;
+
+} MODELFILE;
 
 typedef struct
 {
@@ -858,7 +1012,7 @@ typedef struct
 
 	double	LhPrior;
 	double	LnHastings;
-	double	LogJacobion;
+	double	LnJacobion;
 
 	PRIORS	**Prios;
 
@@ -869,6 +1023,7 @@ typedef struct
 	double	Delta;
 	double	Lambda;
 	double	Kappa;
+	double	OU;
 
 	double	OnToOff;
 	double	OffToOn;
@@ -882,12 +1037,9 @@ typedef struct
 	double	Gamma;
 	double	LastGamma;
 	PRIORS	*GammaPrior;
-
-	double	Numer;
-	double	Donom;
-
 	
 	int		HMeanCount;
+
 #ifndef BIG_LH
 	double	HMeanSum;
 #else
@@ -899,11 +1051,10 @@ typedef struct
 	double	*EstData;
 	int		NoEstData;
 
-	double	**FixedModels;
-	int		NoOfModels;
-	int		ModelNo;
+	MODELFILE		*ModelFile;
+	int				ModelNo;
 
-	int		VarDataSite;
+	int				VarDataSite;
 
 	RANDSTATES		*RS;
 
@@ -926,7 +1077,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NOOFOPERATORS	15
+#define NOOFOPERATORS	18
 
 static char    *SHEDOP[] =
 {
@@ -944,36 +1095,76 @@ static char    *SHEDOP[] =
 	"PP Move",
 	"PP Change Scale",
 	"PP Hyper Prior",
-	"Change Hetero"
+	"Change Hetero",
+	"Tree Move",
+	"OU",
+	"Gamma"
 };
 
 typedef enum
 {
-	SRATES=0,
-	SCV=1,
-	SKAPPA=2,
-	SDELTA=3,
-	SLABDA=4,
-	SJUMP=5,
-	SPPROR=6,
-	SESTDATA=7,
-	SVARDATA=8,
-	SSOLOTREEMOVE=9,
-	SPPADDREMOVE=10,
-	SPPMOVE=11,
-	SPPCHANGESCALE=12,
-	SPPHYPERPRIOR=13,
-	SHETERO=14
+	SRATES,
+	SCV,
+	SKAPPA,
+	SDELTA,
+	SLABDA,
+	SJUMP,
+	SPPROR,
+	SESTDATA,
+	SVARDATA,
+	SSOLOTREEMOVE,
+	SPPADDREMOVE,
+	SPPMOVE,
+	SPPCHANGESCALE,
+	SPPHYPERPRIOR,
+	SHETERO, 
+	STREEMOVE,
+	SOU,
+	SGAMMA
 } OPERATORS;
+
+typedef struct 
+{
+	int No;
+	
+	double	Min, Max, Target;
+	double	Last;	
+	
+	double	*RateAcc;
+	double	*RateDev;
+} AUTOTUNE;
 
 typedef struct
 {
 	int		Op;
 	int		NoOfOpts;
 
-	double	OptFreq[NOOFOPERATORS];
-	int		Tryed[NOOFOPERATORS];
-	int		Accepted[NOOFOPERATORS];
+	int		GNoAcc, GNoTried;
+	int		SNoAcc, SNoTried;
+	
+//	double	OptFreq[NOOFOPERATORS];
+//	int		Tryed[NOOFOPERATORS];
+//	int		Accepted[NOOFOPERATORS];
+
+	double		*OptFreq;
+	int			*Tryed;
+	int			*Accepted;
+//	AUTOTUNE	*RateDevAT;
+	AUTOTUNE	*DataDevAT;
+	AUTOTUNE	*VarRateAT;
+
+	int			RateDevPerParm;
+	int			NoParm;
+	AUTOTUNE	**RateDevATList;
+	int			*PTried;
+	int			*PAcc;
+	int			PNo;
+
+	AUTOTUNE	*KappaAT;
+	AUTOTUNE	*DeltaAT;
+	AUTOTUNE	*LambdaAT;
+	AUTOTUNE	*OUAT;
+
 } SCHEDULE;
 
 typedef struct
@@ -986,5 +1177,6 @@ typedef struct
 	int	NoInZero;
 	int	*ZeroPos;
 } MAPINFO;
+
 
 #endif

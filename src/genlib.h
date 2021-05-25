@@ -59,6 +59,7 @@ void		MakeUpper(char* Str);
 void		MakeLower(char* Str);
 void		RemoveChar(char c, char* String);
 int			MakeArgv(char*	string, char *argv[], int argvsize);
+int			MakeArgvChar(char*	string, char *argv[], int argvsize, char Break);
 
 
 int			IsValidInt(char* Str);
@@ -83,4 +84,10 @@ void		PrintTime(FILE* Str);
 void**		AddToList(int *No, void** OldList, void* Item);
 
 void		PrintDoubleHex(FILE *Str, double D);
+
+int			CountChar(char *Str, char C);
+
+void		CalcRSqr(double *x, double *y, int Size, double *R2, double *Slope, double *Intercept);
+
+
 #endif

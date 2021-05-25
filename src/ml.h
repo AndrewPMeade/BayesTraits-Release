@@ -11,5 +11,5 @@
 
 void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates);
-
+void	SetRandStaes(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 #endif

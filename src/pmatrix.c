@@ -19,6 +19,7 @@ int	PreCalc(INVINFO	*InvInfo, TREES *Trees, RATES *Rates)
 	double			*work;
 	double			*vi;
 	
+	
 	NoOfStates = Trees->NoOfStates;
 
 	iwork = (int*)InvInfo->TempVect2;
@@ -33,7 +34,7 @@ int	PreCalc(INVINFO	*InvInfo, TREES *Trees, RATES *Rates)
 	}
 
 	Ret = EigenRealGeneral(NoOfStates, InvInfo->A->me, InvInfo->val, vi, InvInfo->vec->me, iwork, work);
-
+	
 	if(DB == TRUE)
 		PrintMatrix(InvInfo->vec, "egi Vec Matrix", stdout);
 
@@ -342,7 +343,6 @@ int	CreateDepCVAMatrix(INVINFO *InvInfo, double *R, RATES* Rates, TREES* Trees)
 	double Alpha1, Beta1, Alpha2, Beta2;
 	double q12,q13,q21,q24,q31,q34,q42,q43;
 	double 	qDI,qID;
-	int		i;
 	MATRIX *A;
 
 	A = InvInfo->A;
@@ -407,7 +407,7 @@ int	CreateDepCVAMatrix(INVINFO *InvInfo, double *R, RATES* Rates, TREES* Trees)
 
 double	Create2SPMat(double t, INVINFO *InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et)
 {
-	int		NOS, i;
+	int		NOS;
 	double  t1, t2;
 	double	*Val;
 	double	**Vec, **InvVec, **M, **Am;
@@ -693,7 +693,6 @@ double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, M
 	M		= Mat->me;
 	Am		= A->me;
 	
-
 	NOS		= Trees->NoOfStates;
 	
 	for(i=0;i<NOS;i++)

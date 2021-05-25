@@ -7,6 +7,7 @@
 #include "genlib.h"
 #include "trees.h"
 #include "treenode.h"
+#include "part.h"
 
 
 void	PrintTaxaData(OPTIONS *Opt, TREES* Trees)
@@ -81,7 +82,7 @@ void	PrintDataCon(TREES* Trees, OPTIONS *Opt)
 			printf("Yetp\n");
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 			printf("%f\t", Taxa->ConData[SIndex]);
-		if(Opt->Model == CONTINUOUSREG)
+		if(Opt->Model == M_CONTINUOUSREG)
 			printf("|\t%f", Taxa->Dependant);
 		printf("\n");
 	}
@@ -280,10 +281,10 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 
 void	LoadTaxaData(char* FileName, TREES* Trees)
 {
-	char*	Buffer=NULL;
-	char**	Passed=NULL;
-	int		Tokes;
-	int		Line=0;
+	char*		Buffer;
+	char**		Passed;
+	int			Tokes;
+	int			Line;
 	TEXTFILE	*DataFile;
 
 	Buffer = (char*)malloc(sizeof(char)*BUFFERSIZE);
@@ -468,7 +469,7 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 	FILE*	ErrFile;
 	char	ErrFileName[1024];
 
-	if(Model == MULTISTATE)
+	if(Model == M_MULTISTATE)
 	{
 		qsort(Trees->SymbolList, Trees->NoOfStates, sizeof(char), CompChars);
 
@@ -485,19 +486,20 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 	}
 	else
 	{
-		if((Model == DESCDEP) || (Model == DESCINDEP))
+		if((Model == M_DESCDEP) || (Model == M_DESCINDEP))
 		{
 			CheckDescData(Trees);
 		}
 	}
 
-	if((Model == DESCDEP) || (Model == DESCINDEP) || (Model == MULTISTATE))
+	if((Model == M_DESCDEP) || (Model == M_DESCINDEP) || (Model == M_MULTISTATE))
 		SetMinBL(Trees);
 }
 
 void	LoadData(char* FileName, TREES *Trees)
 {
 	int		Index;
+
 
 	LoadTaxaData(FileName, Trees);
 
@@ -509,8 +511,13 @@ void	LoadData(char* FileName, TREES *Trees)
 			exit(0);
 		}
 	}
-
-	
+/*
+	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	{
+		printf("SData:\t%s\t%s\t%s\n", Trees->Taxa[Index]->Name, Trees->Taxa[Index]->DesDataChar[0], Trees->Taxa[Index]->DesDataChar[1]);
+	}
+	exit(0);
+*/	
 	BildSymbolList(Trees);
 
 	return;
@@ -548,7 +555,7 @@ void	FreeData(OPTIONS *Opt)
 	Trees = Opt->Trees;
 
 	NOS = Trees->NoOfSites;
-	if(Opt->Model == CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUSREG)
 		NOS++;
 
 	for(Index=0;Index<Opt->Trees->NoOfTaxa;Index++)
@@ -740,7 +747,7 @@ void	RemoveConMissingData(TREES* Trees)
 {
 	int		Index;
 
-	FreePartitions(Trees);
+	FreeParts(Trees);
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
@@ -751,7 +758,7 @@ void	RemoveConMissingData(TREES* Trees)
 		}
 	}
 
-	SetPartitions(Trees);
+	SetParts(Trees);
 }
 
 int		NoOfNodesBelow(NODE N)
@@ -1130,11 +1137,11 @@ TAXA*	SetNewConTaxa(RECNODE RNode, TREES* Trees)
 		MallocErr();
 
 	Ret->Name			= StrMake(RNode->Name);
-	Ret->No			= GetFreeTaxaNo(Trees);
+	Ret->No				= GetFreeTaxaNo(Trees);
 	Ret->DesDataChar	= NULL;
 
 	Ret->Exclude		= FALSE;
-	Ret->EstDepData	= FALSE;
+	Ret->EstDepData		= FALSE;
 
 	SetNewConTaxaData(Ret, RNode, Trees);
 	
@@ -1169,4 +1176,9 @@ void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
 		AddNewConTaxa(Trees, RNode);
 		AddNewRecNode(Trees, RNode);
 	}
+
+	FreeParts(Trees);
+	SetParts(Trees);
+
+	SetTreesDistToRoot(Trees);
 }

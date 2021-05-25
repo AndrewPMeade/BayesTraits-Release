@@ -17,6 +17,7 @@
 #include "continuous.h"
 #include "initialise.h"
 #include "RandLib.h"
+#include "BatchMode.h"
 
 #include "mathlib.h"
 //#include "./MathLib/mconf.h"
@@ -24,6 +25,17 @@
 #ifdef	THREADED
 	#include <omp.h>
 #endif
+
+
+#ifdef BTLAPACK
+#include "btlapack_interface.h"
+#endif
+
+#ifdef BTOCL
+#include "btocl_runtime.h"
+#endif
+
+// #include "btdebug.h"   -- igor
 
 extern void BayesModeTest(OPTIONS *Opt, TREES *Trees);
 extern void PMatrixTest(void);
@@ -80,6 +92,8 @@ extern void PMatrixTest(void);
 	./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < in.txt > sout.txt
 
 	./Seq/MamTreesPoly-50.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
+
+	 ./Seq/Wing.trees ./Seq/Wing.txt < in.txt > sout.txt
 */
 
 #ifdef JNIRUN
@@ -90,17 +104,33 @@ int main(int argc, char** argv)
 
 #else
 
+
+void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
+{
+	char Line[1024];
+
+	if(argc == 3)
+	{
+		*TreeFN = StrMake(argv[1]);
+		*DataFN = StrMake(argv[2]);
+		return;
+	}
+	
+	printf("BayesTraits take a tree file and a data file, it is run form the command line.\nPlease read the manual for more information.\n");
+	printf("Press enter to leave.\n");
+	fgets(&Line[0], 64, stdin);
+	exit(0);
+}
+
 // Full optermisation
 //	cl /Ox /Oi /Ob2 /Ot /Oy /GL /w *.c ./MathLib/*.c
 
 // gcc -O3 -fomit-frame-pointer -lm 
 
-
 // Big Lh + OpenMP
 // gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp
-// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp -Dwarn_unused_result 
+// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp -Dwarn _unused_result 
   
-// ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
 // ./Seq/Mammal-ArtPrim.trees ./Seq/Mammal-ArtPrim.txt < in.txt > sout.txt 
 // ./Seq/ContrastTestLh.trees ./Seq/ContrastTestLh.txt < in.txt > sout.txt
 // ./Seq/MammalBig.trees ./Seq/MammalBig.txt < in.txt > sout.txt
@@ -112,33 +142,87 @@ int main(int argc, char** argv)
 // ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt  < BigMamIn.txt > sout.txt
 // ./Seq/MamBigTrimCNodes.trees ./Seq/MamBigTrim.txt < BigMamIn.txt > sout.txt
 
-//	./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
 //	./Seq/Lang/IE-M1P-RS.trees ./Seq/Lang/IE-MS.nex-0007.txt < in.txt > sout.txt
 
-//  ./Seq/Turk/ConTurkicAll.nex.trees ./Seq/Turk/TurkicAll.txt < in.txt > sout.txt
-//	./Seq/Turk/ConTurkicAll.nex.trees ./Seq/Turk/Turkic0010.txt < in.txt > sout.txt
-//	./Seq/Turk/ConTurkicAll.nex.trees ./Seq/Turk/Turkic0100.txt < in.txt > sout.txt
-
-//	./Seq/PrimatesCon.trees ./Seq/PrimatesMS.txt < in.txt > sout.txt
 //	./Seq/stu.trees ./Seq/stu.txt < in.txt > sout.txt
 
 //	./Seq/BirdDiscRJ/Sub.trees ./Seq/BirdDiscRJ/Sub.txt < ./Seq/BirdDiscRJ/Sub.in.txt > ./Seq/BirdDiscRJ/Sub.out.txt
 //	./Seq/Ficus3genesReSampled.rooted.trees ./Seq/Ficus3genesReSampled.rooted.txt < in.txt > sout.txt
+//	./Seq/P_E_Primates_ClusterRep2. trees ./Seq/ConSim-000001.txt < in.txt > sout.txt
 
-//	./Seq/Verkerk.trees ./Seq/Verkerk.txt < in.txt > sout.txt
+//	./Seq/PTest.trees ./Seq/PTest.txt < in.txt > sout.txt
+	
+//	./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
+//	./Seq/PrimatesCon.trees ./Seq/PrimatesMS.txt < in.txt > sout.txt
+
+// ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
+
+// ./Seq/MamTrees-50.trees ./Seq/MamData.txt< in.txt > sout.txt
+// ./Seq/Ther.trees ./Seq/Ther.txt < in.txt > sout.txt
+
+// ./Seq/Artiodactyl.trees ./Seq/Artiodactyl.txt < in.txt > sout.txt
+// ./Seq/P_E_Lagomorpha.trees ./Seq/LagomorphaDs02.txt < in.txt > sout.txt
+// ./Seq/SaurFL.trees ./Seq/3wayNoiseR42.txt < in.txt > sout.txt
+
+// ./Seq/Wing.trees ./Seq/Wing.txt < in.txt > sout.txt
+
+// ./Seq/Birds/FullEricson_Crop.trees ./Seq/Birds/BM_Dat.txt < in.txt > sout.txt
+// ./Seq/Birds/Test.trees ./Seq/Birds/Test.txt < in.txt > sout.txt
+
+
+// ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt  < in.txt > sout.txt
+// ./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < in.txt > sout.txt
+
+// ./Seq/Birds/Test.trees ./Seq/Birds/Test.txt < in.txt > sout.txt
+
+// ./Seq/MamTrees-1.trees ./Seq/MamDataMRegTest.txt < in.txt > sout.txt
+// ./Seq/MamBigTrim-00200.trees ./Seq/MultiRegData.txt < in.txt > sout.txt
+// ./Seq/MamTreesPoly2-1.trees ./Seq/MammalBrainBody.txt < in.txt > sout.txt
+// ./Seq/Mammal.trees ./Seq/MammalBrainBody.txt < in.txt > sout.txt
+
+// ./Seq/IE-M1P-RS.trees ./Seq/IE-MS.nex-0019.txt < in.txt > sout.txt
+
+// ./Seq/MamBigTrim-00200.trees ./Seq/MammalBrainBody.txt < in.txt > sout.txt
+
+// ./Seq/Wing.trees ./Seq/Wing.txt < in.txt > sout.txt
+// ./Seq/Lago_Time.trees ./Seq/lago_outransform_simvar0.002.txt < in.txt > sout.txt
+
+// ./Seq/Artiodactyl-1.trees ./Seq/Artiodactyl.txt < in.txt > sout.txt
+
+// ./Seq/OUTest/minitree.trees ./Seq/OUTest/Data.txt < in.txt > sout.txt
+// ./Seq/Cat_FossTree.trees ./Seq/cat_outransform_var0.002.txt < in.txt > sout.txt
+
+// ./Seq/IE-M1P-RS.trees ./Seq/IE-MS.nex-0019.txt < in.txt > sout.txt
+// ./Seq/Mammal-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
+
+// ./Seq/Mammal-1.trees ./Seq/MamData.txt < in.txt > sout.txt
+
+// ./Seq/ContrastReg/RegTree.trees ./Seq/ContrastReg/Data.txt < in.txt > sout.txt
+
+// ./Seq/croptree2.trees ./Seq/croptree2.txt < in.txt > sout.txt
+
 int main(int argc, char** argv)
 {
 	TREES*		Trees;
 	OPTIONS*	Opt; 
 	int			NoSites;
+	char		*TreeFN, *DataFN; 
 
-	if(argc != 3)
+	DISPLAY_INFO;
+
+	//btdebug_init();
+	
+	NoSites = 0;
+
+	if(argc == 2)
 	{
-		printf("The program takes 2 parameters a tree file and a data file\n");
-		exit(0);
+		BatchRun(argv[1]);
+		return 0;
 	}
 
-	Trees  = LoadTrees(argv[1]);
+	GetTreeDataF(argc, argv, &TreeFN, &DataFN);
+
+	Trees  = LoadTrees(TreeFN);
 
 	if(Trees->NoOfTrees == 0) 
 	{
@@ -146,17 +230,20 @@ int main(int argc, char** argv)
 		exit(0);
 	}
 
-	LoadData(argv[2], Trees);
+	LoadData(DataFN, Trees);
 	
-	Opt = SetUpOptions(Trees, argv[1], argv[2]);
+	Opt = SetUpOptions(Trees, TreeFN, DataFN);
+	
+	#ifdef BTOCL
+	btocl_init_runtime();
+	#endif
 	
 	PrintOptions(stdout, Opt);
 
 	GetOptions(Opt);
+	CheckOptions(Opt);
 	
 	PreProcess(Opt, Trees);
-
-//	LhOverAllModels(Opt, Trees); 
 
 	if(Opt->Analsis == ANALMCMC)
 		MCMC(Opt, Trees);
@@ -167,6 +254,9 @@ int main(int argc, char** argv)
 	NoSites = Trees->NoOfSites;
 	FreeTrees(Trees, Opt);
 	FreeOptions(Opt, NoSites);
+
+	free(DataFN);
+	free(TreeFN);
 
 	return 0;	
 }

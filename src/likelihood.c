@@ -19,16 +19,25 @@
 #include "BigLh.h"
 #include "pmatrix.h"
 #include "linalg.h"
+#include "modelfile.h"
+#include "QuadDouble.h"
+
+#ifdef BTOCL_DSC
+	#include "btocl_discrete.h"
+#endif
 
 #ifndef isnan
-	extern int isnan(double x);
+	extern int isnan2(double x);
 #endif
+
+
+
 
 double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et);
 
 int		IsNum(double n)
 {
-	if(isnan(n) == 1)
+	if(isnan2(n) == 1)
 		return FALSE;
 
 	if(n == n + 1)
@@ -140,19 +149,13 @@ void	FreeInvInfo(INVINFO* InvInfo)
 
 void	AllocLHInfo(TREES *Trees, OPTIONS *Opt)
 {
-	int	NOS, Index;
+	int	NOS;
 	
 	NOS = Trees->NoOfStates;
 
 	Trees->InvInfo = AllocInvInfo(NOS);
 
-	Trees->PList = (MATRIX**)malloc(sizeof(MATRIX*) * Trees->MaxNodes);
-	if(Trees->PList == NULL)
-		MallocErr();
-
-	for(Index=0;Index<Trees->MaxNodes;Index++)
-		Trees->PList[Index] = AllocMatrix(NOS, NOS);
-
+	Trees->PList = AllocMultiMatrixLinMem(Trees->MaxNodes, NOS, NOS);
 }
 /*
 void	SumLikeDep(NODE N, TREES *Trees, int SiteNo, double Kappa, int *Err)
@@ -210,6 +213,11 @@ void	SetFossilStates(NODE N, int SiteNo, int s00, int s01, int s10, int s11)
 	return;
 #endif
 
+#ifdef QUAD_DOUBLE
+	FossilDepLhQuadDobule(N, SiteNo, s00, s01, s10, s11);
+	return;
+#endif
+
 	if(s00 == 0)
 		N->Partial[SiteNo][0] = 0;
 
@@ -261,7 +269,13 @@ void	FossilLh(NODE N, TREES *Trees, int SiteNo)
 		for(Index=0;Index<Trees->NoOfStates;Index++)
 		{
 			if(Index != N->FossilState)
-				N->Partial[SiteNo][Index] = 0;
+			{
+#ifdef QUAD_DOUBLE
+				N->BigPartial[SiteNo][Index] = 0.0;
+#else
+				N->Partial[SiteNo][Index] = 0.0;
+#endif
+			}
 		}
 	}
 	else
@@ -471,7 +485,7 @@ void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo,  int Rec)
 		{
 			Mat = Trees->PList[N->NodeList[NIndex]->ID]->me;
 			Partial = N->NodeList[NIndex]->Partial;
-
+		
 			Lh = 0;
 			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
 				Lh += Partial[SiteNo][Inner] * Mat[Outter][Inner];
@@ -659,7 +673,7 @@ int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
  	if(Opt->UseRModel == TRUE)
 		return NO_ERROR;
 
-	if(Opt->Model == MULTISTATE)
+	if(Opt->Model == M_MULTISTATE)
 	{
 		if(Trees->UseCovarion == FALSE)
 			Err = CreateMSAMatrix(Trees->InvInfo, Rates, Trees);
@@ -667,7 +681,7 @@ int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			Err = CreateMSAMatrixCoVar(Trees->InvInfo, Rates, Trees);
 	}
 
-	if(Opt->Model == DESCDEP)
+	if(Opt->Model == M_DESCDEP)
 	{
 		if(Trees->UseCovarion == FALSE)
 			Err = CreateDEPAMatrix(Trees->InvInfo, Rates->FullRates, Rates, Trees);
@@ -675,7 +689,7 @@ int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			Err = CreateDEPAMatrixCoVar(Trees->InvInfo, Rates, Trees);
 	}
 
-	if(Opt->Model == DESCINDEP)
+	if(Opt->Model == M_DESCINDEP)
 	{
 		if(Trees->UseCovarion == FALSE)
 			Err = CreateInDEPAMatrix(Trees->InvInfo, Rates->FullRates, Rates, Trees);
@@ -683,12 +697,12 @@ int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			Err = CreateInDEPAMatrixCoVar(Trees->InvInfo, Rates, Trees);
 	}
 
-	if(Opt->Model == DESCCV)
+	if(Opt->Model == M_DESCCV)
 	{
 		Err = CreateDepCVAMatrix(Trees->InvInfo, Rates->FullRates, Rates, Trees);
 	}
 
-	if(Opt->Model == DESCHET)
+	if(Opt->Model == M_DESCHET)
 	{
 		Hetero = Rates->Hetero;
 		if(Trees->UseCovarion == FALSE)
@@ -867,7 +881,7 @@ void SetDiscEstData(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			if(N->Taxa->EstData == TRUE)
 			{
 				Taxa = N->Taxa;
-				if(Opt->Model == MULTISTATE)
+				if(Opt->Model == M_MULTISTATE)
 				{
 					for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 					{
@@ -909,7 +923,7 @@ int		SetStdPMatrix(INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gam
 
 	ThrNo = GetThreadNo();
 	
-	switch(Trees->NoOfSites)
+	switch(Trees->NoOfStates)
 	{
 		case 2:
 			ErrVal = Create2SPMat(Len, InvInfo, P, Trees, InvInfo->As[ThrNo], InvInfo->Ets[ThrNo]);
@@ -940,7 +954,7 @@ int		SetAnalyticalPMatrix(TREES *Trees, NODE N, MATRIX *P, double Rate, double G
 		
 	Len = Len * Gamma;
 
-	ErrVal = CreatFullAP(Len, Rate, Trees->NOSPerSite, P);			
+	ErrVal = CreatFullAP(Len, Rate, Trees->NoOfStates, P);			
 
 	return FALSE;
 }
@@ -973,14 +987,13 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, doubl
 		Err = FALSE;
 		if(NoErr == 0)
 		{
-
 			if(Opt->UseRModel == TRUE)
 				Err = SetRPMatrix(Trees, N, Trees->PList[N->ID], Gamma, Kappa);
 			else
 			{
 				if(Opt->AnalyticalP == FALSE)
 				{
-					if(Opt->Model != DESCHET)
+					if(Opt->Model != M_DESCHET)
 						Err = SetStdPMatrix(Trees->InvInfo, Trees, N, Trees->PList[N->ID], Gamma, Kappa);
 					else
 					{
@@ -1009,12 +1022,16 @@ void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Tr
 
 	if(Parallel == FALSE)
 	{
-		for(NIndex=0;NIndex<Tree->NoPNodes[GroupNo];NIndex++)
+		for(NIndex=0;NIndex<Tree->NoFNodes[GroupNo];NIndex++)
 		{
-			#ifndef BIG_LH
-				SumLikeMultiState(Tree->PNodes[GroupNo][NIndex], Trees, SiteNo, FALSE);
+			#ifdef BIG_LH
+				LhBigLh(Tree->FNodes[GroupNo][NIndex], Trees, Opt->Precision, SiteNo);
 			#else
-				LhBigLh(Tree->PNodes[GroupNo][NIndex], Trees, Opt->Precision, SiteNo);
+				#ifdef QUAD_DOUBLE
+					NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo);
+				#else
+					SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo, FALSE);	
+				#endif
 			#endif
 		}
 
@@ -1024,12 +1041,18 @@ void	RunNodeGroup(int GroupNo, int Parallel, RATES* Rates, TREE *Tree, TREES *Tr
 #ifdef THREADED
 	#pragma omp parallel for num_threads(Opt->Cores)
 #endif
-	for(NIndex=0;NIndex<Tree->NoPNodes[GroupNo];NIndex++)
+	for(NIndex=0;NIndex<Tree->NoFNodes[GroupNo];NIndex++)
 	{
-		#ifndef BIG_LH
-			SumLikeMultiState(Tree->PNodes[GroupNo][NIndex], Trees, SiteNo, FALSE);
+		#ifdef BIG_LH
+			LhBigLh(Tree->FNodes[GroupNo][NIndex], Trees, Opt->Precision, SiteNo);
 		#else
-			LhBigLh(Tree->PNodes[GroupNo][NIndex], Trees, Opt->Precision, SiteNo);
+			#ifdef QUAD_DOUBLE
+				NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo);
+				
+			//	fdadfad
+			#else
+				SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Trees, SiteNo, FALSE);
+			#endif
 		#endif
 	}
 }
@@ -1038,19 +1061,21 @@ void	SumLhLiner(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
 {
 	int	GIndex, NIndex;
 	TREE	*Tree;
+
+	NIndex = 0;
 	
+
 	Tree = Trees->Tree[Rates->TreeNo];
-
-
-	for(GIndex=0;GIndex<Tree->NoPGroups;GIndex++)
+	
+	for(GIndex=0;GIndex<Tree->NoFGroups;GIndex++)
 	{
 #ifndef THREADED
 		RunNodeGroup(GIndex, FALSE, Rates, Tree, Trees, Opt, SiteNo);
 #else
-		if(Tree->NoPNodes[GIndex] >= Trees->InvInfo->NoThreads * MIN_NODES_PER_PROC)
-			RunNodeGroup(GIndex, TRUE, Rates, Tree, Trees, Opt, SiteNo);
-		else
+		if(Opt->Cores == 1)
 			RunNodeGroup(GIndex, FALSE, Rates, Tree, Trees, Opt, SiteNo);
+		else
+			RunNodeGroup(GIndex, TRUE, Rates, Tree, Trees, Opt, SiteNo);
 #endif
 	}
 }
@@ -1075,7 +1100,12 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		else
 			NOS = Trees->NoOfStates;
 
-#ifndef BIG_LH
+#ifdef BIG_LH
+		Ret += CombineBigLh(Rates, Trees, Opt, SiteNo, NOS);
+#else
+	#ifdef QUAD_DOUBLE
+		Ret = CombineQuadDoubleLh(Rates, Trees, Opt, SiteNo, NOS);
+	#else
 		Sum = 0;
 		for(Index=0;Index<NOS;Index++)
 			Sum += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
@@ -1093,16 +1123,12 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			return ERRLH;
 
 		Ret += log(SiteLh);
-
-#else
-		Ret += CombineBigLh(Rates, Trees, Opt, SiteNo, NOS);
+	#endif
 #endif
 	}
 
 	return Ret;
 }
-
-
 
 double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
@@ -1112,17 +1138,16 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		Err;
 	int		GammaCat;
 	double	RateMult;
-//	int		Index, NOS;
-//	double	SiteLh, Sum;
-	
 
-	MapRates(Rates, Opt);
+ 	if(Rates->ModelFile == NULL)
+		MapRates(Rates, Opt);
+	else
+		MapModelFile(Opt, Rates);
 
-	
-	if(Opt->Model == CONTRASTM)
+	if(Opt->ModelType == MT_CONTRAST)
 		return CalcContrastLh(Opt, Trees, Rates);
 	
-	if(Opt->DataType == CONTINUOUS)
+	if(Opt->ModelType == MT_CONTINUOUS)
 		return LHRandWalk(Opt, Trees, Rates);
 
 	Tree = Trees->Tree[Rates->TreeNo];
@@ -1148,11 +1173,15 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		else
 			RateMult = Rates->GammaMults[GammaCat];
 
+#ifndef BTOCL_DSC
 		Err = SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
+#else
+		Err = SetAllPMatrixOpenCL(Rates, Trees, Opt, RateMult, Rates->Kappa);
+//		Err = SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
+#endif
+
 		if(Err == TRUE)
 			return ERRLH;
-
-		
 
 		for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
 		{
@@ -1172,50 +1201,72 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	Ret = CombineLh(Rates, Trees, Opt);
 
+	
 	if((Ret > 0) || (Ret == Ret+1) || (Ret != Ret) || (Ret == ERRLH))
 		return ERRLH;
 
 	return Ret;
 }
 
-double	LhPraxisCon(PRAXSTATE* PState, double *List)
+void	MapConParams(OPTIONS *Opt, RATES *Rates, double *List)
 {
-	int	Index=0;
+	int	Index;
 
-	if(PState->Opt->EstKappa == TRUE)
+	Index = 0;
+	if(Opt->EstKappa == TRUE)
 	{
-		PState->Rates->Kappa = List[Index];
-		if(PState->Rates->Kappa > MAX_KAPPA)
-			PState->Rates->Kappa = MAX_KAPPA;
-		if(PState->Rates->Kappa < MIN_KAPPA)
-			PState->Rates->Kappa = MIN_KAPPA;
+		Rates->Kappa = List[Index];
+		if(Rates->Kappa > MAX_KAPPA)
+			Rates->Kappa = MAX_KAPPA;
+		if(Rates->Kappa < MIN_KAPPA)
+			Rates->Kappa = MIN_KAPPA;
 
 		Index++;
 	}
 
-	if(PState->Opt->EstDelta == TRUE)
+	if(Opt->EstDelta == TRUE)
 	{
-		PState->Rates->Delta = List[Index];
-		if(PState->Rates->Delta > MAX_DELTA)
-			PState->Rates->Delta = MAX_DELTA;
-		if(PState->Rates->Delta < MIN_DELTA)
-			PState->Rates->Delta = MIN_DELTA;
+		Rates->Delta = List[Index];
+		if(Rates->Delta > MAX_DELTA)
+			Rates->Delta = MAX_DELTA;
+		if(Rates->Delta < MIN_DELTA)
+			Rates->Delta = MIN_DELTA;
 
 		Index++;
 	}
 
-	if(PState->Opt->EstLambda == TRUE)
+	if(Opt->EstLambda == TRUE)
 	{
-		PState->Rates->Lambda = List[Index];
-		if(PState->Rates->Lambda > MAX_LAMBDA)
-			PState->Rates->Lambda = MAX_LAMBDA;
-		if(PState->Rates->Lambda < MIN_LAMBDA)
-			PState->Rates->Lambda = MIN_LAMBDA;
+		Rates->Lambda = List[Index];
+		if(Rates->Lambda > MAX_LAMBDA)
+			Rates->Lambda = MAX_LAMBDA;
+		if(Rates->Lambda < MIN_LAMBDA)
+			Rates->Lambda = MIN_LAMBDA;
 		
 		Index++;
 	}
 
+	if(Opt->EstOU == TRUE)
+	{
+		Rates->OU = List[Index];
+		if(Rates->OU > MAX_OU)
+			Rates->OU = MAX_OU;
+		if(Rates->OU < MIN_OU)
+			Rates->OU = MIN_OU;
+		Index++;
+	}
+}
+
+double	LhPraxisCon(PRAXSTATE* PState, double *List)
+{
+	MapConParams(PState->Opt, PState->Rates, List);
 	return LHRandWalk(PState->Opt, PState->Trees, PState->Rates);
+}
+
+double	LhPraxisContrast(PRAXSTATE* PState, double *List)
+{
+	MapConParams(PState->Opt, PState->Rates, List);
+	return CalcContrastLh(PState->Opt, PState->Trees, PState->Rates);
 }
 
 void	CheckRatesVec(double *Vec, int Size)
@@ -1241,14 +1292,16 @@ void	CheckRatesVec(double *Vec, int Size)
 double	LhPraxis(void* P, double *List)
 {
 //	static		Called;
-	int			Index;
 	double		Ret;
 	double		*TRates;
 	PRAXSTATE	*PState;
 
 	PState = (PRAXSTATE*)P;
 	
-	if(PState->Opt->DataType == CONTINUOUS)
+	if(PState->Opt->ModelType == MT_CONTRAST)
+		return -LhPraxisContrast(PState, List);
+
+	if(PState->Opt->ModelType == MT_CONTINUOUS)
 		return -LhPraxisCon(PState, List);
 
 	CheckRatesVec(List, PState->Rates->NoOfRates);

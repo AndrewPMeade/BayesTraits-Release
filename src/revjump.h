@@ -5,12 +5,14 @@
 
 void		MapRJRates(OPTIONS *Opt, RATES *Rates);
 int			NoOfPramGroups(RATES* Rates, int *GroupID, int *GroupSize);
-void		RJSplit(RATES* Rates, OPTIONS* Opt);
-void		RJMerge(RATES* Rates, OPTIONS* Opt);
 MAPINFO*	CreatMapping(RATES* Rates);
 void		FreeMapInfo(MAPINFO *MapInfo);
 
-void		RJAugment(RATES* Rates, OPTIONS* Opt);
-void		RJReduce(RATES* Rates, OPTIONS* Opt);
+
+int			RJSplit(RATES* Rates, OPTIONS* Opt);
+int			RJMerge(RATES* Rates, OPTIONS* Opt);
+
+int			RJAugment(RATES* Rates, OPTIONS* Opt);
+int			RJReduce(RATES* Rates, OPTIONS* Opt);
 
 #endif
