@@ -255,29 +255,58 @@ void	AddPolyContrast(CONTRAST *C0, CONTRAST *Dest, NODE Add, int NoSites)
 	}
 }
 
-void	PrintContrast(NODE N, int NoSites)
+void	PrintNodeContrast(NODE N, int NoSites)
 {
 	int Index;
+	int CIndex;
 	CONDATA *ConData;
 
 	ConData = N->ConData;
-
-
-	printf("Con\t");
+	
+//	printf("Con\t");
 	// Data	Cont	Var	Err	u	y	v	V
-	for(Index=0;Index<NoSites;Index++)
+
+	if(N->Tip == TRUE)
+		return;
+
+	for(CIndex=0;CIndex<ConData->NoContrast;CIndex++)
 	{
-		printf("%f\t", ConData->Contrast[0]->Data[Index]); 
-		printf("%f\t", ConData->Contrast[0]->Cont[Index]);
-		printf("%f\t", ConData->Contrast[0]->Var[Index]);
-		printf("%f\t", ConData->Contrast[0]->Err[Index]);
+		for(Index=0;Index<NoSites;Index++)
+		{ 
+			printf("%f\t", ConData->Contrast[CIndex]->Data[Index]); 
+			printf("%f\t", ConData->Contrast[CIndex]->Cont[Index]);
+			printf("%f\t", ConData->Contrast[CIndex]->Var[Index]);
+			printf("%f\t", ConData->Contrast[CIndex]->Err[Index]);
 
-		printf("%f\t", ConData->Contrast[0]->v[Index]);
+			printf("%f\t", ConData->Contrast[CIndex]->v[Index]);
 
-		printf("\t");
+			printf("\t");
+		}
+
+		printf("\n");
 	}
+}
 
+void	PrintContrast(RATES *Rates, TREES *Trees)
+{
+	TREE *Tree;
+	int Index;
+	NODE N;
+	CONTRASTR *CR; 
+
+	CR = Rates->Contrast;
+
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	for(Index=0;Index<CR->NoSites;Index++)
+		printf("Data\tCon\tVar\tErr\tV\t\t"); 
 	printf("\n");
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+		PrintNodeContrast(N, CR->NoSites);
+	}
 }
 
 void	RecCalcContrast(NODE N, int NoSites)
@@ -1311,7 +1340,7 @@ double	CalcRegAlpha(TREE *Tree, CONTRASTR *CR, int NoSites)
 	Ret = C->Data[0] - Ret;
 
 // When normlised z scores. 
-	return 0;
+//	return 0;
 	return Ret;
 }
 
@@ -1845,7 +1874,9 @@ void		NormaliseReg(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Index;	
 	CONTRASTR *CR;
-//	return;
+
+	return;
+	
 	CalcContrast(Opt->Trees, Rates);	
 	
 	Trees->PMean = (double*)malloc(sizeof(double) * Trees->NoOfSites);

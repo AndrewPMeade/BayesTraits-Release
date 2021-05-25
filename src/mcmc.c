@@ -501,15 +501,6 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	StartT = GetSeconds();	
 	for(Itters=1;;Itters++)
 	{ 
-
-		if(Itters == 96000)
-		{
-//			TestArea(Opt, Trees, CRates);
-		}
-
-
-
-
  		CopyRates(NRates, CRates, Opt);
 		MutateRates(Opt, NRates, Shed, Itters);
 

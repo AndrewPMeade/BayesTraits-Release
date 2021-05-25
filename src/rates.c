@@ -1555,6 +1555,13 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 	}
 }
 
+void	PrintRegSE(RATES* Rates, OPTIONS *Opt)
+{
+ //	return;
+	PrintContrast(Rates, Opt->Trees);
+	exit(0);
+}
+
 void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
 	int		Index;
@@ -1623,6 +1630,8 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		fprintf(Str, "%0.12f\t", Rates->Contrast->RegAlpha);
 		for(Index=0;Index<Trees->NoOfSites-1;Index++)
 			fprintf(Str, "%0.12f\t", Rates->Contrast->RegBeta[Index]);
+		
+		PrintRegSE(Rates, Opt);
 	}
 
 	if(Opt->Model == M_CONTINUOUS_REG)
@@ -1639,7 +1648,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		if(Opt->Analsis == ANALML)
 			fprintf(Str, "%0.12f\t", FindERatio(Rates, Opt));
 
-		PrintRegVarCoVar(Str, Rates, Opt);
+ 		PrintRegVarCoVar(Str, Rates, Opt);
 	}
 
 	if(Opt->UseVarData == TRUE)

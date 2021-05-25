@@ -192,7 +192,6 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
  
 // ./Seq/MamTrees-1.trees ./Seq/MamData.txt < in.txt > sout.txt
 // ./Seq/MamBrainBody.trees ./Seq/MamBrainBody.txt < in.txt. > sout.txt
-// ./Seq/MamBrainBody.trees ./Seq/MamBrainBody.txt < in.txt. > sout.txt
 // ./Seq/FritzMammalianSupertree.trees ./Seq/JustBM.txt < in.txt > sout.txt
 // ./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
 

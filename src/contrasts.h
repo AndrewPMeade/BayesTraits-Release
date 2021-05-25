@@ -27,4 +27,6 @@ void		RecIntNode(NODE N, int SiteNo, double *Alpha);
 
 void		NormaliseReg(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 double		DataToZScore(double X, double Mean, double SD);
+
+void		PrintContrast(RATES *Rates, TREES *Trees);
 #endif
