@@ -563,17 +563,24 @@ typedef struct
 
 typedef struct
 {
-	double		*RealBL;
-	int			NoBL;
+	double			*RealBL;
+	int				NoBL;
 
 	PPSCALENODE**	NodeList;
-	int			NoNodes;
+	int				NoNodes;
 /*	double		*Rates;
 	int			NoRates;
 	int			NoDiffRates;
 
 	int			InvV; */
 } PHYLOPLASTY;
+
+typedef struct
+{
+	double	*Rates;
+	int		NoRates;
+
+} CONTRAST;
 
 typedef struct
 {
@@ -757,8 +764,10 @@ typedef struct
 
 	int		VarDataSite;
 
-	RANDSTATES	*RandStates;
-	PHYLOPLASTY	*PhyloPlasty;
+	RANDSTATES		*RandStates;
+	PHYLOPLASTY		*PhyloPlasty;
+
+	CONTRASTRATES	*Contrast;
 } RATES;
 
 typedef struct

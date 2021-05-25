@@ -406,5 +406,5 @@ void	CopyPhyloPlasty(PHYLOPLASTY *A, PHYLOPLASTY *B)
 
 void	PhyloPlasyMove(RATES *Rates)
 {
-
+	
 }

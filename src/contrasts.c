@@ -99,15 +99,32 @@ void	CalcContrast(TREES* Trees, RATES* Rates)
 {
 	TREE *Tree;
 	double	Alpha;
+	int		i;
 
 //	Tree = &Trees->Tree[Rates->TreeNo];
-
 	Tree = &Trees->Tree[0];
+
+	PrintTime(stdout);
+	printf("\n\n");
 
 	RecCalcContrast(Tree->Root);
 
+
 	Alpha = Tree->Root->Contrast->Data;
 
-	printf("Root Val\t%f\t%f\n", Alpha, Alpha + Tree->Root->Contrast->Var);
-	exit(0);
+/*
+	printf("%d\tRoot Val\t%f\t%f\n", i, Alpha, Alpha + Tree->Root->Contrast->Var);
+	printf("\n\n");
+	PrintTime(stdout);
+	exit(0); */
+}
+
+
+
+double	CalcContrastLh(TREES* Trees, RATES* Rates)
+{
+	double	Lh;
+
+
+
 }

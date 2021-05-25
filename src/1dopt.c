@@ -220,7 +220,6 @@ double	Opt1DDesc(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 	return BestP;
 }
 
-
 void	Opt1D(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 {
 	double	xmin;
