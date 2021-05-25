@@ -358,9 +358,13 @@ struct INODE
 
 	double	Length;
 
-	struct INODE	*Left;
-	struct INODE	*Right;
+//	struct INODE	*Left;
+//	struct INODE	*Right;
 	struct INODE	*Ans;
+
+	struct	INODE	**NodeList;
+	int				NoNodes;
+
 
 	char		Visited;
 
@@ -457,6 +461,7 @@ typedef	struct
 	NODE		NodeList;
 	NODE		Root;
 
+	int			NoNodes;
 	CONVAR*		ConVars;
 } TREE;
 
@@ -514,14 +519,13 @@ typedef struct
 {
 	int			NoOfTrees;
 	int			NoOfTaxa;
-	int			NoOfNodes;
 	int			NoOfSites;
 	int			NoOfStates;
 
 	INVINFO*	InvInfo;
 
-	MATRIX		*PLeft;
-	MATRIX		*PRight;
+	MATRIX		**PList;
+	int			MaxPoly;
 
 	TAXA		*Taxa;
 	TREE		*Tree;

@@ -36,14 +36,16 @@ void	PrintDataDesc(TREES* Trees)
 	int		NIndex;
 	int		SiteIndex,StateIndex;
 	TAXA	*T;
+	TREE	*Tree;
 	NODE	N;
 
+	Tree = &Trees->Tree[0];
 
 	printf("Symbol List: %s\n", Trees->SymbolList);
 
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N =&Trees->Tree[0].NodeList[NIndex];
+		N = &Tree->NodeList[NIndex];
 			
 		if(N->Tip == TRUE)
 		{
@@ -728,12 +730,15 @@ double	RootToTipLen(NODE N)
 void	SetTreeAsData(OPTIONS *Opt, TREES *Trees, int TreeNo)
 {
 	int		NIndex;
+	TREE	*Tree;
 	TAXA	*Taxa;
 	NODE	N;
 
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	Tree = &Trees->Tree[TreeNo];
+
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N = &Trees->Tree[TreeNo].NodeList[NIndex];
+		N = &Tree->NodeList[NIndex];
 
 		if(N->Tip == TRUE)
 		{

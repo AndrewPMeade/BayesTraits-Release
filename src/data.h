@@ -6,7 +6,7 @@
 void		LoadData(char* FileName, TREES *Trees);
 void		CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model);
 
-void	PrintData(TREES* Trees, OPTIONS *Opt);
+void		PrintData(TREES* Trees, OPTIONS *Opt);
 void		PrintTaxaData(OPTIONS *Opt, TREES* Trees);
 
 ANALSIS		GetAnalsis(TREES *Trees);

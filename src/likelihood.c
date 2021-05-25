@@ -127,8 +127,8 @@ int	PreCalc(TREES *Trees, RATES *Rates)
 
 	if(DB == TRUE)
 	{
-		CreatFullPMatrix(1, Trees->PLeft, Trees);
-		PrintMatrix(Trees->PLeft, "My P", stdout);
+		CreatFullPMatrix(1, Trees->PList[0], Trees);
+		PrintMatrix(Trees->PList[0], "My P", stdout);
 	}
 
 	return NO_ERROR;
@@ -492,14 +492,18 @@ void	FreeInvInfo(INVINFO* InvInfo)
 
 void	AllocLHInfo(TREES *Trees, OPTIONS *Opt)
 {
-	int	NOS;
-
+	int	NOS, Index;
+	
 	NOS = Trees->NoOfStates;
 
 	Trees->InvInfo = AllocInvInfo(NOS);
 
-	Trees->PLeft	= AllocMatrix(NOS, NOS);
-	Trees->PRight	= AllocMatrix(NOS, NOS);
+	Trees->PList = (MATRIX**)malloc(sizeof(MATRIX*) * Trees->MaxPoly);
+	if(Trees->PList == NULL)
+		MallocErr();
+
+	for(Index=0;Index<Trees->MaxPoly;Index++)
+		Trees->PList[Index] = AllocMatrix(NOS, NOS);
 
 }
 /*
@@ -678,7 +682,7 @@ double	CreatFullAP(double T, double Mue, int K, MATRIX *Mat)
 
 	return 0;
 }
-
+/*
 void	SumLikeMultiStateAP(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err, double BLMult, double Rate)
 {
 	int		Inner;
@@ -732,10 +736,8 @@ void	SumLikeMultiStateAP(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Er
 
 void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err, double BLMult)
 {
-	int		Inner;
-	int		Outter;
-	double	Lr;
-	double	Ll;
+	int		Inner, Outter, NIndex;
+	double	Lr, Ll, Lh;
 	double	Len;
 	double	Val;
 
@@ -787,9 +789,113 @@ void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err,
 	if(N->FossilState != -1)
 		FossilLh(N, Trees, SiteNo);
 }
+*/
+
+void	SumLikeMultiStateAP(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err, double BLMult, double Rate)
+{
+
+	int		Inner, Outter, NIndex;
+	int		NOS;
+	double	Lh;
+	double	Len, ErrVal;
+
+	for(NIndex=0;NIndex<N->NoNodes;NIndex++)
+	{
+		if(N->NodeList[NIndex]->Tip == FALSE)
+			SumLikeMultiStateAP(N->NodeList[NIndex], Trees, SiteNo, Kappa, Err, BLMult, Rate);
+	}
+
+	if(Trees->NOSPerSite == TRUE)
+		NOS = Trees->NOSList[SiteNo];
+	else
+		NOS = Trees->NoOfStates;
+
+	for(NIndex=0;NIndex<N->NoNodes;NIndex++)
+	{
+		Len = N->NodeList[NIndex]->Length;
+		if(Kappa != -1)
+			Len = pow(Len, Kappa);
+		
+		Len = Len * BLMult;
+
+		ErrVal = CreatFullAP(Len, Rate, NOS, Trees->PList[NIndex]);
+
+		if(ErrVal > 0.001)
+		{
+			(*Err) = TRUE;
+			return;
+		}
+	}
+
+	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
+	{
+		N->Partial[SiteNo][Outter] = 1;
+
+		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
+		{
+			Lh = 0;
+			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
+				Lh += N->NodeList[NIndex]->Partial[SiteNo][Inner] * Trees->PList[NIndex]->me[Outter][Inner];
+			N->Partial[SiteNo][Outter] *= Lh;
+		}
+	}
+
+	if(N->FossilState != -1)
+		FossilLh(N, Trees, SiteNo);
+}
+
+void	SumLikeMultiState(NODE N, TREES *Trees, int SiteNo, double Kappa, int* Err, double BLMult)
+{
+	int		Inner, Outter, NIndex;
+	double	Lh;
+	double	Len, ErrVal;
+
+	for(NIndex=0;NIndex<N->NoNodes;NIndex++)
+	{
+		if(N->NodeList[NIndex]->Tip == FALSE)
+			SumLikeMultiState(N->NodeList[NIndex], Trees, SiteNo, Kappa, Err, BLMult);
+	}
+
+	for(NIndex=0;NIndex<N->NoNodes;NIndex++)
+	{
+		Len = N->NodeList[NIndex]->Length;
+		if(Kappa != -1)
+			Len = pow(Len, Kappa);
+		
+		Len = Len * BLMult;
+
+		ErrVal = CreatFullPMatrix(Len, Trees->PList[NIndex], Trees);
+		if(ErrVal > 0.001)
+		{
+			(*Err) = TRUE;
+			return;
+		}
+	}
+
+	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
+	{
+		N->Partial[SiteNo][Outter] = 1;
+
+		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
+		{
+			Lh = 0;
+			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
+				Lh += N->NodeList[NIndex]->Partial[SiteNo][Inner] * Trees->PList[NIndex]->me[Outter][Inner];
+			N->Partial[SiteNo][Outter] *= Lh;
+		}
+	}
+
+	if(N->FossilState != -1)
+		FossilLh(N, Trees, SiteNo);
+}
+
 
 void	SumLikeRModel(NODE N, TREES *Trees, int SiteNo, RATES *Rates)
 {
+	return;
+
+/* Need to fix for polytomes */
+/*
 	int		Inner;
 	int		Outter;
 	double	Lr;
@@ -838,9 +944,9 @@ void	SumLikeRModel(NODE N, TREES *Trees, int SiteNo, RATES *Rates)
 
 		N->Partial[SiteNo][Outter] = Ll * Lr;
 	}
+
+	*/
 }
-
-
 
 void	CreatIndepPMatrix(double t, MATRIX *Mat, double Alpha, double Beta)
 {
@@ -859,7 +965,7 @@ void	CreatIndepPMatrix(double t, MATRIX *Mat, double Alpha, double Beta)
 	Mat->me[1][1] = 1 - Mat->me[1][0];
 
 }
-
+/*
 void	SumLikeInDep(NODE N, TREES *Trees, double *Rates, int SiteNo)
 {
 	int		Inner;
@@ -875,7 +981,7 @@ void	SumLikeInDep(NODE N, TREES *Trees, double *Rates, int SiteNo)
 		SumLikeInDep(N->Right, Trees, Rates, SiteNo);
 
 	
-	CreatIndepPMatrix(N->Left->Length, Trees->PLeft, Rates[0], Rates[1]);
+		CreatIndepPMatrix(N->Left->Length, Trees->PLeft, Rates[0], Rates[1]);
 	CreatIndepPMatrix(N->Right->Length, Trees->PRight, Rates[0], Rates[1]);
 
 	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
@@ -892,6 +998,38 @@ void	SumLikeInDep(NODE N, TREES *Trees, double *Rates, int SiteNo)
 		N->Partial[SiteNo][Outter] = Ll * Lr;
 	}
 }
+*/
+/*
+void	SumLikeInDep(NODE N, TREES *Trees, double *Rates, int SiteNo)
+{
+	int		Inner, Outter, Index;
+	double	Lh;
+
+	for(Index=0;Index<N->NoNodes;Index++)
+		if(N->NodeList[Index]->Tip == FALSE)
+			SumLikeInDep(N->NodeList[Index], Trees, Rates, SiteNo);
+
+	for(Index=0;Index<N->NoNodes;Index++)
+	{
+		CreatIndepPMatrix(N->NodeList[Index]->Length, Trees->PList[Index], Rates[0], Rates[1]);
+	}
+
+
+	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
+	{
+		N->Partial[SiteNo][Outter] = 1;
+
+		for(Index=0;Index<N->NoNodes;Index++)
+		{
+			Lh = 0;
+			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
+				Lh += N->NodeList[Index]->Partial[SiteNo][Inner] * Trees->PList[Index]->me[Outter][Inner];
+			N->Partial[SiteNo][Outter] *= Lh;
+		}
+	}
+}
+*/
+
 
 void	PrintTipData(TREES* Trees, int TreeNo)
 {
@@ -901,7 +1039,7 @@ void	PrintTipData(TREES* Trees, int TreeNo)
 
 	Tree = &Trees->Tree[TreeNo];
 
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = &Tree->NodeList[NIndex];
 		if(N->Tip==TRUE)
@@ -967,7 +1105,7 @@ void	SetGammaBlank(RATES* Rates, OPTIONS* Opt)
 	Trees	= Opt->Trees;
 	Tree	= &Trees->Tree[Rates->TreeNo];
 	
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = &Tree->NodeList[NIndex];
 
@@ -1023,7 +1161,7 @@ void	ProcessGamma(RATES *Rates, TREES* Trees)
 	Weight	= (double)1 / Rates->GammaCats;
 	NOS = Trees->NoOfStates;
 
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = &Tree->NodeList[NIndex];
 
@@ -1052,7 +1190,7 @@ void	FinishUpGamma(RATES* Rates, OPTIONS* Opt, TREES* Trees)
 
 	Tree	= &Trees->Tree[Rates->TreeNo];
 
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = &Tree->NodeList[NIndex];
 		
@@ -1106,7 +1244,7 @@ void SetDiscEstData(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	MDPos = 0;	
 	Tree = &Trees->Tree[Rates->TreeNo];
 
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = &Tree->NodeList[NIndex];
 		if(N->Tip == TRUE)

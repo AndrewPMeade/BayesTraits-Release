@@ -1465,12 +1465,14 @@ void	SetAllPriors(OPTIONS *Opt, int Tokes, char *argv[])
 
 void	PrintUnderNode(NODE N)
 {
+	int	Index;
+
 	if(N->Tip == TRUE)
 		printf("%s\t", N->Taxa->Name);
 	else
 	{
-		PrintUnderNode(N->Left);
-		PrintUnderNode(N->Right);
+		for(Index=0;Index<N->NoNodes;Index++)
+			PrintUnderNode(N->NodeList[Index]);
 	}
 }
 
@@ -1975,6 +1977,7 @@ void	DelToRecNode(OPTIONS *Opt, int Tokes, char *argv[])
 void	SetEvenRoot(TREES *Trees)
 {
 	int		TIndex;
+	int		NIndex;
 	double	t;
 	NODE	Root;
 
@@ -1983,9 +1986,12 @@ void	SetEvenRoot(TREES *Trees)
 		Root = Trees->Tree[TIndex].Root;
 		t = 0;
 
-		t = (Root->Right->Length + Root->Left->Length) / 2;
-		Root->Left->Length = t;
-		Root->Right->Length = t;
+		for(NIndex=0;NIndex<Root->NoNodes;NIndex++)
+			t += Root->NodeList[NIndex]->Length;
+
+		t = t / (double)Root->NoNodes;
+		for(NIndex=0;NIndex<Root->NoNodes;NIndex++)
+			Root->NodeList[NIndex]->Length = t;
 	}
 }
 

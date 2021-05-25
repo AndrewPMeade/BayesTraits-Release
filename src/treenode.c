@@ -10,6 +10,8 @@
 
 void	SetNodePartition(NODE N, int* List, int *No)
 {
+	int Index;
+
 	if(N->Tip == TRUE)
 	{
 		if(List != NULL)
@@ -18,8 +20,8 @@ void	SetNodePartition(NODE N, int* List, int *No)
 		return;
 	}
 
-	SetNodePartition(N->Left, List, No);
-	SetNodePartition(N->Right, List, No);
+	for(Index=0;Index<N->NoNodes;Index++)
+		SetNodePartition(N->NodeList[Index], List, No);
 }
 
 int PartComp(int *a, int *b)
@@ -107,7 +109,7 @@ void	FreePartitions(TREES *Trees)
 	{
 		Tree = &Trees->Tree[TIndex];
 
-		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 		{
 			N = &Tree->NodeList[NIndex];
 			if(N->Part != NULL)
@@ -129,7 +131,7 @@ void	SetPartitions(TREES *Trees)
 	{
 		Tree = &Trees->Tree[TIndex];
 
-		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 		{
 			N = &Tree->NodeList[NIndex];
 			if(N->Tip == FALSE)
@@ -235,7 +237,7 @@ void	SetRecNodes(RECNODE RNode, OPTIONS *Opt)
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
 		Depth = 0;
-		N = FindNode(RNode, &Trees->Tree[TIndex], &Depth, Trees->NoOfNodes);
+		N = FindNode(RNode, &Trees->Tree[TIndex], &Depth, Trees->Tree[TIndex].NoNodes);
 		RNode->TreeNodes[TIndex] = N;
 
 		if(N != NULL)

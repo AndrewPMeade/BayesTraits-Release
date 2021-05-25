@@ -10,7 +10,7 @@
 #include "likelihood.h"
 #include "trees.h"
 #include "randdists.h"
-
+/*
 void	TestGenRand(OPTIONS *Opt, TREES *Trees, RATES* Rates);
 
 extern double gamma(double x);
@@ -59,7 +59,7 @@ double**	MakeTrueBL(TREES *Trees)
 
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 	{
-		Ret[Index] = (double*)malloc(sizeof(double) * Trees->NoOfNodes);
+		Ret[Index] = (double*)malloc(sizeof(double) * Trees->Tree[Index].NoNodes);
 		if(Ret[Index] == NULL)
 			MallocErr();
 	}
@@ -67,7 +67,7 @@ double**	MakeTrueBL(TREES *Trees)
 	for(Index=0;Index<Trees->NoOfTrees;Index++)
 	{
 		T = &Trees->Tree[Index];
-		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
 			Ret[Index][NIndex] = T->NodeList[NIndex].Length;
 	}
 
@@ -90,7 +90,7 @@ int		FindNoValidNodes(TREES *Trees)
 
 	Ret = 0;
 	T = &Trees->Tree[0];
-	for(Index=0;Index<Trees->NoOfNodes;Index++)
+	for(Index=0;Index<T->NoNodes;Index++)
 	{
 		if(IsValidPPNode(&T->NodeList[Index]) == TRUE)
 			Ret++;
@@ -113,7 +113,7 @@ void	MakeValidNodes(TREES *Trees, PLASTY* Plasty)
 	Plasty->NoValidNode = 0;
 
 	T = &Trees->Tree[0];
-	for(Index=0;Index<Trees->NoOfNodes;Index++)
+	for(Index=0;Index<T->NoNodes;Index++)
 	{
 		N = &T->NodeList[Index];
 		if(IsValidPPNode(N) == TRUE)
@@ -496,7 +496,7 @@ void	Plasty(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	TNo = Rates->TreeNo;
 	T = &Trees->Tree[TNo];
 
-	for(Index=0;Index<Trees->NoOfNodes;Index++)
+	for(Index=0;Index<T->NoNodes;Index++)
 		T->NodeList[Index].Length = P->TrueBL[TNo][Index];
 
 	for(Index=0;Index<P->NoNodes;Index++)
@@ -779,3 +779,25 @@ void	CheckPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 		}
 	}	
 }
+
+*/
+
+
+PLASTY*	CreatPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt) { return NULL; }
+void	FreePlasty(PLASTY* Plasty) { }
+
+void	PPAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, int It) { }
+void	PPChangeScale(RATES *Rates, TREES *Trees, OPTIONS *Opt) { }
+void	PPMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt) { }
+
+
+void	PlastyCopy(RATES *R1, RATES *R2) { }
+void	Plasty(OPTIONS *Opt, TREES *Trees, RATES *Rates) { }
+
+void	InitPPFiles(OPTIONS *Opt, TREES *Trees, RATES *Rates) { }
+void	PrintPPOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It) { }
+
+double	CalcPPPriors(RATES *Rates, OPTIONS *Opt) { return 0;}
+void	ChangePPHyperPrior(RATES *Rates, OPTIONS *Opt) { }
+
+void	CheckPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt) { }

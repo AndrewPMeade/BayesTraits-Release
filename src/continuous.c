@@ -117,7 +117,7 @@ NODE	TaxaToNode(TREES* Trees, TREE *Tree, TAXA *Taxa)
 {
 	int	NIndex;
 
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		if(Tree->NodeList[NIndex].Tip == TRUE)
 		{
@@ -140,7 +140,7 @@ double	GetTinyBL(TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+		for(NIndex=0;NIndex<Trees->Tree[TIndex].NoNodes;NIndex++)
 		{
 			Node = &Trees->Tree[TIndex].NodeList[NIndex];
 			if((Node != Trees->Tree[TIndex].Root) &&
@@ -170,7 +170,7 @@ void	CheckZeroTaxaBL(TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+		for(NIndex=0;NIndex<Trees->Tree[TIndex].NoNodes;NIndex++)
 		{
 			Node = &Trees->Tree[TIndex].NodeList[NIndex];
 
@@ -202,7 +202,7 @@ double	FindCoVar(TREES* Trees, TREE *Tree, int T1, int T2)
 
 	Ret = 0;
 
-    for(Index=0;Index< Trees->NoOfNodes;Index++)
+    for(Index=0;Index<Tree->NoNodes;Index++)
 		Tree->NodeList[Index].Visited = FALSE;
 
 	N1 = TaxaToNode(Trees, Tree, &Trees->Taxa[T1]);
@@ -1422,7 +1422,7 @@ void	TreeBLToPower(TREES *Trees, TREE *Tree, double Power)
 	int	Index;
 	NODE N;
 
-	for(Index=0;Index<Trees->NoOfNodes;Index++)
+	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		N = &Tree->NodeList[Index];
 		if(N != Tree->Root)

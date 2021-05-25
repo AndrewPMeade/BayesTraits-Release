@@ -10,7 +10,7 @@
 #include "rand.h"
 #include "phyloplasty.h"
 
-
+/*
 CONTRAST*	AllocContrast(NODE N)
 {
 	CONTRAST*	Ret;
@@ -38,7 +38,7 @@ void	InitContrastTree(OPTIONS *Opt, TREES* Trees, int TNo)
 	NODE N;
 
 	Tree = &Trees->Tree[TNo];
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = &Tree->NodeList[NIndex];
 		N->Contrast = AllocContrast(N);
@@ -62,7 +62,7 @@ void	FreeContrast(OPTIONS *Opt, TREES* Trees, int TreeNo)
 	int NIndex;
 
 	Tree = &Trees->Tree[TreeNo];
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
 		N = &Tree->NodeList[NIndex];
 		free(N->Contrast);
@@ -131,7 +131,7 @@ void	PrintContrasts(TREES* Trees, RATES* Rates)
 
 	Tree = &Trees->Tree[Rates->TreeNo];
 
-	for(Index=0;Index<Trees->NoOfNodes;Index++)
+	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		N = &Tree->NodeList[Index];
 		printf("Node Contrasts\t");
@@ -143,8 +143,6 @@ void	PrintContrasts(TREES* Trees, RATES* Rates)
 
 		printf("\n");
 	}
-
-
 }
 
 void	CalcContrast(TREES* Trees, RATES* Rates)
@@ -174,7 +172,7 @@ void	CalcContLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	GlobalVar = 0;
 	SumLogVar = 0;
 
-	for(Index=0;Index<Trees->NoOfNodes;Index++)
+	for(Index=0;Index<T->NoNodes;Index++)
 	{
 		N = &T->NodeList[Index];
 		if(N->Tip == FALSE)
@@ -220,7 +218,7 @@ void CalcContrastMCMC(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	GlobalVar = 0;
 	SumLogVar = 0;
 
-	for(Index=0;Index<Trees->NoOfNodes;Index++)
+	for(Index=0;Index<T->NoNodes;Index++)
 	{
 		N = &T->NodeList[Index];
 		if(N->Tip == FALSE)
@@ -408,5 +406,21 @@ void	CopyContrastRates(RATES* R1, RATES* R2, int NoSites)
 		C1->EstAlpha[Index] = C2->EstAlpha[Index];
 		C1->EstSigma[Index] = C2->EstSigma[Index];
 	}
+} 
 
-}
+*/
+
+void	InitContrastAll(OPTIONS *Opt, TREES* Trees){ }
+void	InitContrastTree(OPTIONS *Opt, TREES* Trees, int TNo) { }
+void	FreeAllContrast(OPTIONS *Opt, TREES* Trees) { }
+void	FreeContrast(OPTIONS *Opt, TREES* Trees, int TreeNo) { }
+
+void	CalcContrast(TREES* Trees, RATES* Rates) { }
+double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates) { return 0; }
+
+CONTRASTR*	AllocContrastRates(OPTIONS *Opt, RATES *Rates) { return NULL; }
+
+void	MLContrast(OPTIONS *Opt, TREES *Trees, RATES *Rates) { }
+
+void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates) { }
+void	CopyContrastRates(RATES* R1, RATES* R2, int NoSites) { }
