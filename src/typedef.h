@@ -823,7 +823,7 @@ typedef struct
 	NODE		Node;
 	double		Scale;
 	PLASTYTYPE	Type;
-	int			NodeID;
+	long long	NodeID;
 } PLASTYNODE;
 
 typedef struct
@@ -888,8 +888,8 @@ typedef struct
 	int		NoStones;
 	double	Alpha, Beta;
 	
-	int		ItPerStone;
-	int		ItStart;
+	int			ItPerStone;
+	long long	ItStart;
 
 	int		SampleFreq;
 	int		Started;
@@ -933,9 +933,9 @@ typedef struct
 
 	int			PriorCats;
 
-	int			Itters;
+	long long	Itters;
 	int			Sample;
-	int			BurnIn;
+	long long	BurnIn;
 	int			MLTries;
 
 	int			NoOfRecNodes;
@@ -1087,7 +1087,7 @@ typedef struct
 	RJDUMMY_TYPE	Type;
 	NODE			Node;
 	double			*Beta;
-	int				Iteration;
+	long long		Iteration;
 } DUMMYCODE;
 
 typedef struct

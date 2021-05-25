@@ -341,7 +341,6 @@ void	Test(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 void	InitML(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	double Lh;
 	if(Opt->Model == M_CONTRAST_REG)
 	{
 		NormaliseReg(Opt, Trees, Rates);

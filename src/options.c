@@ -255,8 +255,8 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	{
 		fprintf(Str, "Analysis Type:                   MCMC\n" );
 		fprintf(Str, "Sample Period:                   %d\n", Opt->Sample);
-		fprintf(Str, "Iterations:                      %d\n", Opt->Itters);
-		fprintf(Str, "Burn in:                         %d\n", Opt->BurnIn);
+		fprintf(Str, "Iterations:                      %lld\n", Opt->Itters);
+		fprintf(Str, "Burn in:                         %lld\n", Opt->BurnIn);
 
 		fprintf(Str, "MCMC ML Start:                   ");
 		
@@ -3318,13 +3318,66 @@ void	SetRJDummy(OPTIONS *Opt, char **Passed, int Tokes)
 		Opt->RJDummy = TRUE;
 }
 
+void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	long long TBurnIn;
+
+	if(Tokes != 2)
+	{
+		printf("The Burn In command take the number of iterations before sampling.\n");
+		return;
+	}
+	
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("%s is not a valid number of iterations for Burn In.\n", Passed[1]);
+		return;
+	}
+
+	sscanf(Passed[1], "%lld", &TBurnIn);
+	if(TBurnIn < 0)
+	{
+		printf("Burn In period must be greater than 0.\n");
+		return;
+	}
+
+	Opt->BurnIn = TBurnIn;
+}
+
+
+void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	long long TItter;
+
+	if(Tokes != 2)
+	{
+		printf("The iterations command take the number of iterations to run the chain for.\n");
+		return;
+	}
+	
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("%s is not a valid number of iterations.\n", Passed[1]);
+		return;
+	}
+
+	sscanf(Passed[1], "%lld", &TItter);
+	if(TItter < -1) 
+	{
+		printf("Burn In period must be 0 or greater, or -1 to run an infinite chain.\n");
+		return;
+	}
+
+	Opt->Itters = TItter;
+}
+
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 {
 	int			Tokes;
 	COMMANDS	Command;
 	int			Index;
 	int			Temp;
-
+	
 	ReplaceChar(';', ' ', Buffer);
 	ReplaceChar('=', ' ', Buffer);
 	ReplaceChar(',', ' ', Buffer);
@@ -3399,16 +3452,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CITTERS)
 	{
-		if(Tokes == 2)
-		{
-			Temp = atoi(Passed[1]);
-			if(Temp == 0)
-				printf("Could not convert %s to a valid number of Itterashions. Use -1 for infinite\n", Passed[1]);
-			else
-				Opt->Itters = Temp;
-		}
-		else
-			printf("Itters requires a number that spesifies the number of itters to run the chain for, use -1 of infineite\n");
+		SetItters(Opt, Tokes, Passed);
 	}
 	
 	
@@ -3562,18 +3606,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CBURNIN)
 	{
-		if((Tokes == 2) && (Opt->Analsis == ANALMCMC))
-		{
-			if(IsValidInt(Passed[1]) == TRUE)
-			{
-				Temp = atoi(Passed[1]);
-				Opt->BurnIn = Temp;
-			}
-			else
-				printf("The value %s cannot be converted to a valid ingteger\n", Passed[1]);
-		}
-		else
-			printf("The Burn In command take an interger, the number of itteraions needed befor convergence. Only allpicable for MCMC\n");
+		SetBurnIn(Opt, Tokes, Passed);
 	}
 
 	if(Command == CPIS)

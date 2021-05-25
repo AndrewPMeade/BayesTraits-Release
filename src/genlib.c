@@ -4,6 +4,8 @@
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
+#include <stdint.h>
+
 #include "genlib.h"
 
 
@@ -562,6 +564,9 @@ int		IsValidDouble(char* Str)
 int		IsValidInt(char* Str)
 {
 	if(*Str == '-')
+		Str++;
+
+	if(*Str == '+')
 		Str++;
 
 	while(*Str)

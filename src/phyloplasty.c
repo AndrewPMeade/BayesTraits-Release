@@ -11,8 +11,6 @@
 #include "trees.h"
 #include "randdists.h"
 
-void	TestGenRand(OPTIONS *Opt, TREES *Trees, RATES* Rates);
-
 extern double gamma(double x);
 extern double ndtr(double a);
 
@@ -178,7 +176,7 @@ void	FreePlasty(PLASTY* Plasty)
 }
 
 
-void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, int It)
+void	PlastyAdd(RATES *Rates, TREES *Trees, OPTIONS *Opt, NODE N, long long It)
 {
 	PLASTYNODE	*PNode;
 	PLASTY		*Plasty;
@@ -389,7 +387,7 @@ int GetPlastyNode(int ID, PLASTY *Plasty)
 	return -1;
 }
 
-void	PPAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, int It)
+void	PPAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, long long It)
 {
 	PLASTY *	Plasty;
 	int			PNodeID;
@@ -623,7 +621,7 @@ void	GetNodeIDList(NODE N, int *Size, int *List)
 
 void	InitPPFiles(OPTIONS *Opt, TREES *Trees, RATES* Rates)
 {
-//	TestGenRand(Opt, Trees, Rates);
+
 	InitPPTreeFile(Opt, Trees);
 	IntiPPLogFile(Opt, Trees, Rates);
 }
@@ -648,7 +646,7 @@ void	PrintPPNode(FILE *Out, NODE N)
 	fprintf(Out, "):%f", N->Length);
 }
 
-void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
+void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 {
 	PLASTY	*P;
 	TREE	*T;
@@ -659,7 +657,7 @@ void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 
 	Plasty(Opt, Trees, Rates, NORM_TRANSFORMS);
 
-	fprintf(Opt->PPTree, "\tTree T_%010d_%d = (", It, P->NoNodes);
+	fprintf(Opt->PPTree, "\tTree T_%010ll_%d = (", It, P->NoNodes);
 
 	for(Index=0;Index<T->Root->NoNodes-1;Index++)
 	{
@@ -673,7 +671,7 @@ void	PrintPPTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 	fflush(Opt->PPTree);
 }
 
-void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
+void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 {
 	FILE		*Out;
 	PLASTY		*P;
@@ -686,7 +684,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 
 	Out = Opt->PPLog;
 
-	fprintf(Out, "%d\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, P->NoNodes);
+	fprintf(Out, "%lld\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, P->NoNodes);
 
 	Sigma = Rates->Contrast->Sigma[0];
 	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
@@ -710,7 +708,7 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 	fflush(Out);
 }	
 
-void	PrintPPOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
+void	PrintPPOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 {
 	PrintPPTree(Opt, Trees, Rates, It);
 	LogPPResults(Opt, Trees, Rates, It);
@@ -780,6 +778,7 @@ double	CalcPPPriors(RATES *Rates, OPTIONS *Opt)
 		PVal = PPSGammaPDF(PNode->Scale, Plasty->Alpha, PPBETA);
 		Ret += log(PVal);
 	}
+
 
 	return Ret;
 }

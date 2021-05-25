@@ -206,7 +206,7 @@ void		SortDummyCodes(RJDUMMY *RJDummy)
 	qsort(RJDummy->DummyList, RJDummy->NoDummyCode, sizeof(DUMMYCODE*), CompRJDummy);
 }
 
-void		AddRJDummyCode(int Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates, NODE N)
+void		AddRJDummyCode(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates, NODE N)
 {
 	CONTRASTR	*CRates;
 	TREE		*Tree;
@@ -303,7 +303,7 @@ int			GetPosFromNode(NODE N, RJDUMMY *RJDummy)
 }
 
 
-void		RJDummyMove(int Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void		RJDummyMove(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	RJDUMMY		*RJDummy;
 	NODE		N;
@@ -565,7 +565,7 @@ void	PrintRJDummyTaxaList(FILE *Out, TREES *Trees, DUMMYCODE *DC)
 	fprintf(Out, "\t");
 }
 
-void	PrintRJDummy(int Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	PrintRJDummy(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	RJDUMMY		*RJDummy;
 	DUMMYCODE	*DC;
@@ -574,7 +574,7 @@ void	PrintRJDummy(int Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	RJDummy = Rates->RJDummy;
 
-	fprintf(Opt->RJDummyLog, "%d\t%f\t%d\t", Itter, Rates->Lh, RJDummy->NoDummyCode);
+	fprintf(Opt->RJDummyLog, "%lld\t%f\t%d\t", Itter, Rates->Lh, RJDummy->NoDummyCode);
 
 	for(Index=0;Index<RJDummy->NoDummyCode;Index++)
 	{

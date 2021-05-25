@@ -1136,13 +1136,11 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		Err;
 	int		GammaCat;
 	double	RateMult;
-	
+
  	if(Rates->ModelFile == NULL)
 		MapRates(Rates, Opt);
 	else
 		MapModelFile(Opt, Rates);
-
-//	return -9.95;
 
 	if(Opt->ModelType == MT_CONTRAST)
 		return CalcContrastLh(Opt, Trees, Rates);

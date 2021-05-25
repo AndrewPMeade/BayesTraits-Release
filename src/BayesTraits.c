@@ -189,11 +189,18 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // Big Lh + OpenMP
 // gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp
 // gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp -Dwarn _unused_result 
- 
+
+
+// Threaded + quad math
+// gcc *.c -O3 -fomit-frame-pointer -lgsl -DQUAD_DOUBLE -DTHREADED -lquadmath -fopenmp
+
+
 // ./Seq/MamTrees-1.trees ./Seq/MamData.txt < in.txt > sout.txt
 // ./Seq/MamBrainBody.trees ./Seq/MamBrainBody.txt < in.txt. > sout.txt
 // ./Seq/FritzMammalianSupertree.trees ./Seq/JustBM.txt < in.txt > sout.txt
 // ./Seq/Primates.trees ./Seq/Primates.txt < in.txt > sout.txt
+
+
 
 int main(int argc, char** argv)
 {

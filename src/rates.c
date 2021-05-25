@@ -2545,7 +2545,7 @@ int		TryRJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 }
 
 
-void	RJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
+void	RJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 {
 	int Success;
 
@@ -2555,7 +2555,7 @@ void	RJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 	} while(Success == FALSE);
 }
 
-void	ChangeConRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
+void	ChangeConRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 {
 	int Index;
 
@@ -2583,7 +2583,7 @@ void	ChangeConRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 	}
 }
 
-void	ChangeRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
+void	ChangeRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 {
 	int Index, NoOfRates;
 
@@ -2613,11 +2613,11 @@ void	ChangeRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 		if(Opt->ModelType == MT_CONTRAST)
 			MutateContrastRates(Opt, Opt->Trees, Rates, Shed);
 		else
-			ChangeConRates(Opt, Rates, Shed, It);
+			ChangeConRates(Opt, Rates, Shed);
 	}
 }
 
-void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
+void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 {
 	Shed->Op = PickACat(Rates, Shed->OptFreq, Shed->NoOfOpts);
 
@@ -2664,7 +2664,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, int It)
 		break;
 
 		case SJUMP:
-			RJMove(Opt, Rates ,Shed ,It);
+			RJMove(Opt, Rates ,Shed);
 		break;
 
 		case SPPROR:

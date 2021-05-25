@@ -127,7 +127,7 @@ void	UpDateHMean(OPTIONS *Opt, RATES *Rates)
 #endif
 }
 
-void	PrintMCMCSample(int Itters, SCHEDULE* Shed, OPTIONS *Opt, RATES *Rates, FILE* Str)
+void	PrintMCMCSample(long long Itters, SCHEDULE* Shed, OPTIONS *Opt, RATES *Rates, FILE* Str)
 {
 	TREES*	Trees;
 	int		PIndex;
@@ -136,7 +136,7 @@ void	PrintMCMCSample(int Itters, SCHEDULE* Shed, OPTIONS *Opt, RATES *Rates, FIL
 	Trees = Opt->Trees;
 
 	HMean = GetHMean(Opt, Rates);
-	fprintf(Str, "%d\t%f\t%f\t%d\t", Itters, Rates->Lh, HMean, Rates->TreeNo+1);
+	fprintf(Str, "%lld\t%f\t%f\t%d\t", Itters, Rates->Lh, HMean, Rates->TreeNo+1);
 		
 	PrintRates(Str, Rates, Opt, Shed);
 
@@ -323,7 +323,7 @@ FILE*	CreatStoneOuput(OPTIONS *Opt)
 	return Ret;
 }
 
-int		ExitMCMC(OPTIONS *Opt, int Itters)
+int		ExitMCMC(OPTIONS *Opt, long long Itters)
 {
 	if(Opt->Stones != NULL)
 		return StoneExit(Opt->Stones, Itters);
@@ -372,7 +372,7 @@ void	SetValidStartingPriors(OPTIONS *Opt,TREES* Trees, RATES *Rates)
 
 void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	int Index;
+//	int Index;
 	double Lh, X;
 
 	TestDummyCodeSig(Opt, Trees, Rates);
@@ -402,13 +402,14 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	RATES*		CRates;
 	RATES*		NRates;
-	int			Itters;
+	long long	Itters;
 	double		Heat, StartT, EndT;
 	SCHEDULE*	Shed;
 	FILE*		ShedFile;
 	FILE*		SaveModelF;
 	FILE*		StoneF;
 	int			BurntIn, GBurntIn;
+
 #ifdef	JNIRUN
 	long		FP;
 #endif
@@ -501,6 +502,8 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	StartT = GetSeconds();	
 	for(Itters=1;;Itters++)
 	{ 
+		printf("Itter:\t%d\t%d\n", Itters, CRates->TreeNo);
+
  		CopyRates(NRates, CRates, Opt);
 		MutateRates(Opt, NRates, Shed, Itters);
 
@@ -630,7 +633,12 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 					}
 				}
 			#endif
-
+			
+			if(Opt->UseEqualTrees == TRUE)
+			{
+				if((Itters == Opt->ETreeBI) && (GBurntIn == TRUE))
+					BurntIn = TRUE;
+			}
 
 			if(Itters == Opt->BurnIn)
 			{
@@ -640,17 +648,14 @@ void	TestArea(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 					{
 						GBurntIn = TRUE;
 						Itters = 1;
+						BurntIn = FALSE;
 					}
 				}
 				else
 					BurntIn = TRUE;
 			}
 
-			if(Opt->UseEqualTrees == TRUE)
-			{
-				if((Itters == Opt->ETreeBI) && (GBurntIn == TRUE))
-					BurntIn = TRUE;
-			}
+
 
 			if(Opt->Stones != NULL)
 				StoneItter(Opt->Stones, Itters, CRates->Lh, StoneF);

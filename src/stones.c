@@ -32,20 +32,21 @@ void	OutputStoneHeadder(FILE *Out, STONES *Stones)
 	fflush(Out);
 }
 
-double	GetStoneHeat(STONES *Stones, int Itter, double Heat)
+double	GetStoneHeat(STONES *Stones, long long Itter, double Heat)
 {
-	int StoneIt, CStone;
+	long long StoneIt;
+	int CStone;
 
 	if(Itter < Stones->ItStart)
 		return Heat;
 	
 	StoneIt = Itter - Stones->ItStart;
-	CStone = StoneIt / Stones->ItPerStone;
+	CStone = (int) StoneIt / Stones->ItPerStone;
 
 	return Heat * Stones->Power[CStone];
 }
 
-int		StonesStarted(STONES *Stones, int Itter)
+int		StonesStarted(STONES *Stones, long long Itter)
 {
 	if(Stones == NULL)
 		return FALSE;
@@ -136,7 +137,7 @@ double	GetMLhStoneSum(STONES *Stones, int Pos)
 	return Ret;
 }
 
-void	NewStone(STONES *Stones, int Itter, double Lh, int CStone, FILE *Out)
+void	NewStone(STONES *Stones, long long Itter, double Lh, int CStone, FILE *Out)
 {
 	if(CStone != 0)
 	{
@@ -163,9 +164,9 @@ void	NewStone(STONES *Stones, int Itter, double Lh, int CStone, FILE *Out)
 	fflush(Out);
 }
 
-int		SampleStone(STONES *Stones, int StoneIt, int CStone)
+int		SampleStone(STONES *Stones, long long StoneIt, int CStone)
 {
-	int CIt;
+	long long CIt;
 
 	if(StoneIt % Stones->SampleFreq != 0)
 		return FALSE;
@@ -179,15 +180,16 @@ int		SampleStone(STONES *Stones, int StoneIt, int CStone)
 	return TRUE;
 }
 
-void	StoneItter(STONES *Stones, int Itter, double Lh, FILE *Out)
+void	StoneItter(STONES *Stones, long long Itter, double Lh, FILE *Out)
 {
-	int StoneIt, CStone;
+	long long StoneIt;
+	int CStone;
 
 	if(Itter < Stones->ItStart)
 		return;
 	
 	StoneIt = Itter - Stones->ItStart;
-	CStone = StoneIt / Stones->ItPerStone;
+	CStone = (int)StoneIt / Stones->ItPerStone;
 
 	if(StoneIt % Stones->ItPerStone == 0)
 	{
@@ -202,7 +204,7 @@ void	StoneItter(STONES *Stones, int Itter, double Lh, FILE *Out)
 
 }
 
-int		StoneExit(STONES *Stones, int Itters)
+int		StoneExit(STONES *Stones, long long Itters)
 {
 	if(Stones == NULL)
 		return FALSE;
