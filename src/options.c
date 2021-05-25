@@ -2533,8 +2533,7 @@ void	PrintTaxaInfo(OPTIONS *Opt)
 void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
 {
 	PRIORS		*P;
-	int			Index;
-	PRIORDIST	Dist;
+
 
 	if(Opt->UseRJMCMC == TRUE)
 	{
@@ -2962,7 +2961,9 @@ void	OptSetSeed(OPTIONS *Opt, char	*CSeed)
 		return;
 	}
 
-	Opt->Seed = atoi(CSeed);
+	sscanf(CSeed, "%lu", &Opt->Seed);
+
+//	Opt->Seed = atoi(CSeed);
 }
 
 int	FossilNoPramOK(OPTIONS *Opt, char **Passed, int Tokes)

@@ -358,6 +358,8 @@ void	CheckPlasyNodes(PLASTY *Plasty)
 	}
 }
 
+
+
 void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, RJ_VARRATE_TYPE Type, NODE N, long long It)
 {
 	PLASTYNODE	*PNode;
@@ -611,8 +613,6 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	NODE		N;
 	RJ_VARRATE_TYPE		Type;
 	
-
-
 	Type = GetVarRatesType(Rates->RS, Shed);
 		
 	Plasty = Rates->Plasty;
@@ -626,7 +626,7 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	else
 		VarRatesDelNode(Rates, Trees, Opt, PNodeID);	
 
-	CheckPlasyNodes(Plasty);
+//	CheckPlasyNodes(Plasty);
 }
 
 
@@ -1133,7 +1133,31 @@ void	ChangeVarRatesHyperPrior(RATES *Rates, OPTIONS *Opt)
 	Plasty->Alpha = NAlpha;
 }
 
-double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
+double	CaclVRPrior(PLASTYNODE *PNode, double Alpha, double Beta, int *Err)
+{
+	double Ret;
+
+	if(PNode->Type == VR_KAPPA && PNode->Scale >= MAX_VR_KAPPA)
+		*Err = TRUE;
+
+	if(PNode->Type == VR_DELTA && PNode->Scale >= MAX_VR_DELTA)
+		*Err = TRUE;
+
+	if(PNode->Type == VR_LAMBDA && PNode->Scale >= MAX_VR_LAMBDA)
+		*Err = TRUE;
+
+	if(PNode->Type == VR_OU && PNode->Scale >= MAX_VR_OU)
+		*Err = TRUE;
+	
+	if(*Err == TRUE)
+		return 0.0;
+	
+	Ret = PPSGammaPDF(PNode->Scale, Alpha, Beta);
+
+	return Ret;
+}
+
+double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt, int *Err)
 {
 	double		Ret;
 	int			Index;
@@ -1154,7 +1178,12 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 	for(Index=0;Index<Plasty->NoNodes;Index++)
 	{
 		PNode = Plasty->NodeList[Index];
-		PVal = PPSGammaPDF(PNode->Scale, Plasty->Alpha, PPBETA);
+//		PVal = PPSGammaPDF(PNode->Scale, Plasty->Alpha, PPBETA);
+		PVal = CaclVRPrior(PNode, Plasty->Alpha, PPBETA, Err);
+
+		if(*Err == TRUE)
+			return ERRLH;
+
 		Ret += log(PVal);
 	}
 
@@ -1173,6 +1202,257 @@ int		SeenNodeID(int NID, PLASTY *Plasty, int Size)
 	return FALSE;
 }
 
+PLASTYNODE*	CreateTextPNode(NODE N, double Scale, long long CIt, RJ_VARRATE_TYPE Type)
+{
+	PLASTYNODE*	Ret;
+	
+	Ret = CreateVarRatesNode(CIt, N);
+
+	Ret->Scale = Scale;
+	Ret->Type = Type;
+
+	return Ret;
+}
+
+RJ_VARRATE_TYPE	StrToRJVarRatesType(char *Str)
+{
+	MakeLower(Str);
+
+	if(strcmp("node", Str) == 0)
+		return VR_NODE;
+	
+	if(strcmp("branch", Str) == 0)
+		return VR_BL;
+	
+	if(strcmp("kappa", Str) == 0)
+		return VR_KAPPA;
+
+	if(strcmp("lambda", Str) == 0)
+		return VR_LAMBDA;
+
+	if(strcmp("delta", Str) == 0)
+		return VR_DELTA;
+
+	if(strcmp("ou", Str) == 0)
+		return VR_OU;
+
+	printf("Unkown string (%s) in %s::%d.\n", Str, __FILE__, __LINE__);
+	exit(0);
+}
+
+void	AddTextVarRate(TREE *Tree, RATES *Rates, int Tokes, char **Passed)
+{
+	PLASTYNODE* PNode;
+	NODE N;
+	int NodeID;
+	double Scale;
+	long long Itter;
+	RJ_VARRATE_TYPE Type;
+	PLASTY		*Plasty;
+
+	Plasty = Rates->Plasty;
+
+	NodeID = atoi(Passed[0]);
+	Scale = atof(Passed[1]);
+	sscanf(Passed[2], "%lld", &Itter);
+	
+	Type = StrToRJVarRatesType(Passed[3]);
+
+	N = Tree->NodeList[NodeID];
+		
+	PNode = CreateTextPNode(N, Scale, Itter, Type);
+
+	Plasty->NodeList = (PLASTYNODE**) AddToList(&Plasty->NoNodes, (void**)Plasty->NodeList, (void*)PNode);
+}
+
+PLASTYNODE**	MakeNewList(PLASTY *Plasty, int Pos)
+{
+	PLASTYNODE** Ret;
+	int CPos, Index;
+
+	Ret = (PLASTYNODE**)malloc(sizeof(PLASTYNODE*) * (Plasty->NoNodes - 1));
+
+
+	CPos = 0;
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+	{
+		if(Index != Pos)
+			Ret[CPos++] = Plasty->NodeList[Index];
+	}
+	
+	return Ret;
+}
+
+void	SetVarRatesList(PLASTY *Plasty, PLASTYNODE** VRateList, int NoVRates)
+{
+	free(Plasty->NodeList);
+
+	Plasty->NodeList = VRateList;
+	Plasty->NoNodes = NoVRates;
+}
+
+
+double	LhVarRatesList(OPTIONS *Opt, RATES *Rates, TREES *Trees, PLASTYNODE** VRateList, int NoVRates)
+{
+	PLASTYNODE** OList;
+	int NoOld;
+	PLASTY		*Plasty;
+	double		Ret;
+
+	Plasty = Rates->Plasty;
+	
+	NoOld = Plasty->NoNodes;
+	OList = Plasty->NodeList;
+
+	Plasty->NodeList = VRateList;
+	Plasty->NoNodes = NoVRates;
+	
+	Ret = Likelihood(Rates, Trees, Opt);
+
+	Plasty->NodeList = OList;
+	Plasty->NoNodes = NoOld;
+
+
+	return Ret;
+}
+
+
+void	RemoveEachVarRate(OPTIONS *Opt, RATES *Rates)
+{
+	PLASTY		*Plasty;
+	PLASTYNODE	**RList;
+	int Index;
+	double Lh;
+
+	Plasty = Rates->Plasty;
+	
+	for(Index=0;Index<Plasty->NoNodes;Index++)
+	{
+
+		RList = MakeNewList(Plasty, Index);
+		Lh = LhVarRatesList(Opt, Rates, Opt->Trees, RList, Plasty->NoNodes - 1);
+
+		printf("Del\t%d\tLh\t%f\n", Index, Lh);
+				
+		free(RList);
+	}
+}
+
+PLASTYNODE** CreateVRateList(PLASTY *Plasty, int No1, int No2)
+{
+	PLASTYNODE** Ret;
+
+	Ret = (PLASTYNODE**)malloc(sizeof(PLASTYNODE*) * 2);
+	
+	Ret[0] = Plasty->NodeList[No1];
+	Ret[1] = Plasty->NodeList[No2];
+
+
+	return Ret;
+}
+
+void	TestEachVarRatePair(OPTIONS *Opt, RATES *Rates)
+{
+	int X, Y;
+	PLASTY		*Plasty;
+	PLASTYNODE**	List;
+	double Lh;
+
+	Plasty = Rates->Plasty;
+
+	List = CreateVRateList(Plasty, 1, 3);
+//	Lh = LhVarRatesList(Opt, Rates, Opt->Trees, List, 2);
+
+	SetVarRatesList(Plasty, List, 2);
+
+	
+
+	Lh = Likelihood(Rates, Opt->Trees, Opt);
+	printf("Lh:\t%f\n", Lh);
+
+	CalcPriors(Rates, Opt);
+
+	PrintPPTree(Opt, Opt->Trees, Rates, 1);
+		
+	exit(0);
+	
+	for(X=0;X<Plasty->NoNodes;X++)
+	{
+		for(Y=0;Y<Plasty->NoNodes;Y++)
+		{
+			if(X != Y)
+			{
+				List = CreateVRateList(Plasty, X, Y);
+				Lh = LhVarRatesList(Opt, Rates, Opt->Trees, List, 2);
+
+				printf("%d\t%d\t%f\n", X, Y, Lh);
+
+				free(List);
+			}
+		}
+	}
+
+	exit(0);
+}
+
+void	TestVarRates(OPTIONS *Opt, RATES *Rates)
+{
+	TREES *Trees;
+	TREE *Tree;
+	double Lh;
+
+	Trees = Opt->Trees;
+	Tree = Trees->Tree[0];
+
+	ReSetBranchLength(Tree);
+
+	Lh = Likelihood(Rates, Opt->Trees, Opt);
+
+	printf("Lh = %f\n", Lh);
+//	exit(0);
+//	RemoveEachVarRate(Opt, Rates);
+
+	TestEachVarRatePair(Opt, Rates);
+
+
+//	PrintPPTree(Opt, Opt->Trees, Rates, 1);
+
+	exit(0);
+}
+
+
+
+void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt)
+{
+	char **Passed;
+	int Index, Tokes;
+	char *S;
+	
+
+	S = StrMake(Str);
+
+	Passed = (char**)malloc(sizeof(char*) * strlen(Str));
+	if(Passed == NULL)
+		MallocErr();
+
+	Tokes = MakeArgv(S, Passed, strlen(S));
+
+	Rates->Contrast->Alpha[0] = atof(Passed[4]);
+	Rates->Contrast->Sigma[0] = atof(Passed[5]);
+
+	Index = 7;
+	for(;Index<Tokes;Index+=4)
+		AddTextVarRate(Opt->Trees->Tree[0], Rates, 4, &Passed[Index]);
+//		printf("%s\n", Passed[Index]);
+	
+
+
+	TestVarRates(Opt, Rates);
+	
+
+	free(Passed);
+
+}
 
 /*
 PLASTY*	CreatPlasty(RATES *Rates, TREES *Trees, OPTIONS *Opt) { return NULL; }
@@ -1193,3 +1473,5 @@ double	CalcPPPriors(RATES *Rates, OPTIONS *Opt) { return 0;}
 void	ChangePPHyperPrior(RATES *Rates, OPTIONS *Opt) { }
 
 */
+
+

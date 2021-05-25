@@ -17,12 +17,14 @@
 /*
 extern double beta(double a, double b);
 extern double incbet(double aa, double bb, double xx );
-extern double chdtr(double df, double x);
+
 extern double igam(double a, double x);
 extern double igamc ( double, double );
 extern double igami ( double, double );
 extern double gamma(double a);
 */
+
+extern double chdtr(double df, double x);
 
 void	FreePrior(PRIORS* P)
 {
@@ -363,7 +365,7 @@ double	PBetaWidth(double X, double Alpha, double Beta, double Width)
 	double	P1, P2;
 	double	X1, X2;
 	double	Scale;
-	int		Cat;
+//	int		Cat;
 
 	Scale = 100;
 	
@@ -725,14 +727,14 @@ double CalcRJDummyPriors(OPTIONS *Opt, RATES* Rates)
 void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 {
 	PRIORS	*Prior;
-	int		PIndex;
+	int		PIndex, Err;
 	double	TLh;
 	double	Rate;
 	int		NoPRates;
 	double	CalcP;
 
 	CalcP = 0;
-	
+	Err = FALSE;
 //	ProbTest();
 
 	if(Opt->LoadModels == TRUE)
@@ -773,9 +775,9 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 		CalcP += CalcRJDummyPriors(Opt, Rates);
 
 	if(UseNonParametricMethods(Opt) == TRUE)
-		CalcP += CalcVarRatesPriors(Rates, Opt);
+		CalcP += CalcVarRatesPriors(Rates, Opt, &Err);
 	
-	if((CalcP == ERRLH) || (IsNum(CalcP) == FALSE))
+	if((CalcP == ERRLH) || (IsNum(CalcP) == FALSE) || (Err == TRUE))
 	{
 		Rates->LhPrior = ERRLH;
 		return;

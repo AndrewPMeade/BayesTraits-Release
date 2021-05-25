@@ -1,6 +1,8 @@
 #if !defined (TYPEDEFS)
 #define TYPEDEFS
 
+//#define BTLAPACK
+
 #pragma warning(disable : 4996)
 #include <stdio.h>
 #include <assert.h>
@@ -172,6 +174,10 @@
 
 #define	NORM_MEAN_BL	0.1
 
+#define	MAX_VR_KAPPA	25
+#define MAX_VR_DELTA	25
+#define MAX_VR_LAMBDA	1
+#define MAX_VR_OU		100
 
 // Value for a normal distribution for a fat tail model
 #define FAT_TAIL_NORMAL_VAL 2.0

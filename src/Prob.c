@@ -107,7 +107,7 @@ double		PDFBeta(double X, double Alpha, double Beta)
 
 double		PDFChi(double X, double Alpha, double Beta)
 {
-	double Ret;
+//	double Ret;
 
 	printf("hs not been implmented.\n");
 	exit(0);

@@ -501,9 +501,9 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 //		TestModelFile(Opt, Trees, CRates);
 
 	InitMCMC(Opt, Trees, CRates);
-		
-
-	LoadGeoData(Opt, Trees, CRates, NRates);
+	
+//	SetVarRatesFromStr("64680000	456.345426	338.643858	16	2.631978	0.003743	1.100000	11	3.101924	23747469	Kappa	20	4.834260	23802931	Branch	23	3.525218	23803910	Branch	15	633.971682	23803921	Kappa	164	9.358599	64526669	Kappa	84	3.034389	64677737	Node	431	6.568727	64678104	Node	181	5.733636	64678397	Node	244	5.479540	64679268	Branch	26	1.634304	64679343	Node	100	1.204039	64679581	Node	233	7.079552	64679638	Branch	59	6.473202	64679780	Node	195	5.609137	64679832	Branch	325	9.689859	64679865	Branch	45	0.975597	64679910	Kappa	\0", CRates, Opt);
+//	LoadGeoData(Opt, Trees, CRates, NRates);
 
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	CalcPriors(CRates, Opt);
@@ -543,6 +543,7 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 			printf("False\n");
 		*/
  		CopyRates(NRates, CRates, Opt);
+
 		MutateRates(Opt, NRates, Shed, Itters);
 
 		if(Opt->NodeData == TRUE)
