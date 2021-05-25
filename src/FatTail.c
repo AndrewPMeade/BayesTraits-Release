@@ -446,12 +446,28 @@ NODE	GetSliceSampleNode(TREE *Tree, RANDSTATES *RS)
 	return Ret;
 }
 
+void	TestSDStuff(STABLEDIST *SD)
+{
+	double x, lh ;
+
+	SetStableDist(SD, 2.0, 1.0);
+
+	for(x=-20;x<20;x+=0.01)
+	{
+		lh = StableDistTPDF(SD, x, 1.0);
+		printf("%f\t%f\n", x, lh);
+	}
+	exit(0);
+}
+
 double	AnsStateLh(double X, int SiteNo, NODE N, STABLEDIST *SD)
 {
 	double Ret, Val;
 	int Index;
 
 	Ret = 0;
+
+//	TestSDStuff(SD);
 
 	for(Index=0;Index<N->NoNodes;Index++)
 	{
@@ -962,7 +978,7 @@ void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 
 	P = Rates->Prios[Pos];
 //	Rates->Rates[Pos] = RandUniDouble(Rates->RS, P->DistVals[0], P->DistVals[1]);
-	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 10);
+	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 2);
 	Pos++;
 
 }
@@ -1005,4 +1021,39 @@ void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	printf("%f\t%f\t%f\n", Lh, Rates->Rates[0], Rates->Rates[1]);
 	exit(0);*/
+}
+
+
+void	FatTailTest(int argc, char **argv)
+{
+	STABLEDIST *SD;
+	double Start, End, SSize, X, P, Alpha, Scale;
+	int No;
+
+	if(argc != 6)
+	{
+		printf("StableDist Test takes an Alpha, Scale, Start and Stop X and number of steps.\n");
+		exit(0);
+	}
+
+	Alpha = atof(argv[1]);
+	Scale = atof(argv[2]);
+	Start = atof(argv[3]);
+	End = atof(argv[4]);
+	No = atoi(argv[5]);
+
+	SD = CreatStableDist();
+
+	SetStableDist(SD, Alpha, Scale);
+
+	SSize = (End - Start) / (double)No;
+
+	for(X=Start;X<=End;X+=SSize)
+	{
+		P = StableDistPDF(SD, X);
+
+		printf("%f\t%f\n", X, P);
+	}
+	
+	exit(0);
 }

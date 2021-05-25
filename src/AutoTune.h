@@ -20,11 +20,18 @@ typedef struct
 	
 	double	*RateAcc;
 	double	*RateDev;
+
+	char	*Name;
+		
 } AUTOTUNE;
 
-AUTOTUNE*	CreatAutoTune(double InitDev, double Min, double Max);
+AUTOTUNE*	CreatAutoTune(char *Name, double InitDev, double Min, double Max);
 void		FreeAutoTune(AUTOTUNE *AutoTune);
 
 void		AutoTuneUpDate(AUTOTUNE *AutoTune, RANDSTATES *RS);
+
+double		AutoTuneCalcAcc(AUTOTUNE *AT);
+
 void		ReSetAutoTune(AUTOTUNE *AutoTune);
+
 #endif

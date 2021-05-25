@@ -34,7 +34,7 @@ void	BuildStateDS(int NOS, TREES *Trees)
 	FILE *Out;
 	int Index, Len;
 		
-	Len = strlen(SymList);
+	Len = (int)strlen(SymList);
 	Out = OpenRandSimOutFile(NOS);
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)

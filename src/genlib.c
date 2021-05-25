@@ -232,10 +232,10 @@ void		FindTextFileMaxLine(TEXTFILE* TextFile)
 		return;
 	}
 
-	TextFile->MaxLine = strlen(TextFile->Data[0]);
+	TextFile->MaxLine = (int)strlen(TextFile->Data[0]);
 	for(Index=1;Index<TextFile->NoOfLines;Index++)
 	{
-		Len = strlen(TextFile->Data[Index]);
+		Len = (int)strlen(TextFile->Data[Index]);
 		if(Len > TextFile->MaxLine)
 			TextFile->MaxLine = Len;
 	}
@@ -273,7 +273,7 @@ TEXTFILE*	LoadTextFile(char* Name, char DelComments)
 
 	do
 	{
-		NoRead = fread(&Buffer[0], sizeof(char), BUFFERSIZE, InFile);
+		NoRead = (int)fread(&Buffer[0], sizeof(char), BUFFERSIZE, InFile);
 		Ret->Size += NoRead;
 	} while(NoRead == BUFFERSIZE);
 
@@ -443,7 +443,7 @@ void		MakeUpper(char* Str)
 	int Size;
 	int	Index;
 
-	Size = strlen(Str);
+	Size = (int)strlen(Str);
 	for(Index=0;Index<Size;Index++)
 		Str[Index] = toupper(Str[Index]);
 }
@@ -453,7 +453,7 @@ void		MakeLower(char* Str)
 	int Size;
 	int	Index;
 
-	Size = strlen(Str);
+	Size = (int)strlen(Str);
 	for(Index=0;Index<Size;Index++)
 		Str[Index] = tolower(Str[Index]);
 }
@@ -629,7 +629,7 @@ void	ReplaceChar(char Rep, char With, char* String)
 	int	Index;
 	int	Size;
 
-	Size = strlen(String);
+	Size = (int)strlen(String);
 
 	for(Index=0;Index<Size;Index++)
 	{
@@ -645,7 +645,7 @@ void	RemoveChar(char c, char* String)
 	int	Index;
 	int	SIndex;
 
-	Size = strlen(String);
+	Size = (int)strlen(String);
 
 	for(Index=0;Index<Size;Index++)
 	{
@@ -684,7 +684,7 @@ char*	FormatInt(int No, int Size)
 	if(Ret == NULL)
 		MallocErr();
 
-	Len = strlen(Buffer);
+	Len = (int)strlen(Buffer);
 	for(Index=0;Index<Size - Len;Index++)
 		Ret[Index] = '0';
 	Ret[Index] = '\0';
@@ -747,7 +747,7 @@ void    revstr(char * String)
     char    *End;
     int     Size;
 
-    Size = strlen(String);
+    Size = (int)strlen(String);
 
     Start = String;
     End   = String + (Size - 1);
@@ -883,7 +883,7 @@ void	PrintFixSize(char *String, int Size, FILE* Str)
 	int		Index;
 	int		StrSize;
 
-	StrSize = strlen(String);
+	StrSize = (int)strlen(String);
 
 	fprintf(Str, "%s", String);
 

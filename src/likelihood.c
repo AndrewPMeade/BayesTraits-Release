@@ -31,7 +31,7 @@
 	extern int isnan2(double x);
 #endif
 
-
+extern int isnan2(double);
 
 
 double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et);

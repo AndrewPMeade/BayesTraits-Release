@@ -6,6 +6,7 @@
 #include "typedef.h"
 #include "genlib.h"
 #include "continuous.h"
+#include "trees.h"
 
 void	FreePart(PART *Part)
 {
@@ -51,8 +52,6 @@ int		TaxaInPart(int TaxaIndex, PART *P)
 
 	return FALSE;
 }
-
-
 
 int		PartEqual(PART *A, PART *B)
 {
@@ -135,7 +134,6 @@ void	SetIntPart(NODE N)
 	}
 
 	qsort(Part->Taxa, Part->NoTaxa, sizeof(int), PartCompID);
-	
 }
 
 void	SetTreePart(NODE N)
@@ -293,9 +291,63 @@ void	PrintPart(FILE *Str, TREES *Trees, PART *Part)
 	fprintf(Str, "Part:\t%d\t", Part->NoTaxa);
 	for(Index=0;Index<Part->NoTaxa;Index++)
 	{
-//		ID = GetMapID(Trees, Part->Taxa[Index]);
 		ID = Part->Taxa[Index];
 		T = Trees->Taxa[ID];
 		fprintf(Str, "%s\t", T->Name);
 	}
+}
+
+PART*	CreatePart(TREES *Trees, int NoTaxa, char **TaxaList)
+{
+	PART	*Ret;
+	TAXA	*Taxa;
+	int		Index;
+
+	Ret = CreatPart(NoTaxa);
+
+	for(Index=0;Index<NoTaxa;Index++)
+	{
+		Taxa = GetTaxaFromName(TaxaList[Index], Trees->Taxa, Trees->NoOfTaxa);
+
+		if(Taxa == NULL)
+		{
+			printf("Invalid taxa name:\t%s\n", TaxaList[Index]);
+			exit(0);
+		}
+		
+		Ret->Taxa[Index] = Taxa->Index;
+	}
+
+	qsort(Ret->Taxa, Ret->NoTaxa, sizeof(int), PartCompID);
+
+	for(Index=0;Index<NoTaxa-1;Index++)
+	{
+		if(Ret->Taxa[Index] == Ret->Taxa[Index+1])
+		{
+			printf("Taxa %s included multiple times.\n", Trees->Taxa[Ret->Taxa[Index]]->Name);
+			exit(0);
+		}
+	}
+
+	return Ret;
+}
+
+NODE	PartGetMRCA(TREE *Tree, PART *Part)
+{
+	NODE Ret, N;
+	int Index;
+
+	Ret = Tree->Root;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+		if(PartSubSet(N->Part, Part) == TRUE)
+		{
+			if(N->Part->NoTaxa < Ret->Part->NoTaxa)
+				Ret = N;
+		}
+	}
+
+	return Ret;
 }

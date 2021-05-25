@@ -130,7 +130,7 @@ void	AddTaxa(NTREES* Trees, int TaxaNo, int Tokes, char **Passed, int LineSize)
 		strcat(Buffer, Passed[Index]);
 	}
 
-	Index = strlen(Buffer);
+	Index = (int)strlen(Buffer);
 	if((Buffer[Index-1] == ';') || (Buffer[Index-1] == ','))
 		Buffer[Index-1] = '\0';
 
@@ -459,7 +459,7 @@ void	CheckBrackets(char* TreeString, int TreeNo)
 	Open = 0;
 	Close = 0;
 
-	Len = strlen(TreeString);
+	Len = (int)strlen(TreeString);
 	for(Index=0;Index<Len;Index++)
 	{
 		if(TreeString[Index] == '(')
@@ -1251,7 +1251,7 @@ void	PrintNTrees(FILE* Str, NTREES *Trees)
 		MallocErr();
 
 	sprintf(Buffer, "%d", Trees->NoOfTrees);
-	MaxDig = strlen(Buffer);
+	MaxDig = (int)strlen(Buffer);
 	free(Buffer);
 
 	PrintNTreeHeadder(Str, Trees);

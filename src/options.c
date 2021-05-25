@@ -15,6 +15,7 @@
 #include "rates.h"
 #include "stones.h"
 #include "RJLocalScalar.h"
+#include "tag.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHT_INDENT	4
@@ -190,13 +191,7 @@ void	PrintEstData(FILE *Str, OPTIONS *Opt)
 	if(EstData(Trees) == FALSE)
 		return;
 
-	if(Opt->DataType == CONTINUOUS)
-	{
-		fprintf(Str, "Data Deviation:                  %f\n", Opt->EstDataDev);
-		fprintf(Str, "Estimating values for taxa and Sites\n");
-	}
-	else
-		fprintf(Str, "Estimating values for taxa and Sites\n");
+	fprintf(Str, "Estimating values for taxa and Sites\n");
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
@@ -212,6 +207,41 @@ void	PrintEstData(FILE *Str, OPTIONS *Opt)
 			}
 			fprintf(Str, "\n");
 		}
+	}
+}
+
+void	PrintHetMapPart(FILE *Str, TREES *Trees, PART *Part)
+{
+	int ID, Index;
+	TAXA *Taxa;
+
+	for(Index=0;Index<Part->NoTaxa;Index++)
+	{
+		ID = Part->Taxa[Index];
+		Taxa = Trees->Taxa[ID];
+		fprintf(Str, "%s\t", Taxa->Name);
+	}
+}
+
+
+void	PrintHetMap(FILE *Str, OPTIONS *Opt, TREES *Trees)
+{
+	int Index;
+	TREE *Tree;
+	NODE N;
+
+	Tree = Trees->Tree[0];
+
+	fprintf(Str, "Hetro Model Key:\n");
+
+	for(Index=1;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+
+		fprintf(Str, "\tHNode\t%d\t", Index);
+		PrintHetMapPart(Str, Trees, N->Part);
+
+		fprintf(Str, "\n");
 	}
 }
 
@@ -282,22 +312,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		if(Opt->UseSchedule	== TRUE)
 			fprintf(Str, "Schedule File:                   %s.Schedule.txt\n", Opt->LogFN);
 
-		if(Opt->AutoTuneRD == TRUE)
-			fprintf(Str, "Rate Dev:                        AutoTune\n");
-		else
-		{
-			fprintf(Str, "Rate Dev:                        %f\n", Opt->RateDev);
-
-			if(Opt->DataType == CONTINUOUS)
-			{
-				for(Index=0;Index<Opt->NoOfRates;Index++)
-				{
-					fprintf(Str, "    ");
-					PrintFixSize(Opt->RateName[Index], 29, Str);
-					fprintf(Str, "%f\n", Opt->RateDevList[Index]);
-				}
-			}
-		}
+		fprintf(Str, "Rate Dev:                        AutoTune\n");
 	}
 
 	if(Opt->RJDummy == TRUE)
@@ -468,6 +483,10 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	}
 
 
+	if(Opt->Model == M_DESCHET)
+		PrintHetMap(Str, Opt, Opt->Trees);
+
+
 	PrintTreesInfo(Str, Opt->Trees, Opt->DataType);
 	fflush(Str);
 }
@@ -508,8 +527,6 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	if(Opt->EstDataSites != NULL)
 		free(Opt->EstDataSites);
 
-	if(Opt->RateDevList != NULL)
-		free(Opt->RateDevList);
 
 	free(Opt->DataFN);
 	free(Opt->TreeFN);
@@ -926,15 +943,6 @@ void	AllocPrios(OPTIONS *Opt)
 	Opt->PriorOU	= CreateExpPrior(1.0);
 }
 
-void	SetAllRateDevs(OPTIONS *Opt, double Dev)
-{
-	int Index;
-
-	for(Index=0;Index<Opt->NoOfRates;Index++)
-		Opt->RateDevList[Index] = Dev;
-	Opt->RateDev = Dev;
-}
-
 MODEL_TYPE	GetModelType(MODEL Model)
 {
 	switch(Model)
@@ -1003,18 +1011,14 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	
 	Ret->UseRModel	= FALSE;
 	Ret->RModelP	= -1;
-	Ret->EstDataDev	= 0.2;
-	
-	Ret->VarRatesScaleDev = PPSCALEDEV;
-	Ret->AutoTuneVarRates = FALSE;
+	Ret->EstData	= FALSE;
+
 
 	Ret->NoEstDataSite	=	0;
 	Ret->EstDataSites	=	NULL;
 	Ret->NoEstChanges	=	5;
 
 	Ret->NOSPerSite		=	FALSE;
-	Ret->RateDevList	=	NULL;
-
 
 	if(Ret->ModelType == MT_DISCRETE);
 		Ret->DataType = DISCRETE;
@@ -1046,9 +1050,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->MLTries		= 10;
 	Ret->MCMCMLStart	= FALSE; 
-	Ret->AutoTuneRD		= FALSE;
-	Ret->AutoTuneDD		= FALSE;
-	Ret->RateDevPerParm	= TRUE;
 
 	Ret->PriorGamma		=	NULL;
 	Ret->PriorKappa		=	NULL;
@@ -1062,7 +1063,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	{
 		Ret->Itters		=	-1;
 		Ret->Sample		=	-1;
-		Ret->RateDev	=	-1;
 		Ret->BurnIn		=	-1;
 		Ret->RJPrior		=	NULL;
 	}
@@ -1086,9 +1086,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		Ret->Itters		=	101000;
 		*/
 		Ret->PriorCats	=	100;
-		Ret->RateDev	=	1;
-		Ret->AutoTuneRD	=	TRUE;
-		Ret->EstDataDev	=	.05;
+
 		
 		AllocPrios(Ret);
 
@@ -1096,19 +1094,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		Ret->UseSchedule	= FALSE;
 	}
 
-	if(Ret->DataType == CONTINUOUS)
-	{
-		Ret->RateDevList = (double*)malloc(sizeof(double)  * Ret->NoOfRates);
-		if(Ret->RateDevList == NULL)
-			MallocErr();
-		SetAllRateDevs(Ret, Ret->RateDev);
-	}
-	else
-	{
-		Ret->RateDevList = (double*)malloc(sizeof(double));
-		if(Ret->RateDevList == NULL)
-			MallocErr();
-	}
 
 	Ret->RecNode		=	NULL;
 	Ret->RecNodeList	=	NULL;
@@ -1135,14 +1120,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->FixGamma		=	-1;
 	Ret->FixOU			=	-1;
 
-	Ret->RateDevKappa	=	1.0;
-	Ret->RateDevLambda	=	1.0;
-	Ret->RateDevDelta	=	1.0;
-	Ret->RateDevOU		=	1.0;
-
 	Ret->InvertV		=	FALSE;
-
-
 
 	Ret->UseRJMCMC		=	FALSE;
 	Ret->CapRJRatesNo	=	-1;
@@ -1206,6 +1184,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		Ret->UseRJLocalScalar[Index] = FALSE;
 		Ret->RJLocalScalarPriors[Index] = NULL;
 	}
+
+	Ret->NoTags			= 0;
+	Ret->TagList		= NULL;
 
 	free(Buffer);
 
@@ -2397,7 +2378,6 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CNODEBLDATA)||
 			(Command == CNODEDATA)  ||
 			(Command == CDEPSITE)   ||
-			(Command == CDATADEV)	||
 			(Command == CRJDUMMY)	||
 			(Command == CVARRATES)	||
 			(Command == CRJLOCALSCALAR)
@@ -2424,7 +2404,6 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command ==	CBURNIN)		||
 			(Command ==	CSAMPLE)		||
 			(Command ==	CHYPERPRIOR)	||
-			(Command ==	CRATEDEV)		||
 			(Command ==	CHPRJ)			||
 			(Command ==	CHPALL)			||
 			(Command ==	CREVJUMP)		||
@@ -2869,44 +2848,6 @@ void	FreeRecNodes(OPTIONS *Opt, int NoSites)
 	Opt->RecNode = NULL;
 }
 
-void	SetDataDev(OPTIONS *Opt, int Tokes, char ** Passed)
-{
-	double	NewVal;
-
-	if(Tokes == 0)
-	{
-		Opt->AutoTuneDD = TRUE;
-		return;
-	}
-	
-	if(Opt->Analsis == ANALML)
-	{
-		printf("Missing Data can only be estimated under MCMC.\n");
-		return;
-	}
-/*
-	if(EstData(Opt->Trees) == FALSE)
-	{
-		printf("No Data is being estimated, DataDev cannot be set.\n");
-		return;
-	}
-*/
-	if(IsValidDouble(Passed[1]) == FALSE)
-	{
-		printf("Could not convert %s to a valid DataDev\n", Passed[1]);
-		return;
-	}
-
-	NewVal = atof(Passed[1]);
-	if(NewVal <= 0)
-	{
-		printf("DataDev must be gratern then 0\n");
-		return;
-	}
-
-	Opt->EstDataDev = NewVal;
-	Opt->AutoTuneDD = FALSE;
-}
 
 void	SetNOSPerSiteOpt(OPTIONS *Opt)
 {
@@ -2921,36 +2862,6 @@ void	SetNOSPerSiteOpt(OPTIONS *Opt)
 		Opt->NOSPerSite = FALSE;
 		Opt->AnalyticalP = FALSE;
 	}
-}
-
-
-
-void	SetConRateDev(OPTIONS *Opt, char *PName, char *PRateDev)
-{
-	int		RPos;
-	double	RD;
-
-	RPos = StrToRate(Opt, PName);
-	if(RPos == -1)
-	{
-		printf("Could not find parameter %s\n", PName);
-		return;
-	}
-
-	if(IsValidDouble(PRateDev) == FALSE)
-	{
-		printf("Could not convert %s to a valid double\n", PRateDev);
-		return;
-	}
-
-	RD = atof(PRateDev);
-	if(RD < 0)
-	{
-		printf("%s has to be a value grater then 0.\n", PRateDev);
-		return;
-	}
-
-	Opt->RateDevList[RPos] = RD;
 }
 
 void	OptSetSeed(OPTIONS *Opt, char	*CSeed)
@@ -3219,46 +3130,6 @@ void	SetLoadModels(OPTIONS *Opt, int Tokes, char **Passed)
 	Opt->LoadModelsFN = StrMake(Passed[1]);
 }
 
-void	SetRateDev(OPTIONS *Opt, int Tokes, char **Passed)
-{
-	double Temp;
-
-	if(Tokes == 0)
-	{
-		Opt->AutoTuneRD = TRUE;
-		return;
-	}
-
-	if(Opt->ModelType == MT_CONTRAST)
-	{
-		printf("RateDev is not valid with independent contrast models.\n");
-		return;
-	}
-
-//	MakeLower(Passed[0]);
-		
-	if(Tokes == 1)
-	{
-		Temp = atof(Passed[0]);
-	
-		if(Temp <= 0)
-			printf("Could not convert %s to a valid Rate deveation\n", Passed[1]);
-		else
-			Opt->RateDev  = Temp;
-
-		if(Opt->DataType == CONTINUOUS)
-			SetAllRateDevs(Opt, Opt->RateDev);
-
-		Opt->AutoTuneRD = FALSE;
-	}
-	else if ((Tokes == 2) && (Opt->DataType == CONTINUOUS))
-	{
-		SetConRateDev(Opt, Passed[0], Passed[1]);
-		Opt->AutoTuneRD = FALSE;
-	}
-	else
-		printf("The RateDev command requires a floating point number\n");
-}
 
 void	LineAddErr(TREES *Trees, char *Line)
 {
@@ -3272,7 +3143,7 @@ void	LineAddErr(TREES *Trees, char *Line)
 	if(Passed == NULL)
 		MallocErr();
 
-	Tokes = MakeArgv(Buffer, Passed, strlen(Line));
+	Tokes = MakeArgv(Buffer, Passed, (int)strlen(Line));
 
 	if(Tokes == 0)
 		return;
@@ -3798,10 +3669,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 			printf("The LogFile command requires a file name to use a log file\n");
 	}
 
-	if(Command == CRATEDEV)
-	{
-		SetRateDev(Opt, Tokes-1, &Passed[1]);
-	}
 
 	if(Command == CPRESET)
 	{
@@ -4080,11 +3947,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		}
 	}
 
-	if(Command == CDATADEV)
-		SetDataDev(Opt, Tokes, Passed);
 
-	if(Command == CNOSPERSITE)
-		SetNOSPerSiteOpt(Opt);
 
 	if(Command == CSETSEED)
 	{
@@ -4115,15 +3978,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		else
 		{
 			if(Opt->UseVarRates == FALSE)
-			{
 				Opt->UseVarRates = TRUE;
-				Opt->AutoTuneVarRates = TRUE;
-			}
 			else
-			{
 				Opt->UseVarRates = FALSE;
-				Opt->AutoTuneVarRates = FALSE;
-			}
 		}
 	}
 
@@ -4220,6 +4077,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CFATTAILNORMAL)
 		SetFatTailNormal(Opt);
+
+	if(Command == CADDTAG)
+		AddTag(Opt, Tokes, Passed);
 
 	return FALSE;
 }

@@ -1727,57 +1727,6 @@ double	ChangeContrastRate(double Rate, double Dev, RANDSTATES *RS)
 	return Ret;
 }
 
-void	MutateContrastRatesUniRate(OPTIONS *Opt, TREES* Trees, RATES* Rates)
-{
-	int			Index;
-	CONTRASTR*	Con;
-	double		Dev;
-
-	Con = Rates->Contrast;
-
-	if(RandDouble(Rates->RS) < 0.5)
-	{
-		Dev = Opt->RateDevList[0];
-
-		for(Index=0;Index<Trees->NoOfSites;Index++)
-			Con->Alpha[Index] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
-	}	
-	else
-	{
-		Dev = Opt->RateDevList[1];
-		for(Index=0;Index<Trees->NoOfSites;Index++)
-			Con->SigmaMat->me[Index][Index] = ChangeContrastRate(Con->SigmaMat->me[Index][Index], Dev, Rates->RS);
-	} 
-}
-
-void	MutateStdContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
-{
-	int			Index;
-	CONTRASTR*	Con;
-	double		Dev;
-
-	if(Opt->RateDevPerParm == FALSE)
-	{
-		MutateContrastRatesUniRate(Opt, Trees, Rates);
-		return;
-	}
-	
-	Con = Rates->Contrast;
-
-	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
-	Index = Shed->PNo;
-	Dev = Opt->RateDevList[Shed->PNo];
-	
-	if(Index < Trees->NoOfSites)
-	{
-		Con->Alpha[Index] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
-	}	
-	else
-	{
-		Index = Index - Trees->NoOfSites;
-		Con->SigmaMat->me[Index][Index] = ChangeContrastRate(Con->SigmaMat->me[Index][Index], Dev, Rates->RS);
-	}
-}
 
 void	MutateRegContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
 {
@@ -1797,11 +1746,6 @@ void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	She
 	
 
 	Rates->Rates[Pos] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
-	
-	return;
-
-	if(Opt->Model == M_CONTRAST_CORREL)
-		MutateStdContrastRates(Opt, Trees, Rates, Shed);
 }
 
 void	CopyContrastRatesStd(RATES *R1, RATES* R2, CONTRASTR *C1, CONTRASTR	*C2, int NoSites)

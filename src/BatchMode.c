@@ -21,7 +21,7 @@ char**	MakeCommands(char *Command, int *NoC)
 	char **Ret;
 	int Len;
 	
-	Len = strlen(Command);
+	Len = (int)strlen(Command);
 	*NoC = 0;
 
 	Ret = (char**)malloc(sizeof(char*) * (Len + 1));

@@ -1542,7 +1542,7 @@ void	SetVarRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt)
 	if(Passed == NULL)
 		MallocErr();
 
-	Tokes = MakeArgv(S, Passed, strlen(S));
+	Tokes = MakeArgv(S, Passed, (int)strlen(S));
 
 	Rates->Contrast->Alpha[0] = atof(Passed[4]);
 	Rates->Contrast->Sigma[0] = atof(Passed[5]);

@@ -16,8 +16,8 @@
 //#define THREADED
 //#define BIG_LH
 
-// define BTOCL
-//#define BTLAPACK
+// #define BTOCL
+// #define BTLAPACK
 
 #ifdef BTOCL
 	#include "btocl_runtime.h"
@@ -232,7 +232,6 @@ typedef enum
 	CEVENROOT,
 	CLOGFILE,
 	CMODEL,
-	CRATEDEV,
 	CPRESET,
 	CSUMMARY,
 	CBURNIN,
@@ -262,7 +261,6 @@ typedef enum
 /*	CPREVAR, */
 	CVARDATA,
 	CRMODEL,
-	CDATADEV,
 	CCOMMENT,
 	CNOSPERSITE,
 	CSETSEED,
@@ -284,7 +282,8 @@ typedef enum
 	CSCALETREES,
 	CRJLOCALSCALAR,
 	CGEODATA,
-	CFATTAILNORMAL, 
+	CFATTAILNORMAL,
+	CADDTAG,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -311,7 +310,6 @@ static char    *COMMANDSTRINGS[] =
 	"evenroot",		"er",
 	"logfile",		"lf",
 	"hiddenstate",	"hs",
-	"ratedev",		"rd",
 	"preset",		"ps",
 	"summary",		"sum",
 	"burnin",		"bi",
@@ -341,7 +339,6 @@ static char    *COMMANDSTRINGS[] =
 /*	"prevar",		"pv", */
 	"vardata",		"vd",
 	"rmodel",		"rm",
-	"datadev",		"dd",
 	"#",			"//",
 	"fitnospersite","nps",
 	"seed",			"se",
@@ -364,6 +361,7 @@ static char    *COMMANDSTRINGS[] =
 	"rjlocalscalar", "rjls", 
 	"geodata",		"gd", 
 	"fattailnormal", "ftn",
+	"addtag",		"at",
 	""
 };
 
@@ -665,6 +663,19 @@ struct RNODE
 
 typedef struct RNODE*	RECNODE;
 
+typedef struct
+{
+	char	*Name;
+
+	int		NoTaxa;
+	char	**Taxa;
+
+	NODE	*NodeList;
+
+	PART	*Part;
+} TAG;
+
+
 typedef struct 
 {
 	double	*AnsVect;
@@ -964,6 +975,7 @@ typedef struct
 	int		N;
 } STONES;
 
+
 typedef struct
 {
 	MODEL		Model;
@@ -1139,6 +1151,11 @@ typedef struct
 
 	int			UseGeoData;
 	int			FatTailNormal;
+
+	int			EstData;
+
+	int			NoTags;
+	TAG			**TagList;
 
 } OPTIONS;
 
@@ -1384,11 +1401,9 @@ typedef struct
 	double		*OptFreq;
 	int			*Tryed;
 	int			*Accepted;
-//	AUTOTUNE	*RateDevAT;
 	AUTOTUNE	*DataDevAT;
 	AUTOTUNE	*VarRateAT;
 
-	int			RateDevPerParm;
 	int			NoParm;
 	AUTOTUNE	**RateDevATList;
 	int			*PTried;

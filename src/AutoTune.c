@@ -22,7 +22,7 @@ int			GetAutoTuneSize(AUTOTUNE *AutoTune)
 	return  AT_HSIZE;
 }
 
-AUTOTUNE*	CreatAutoTune(double InitDev, double Min, double Max)
+AUTOTUNE*	CreatAutoTune(char *Name, double InitDev, double Min, double Max)
 {
 	AUTOTUNE *Ret;
 	int		Index;
@@ -49,9 +49,14 @@ AUTOTUNE*	CreatAutoTune(double InitDev, double Min, double Max)
 	Ret->Max	= Max;
 	Ret->Target = ((Max - Min) * 0.5) + Min;
 	Ret->No		= 0;
+
+	if(Name != NULL)
+		Ret->Name = StrMake(Name);
+	else
+		Ret->Name = NULL;
 	
 	Ret->CDev	= InitDev;
-	
+
 	ReSetAutoTune(Ret);
 
 	return Ret;
@@ -61,27 +66,13 @@ void		FreeAutoTune(AUTOTUNE *AutoTune)
 {
 	free(AutoTune->RateDev);
 	free(AutoTune->RateAcc);
+
+	if(AutoTune->Name != NULL)
+		free(AutoTune->Name);
+
 	free(AutoTune);
 }
 
-int			GetClosest(AUTOTUNE *AutoTune, double RD, double Acc)
-{
-	int Ret, Index, Size;
-	
-	Ret = -1;
-
-	Size = GetAutoTuneSize(AutoTune);
-
-	for(Index=0;Index<Size;Index++)
-	{
-		if(AutoTune->RateAcc[Index] < Acc)
-		{
-
-		}
-	}
-
-	return Ret;
-}
 
 void		BlindUpDate(AUTOTUNE *AT, RANDSTATES *RS, double Acc)
 {
@@ -122,7 +113,6 @@ void		AddAutoTune(AUTOTUNE *AT, double Acc)
 	}
 
 	AT->Last = AT->CDev;
-	
 }
 
 int			AutoTuneValid(AUTOTUNE *AutoTune, double Acc)
@@ -145,9 +135,12 @@ void		PrintAutoTuneRates(AUTOTUNE *AutoTune)
 	printf("\n");
 }
 
-double		CalcAcc(AUTOTUNE *AT)
+double		AutoTuneCalcAcc(AUTOTUNE *AT)
 {
-	return (double)(AT->NoAcc / AT->NoTried);
+	if (AT->NoTried == 0)
+		return 0.0;
+
+	return (double)AT->NoAcc / AT->NoTried;
 }
 
 void		AutoTuneUpDate(AUTOTUNE *AT, RANDSTATES *RS)
@@ -159,7 +152,8 @@ void		AutoTuneUpDate(AUTOTUNE *AT, RANDSTATES *RS)
 	if(AT->NoTried < AT_MIN_TRIED)
 		return;
 
-	Acc = CalcAcc(AT);
+	Acc = AutoTuneCalcAcc(AT);
+	ReSetAutoTune(AT);
 
 	AddAutoTune(AT, Acc);
 

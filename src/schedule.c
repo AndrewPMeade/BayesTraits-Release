@@ -35,20 +35,24 @@ void	AddToFullATList(SCHEDULE* Shed, AUTOTUNE *AT)
 void	UpDateShedAcc(int Acc, SCHEDULE* Shed)
 {
 	Shed->Tryed[Shed->Op]++;
-	if((Shed->Op == SRATES) && (Shed->RateDevPerParm == TRUE))
-		Shed->PTried[Shed->PNo]++;
-	
+
+	if(Shed->CurrentAT != NULL)
+		Shed->CurrentAT->NoTried++;
+
 	Shed->GNoTried++;
 	Shed->SNoTried++;
 
 	if(Acc == FALSE)
 		return;
 
+
+
 	Shed->GNoAcc++;
 	Shed->SNoAcc++;
 	Shed->Accepted[Shed->Op]++;
-	if((Shed->Op == SRATES) && (Shed->RateDevPerParm == TRUE))
-		Shed->PAcc[Shed->PNo]++;
+
+	if(Shed->CurrentAT != NULL)
+		Shed->CurrentAT->NoAcc++;
 }
 
 int		UsingHP(OPTIONS *Opt)
@@ -78,12 +82,6 @@ void	BlankSchedule(SCHEDULE*	Shed)
 	{
 		Shed->Accepted[Index] = 0;
 		Shed->Tryed[Index] = 0;
-	}
-
-	if(Shed->RateDevPerParm == TRUE)
-	{
-		for(Index=0;Index<Shed->NoParm;Index++)
-			Shed->PAcc[Index] = Shed->PTried[Index] = 0;
 	}
 }
 
@@ -315,6 +313,23 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 }
 
+
+void	PrintATHeader(FILE *Str,AUTOTUNE *AT)
+{
+	fprintf(Str,"%s - Dev\t",AT->Name);
+	fprintf(Str,"%s - Tried\t",AT->Name);
+	fprintf(Str,"%s - Accepted\t",AT->Name);
+}
+
+void	PrintAutoTuneHeader(FILE* Str,SCHEDULE* Shed)
+{
+	int Index;
+
+	for(Index=0;Index<Shed->NoFullATList;Index++)
+		PrintATHeader(Str,Shed->FullATList[Index]);
+}
+
+
 void	PrintShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
 {
 	int	Index;
@@ -337,8 +352,7 @@ void	PrintShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
 		Last = Shed->OptFreq[Index];
 	}
 
-	if(UseAutoTune(Opt) == TRUE)
-		PrintAutoTuneHeader(Str, Opt);
+	PrintAutoTuneHeader(Str, Shed);
 
 	fprintf(Str, "Sample Ave Acceptance\tTotal Ave Acceptance\t");
 
@@ -364,8 +378,7 @@ void	PrintShed(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
 		Last = Shed->OptFreq[Index];
 	}
 
-	if(UseAutoTune(Opt) == TRUE)
-		PrintAutoTune(Str, Opt, Shed);
+	PrintAutoTune(Str, Opt, Shed);
 
 	fprintf(Str, "%f\t", (double)Shed->SNoAcc / Shed->SNoTried);
 	fprintf(Str, "%f\t", (double)Shed->GNoAcc / Shed->GNoTried);
@@ -394,7 +407,6 @@ SCHEDULE*	AllocSchedule()
 	Ret->DataDevAT		= NULL;
 	Ret->VarRateAT		= NULL;
 
-	Ret->RateDevPerParm	= FALSE;
 	Ret->NoParm			= -1;
 	Ret->PTried			= NULL;
 	Ret->PAcc			= NULL;
@@ -426,22 +438,150 @@ int		FindNoOfAutoCalibRates(OPTIONS *Opt)
 	return FindNoConRates(Opt);
 }
 
+char**	GetAutoParamNames(OPTIONS *Opt)
+{
+	char	**Ret,*Buffer;
+	int		NoP,PIndex,Index,NoS;
+	
+	PIndex = 0;
+
+	NoP = FindNoOfAutoCalibRates(Opt);
+	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
+	Ret = (char**)malloc(sizeof(char*) * NoP);
+	if(Buffer == NULL || Ret == NULL)
+		MallocErr();
+
+	if(Opt->DataType == DISCRETE)
+	{
+		sprintf(Buffer,"Rates");
+		Ret[PIndex++] = StrMake(Buffer);
+		free(Buffer);
+		return Ret;
+	}
+
+	if(Opt->Model == M_FATTAIL)
+	{
+		NoS = Opt->Trees->NoOfSites;
+		if(Opt->UseGeoData == TRUE)
+			NoS = 1;
+		for(Index=0;Index<NoS;Index++)
+		{
+			sprintf(Buffer,"Alpha %d",Index+1);
+			Ret[PIndex++] = StrMake(Buffer);
+
+			sprintf(Buffer,"Scale %d",Index+1);
+			Ret[PIndex++] = StrMake(Buffer);
+		}
+
+		free(Buffer);
+		return Ret;
+	}
+
+	if(Opt->Model == M_CONTRAST_CORREL)
+	{
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		{
+			sprintf(Buffer,"Alpha %d",Index+1);
+			Ret[PIndex++] = StrMake(Buffer);
+		}
+
+		free(Buffer);
+		return Ret;
+	}
+
+	if(Opt->Model == M_CONTRAST_REG)
+	{
+		sprintf(Buffer,"Alpha");
+		Ret[PIndex++] = StrMake(Buffer);
+
+		if(Opt->TestCorrel == TRUE)
+		{
+
+			for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
+			{
+				sprintf(Buffer,"Beta %d",Index);
+				Ret[PIndex++] = StrMake(Buffer);
+			}
+		}
+		free(Buffer);
+		return Ret;
+	}
+
+	if(Opt->Model == M_CONTRAST)
+	{
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		{
+			sprintf(Buffer,"Alpha %d",Index+1);
+			Ret[PIndex++] = StrMake(Buffer);
+		}
+
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		{
+			sprintf(Buffer,"Sigma^2 %d",Index+1);
+			Ret[PIndex++] = StrMake(Buffer);
+		}
+
+		free(Buffer);
+		return Ret;
+	}
+
+	if(Opt->Model == M_CONTINUOUS_REG)
+	{
+		sprintf(Buffer,"Alpha");
+		Ret[PIndex++] = StrMake(Buffer);
+
+		for(Index=1;Index<Opt->Trees->NoOfSites+1;Index++)
+		{
+			sprintf(Buffer,"Beta Trait %d",Index);
+			Ret[PIndex++] = StrMake(Buffer);
+		}
+		free(Buffer);
+		return Ret;
+	}
+
+	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	{
+		sprintf(Buffer,"Alpha Trait %d",Index+1);
+		Ret[PIndex++] = StrMake(Buffer);
+	}
+
+	if(Opt->Model == M_CONTINUOUS_DIR)
+	{
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+		{
+			sprintf(Buffer,"Beta Trait %d",Index+1);
+			Ret[PIndex++] = StrMake(Buffer);
+		}
+	}
+
+	free(Buffer);
+
+	return Ret;
+}
+
+
 void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, RANDSTATES *RS)
 {
 	int Index;
+	char **PNames;
 
-	Shed->RateDevPerParm	= TRUE;
 	Shed->NoParm			= FindNoOfAutoCalibRates(Opt);
 	Shed->RateDevATList		= (AUTOTUNE**)malloc(sizeof(AUTOTUNE*) * Shed->NoParm);
 
 	if(Shed->RateDevATList == NULL)
 		MallocErr();
 
+	PNames = GetAutoParamNames(Opt);
+	
 	for(Index=0;Index<Shed->NoParm;Index++)
 	{
-		Shed->RateDevATList[Index] = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Shed, Shed->RateDevATList[Index]);
 	}
+
+	for(Index=0;Index<Shed->NoParm;Index++)
+		free(PNames[Index]);
+	free(PNames);
 }
 
 SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
@@ -460,51 +600,52 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 	SetRateDevPerParm(Ret, Opt, RS);
 
 	// Set Auto tune Data Dev
-	Ret->DataDevAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
-	AddToFullATList(Ret, Ret->DataDevAT);
+	if(Opt->EstData == TRUE)
+	{
+		Ret->DataDevAT = CreatAutoTune("Data", RandDouble(RS) * 10,MIN_VALID_ACC,MAX_VALID_ACC);
+		AddToFullATList(Ret,Ret->DataDevAT);
+	}
 
 	// Set VarRates Auto Tune
-	Ret->VarRateAT = CreatAutoTune(RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
-	AddToFullATList(Ret, Ret->VarRateAT);
-
-	//	Opt->VarRatesScaleDev = RandDouble(RS) * 100;
-//		Opt->VarRatesScaleDev = RandDouble(RS);
-	
+	if(UseNonParametricMethods(Opt) == TRUE)
+	{
+		Ret->VarRateAT = CreatAutoTune("VarRates", RandDouble(RS),MIN_VALID_ACC,MAX_VALID_ACC);
+		AddToFullATList(Ret,Ret->VarRateAT);
+	}
 
 	if(Opt->EstKappa == TRUE)
 	{
-		Ret->KappaAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->KappaAT = CreatAutoTune("Kappa", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Ret, Ret->KappaAT);
 	}
 
 	if(Opt->EstLambda == TRUE)
 	{
-		Ret->LambdaAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->LambdaAT = CreatAutoTune("Lambda", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Ret, Ret->LambdaAT);
 	}
 
 	if(Opt->EstDelta == TRUE)
 	{
-		Ret->DeltaAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->DeltaAT = CreatAutoTune("Delta", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Ret, Ret->DeltaAT);
 	}
 
 	if(Opt->EstOU == TRUE)
 	{
-		Ret->OUAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->OUAT = CreatAutoTune("OU", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Ret, Ret->OUAT);
 	}
 
 	if(Opt->RJDummy == TRUE)
 	{
-		Ret->RJDummyBetaAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->RJDummyBetaAT = CreatAutoTune("Dummy", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Ret, Ret->RJDummyBetaAT);
 	}
 	
-
 	if(Opt->EstGamma == TRUE)
 	{
-		Ret->GammaAT = CreatAutoTune(RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->GammaAT = CreatAutoTune("Gamma", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Ret, Ret->GammaAT);
 	}
 
@@ -592,152 +733,12 @@ double	GetRDDecAccRate(OPTIONS *Opt, SCHEDULE* Shed)
 	return Ret;
 }
 
-void	UpDateRateDevPerP(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
-{
-	int Index;
-	double Acc;
-
-	if(Opt->DataType == DISCRETE)
-	{
-		if(Shed->PTried[0] > 10)
-		{
-			Acc = GetRDDecAccRate(Opt, Shed);
-			Opt->RateDevList[0] = AutoTuneNextRD(Shed->RateDevATList[0], RS, Opt->RateDevList[0], Acc);
-		}
-	}
-	else
-	{
-		for(Index=0;Index<Shed->NoParm;Index++)
-		{
-			if(Shed->PTried[Index] > 10)
-			{
-				Acc = (double)Shed->PAcc[Index] / Shed->PTried[Index];
-				Opt->RateDevList[Index] = AutoTuneNextRD(Shed->RateDevATList[Index], RS, Opt->RateDevList[Index], Acc);
-			}
-		}
-	}
-
-	Opt->RateDev = Opt->RateDevList[0];
-}
 
 void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
 {
-	int		Tried;
-	double	Acc;
-
-	if((Opt->AutoTuneRD == TRUE) && (Shed->RateDevPerParm == TRUE))
-		UpDateRateDevPerP(Opt, Shed, RS);
+	int		Index;
 	
-	if(Shed->DataDevAT != NULL)
-	{
-		Tried = Shed->Tryed[SESTDATA];
-		Acc = GetAccRate(SESTDATA, Shed);
-
-		if(Tried > 2)
-			Opt->EstDataDev = AutoTuneNextRD(Shed->DataDevAT, RS, Opt->EstDataDev, Acc);
-	}
-
-	if(Shed->VarRateAT != NULL)
-	{
-		Tried = Shed->Tryed[SPPCHANGESCALE];
-		Acc = GetAccRate(SPPCHANGESCALE, Shed);
-
-		if(Tried > 2)
-		{
-			Opt->VarRatesScaleDev = AutoTuneNextRD(Shed->VarRateAT, RS, Opt->VarRatesScaleDev, Acc);
-		}
-	}
-
-	if(Shed->KappaAT != NULL)
-	{
-		Tried = Shed->Tryed[SKAPPA];
-		Acc = GetAccRate(SKAPPA, Shed);
-
-		if(Tried > 2)
-		{
-			Opt->RateDevKappa = AutoTuneNextRD(Shed->KappaAT, RS, Opt->RateDevKappa, Acc);
-			if(Opt->RateDevKappa > MAX_KAPPA)
-				Opt->RateDevKappa = MAX_KAPPA;
-		}
-	}
-
-	if(Shed->DeltaAT != NULL)
-	{
-		Tried = Shed->Tryed[SDELTA];
-		Acc = GetAccRate(SDELTA, Shed);
-
-		if(Tried > 2)
-		{
-			Opt->RateDevDelta = AutoTuneNextRD(Shed->DeltaAT, RS, Opt->RateDevDelta, Acc);
-			if(Opt->RateDevDelta > MAX_DELTA)
-				Opt->RateDevDelta = MAX_DELTA;
-		}
-	}
-
-	if(Shed->LambdaAT != NULL)
-	{
-		Tried = Shed->Tryed[SLABDA];
-		Acc = GetAccRate(SLABDA, Shed);
-
-		if(Tried > 2)
-		{
-			Opt->RateDevLambda = AutoTuneNextRD(Shed->LambdaAT, RS, Opt->RateDevLambda, Acc);
-			if(Opt->RateDevLambda > MAX_LAMBDA)
-				Opt->RateDevLambda = MAX_LAMBDA;
-		}
-	}
-
-	if(Shed->OUAT != NULL)
-	{
-		Tried = Shed->Tryed[SOU];
-		Acc = GetAccRate(SOU, Shed);
-
-		if(Tried > 2)
-		{
-			Opt->RateDevOU = AutoTuneNextRD(Shed->OUAT, RS, Opt->RateDevOU, Acc);
-			if(Opt->RateDevOU  > MAX_OU)
-				Opt->RateDevOU = MAX_OU;
-		}
-	}
-
-	if(Shed->RJDummyBetaAT != NULL)
-	{
-		Tried = Shed->Tryed[SRJDUMMYCHANGEBETA];
-		Acc = GetAccRate(SRJDUMMYCHANGEBETA, Shed);
-
-		if(Tried > 4)
-		{
-			Opt->RJDummyBetaDev = AutoTuneNextRD(Shed->RJDummyBetaAT, RS, Opt->RJDummyBetaDev, Acc);
-			if(Opt->RJDummyBetaDev > 100)
-				Opt->RJDummyBetaDev = 100;
-		}
-
-	}
-}
-
-int		UseAutoTune(OPTIONS *Opt)
-{
-	if(Opt->AutoTuneRD == TRUE)
-		return TRUE;
-
-	if(Opt->AutoTuneDD == TRUE)
-		return TRUE;
-
-	if(Opt->AutoTuneVarRates == TRUE)
-		return TRUE;
-
-	if(Opt->EstKappa == TRUE)
-		return TRUE;
-
-	if(Opt->EstDelta == TRUE)
-		return TRUE;
-
-	if(Opt->EstLambda == TRUE)
-		return TRUE;
-
-	if(Opt->EstOU == TRUE)
-		return TRUE;
-
-	return FALSE;
+	for(Index=0;Index<Shed->NoFullATList;Index++)
+		AutoTuneUpDate(Shed->FullATList[Index],RS);
 }
 

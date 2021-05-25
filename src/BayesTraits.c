@@ -213,8 +213,6 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 // ./Seq/BM_Trim_Hard.trees ./Seq/BM_Trim.txt < in.txt > sout.txt
 
 // ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
-
-
 // ./Seq/temp/tree.trees ./Seq/temp/Data-00001.txt < ./Seq/temp/in.txt > sout.txt
 
 // ./Seq/Earcanals.trees ./Seq/Earcanals.txt < in.txt > sout.txt
@@ -225,14 +223,18 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/funnydelta.trees ./Seq/funnydelta.txt < in.txt > sout.txt
 
-
-
 // ./Seq/cc-discrete.trees ./Seq/infbreeding-islandcont.txt < in.txt > sout.txt
 
 // ./Seq/prim10k.trees ./Seq/lambda-vr.LogBM-2.txt < in.txt > sout.txt
 // ./Seq/Bug/Lloydcroptyrannonotmt.trees ./Seq/Bug/Lloydcroptyrannonotmt.txt < ./Seq/Bug/in.txt > ./Seq/Bug/sout.txt
 // ./Seq/Bug/Lloydcroptyrannonotmt.trees ./Seq/Bug/ConSim-000001.txt < ./Seq/Bug/in.txt > ./Seq/Bug/sout.txt
+// ./Seq/Lloydcroptyrannonotmt.trees ./Seq/ConSim-000001.txt < ./Seq/in.txt > ./Seq/sout.txt
 
+// 1.0 0.5 -10 10 1000 > sout.txt
+
+// ./Seq/Lloydcroptyrannonotmt.trees ./Seq/Lloydcroptyrannonotmt.txt < ./Seq/in.txt > ./Seq/sout.txt
+
+// ./Seq/Primates1.trees ./Seq/Primates.txt < in.txt > sout.txt
 
 int main(int argc, char** argv)
 {
@@ -240,6 +242,8 @@ int main(int argc, char** argv)
 	OPTIONS*	Opt; 
 	char		*TreeFN, *DataFN; 
 	int			NoSites;
+
+//	FatTailTest(argc, argv);
 
 	DISPLAY_INFO;
 

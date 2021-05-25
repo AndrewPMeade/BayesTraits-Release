@@ -643,33 +643,20 @@ void	PriorLhTest(PRIORS *Prior, double Width)
 	}
 }
 
-void	FatTailTest(PRIORS *Prior, double Width)
+double TestPT(void)
 {
-	double X,P;
-	STABLEDIST*	SD;
+	double S, Lh;
 
-	SD = CreatStableDist();
 
-//	SetStableDist(SD, 0.398682036619, 0.028880948364);
-	SetStableDist(SD, 0.248217153037, 0.000014251091);
-//	0.248217153	1.42511E-05
-	
-
-	for(X=-10;X<10;X+=0.1)
+	for(S=0;S<500;S+=0.01)
 	{
+		Lh = PDFInvGamma(S, 2.00, 0.13);
 
-		P = StableDistPDF(SD, X);	
-
-	//	P = PDFInvGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
-
-		printf("%f\t%f\n", X, P);
+		printf("%f\t%f\n", S, log(Lh));
 	}
-
-//	PriorLhTest(Prior, Width);
-
+//	PDFInvGamma(Val, Prior->DistVals[0], Prior->DistVals[1]);
 	exit(0);
 }
-
 
 double	CaclPriorCost(double Val, PRIORS *Prior, int NoCats)
 {
@@ -996,6 +983,8 @@ PRIORS*		CreatePrior(int Tokes, char **Passed)
 	PRIORDIST	PD;
 	double		*PVal;
 	PRIORS		*Ret;
+
+	Ret = NULL;
 	
 	if(Tokes != 2 && Tokes != 3)
 	{

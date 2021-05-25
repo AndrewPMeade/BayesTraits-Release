@@ -17,4 +17,9 @@ void	GetPartDiff(PART *Ans, PART *Cur, PART *Diff);
 
 void	PrintPart(FILE *Str, TREES *Trees, PART *Part);
 
+PART*	CreatePart(TREES *Trees, int NoTaxa, char **TaxaList);
+
+NODE	PartGetMRCA(TREE *Tree, PART *Part);
+
+
 #endif

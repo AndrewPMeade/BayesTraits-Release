@@ -118,7 +118,7 @@ int		ValidDouble(char *Str)
 	int	Point=FALSE;
 	int	Len,Index;
 
-	Len = strlen(Str);
+	Len = (int)strlen(Str);
 
 	for(Index=0;Index<Len;Index++)
 	{
@@ -329,7 +329,7 @@ int		IsSymbolInList(char Symbol, char* List)
 	if(Symbol == UNKNOWNSTATE)
 		return TRUE	;
 
-	for(Index=strlen(List);Index>=0;Index--)
+	for(Index=(int)strlen(List);Index>=0;Index--)
 		if(List[Index] == Symbol)
 			return TRUE;
 
@@ -374,7 +374,7 @@ void	BildSymbolList(TREES *Trees)
 		MallocErr();
 	strcpy(Trees->SymbolList, Temp);
 
-	Trees->NoOfStates = strlen(Trees->SymbolList);
+	Trees->NoOfStates = (int)strlen(Trees->SymbolList);
 
 	free(Temp);
 }
@@ -413,7 +413,7 @@ void	FindSiteSymbols(TREES *Trees, int SiteNo)
 	{
 		Taxa = Trees->Taxa[TIndex];
 		DP = Taxa->DesDataChar[SiteNo];
-		DPLen = strlen(DP);
+		DPLen = (int)strlen(DP);
 		for(DPIndex=0;DPIndex<DPLen;DPIndex++)
 		{
 			if(IsSymbolInList(DP[DPIndex], Buffer) == FALSE)
@@ -427,7 +427,7 @@ void	FindSiteSymbols(TREES *Trees, int SiteNo)
 //	qsort(Buffer, strlen(Buffer), sizeof(char), (void *)CompChars);
 	qsort(Buffer, strlen(Buffer), sizeof(char), CompChars);
 	Trees->SiteSymbols[SiteNo] = StrMake(Buffer);
-	Trees->NOSList[SiteNo] = strlen(Trees->SiteSymbols[SiteNo]);
+	Trees->NOSList[SiteNo] = (int)strlen(Trees->SiteSymbols[SiteNo]);
 
 	free(Buffer);	
 }
@@ -626,7 +626,7 @@ int		Dep01Site(char *Site)
 	int S0, S1, SM, Index, Len;
 
 	S0 = S1 = SM = FALSE;
-	Len = strlen(Site);
+	Len = (int)strlen(Site);
 	for(Index=0;Index<Len;Index++)
 	{
 		if(Site[Index] == '0')

@@ -1738,7 +1738,7 @@ void	SaveTrees(char	*FileName, TREES* Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		Name = FormatInt(TIndex+1, NoOfChar);
+		Name = FormatInt(TIndex+1, (int)NoOfChar);
 
 		fprintf(TreeFile, "\t\ttree No_%s = ", Name);
 		WriteTreeToFile(Trees->Tree[TIndex]->Root, Trees->Tree[TIndex]->Root, TreeFile);

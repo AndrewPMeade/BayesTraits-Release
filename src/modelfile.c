@@ -258,7 +258,7 @@ void	InitModelFile(MODELFILE* MF)
 		exit(0);
 	}
 
-	MF->NoModels = No / (MF->NoParam * sizeof(double));
+	MF->NoModels = (int)No / (MF->NoParam * sizeof(double));
 	
 	fclose(In);	
 }

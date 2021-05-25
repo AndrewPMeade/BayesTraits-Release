@@ -251,7 +251,7 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		
 	GeoUpDateNode(N, Rates, Rates->RS);
 		
-//	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
+	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
 }
 /*
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -438,7 +438,7 @@ void	LoadGeoData(char *Str, OPTIONS *Opt, TREES *Trees, RATES *CRates)
 	if(Passed == NULL)
 		MallocErr();
 
-	Tokes = MakeArgv(S, Passed, strlen(S) + 1);
+	Tokes = MakeArgv(S, Passed, (int)(strlen(S) + 1));
 
 	FTR->Alpha[0] = atof(Passed[2]);
 	FTR->Scale[0] = atof(Passed[3]);

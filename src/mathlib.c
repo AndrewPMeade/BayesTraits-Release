@@ -2776,7 +2776,7 @@ extern double fabs ( double );
 extern double sqrt ( double );
 //extern double expx2 ( double, int );
 double erf ( double );
-double erfc ( double );
+//double erfc ( double );
 static double erfce ( double );
 #else
 double polevl(), p1evl(), exp(), log(), fabs();
@@ -2814,7 +2814,7 @@ else
 return(y);
 }
 
-
+/*
 double erfc(a)
 double a;
 {
@@ -2842,7 +2842,7 @@ under:
 	}
 
 #ifdef USE_EXPXSQ
-/* Compute z = exp(z).  */
+// Compute z = exp(z).  
 z = expx2(a, -1);
 #else
 z = exp(z);
@@ -2867,7 +2867,7 @@ if( y == 0.0 )
 
 return(y);
 }
-
+*/
 
 /* Exponentially scaled erfc function
    exp(x^2) erfc(x)
@@ -2891,8 +2891,8 @@ else
 return (p/q);
 }
 
-
-
+/*	New C Lib have erf function, required for compatablity
+http://www.johndcook.com/blog/cpp_erf/
 double erf(x)
 double x;
 {
@@ -2917,6 +2917,8 @@ double x;
     return sign*y;
 
 }
+*/
+
 /*							ndtri.c
  *
  *	Inverse of Normal distribution function

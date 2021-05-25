@@ -37,7 +37,7 @@ int			FindNoEstDataPoint(OPTIONS *Opt, TREES *Trees);
 
 void		PrintAutoTune(FILE* Str, OPTIONS *Opt, SCHEDULE* Shed);
 int			FindNoConRats(OPTIONS *Opt);
-void		PrintAutoTuneHeader(FILE* Str, OPTIONS *Opt);
+//void		PrintAutoTuneHeader(FILE* Str, OPTIONS *Opt);
 
 int			FindNoConRates(OPTIONS *Opt);
 #endif

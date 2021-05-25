@@ -11,7 +11,9 @@
 #endif
 
 extern double gamma(double a);
-extern double erf(double a);
+
+//	extern double erf(double a);
+
 extern double beta(double a, double b);
 extern double igamc ( double, double );
 extern double igam (double a, double x);

@@ -10,8 +10,6 @@ void		UpDateShedAcc(int Acc, SCHEDULE* Shed);
 
 void		UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS);
 
-int			UseAutoTune(OPTIONS *Opt);
-
 double		GetAccRate(int Op, SCHEDULE* Shed);
 
 int			FindNoOfAutoCalibRates(OPTIONS *Opt);

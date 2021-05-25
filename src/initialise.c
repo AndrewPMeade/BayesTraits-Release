@@ -67,9 +67,6 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	
 	SetNoOfThreads(Opt->Cores);
 
-	if(Opt->LoadModels == TRUE)
-		Opt->AutoTuneRD = FALSE;
-
 	if(Opt->UseVarData == TRUE)
 		LoadVarData(Opt);
 
@@ -151,9 +148,9 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	}
 
 	if(FindNoEstDataPoint(Opt, Trees) > 0)
-		Opt->AutoTuneDD	= TRUE;
+		Opt->EstData = TRUE;
 	else
-		Opt->AutoTuneDD = FALSE;
+		Opt->EstData = FALSE;
 		
 	if(Opt->SaveTrees != NULL)
 		SaveTrees(Opt->SaveTrees, Opt->Trees);

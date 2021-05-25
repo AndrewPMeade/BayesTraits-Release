@@ -364,6 +364,7 @@ void	InitML(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	long	FP;
 #endif
 
+	Summary = NULL;
 	if(Opt->Summary == TRUE)
 		Summary = CreatSummary(Opt);
 

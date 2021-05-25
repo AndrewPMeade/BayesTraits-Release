@@ -74,7 +74,6 @@ int		FindNoConRates(OPTIONS *Opt)
 			else
 				return 2;
 		break;
-
 	}
 
 	printf("Unkonwn model %s::%d\n", __FILE__, __LINE__);
@@ -913,121 +912,6 @@ void	PrintConRecNodesHeadder(FILE *Str, OPTIONS *Opt)
 	}
 }
 
-char**	GetAutoParamNames(OPTIONS *Opt)
-{
-	char	**Ret, *Buffer;
-	int		NoP, PIndex, Index, NoS;
-
-	if(Opt->DataType == DISCRETE)
-		return NULL;
-
-	PIndex = 0;
-
-	NoP = FindNoOfAutoCalibRates(Opt);
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	Ret = (char**)malloc(sizeof(char*) * NoP);
-	if((Buffer == NULL) || (Ret == NULL))
-		MallocErr();
-
-	if(Opt->Model == M_FATTAIL)
-	{
-		NoS = Opt->Trees->NoOfSites;
-		if(Opt->UseGeoData == TRUE)
-			NoS = 1;
-		for(Index=0;Index<NoS;Index++)
-		{
-			sprintf(Buffer, "Alpha %d", Index+1);
-			Ret[PIndex++] = StrMake(Buffer);
-
-			sprintf(Buffer, "Scale %d", Index+1);
-			Ret[PIndex++] = StrMake(Buffer);
-		}
-
-		free(Buffer);
-		return Ret;
-	}
-
-	if(Opt->Model == M_CONTRAST_CORREL)
-	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-		{
-			sprintf(Buffer, "Alpha %d", Index+1);
-			Ret[PIndex++] = StrMake(Buffer);
-		}
-					
-		free(Buffer);
-		return Ret;
-	}
-
-	if(Opt->Model == M_CONTRAST_REG)
-	{
-		sprintf(Buffer, "Alpha");
-		Ret[PIndex++] = StrMake(Buffer);
-
-		if(Opt->TestCorrel == TRUE)
-		{
-
-			for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
-			{
-				sprintf(Buffer, "Beta %d", Index);
-				Ret[PIndex++] = StrMake(Buffer);
-			}
-		}			
-		free(Buffer);
-		return Ret;
-	}
-
-	if(Opt->Model == M_CONTRAST)
-	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-		{
-			sprintf(Buffer, "Alpha %d", Index+1);
-			Ret[PIndex++] = StrMake(Buffer);
-		}
-		
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-		{
-			sprintf(Buffer, "Sigma^2 %d", Index+1);
-			Ret[PIndex++] = StrMake(Buffer);
-		}
-		
-		free(Buffer);
-		return Ret;
-	}
-
-	if(Opt->Model == M_CONTINUOUS_REG)
-	{
-		sprintf(Buffer, "Alpha");
-		Ret[PIndex++] = StrMake(Buffer);
-
-		for(Index=1;Index<Opt->Trees->NoOfSites+1;Index++)
-		{
-			sprintf(Buffer, "Beta Trait %d", Index);
-			Ret[PIndex++] = StrMake(Buffer);
-		}
-		free(Buffer);
-		return Ret;
-	}
-
-	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-	{
-		sprintf(Buffer, "Alpha Trait %d", Index+1);
-		Ret[PIndex++] = StrMake(Buffer);
-	}
-	
-	if(Opt->Model == M_CONTINUOUS_DIR)
-	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-		{
-			sprintf(Buffer, "Beta Trait %d", Index+1);
-			Ret[PIndex++] = StrMake(Buffer);
-		}
-	}
-
-	free(Buffer);
-
-	return Ret;
-}
 
 void	FreeParamNames(int No, char **PName)
 {
@@ -1037,74 +921,6 @@ void	FreeParamNames(int No, char **PName)
 		free(PName[Index]);
 
 	free(PName);
-}
-
-void	PrintAutoTuneHeader(FILE* Str, OPTIONS *Opt)
-{
-	int Index, NoP;
-	char	*Name, **PName;
-//	fprintf(Str, "Valid Sample\t");
-
-	if(Opt->AutoTuneRD == TRUE)
-	{
-		if(Opt->DataType == DISCRETE)
-			fprintf(Str, "Rate Dev\tRate Acc\t");
-		else
-		{
-
-			if(Opt->Model == M_CONTRAST_REG)
-			{
-				fprintf(Str, "Betas Dev\tBeta Acc\t");
-			}
-			else
-			{
-				PName = GetAutoParamNames(Opt);
-				NoP = FindNoOfAutoCalibRates(Opt);
-				for(Index=0;Index<NoP;Index++)
-				{
-					Name = PName[Index];
-					fprintf(Str, "Rate Dev - %s\tRate Acc - %s\t", Name, Name);			
-				}
-				FreeParamNames(NoP, PName);
-			}
-		}
-	}
-
-	if(Opt->AutoTuneDD == TRUE)
-	{
-		fprintf(Str, "Data Dev\t");
-		fprintf(Str, "Data Acc\t");
-	}
-
-	if(Opt->AutoTuneVarRates == TRUE)
-	{
-		fprintf(Str, "VarRates Dev\t");
-		fprintf(Str, "VarRates Acc\t");
-	}
-
-	if(Opt->EstKappa == TRUE)
-	{
-		fprintf(Str, "Kappa Dev\t");
-		fprintf(Str, "kappa Acc\t");
-	}
-
-	if(Opt->EstDelta == TRUE)
-	{
-		fprintf(Str, "Delta Dev\t");
-		fprintf(Str, "Delta Acc\t");
-	}
-
-	if(Opt->EstLambda == TRUE)
-	{
-		fprintf(Str, "Lambda Dev\t");
-		fprintf(Str, "Lambda Acc\t");
-	}
-
-	if(Opt->EstOU == TRUE)
-	{
-		fprintf(Str, "OU Dev\t");
-		fprintf(Str, "OU Acc\t");
-	}
 }
 
 void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
@@ -1930,8 +1746,9 @@ void	PrintHetro(FILE* Str, RATES *Rates)
 {
 	int NoI, NoD, Index;
 
+
 	NoI = NoD = 0;
-	for(Index=0;Index<Rates->Hetero->MListSize;Index++)
+	for(Index=1;Index<Rates->Hetero->MListSize;Index++)
 	{
 		if(Rates->Hetero->MList[Index] == 0)
 			NoI++;
@@ -1941,76 +1758,24 @@ void	PrintHetro(FILE* Str, RATES *Rates)
 	}
 
 	fprintf(Str, "%d\t%d\t", NoI, NoD);
-	for(Index=0;Index<Rates->Hetero->MListSize-1;Index++)
+	for(Index=1;Index<Rates->Hetero->MListSize-1;Index++)
 		fprintf(Str, "%d,", Rates->Hetero->MList[Index]);
 	fprintf(Str, "%d\t", Rates->Hetero->MList[Index]);
 }
 
-void	PrintPMatrix(FILE* Str, RATES* Rates, OPTIONS *Opt)
+void	PrintAutoTuneDevAcc(FILE *Str,AUTOTUNE *AT)
 {
-	
+	fprintf(Str,"%f\t", AT->CDev);
+	fprintf(Str,"%d\t",AT->NoTried);
+	fprintf(Str,"%f\t", AutoTuneCalcAcc(AT));
 }
 
 void	PrintAutoTune(FILE* Str, OPTIONS *Opt, SCHEDULE* Shed)
 {
 	int Index;
-	double Acc;
 
-
-	if(Opt->AutoTuneRD == TRUE)
-	{
-		if(Opt->RateDevPerParm == FALSE)
-		{
-			fprintf(Str, "%f\t", Opt->RateDev);	
-			fprintf(Str, "%f\t", GetAccRate(SRATES, Shed));
-		}
-		else
-		{
-			for(Index=0;Index<Shed->NoParm;Index++)
-			{
-				Acc  = (double)Shed->PAcc[Index] / Shed->PTried[Index];
-				fprintf(Str, "%f\t", Opt->RateDevList[Index]);
-				fprintf(Str, "%f\t", Acc);
-			}
-		}
-	}
-
-	if(Opt->AutoTuneDD == TRUE)
-	{
-		fprintf(Str, "%f\t", Opt->EstDataDev);	
-		fprintf(Str, "%f\t", GetAccRate(SESTDATA, Shed));
-	}
-
-	if(Shed->VarRateAT != NULL)
-	{
-		fprintf(Str, "%f\t", Opt->VarRatesScaleDev);	
-		fprintf(Str, "%f\t", GetAccRate(SPPCHANGESCALE, Shed));
-	}
-
-	if(Opt->EstKappa == TRUE)
-	{
-		fprintf(Str, "%f\t", Opt->RateDevKappa);	
-		fprintf(Str, "%f\t", GetAccRate(SKAPPA, Shed));
-	}
-
-	if(Opt->EstDelta == TRUE)
-	{
-		fprintf(Str, "%f\t", Opt->RateDevDelta);	
-		fprintf(Str, "%f\t", GetAccRate(SDELTA, Shed));
-	}
-
-	if(Opt->EstLambda == TRUE)
-	{
-		fprintf(Str, "%f\t", Opt->RateDevLambda);	
-		fprintf(Str, "%f\t", GetAccRate(SLABDA, Shed));
-	}
-
-	if(Opt->EstOU == TRUE)
-	{
-		fprintf(Str, "%f\t", Opt->RateDevOU);	
-		fprintf(Str, "%f\t", GetAccRate(SOU, Shed));
-	}
-
+	for(Index=0;Index<Shed->NoFullATList;Index++)
+		PrintAutoTuneDevAcc(Str, Shed->FullATList[Index]);
 }
 
 void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
@@ -2090,7 +1855,6 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 		PrintNodeRec(Str, Opt->RecNodeList[Index]->TreeNodes[Rates->TreeNo], Opt->Trees->NoOfStates, Opt->Trees->NoOfSites, Rates, Opt);
 
-	PrintPMatrix(Str, Rates, Opt);
 }
 
 void	CopyRJRtaes(RATES *A, RATES *B, OPTIONS *Opt)
@@ -2317,43 +2081,6 @@ void	TestMult(RATES *Rates, double Val, double Min, double Max, double Dev)
 	}
 
 	exit(0);
-}
-
-void	MutateRatesOld(OPTIONS* Opt, RATES* Rates)
-{
-	int		Index;
-
-	if(Rates->Rates != NULL)
-		for(Index=0;Index<Rates->NoOfRates;Index++)
-			Rates->Rates[Index] = ChangeRate(Rates, Rates->Rates[Index], Opt->RateDev);
-
-	if(Opt->DataType == CONTINUOUS)
-	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			Rates->Means[Index] += (RandDouble(Rates->RS) * Opt->RateDev) - (Opt->RateDev / 2.0);
-
-		if(Opt->EstDelta == TRUE)
-			Rates->Delta = MultePram(Rates, Rates->Delta, 0.000001, 3.0, Opt->RateDev);
-
-		if(Opt->EstKappa == TRUE)
-			Rates->Kappa = MultePram(Rates, Rates->Kappa, 0.000001, 3.0, Opt->RateDev);
-
-		if(Opt->EstLambda == TRUE)
-			Rates->Lambda = MultePram(Rates, Rates->Lambda, 0.000001, 1, Opt->RateDev);
-	}
-	else
-		if(Opt->EstKappa == TRUE)
-			Rates->Kappa = MultePram(Rates, Rates->Kappa, 0.000001, 3.0, Opt->RateDev);
-
-	if(Opt->UseCovarion == TRUE)
-	{
-		Rates->OffToOn = ChangeRate(Rates, Rates->OffToOn, Opt->RateDev);
-		Rates->OnToOff = ChangeRate(Rates, Rates->OnToOff, Opt->RateDev);
-		
-	}
-	
-
-	Rates->TreeNo = RandUSLong(Rates->RS) % Opt->Trees->NoOfTrees;
 }
 
 
@@ -2867,9 +2594,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 			}
 			else
 				GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
-			
 		break;
-
 	}
 }
 

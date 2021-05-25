@@ -3,8 +3,6 @@
 
 #include "typedef.h"
 
-
-
 void			InitFatTailTrees(OPTIONS *Opt, TREES *Trees);
 void			FreeFatTailTrees(OPTIONS *Opt, TREES *Trees);
 
@@ -32,4 +30,7 @@ void			InitFattailFile(OPTIONS *Opt, TREES *Trees);
 void			OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
 void			InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+
+void			FatTailTest(int argc, char **argv);
+
 #endif

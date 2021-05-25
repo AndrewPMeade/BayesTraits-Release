@@ -960,7 +960,7 @@ S30:
      TRIANGULAR REGION
 */
     if(u > p1) goto S40;
-    ix = xm-p1*v+u;
+    ix = (long)(xm-p1*v+u);
     goto S170;
 S40:
 /*
@@ -977,7 +977,7 @@ S50:
      LEFT TAIL
 */
     if(u > p3) goto S60;
-    ix = xl+log(v)/xll;
+    ix = (long)(xl+log(v)/xll);
     if(ix < 0) goto S30;
     v *= ((u-p2)*xll);
     goto S70;
@@ -985,7 +985,7 @@ S60:
 /*
      RIGHT TAIL
 */
-    ix = xr-log(v)/xlr;
+    ix = (long)(xr-log(v)/xlr);
     if(ix > n) goto S30;
     v *= ((u-p3)*xlr);
 S70:
