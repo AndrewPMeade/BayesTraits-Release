@@ -32,13 +32,17 @@
 // Information for the phomem cog est runs
 // #define	PHONEIM_RUN
 
-
 //#define QUAD_DOUBLE
 
 // use nlopt libray for ML esitmates, much better than praxis if available 
 #define NLOPT
 #ifdef NLOPT
 	#include <nlopt.h>
+#else
+	// maximum number of states 
+	#define MAX_NUMBER 50	
+	#define MAX_NUM_PARAMS (((MAX_NUMBER) * (MAX_NUMBER)) - (MAX_NUMBER) + 1)
+	#define MAX_N (MAX_NUMBER * (MAX_NUMBER)) - 1
 #endif
 
 #ifdef BIG_LH
@@ -81,8 +85,8 @@
 
 // #define NO_GSL
 
-//#define LH_UNDER_FLOW 1.9152E-174 
-#define LH_UNDER_FLOW 9.9296E-153
+//#define LH_UNDER_FLOW 9.9296E-153
+#define LH_UNDER_FLOW 1.3839E-87
 
 // Change only one rate at a time
 //#define RATE_CHANGE_ONE
@@ -132,24 +136,31 @@
 // Minimum number of taxa to Var Rate a ndoe
 #define MIN_TAXA_VR_NODE	0
 
-#define RATE_MIN 1.0e-32
+// def min and max rates, min rate is enforced with user overrides 
+#define RATE_MIN 1.0e-8
 #define RATE_MAX 1000
 
 /*	#define MAXRATE	100 */
-#define MINBL	0.0000001
+// Minium barnch legnth
+#define MIN_BL	0.0000001
 
-#define MAX_NUMBER 50	/* maximum number of states */
-#define MAX_NUM_PARAMS (((MAX_NUMBER) * (MAX_NUMBER)) - (MAX_NUMBER) + 1)
-#define MAX_N (MAX_NUMBER * (MAX_NUMBER)) - 1
+// Output File Extensions 
+#define OUTPUT_EXT_LOG			".Log.txt"
+#define OUTPUT_EXT_SCHEDULE		".Schedule.txt"
+#define OUTPUT_EXT_ANC			".AncStates.txt"
+#define OUTPUT_EXT_DUMMY_CODE	".DummyCode.txt"
+#define OUTPUT_EXT_SIM			".Sim.txt"
+#define OUTPUT_EXT_VAR_RATES	".VarRates.txt"
+#define OUTPUT_EXT_STONES		".Stones.txt"
+#define OUTPUT_EXT_TREES		".Output.trees"
 
-#define LOGFILE_EXT		"log.txt"
+
 #define UNKNOWNSTATE	'-'
-#define SUMMARYFILEEXT	"sum.txt"
 #define ESTDATAPOINT	"?"
 
 #define ERRLH -999999
 
-#define ZERORATENO		-1
+#define ZERO_RATE_NO		-1
 
 /* Use to set V to idenity for testing */
 //#define ID_MATRIX
@@ -235,7 +246,6 @@ typedef enum
 	CDELTAXA,
 	CEVENROOT,
 	CLOGFILE,
-	CMODEL,
 	CPRESET,
 	CSUMMARY,
 	CBURNIN,
@@ -259,8 +269,6 @@ typedef enum
 	CNODEBLDATA,
 	CGAMMA,
 	CCI,
-	CDEPSITE,
-	CHEADERS,
 	CRMODEL,
 	CCOMMENT,
 	CNOSPERSITE,
@@ -321,7 +329,6 @@ static char    *COMMANDSTRINGS[] =
 	"deltaxa",		"deltaxa",
 	"evenroot",		"er",
 	"logfile",		"lf",
-	"hiddenstate",	"hs",
 	"preset",		"ps",
 	"summary",		"sum",
 	"burnin",		"bi",
@@ -345,9 +352,6 @@ static char    *COMMANDSTRINGS[] =
 	"nodebldata",   "nbd",
 	"gamma",		"ga",
 	"confint",		"cf",
-	"depsite",		"ds",
-	"headers",		"hd",
-/*	"prevar",		"pv", */
 	"rmodel",		"rm",
 	"#",			"//",
 	"fitnospersite","nps",
@@ -1087,7 +1091,8 @@ typedef struct
 
 	TREES		*Trees;
 
-	char		*LogFN;
+//	char		*LogFN;
+	char		*BaseOutputFN;
 	char		*TreeFN;
 	char		*DataFN;
 	FILE		*LogFile;
@@ -1152,8 +1157,7 @@ typedef struct
 	int			FindCF;
 	char*		CFRate;
 
-	int			Headers;
-
+	
 	int			UseRModel;
 	double		RModelP;
 

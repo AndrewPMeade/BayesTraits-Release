@@ -527,14 +527,7 @@ void		MapDummyCodes(TREES *Trees, RATES *Rates)
 
 void	InitRJDummyFile(OPTIONS *Opt)
 {
-	char	*Buffer;
-
-	Buffer = (char*)malloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
-	if(Buffer == NULL)
-		MallocErr();
-	sprintf(Buffer, "%s.DummyCode.txt", Opt->DataFN);
-	Opt->RJDummyLog = OpenWrite(Buffer);
-	free(Buffer);
+	Opt->RJDummyLog = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_DUMMY_CODE);
 
 	PrintOptions(Opt->RJDummyLog, Opt);
 

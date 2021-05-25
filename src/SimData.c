@@ -114,7 +114,7 @@ FILE*	OpenSimOutFile(char *BaseFN)
 
 	Buffer = (char*)SMalloc(sizeof(char) * (strlen(BaseFN)+64));
 
-	sprintf(Buffer, "%s.sim.txt", BaseFN);
+	sprintf(Buffer, "%s.Sim.txt", BaseFN);
 
 	Ret = OpenWrite(Buffer);
 
@@ -157,10 +157,10 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	NODE	Root;
 	FILE	*OutF;
 
-//	return;
+	return;
 //	BuildAllSateDS(Trees);
 
-	OutF = OpenSimOutFile(Opt->LogFN);
+	OutF = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_SIM);
 	
 	RS = CreateSeededRandStates(Opt->Seed);
 

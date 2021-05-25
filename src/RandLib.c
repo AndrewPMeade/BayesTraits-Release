@@ -496,7 +496,7 @@ double RndGamma (RANDSTATES* RS, double s)
 	else if (s > 1.0)
 		r = RndGamma2 (RS, s);
 	else
-		r =- log(RandDouble(RS));
+		r = -log(RandDouble(RS));
 	return (r);
 }
 

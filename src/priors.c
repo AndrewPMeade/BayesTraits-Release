@@ -1029,7 +1029,7 @@ void	CopyPrior(PRIOR *A, PRIOR *B)
 	A->Width = B->Width;
 }
 
-PRIORDIST	StrToPriorDist(char* Str)
+PRIORDIST	StrToPriorDist(char* Str, int *Err)
 {
 	int			Index;
 
@@ -1038,10 +1038,14 @@ PRIORDIST	StrToPriorDist(char* Str)
 	for(Index=0;Index<NO_PRIOR_DIST;Index++)
 	{
 		if(strcmp(Str, DISTNAMES[Index])==0)
+		{
+			*Err = FALSE;
 			return (PRIORDIST)(Index);
+		}
 	}
 
-	return (PRIORDIST)-1;
+	*Err = TRUE;
+	return (PRIORDIST)(0);
 }
 
 int			CheckPriorDistVals(PRIORDIST PDist, int Tokes, char **Passed)
@@ -1090,6 +1094,7 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 	PRIORDIST	PD;
 	double		*PVal;
 	PRIOR		*Ret;
+	int			Err;
 
 	Ret = NULL;
 
@@ -1099,13 +1104,15 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 		exit(1);
 	}
 
-	if(StrToPriorDist(Passed[0]) == -1)
+	StrToPriorDist(Passed[0], &Err);
+	
+	if(Err == TRUE)
 	{
 		printf("Invalid prior distribution name. Valid names are beta, gamma, uniform, chi, exp, invgamma, normal.\n");
 		exit(1);
 	}
 
-	PD = StrToPriorDist(Passed[0]);
+	PD = StrToPriorDist(Passed[0], &Err);
 
 	if(Tokes -1 != DISTPRAMS[PD])
 	{
@@ -1148,6 +1155,7 @@ PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed)
 	PRIORDIST	PDist;
 	int			NoParam;
 	double		*PVal;
+	int			Err;
 
 	if(Tokes < 3)
 	{
@@ -1155,9 +1163,9 @@ PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed)
 		exit(0);
 	}
 
-	PDist = StrToPriorDist(Passed[0]);
+	PDist = StrToPriorDist(Passed[0], &Err);
 
-	if(PDist == -1)
+	if(Err == TRUE)
 	{
 		printf("Invalid prior distribution name,. valid names are beta, gamma, uniform, chi, exp, invgamma.\n");
 		exit(1);

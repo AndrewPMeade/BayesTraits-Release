@@ -70,6 +70,22 @@ FILE*		OpenWrite(char *FileName)
 
 	return Ret;
 }
+
+FILE*		OpenWriteWithExt(char *Base, char *Ext)
+{
+	char *Buffer;
+	FILE *Ret;
+
+	Buffer = (char*)SMalloc(strlen(Base) + strlen(Ext) + 2);
+
+	sprintf(Buffer, "%s%s", Base, Ext);
+
+	Ret = OpenWrite(Buffer);
+
+	free(Buffer);
+
+	return Ret;
+}
 /*
 	PC	:	CRLF	013 010
 	Mac	:	CR		013

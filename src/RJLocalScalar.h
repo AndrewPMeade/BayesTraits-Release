@@ -3,7 +3,7 @@
 
 #include "typedef.h"
 
-TRANSFORM_TYPE			NameToRJLocalType(char *Name);
+TRANSFORM_TYPE			NameToRJLocalType(char *Name, int *Err);
 
 int						UseRJLocalScalars(OPTIONS *Opt);
 

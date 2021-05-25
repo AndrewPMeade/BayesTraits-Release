@@ -79,6 +79,9 @@ int		FindNoConRates(OPTIONS *Opt)
 		case M_GEO:
 			return 2;
 		break;
+
+		default:
+			break;
 	}
 
 	printf("Unkonwn model %s::%d\n", __FILE__, __LINE__);
@@ -1227,7 +1230,7 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 	RECNODE		*RNode;
 
 	if(Opt->Analsis == ANALMCMC)
-		fprintf(Str, "Iteration\tLh\tHarmonic Mean\tTree No\t");
+		fprintf(Str, "Iteration\tLh\tTree No\t");
 	else
 		fprintf(Str, "Tree No\tLh\t");
 
@@ -1884,7 +1887,7 @@ int		NoZeroRate(RATES *Rates)
 	Ret = 0;
 
 	for(Index=0;Index<Rates->NoOfRates;Index++)
-		if(Rates->MappingVect[Index] == ZERORATENO)
+		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
 			Ret++;
 
 
@@ -1955,7 +1958,7 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 //		for(Index=0;Index<Rates->NoOfFullRates;Index++)
 		for(Index=0;Index<Rates->NoOfRates;Index++)
 		{
-			if(Rates->MappingVect[Index] == ZERORATENO)
+			if(Rates->MappingVect[Index] == ZERO_RATE_NO)
 				fprintf(Str, "Z ");
 //				fprintf(Str, "Z");
 			else

@@ -329,7 +329,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	
 	fprintf(Str, "Tree File Name:                  %s\n", Opt->TreeFN);
 	fprintf(Str, "Data File Name:                  %s\n", Opt->DataFN);
-	fprintf(Str, "Log File Name:                   %s\n", Opt->LogFN);
+	fprintf(Str, "Log File Name:                   %s%s\n", Opt->BaseOutputFN, OUTPUT_EXT_LOG);
 
 	fprintf(Str, "Save Initial Trees:              ");
 	if(Opt->SaveInitialTrees == NULL)
@@ -342,9 +342,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "False\n");
 	else
 		fprintf(Str, "True\n");		
-
-	if(Opt->Headers == FALSE)
-	fprintf(Str, "Output Headers                   FALSE\n");
 
 	fprintf(Str, "Summary:                         ");
 	if(Opt->Summary == FALSE)
@@ -395,7 +392,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		}
 			
 		if(Opt->UseSchedule	== TRUE)
-			fprintf(Str, "Schedule File:                   %s.Schedule.txt\n", Opt->LogFN);
+			fprintf(Str, "Schedule File:                   %s%s\n", Opt->BaseOutputFN, OUTPUT_EXT_SCHEDULE);
 
 		fprintf(Str, "Rate Dev:                        AutoTune\n");
 	}
@@ -602,7 +599,7 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	
 	free(Opt->DataFN);
 	free(Opt->TreeFN);
-	free(Opt->LogFN);
+	free(Opt->BaseOutputFN);
 	fclose(Opt->LogFile);
 
 	if(Opt->MLAlg != NULL)
@@ -892,6 +889,9 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 
 		case M_GEO:
 			return GeoRateNames(Opt);
+		// Keep CLang happy
+		default:
+			break;
 	}
 
 	return NULL;
@@ -1164,8 +1164,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->TreeFN = StrMake(TreeFN);
 	Ret->DataFN = StrMake(DataFN);
 
-	sprintf(Buffer, "%s.%s", DataFN, LOGFILE_EXT);
-	Ret->LogFN = StrMake(Buffer);
+	Ret->BaseOutputFN = StrMake(DataFN);
 
 	Ret->LogFile		= NULL;
 	Ret->LogFileRead	= NULL;
@@ -1252,7 +1251,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->FindCF			=	FALSE;
 	Ret->CFRate			=	NULL;
 
-	Ret->Headers		=	TRUE;
+//	Ret->Headers		=	TRUE;
 
 	Ret->AnalyticalP	=	FALSE;
 
@@ -1531,8 +1530,8 @@ ANALSIS	GetAnalsis(TREES *Trees)
 	printf("1)	Maximum Likelihood.\n");
 	printf("2)	MCMC\n");
 	
-	fgets(&Buffer[0], 1024, stdin);
-	Buffer[1023] = '\0';
+	fgets(&Buffer[0], BUFFERSIZE, stdin);
+	Buffer[BUFFERSIZE-1] = '\0';
 
 	No = atoi(Buffer);
 	free(Buffer);
@@ -2315,21 +2314,17 @@ void	SetEvenRoot(TREES *Trees)
 	}
 }
 
-void	LogFile(OPTIONS *Opt, char *LogFN)
+void	SetLogFile(OPTIONS *Opt, int Tokes, char **Passed)
 {
-	FILE*	TempLogFile;
-
-	TempLogFile = fopen(LogFN, "w");
-	if(TempLogFile == NULL)
+	if(Tokes != 2)
 	{
-		printf("Could not open file %s for writting\n", LogFN);
-		return;
+		printf("LogFile take the base name to call output files, the default is the data file name.\n");
+		exit(1);
 	}
-	fclose(TempLogFile);
+	
+	free(Opt->BaseOutputFN);
 
-	free(Opt->LogFN);
-
-	Opt->LogFN = StrMake(LogFN);
+	Opt->BaseOutputFN = StrMake(Passed[1]);
 }
 
 void	PreSet(OPTIONS *Opt, int Tokes, char **Passed)
@@ -2454,7 +2449,6 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CALPHAZERO)	||
 			(Command == CNODEBLDATA)||
 			(Command == CNODEDATA)  ||
-			(Command == CDEPSITE)   ||
 			(Command == CRJDUMMY)	||
 			(Command == CRJLOCALTRANSFORM) ||
 			(Command == CDISTDATA)
@@ -2501,6 +2495,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			Command == CVARRATES	||
 			Command == CDISTDATA	||
 			Command == CNOLH		||
+			Command == CSTONES		||
 			Command == CCSCHED	
 			)
 		{
@@ -3205,9 +3200,7 @@ void	LineAddErr(TREES *Trees, char *Line)
 	double	Err;
 
 	Buffer = StrMake(Line);
-	Passed = (char**)malloc(sizeof(char*) * strlen(Line));
-	if(Passed == NULL)
-		MallocErr();
+	Passed = (char**)SMalloc(sizeof(char*) * strlen(Line));
 
 	Tokes = MakeArgv(Buffer, Passed, (int)strlen(Line));
 
@@ -3402,6 +3395,8 @@ void	SetScaleTree(OPTIONS *Opt, char **Passed, int Tokes)
 
 int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 {
+	int Err;
+
 	if(Tokes != 2)
 	{
 		printf("RJ Local Scalar take a scalar names (kappa, lambda, delta, OU).\n");
@@ -3420,7 +3415,9 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 		return FALSE;
 	}
 
-	if(NameToRJLocalType(Passed[1]) == -1)
+	NameToRJLocalType(Passed[1], &Err);
+
+	if(Err == TRUE)
 	{
 		printf("invalid transform name, valid scalars are (kappa, lambda, delta, OU).\n");
 		return FALSE;
@@ -3482,11 +3479,12 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 void	SetRJLocalTransform(OPTIONS *Opt, char **Passed, int Tokes)
 {
 	TRANSFORM_TYPE	Type;
+	int Err;
 
 	if(ValidRJLocalScalarModel(Opt, Passed, Tokes) == FALSE)
 		exit(1);
 
-	Type = NameToRJLocalType(Passed[1]);
+	Type = NameToRJLocalType(Passed[1], &Err);
 
 	Opt->UseRJLocalScalar[Type]	= TRUE;
 
@@ -4059,6 +4057,9 @@ void SetMinMaxRate(OPTIONS *Opt, int Tokes, char **Passed)
 		exit(0);
 	}
 
+	if(Min < RATE_MIN)
+		Min = RATE_MIN;
+
 	Opt->RateMin = Min;
 	Opt->RateMax = Max;
 }
@@ -4122,7 +4123,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	{
 		printf("Command is not valid with data / model.\n");
 		exit(1);
-		return FALSE;
 	}
 
 	if(Command == CRUN)
@@ -4259,12 +4259,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetEvenRoot(Opt->Trees);
 
 	if(Command == CLOGFILE)
-	{
-		if(Tokes == 2)
-			LogFile(Opt, Passed[1]); 
-		else
-			printf("The LogFile command requires a file name to use a log file\n");
-	}
+		SetLogFile(Opt, Tokes, Passed); 
 
 
 	if(Command == CPRESET)
@@ -4402,18 +4397,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		}
 	}
 
-	if(Command == CDEPSITE)
-	{
-
-	}
-
-	if(Command == CHEADERS)
-	{
-		if(Opt->Headers == TRUE)
-			Opt->Headers = FALSE;
-		else
-			Opt->Headers = TRUE;
-	}
 
 	if(Command == CRMODEL)
 	{

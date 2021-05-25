@@ -630,7 +630,7 @@ int		SetInvMat(MODEL Model, RATES *Rates, int NOS, INVINFO *InvInfo)
 	if(Model != M_DESCHET)
 		return InvMat(InvInfo, NOS);
 
-		if(InvMat(Rates->Hetero->ModelInv[0], NOS) == ERROR)
+	if(InvMat(Rates->Hetero->ModelInv[0], NOS) == ERROR)
 		return ERROR;
 
 	return InvMat(Rates->Hetero->ModelInv[1], NOS);
@@ -686,8 +686,11 @@ int		SetUpAllAMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	{
 		SetUpAMatrix(Opt->Model, Rates, Trees, Trees->NoStates, Trees->InvInfo[PIndex], &Rates->FullRates[Pos], Rates->Pis);
 
+//		PrintMatrix( Trees->InvInfo[PIndex]->A, "A=", stdout);fflush(stdout);
+
 		if(Opt->NormQMat == TRUE)
 			NormaliseAMatrix(Rates, Trees->InvInfo[PIndex]->A);
+
 
 		Err = SetInvMat(Opt->Model, Rates, Trees->NoStates, Trees->InvInfo[PIndex]); 
 
@@ -862,7 +865,10 @@ void SetDiscEstData(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 				else
 				{
 					if((N->Taxa->EstDataP[0] == TRUE) && (N->Taxa->EstDataP[1] == TRUE))
-						SetDiscEstDataTaxa(Taxa, '0'+Rates->EstDescData[MDPos++], '0'+Rates->EstDescData[MDPos++]);
+					{
+						SetDiscEstDataTaxa(Taxa, '0'+Rates->EstDescData[MDPos], '0'+Rates->EstDescData[MDPos+1]);
+						MDPos += 2;
+					}
 					else
 					{
 						if(N->Taxa->EstDataP[0] == TRUE)

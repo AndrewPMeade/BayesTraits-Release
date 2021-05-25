@@ -1306,6 +1306,11 @@ void	CalcZAlpha(TREES* Trees, TREE *Tree, MODEL Model)
 				case M_CONTINUOUS_DIR:
 					Tree->ConVars->ZA[ZPos] = Tree->ConVars->Z[ZPos] - (Tree->ConVars->Alpha[SIndex] + (Tree->ConVars->Beta[SIndex] * Tree->ConVars->V->me[TIndex][TIndex]));
 				break;
+
+
+				// Keep CLang happy
+				default:
+					break;
 			}
 		}
 	}

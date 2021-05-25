@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <math.h>
 
+#include "btdebug.h"
 
 /* **** Local Auxiliary **** */
 int btlin_dbcholupdcol(double* pcol,int next_n,double* pdiag,int nb,int lda);

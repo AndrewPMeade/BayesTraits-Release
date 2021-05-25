@@ -3,8 +3,10 @@
 #include <math.h>
 #include <string.h>
 #include <time.h>
+#include <ctype.h>
 
 #include "btlin_dmatrix.h"
+#include "btlin_alg.h"
 
 DMATRIX* btlin_allocDMATRIX(int r, int c) {
   DMATRIX* ret = (DMATRIX*)malloc(sizeof(DMATRIX));

@@ -103,5 +103,7 @@ int			StrICmp(char const *a, char const *b);
 
 void	NormaliseVector(double *Vect, int Size);
 
+FILE*		OpenWriteWithExt(char *Base, char *Ext);
+
 
 #endif

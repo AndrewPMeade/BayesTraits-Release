@@ -1507,7 +1507,7 @@ void SetMinBL(TREES *Trees)
 			Node = Tree->NodeList[NIndex];
 			if(Node != Tree->Root)
 			{
-				if((Node->Length == -1) || (Node->Length < MINBL))
+				if(Node->Length == -1 || Node->Length < MIN_BL)
 				{
 					if(Node->Length == -1)
 					{
@@ -1516,7 +1516,7 @@ void SetMinBL(TREES *Trees)
 					}
 
 					if(NoErr < 5)
-						printf("Tree %d has a Branch length less then %f.\nSetting branch length to %f\n", TIndex, MINBL, MINBL);
+						printf("Tree %d has a Branch length less then %f.\nSetting branch length to %f\n", TIndex, MIN_BL, MIN_BL);
 					
 					
 					if(NoErr == 5)
@@ -1524,7 +1524,7 @@ void SetMinBL(TREES *Trees)
 
 					NoErr++;
 
-					Node->Length = MINBL;
+					Node->Length = MIN_BL;
 				}
 			}
 		}
@@ -1626,7 +1626,7 @@ void	AddNewRecNodeTree(TREES *Trees, int TreeNo, RECNODE *RecNode)
 	Node->NoNodes++;
 
 	NewTaxa->Ans	= Node;
-	NewTaxa->Length = MINBL;
+	NewTaxa->Length = MIN_BL;
 	NewTaxa->Tip	= TRUE;
 	NewTaxa->Taxa	= GetTaxaFromName(RecNode->Name, Trees->Taxa, Trees->NoTaxa);
 	NewTaxa->TipID	= NewTaxa->Taxa->No;
@@ -2133,13 +2133,7 @@ NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo)
 
 void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees)
 {
-	char	*Buffer;
-
-	Buffer = (char*)SMalloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
-
-	sprintf(Buffer, "%s.Output.trees", Opt->LogFN);
-	Opt->OutTrees = OpenWrite(Buffer);
-	free(Buffer);
+	Opt->OutTrees = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_TREES);
 
 	SaveTreesHeader(Opt->OutTrees, Trees);
 

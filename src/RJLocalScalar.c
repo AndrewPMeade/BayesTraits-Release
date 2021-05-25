@@ -9,11 +9,13 @@
 #include "RJLocalScalar.h"
 #include "priors.h"
 
-TRANSFORM_TYPE	NameToRJLocalType (char *Name)
+TRANSFORM_TYPE	NameToRJLocalType(char *Name, int *Err)
 {
 	int Index;
 
 	MakeLower(Name);
+
+	*Err = FALSE;
 
 	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
 	{
@@ -21,7 +23,8 @@ TRANSFORM_TYPE	NameToRJLocalType (char *Name)
 			return (TRANSFORM_TYPE)Index;
 	}
 
-	return (TRANSFORM_TYPE)-1;
+	*Err = TRUE;
+	return (TRANSFORM_TYPE)0;
 }
 
 

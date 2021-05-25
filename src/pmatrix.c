@@ -9,11 +9,11 @@
 
 int	InvMat(INVINFO	*InvInfo, int NoStates)
 {
-	int				Ret;
+	int				Ret, Index;
 	int				*iwork;
 	double			*work;
 	double			*vi;
-		
+	
 
 	iwork = (int*)InvInfo->TempVect2;
 	work = InvInfo->TempVect3;
@@ -24,20 +24,10 @@ int	InvMat(INVINFO	*InvInfo, int NoStates)
 //	PrintMatrix(InvInfo->A, "A = ", stdout);exit(0);
 
 	Ret = EigenRealGeneral(NoStates, InvInfo->A->me, InvInfo->val, vi, InvInfo->vec->me, iwork, work);
-	
+
 
 	if(Ret != NO_ERROR)
-	{
-	/*	for(Ret=0;Ret<Rates->NoOfRates;Ret++)
-			printf("%d\t%f\n", Ret, Rates->Rates[Ret]);
-		printf("\n\n\n");
-		PrintMatrix(InvInfo->Q, "QMat", stdout);
-		PrintMathematicaMatrix(InvInfo->Q, "Q", stdout);
-		exit(0); 
-		*/
-		// TODO Phoneim remove 
 		return ERROR;
-	}
 
 	CopyMatrix(InvInfo->Q, InvInfo->vec);
 	Ret = InvertMatrix(InvInfo->Q->me, NoStates, work, iwork, InvInfo->inv_vec->me);
@@ -668,6 +658,18 @@ double	CreateDiscretePMat(double t, INVINFO *InvInfo, MATRIX *Mat, TREES* Trees,
 }
 */
 
+void	SetIDMatrix(MATRIX *Mat)
+{
+	int i, S;
+
+	S = Mat->NoOfCols * Mat->NoOfRows;
+	for(i=0;i<S;i++)
+		Mat->me[0][i] = 0;
+
+	for(i=0;i<Mat->NoOfCols;i++)
+		Mat->me[i][i] = 1.0;
+}
+
 double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, int NOS, int ThrNo)
 {
 	int		i, j, k;
@@ -684,6 +686,11 @@ double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, int NOS, int Th
 	InvVec	= InvInfo->inv_vec->me;
 	M		= Mat->me;
 	
+	if(t < MIN_BL)
+	{
+		SetIDMatrix(Mat);
+		return 0;
+	}	
 	
 	for(i=0;i<NOS;i++)
 		Et[i] = exp(t*Val[i]);
@@ -706,11 +713,17 @@ double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, int NOS, int Th
 			t2-=M[i][j];
 
 			if(M[i][j] < 0)
-				return 1000;
+			{
+				SetIDMatrix(Mat);
+				return 0;
+			}	
+			//	return 1000;
 		}
 		t1 += t2 * t2;
 	}
 
+	if(t1 > 0.001)
+		return t1;
 
 
 	return t1;

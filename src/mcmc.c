@@ -113,7 +113,7 @@ void	PrintMCMCSample(long long Itters, SCHEDULE* Shed, OPTIONS *Opt, RATES *Rate
 	Trees = Opt->Trees;
 
 	HMean = GetHMean(Opt, Rates);
-	fprintf(Str, "%lld\t%f\t%f\t%d\t", Itters, Rates->Lh, HMean, Rates->TreeNo+1);
+	fprintf(Str, "%lld\t%f\t%d\t", Itters, Rates->Lh, Rates->TreeNo+1);
 		
 	PrintRates(Str, Rates, Opt, Shed);
 
@@ -140,7 +140,7 @@ void	PrintTest(int Itters, RATES* Rates)
 		
 	for(Index=0;Index<Rates->NoOfFullRates;Index++)
 	{
-		if(Rates->MappingVect[Index] == ZERORATENO)
+		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
 			printf("Z");
 		else
 		{
@@ -366,17 +366,11 @@ void	ShowTimeSec(double StartT, double EndT)
 FILE*	SetScheduleFile(OPTIONS *Opt, SCHEDULE*	Shed)
 {
 	FILE *Ret;
-	char	*Buffer;
-
-	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
-
-	sprintf(Buffer, "%s.Schedule.txt", Opt->LogFN);
-
-	Ret = OpenWrite(Buffer);
+	
+	Ret = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_SCHEDULE);
 
 	PrintShedHeadder(Opt, Shed, Ret);
-
-	free(Buffer);
+		
 
 	return Ret;
 }
@@ -384,19 +378,11 @@ FILE*	SetScheduleFile(OPTIONS *Opt, SCHEDULE*	Shed)
 FILE*	CreatStoneOuput(OPTIONS *Opt)
 {
 	FILE*	Ret;
-	char*	Buffer;
-
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
-
-	sprintf(Buffer, "%s.Stones.txt", Opt->LogFN);
-	Ret = OpenWrite(Buffer);
+	
+	Ret = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_STONES);
 
 	OutputStoneHeadder(Ret, Opt->Stones);
-
-	free(Buffer);
-
+	
 	return Ret;
 }
 

@@ -58,7 +58,7 @@ void	MapRJRates(OPTIONS *Opt, RATES *Rates)
 	{
 		if(Opt->ResTypes[Index] == RESNONE)
 		{
-			if(Rates->MappingVect[MIndex] == ZERORATENO)
+			if(Rates->MappingVect[MIndex] == ZERO_RATE_NO)
 				Rates->FullRates[Index] = 0.000000000000000000001;
 			else
 				Rates->FullRates[Index] = Rates->Rates[Rates->MappingVect[MIndex]];
@@ -108,7 +108,7 @@ int		NoOfPramGroups(RATES* Rates, int *GroupID, int *GroupSize)
 		}
 
 		/* If we are in the zero bin don't count us */
-		if(Rates->MappingVect[Index] == ZERORATENO)
+		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
 			InPast = TRUE;
 
 		if((NoOfMappings(Rates,Rates->MappingVect[Index]) >= 1) && (InPast == FALSE))
@@ -175,22 +175,18 @@ void	FindZeroBin(RATES* Rates, MAPINFO* MapInfo)
 	MapInfo->NoInZero = 0;
 
 	for(Index=0;Index<Rates->NoOfRates;Index++)
-		if(Rates->MappingVect[Index] == ZERORATENO)
+		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
 			MapInfo->NoInZero++;
 
 	if(MapInfo->NoInZero > 0)
-	{
-		MapInfo->ZeroPos = (int*)malloc(sizeof(int) * MapInfo->NoInZero);
-		if(MapInfo->ZeroPos == NULL)
-			MallocErr();
-	}
+		MapInfo->ZeroPos = (int*)SMalloc(sizeof(int) * MapInfo->NoInZero);
 	else
 		MapInfo->ZeroPos = NULL;
 
 	ZVectIndex = 0;
 	for(Index=0;Index<Rates->NoOfRates;Index++)
 	{
-		if(Rates->MappingVect[Index] == ZERORATENO)
+		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
 		{
 			MapInfo->ZeroPos[ZVectIndex] = Index;
 			ZVectIndex++;
@@ -653,7 +649,7 @@ int		RJReduce(RATES* Rates, OPTIONS* Opt)
 
 	Pos = MapInfo->GroupPos[Group][TheOne];
 
-	Rates->MappingVect[Pos] = ZERORATENO;
+	Rates->MappingVect[Pos] = ZERO_RATE_NO;
 
 	Top = 0.5;
 	Top = Top * (1.0 / ((double)MapInfo->NoInZero + 1.0));

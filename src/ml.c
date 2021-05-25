@@ -213,7 +213,7 @@ double	LikelihoodML(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	MLMapToRates(MLMap, Opt, Rates);
 
-	return Likelihood(Rates, Trees, Opt);
+ 	return Likelihood(Rates, Trees, Opt);
 }
 
 void	MLMapSetDefVals(ML_MAP* MLMap)
@@ -405,6 +405,54 @@ void	MLTest2(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	exit(0);
 }
 
+void	MLTestF(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double Lh;
+
+
+	Rates->Rates[0] = 5.0287863036920841;
+	Rates->Rates[1]	= 155.60278961982507;
+	Rates->Rates[2]	= 68.574436260179240;
+	Rates->Rates[3]	= 0.00000000000000000;
+	Rates->Rates[4]	= 200.00000000000000;
+	Rates->Rates[5]	= 0.00000000000000000;
+	Rates->Rates[6]	= 10.053324235459865;
+	Rates->Rates[7]	= 0.00000000000000000;
+	
+
+	Lh = Likelihood(Rates, Trees, Opt);
+	printf("%f\n", Lh);
+
+	exit(0);
+	Lh = Likelihood(Rates, Trees, Opt);
+
+	Rates->Rates[0] = 0.982582;
+	Rates->Rates[1] = 0.982582;
+	Rates->Rates[2] = 0.982582;
+	Rates->Rates[3] = 0.982582;
+	Rates->Rates[4] = 34.454587;
+	Rates->Rates[5] = 20.955104;
+	Rates->Rates[6] = 162.393268;
+	Rates->Rates[7] = 34.454587;
+	Rates->Rates[8] = 162.393268;
+	Rates->Rates[9] = 162.393268;
+	Rates->Rates[10] = 34.454587;
+	Rates->Rates[11] = 0.982582;
+	Rates->Rates[12] = 20.955104;
+	Rates->Rates[13] = 20.955104;
+	Rates->Rates[14] = 20.955104;
+	Rates->Rates[15] = 20.955104;
+	Rates->Rates[16] = 0.982582;
+	Rates->Rates[17] = 0.982582;
+	Rates->Rates[18] = 0.982582;
+	Rates->Rates[19] = 0.982582;
+
+
+	Lh = Likelihood(Rates, Trees, Opt);
+
+	exit(0);
+}
+
 
 void	FindML(OPTIONS *Opt, TREES *Trees)
 {
@@ -425,6 +473,8 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 	fflush(Opt->LogFile);
 
 	TStart = GetSeconds();
+	
+//	MLTestF(Opt, Trees, Rates);
 
 	for(Index=0;Index<Trees->NoTrees;Index++)
 	{

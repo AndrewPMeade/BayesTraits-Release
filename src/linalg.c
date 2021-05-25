@@ -12,7 +12,7 @@ static void     Exchange (int j, int k, int l, int m, int n, double **a, double 
 static void     ElmHes (int n, int low, int high, double **a, int *intchg);
 static void     ElTran (int n, int low, int high, double **a, int *intchg, double **z);
 static int      Hqr2 (int n, int low, int high, double **h, double *wr, double *wi, double **z);
-static void     BalBak (int n, int low, int high, double *scale, int m, double **z);
+static int		BalBak (int n, int low, int high, double *scale, int m, double **z);
 static void     CDiv (double ar, double ai, double br, double bi, double *cr, double *ci);
 static double   D_sign (double a, double b);
 
@@ -377,10 +377,10 @@ int EigenRG (int n, double **a, double *wr, double *wi, double **z, int *iv1, do
 	ElmHes (n, is1, is2, a, iv1);
 	ElTran (n, is1, is2, a, iv1, z);
 	ierr = Hqr2 (n, is1, is2, a, wr, wi, z);
-	if (ierr == 0)
-		BalBak (n, is1, is2, fv1, n, z);
+	if (ierr != 0)
+		return ERROR;
 
-	return ierr;
+	return BalBak (n, is1, is2, fv1, n, z);
 }
 
 /*--------------------------------------------------------------------------------------------------
@@ -1293,7 +1293,7 @@ int Hqr2 (int n, int low, int high, double **h, double *wr, double *wi, double *
 |		columns.
 */
 
-void BalBak (int n, int low, int high, double *scale, int m, double **z)
+int BalBak (int n, int low, int high, double *scale, int m, double **z)
 
 {
 	int			i, j, k, ii;
@@ -1324,6 +1324,8 @@ void BalBak (int n, int low, int high, double *scale, int m, double **z)
 					for (j = 0; j < m; j++)
 						{
 						s = z[i][j];
+						if(j >= n || k >= n)
+							return ERROR;
 						z[i][j] = z[k][j];
 						z[k][j] = s;
 						}
@@ -1331,6 +1333,8 @@ void BalBak (int n, int low, int high, double *scale, int m, double **z)
 				}
 			}
 		}
+
+	return NO_ERROR;
 }
 
 /*--------------------------------------------------------------------------------------------------

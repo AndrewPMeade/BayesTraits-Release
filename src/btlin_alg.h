@@ -20,6 +20,7 @@ int btlin_invcholesky(double* m, int n, double *det);
 // computes determinant of lower triangular matrix
 double btlin_ltri_det(double* a, int n, int lda);
 
+
 #ifdef BTLAPACK
 // blocked version
 int btlin_bcholesky(double* m, int n, double* det);

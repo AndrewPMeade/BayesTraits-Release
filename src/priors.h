@@ -40,7 +40,7 @@ PRIOR*		CreateHyperPrior(char *Name, PRIORDIST PDist, double *PVal);
 
 void		FreePrior(PRIOR* P);
 
-PRIORDIST	StrToPriorDist(char* Str);
+PRIORDIST	StrToPriorDist(char* Str, int *Err);
 
 PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed);
 PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed);

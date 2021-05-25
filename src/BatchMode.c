@@ -76,14 +76,12 @@ void	SetLogFName(OPTIONS *Opt, int BNo)
 {
 	char *Buffer;
 
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
-
+	Buffer = (char*)SMalloc(sizeof(char) * 64);
+	
 	sprintf(Buffer, "BTBatchLog-%06d.txt", BNo);
-	free(Opt->LogFN);
+	free(Opt->BaseOutputFN);
 
-	Opt->LogFN = StrMake(Buffer);
+	Opt->BaseOutputFN = StrMake(Buffer);
 	free(Buffer);
 }
 

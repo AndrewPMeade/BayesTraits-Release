@@ -88,8 +88,8 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		ID = 0;
 		SetNodeIDs(Trees->Tree[Index]);
 	}
-		
-	Opt->LogFile		= OpenWrite(Opt->LogFN);
+	
+	Opt->LogFile		= OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_LOG);
 
 	#ifdef JNIRUN
 		Opt->LogFileRead = OpenRead(Opt->LogFN);

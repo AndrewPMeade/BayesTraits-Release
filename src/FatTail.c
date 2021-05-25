@@ -803,21 +803,14 @@ void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed
 
 void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
 {
-	char	*Buffer;
+	
 	TREE	*Tree;
 	NODE	N;
 	int		Index, SIndex, TIndex, NID;
 	PART	*Part;
 	TAXA	*Taxa;
 
-	Buffer = (char*)malloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
-	if(Buffer == NULL)
-		MallocErr();
-	sprintf(Buffer, "%s.AnsStates.txt", Opt->LogFN);
-
-	Opt->LogFatTail = OpenWrite(Buffer);
-	
-	free(Buffer);
+	Opt->LogFatTail = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_ANC);
 
 	Tree = Trees->Tree[0];
 	NID = 0;

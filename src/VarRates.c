@@ -877,14 +877,7 @@ void	VarRatesLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 void	IntiVarRatesLogFile(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	char	*Buffer;
-
-	Buffer = (char*)SMalloc(sizeof(char) * (strlen(Opt->LogFN) + BUFFERSIZE));
-
-
-	sprintf(Buffer, "%s.VarRates.txt", Opt->LogFN);
-	Opt->VarRatesLog = OpenWrite(Buffer);
-	free(Buffer);
+	Opt->VarRatesLog = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_VAR_RATES);
 
 	VarRatesLogFileHeader(Opt, Trees, Rates);
 
