@@ -1372,3 +1372,77 @@ void	AddNewRecNode(TREES* Trees, RECNODE RecNode)
 
 	Trees->NoOfNodes += 2;
 } 
+
+double	GetRootToTip(NODE N)
+{
+	double Ret;
+	
+	Ret = 0;
+	do
+	{
+		N = N->Left;
+		Ret += N->Length;
+	}while(N->Tip == FALSE);
+
+	return Ret;
+}
+
+double	GetTipPathLength(NODE Node)
+{
+	double	Ret;
+
+	Ret = 0;
+
+	do
+	{
+		Ret += Node->Length;
+		Node = Node->Ans;
+	} while(Node->Ans != NULL);
+	
+	return Ret;
+}
+
+void	MakeTreeUM(TREES *Trees, int TNo, double RootTip)
+{
+	int		Index;
+	double	Dist;
+	NODE	N;
+	TREE	*Tree;
+
+	Tree = &Trees->Tree[TNo];
+
+	for(Index=0;Index<Trees->NoOfNodes;Index++)
+	{
+		N = &Tree->NodeList[Index];
+		if(N->Tip == TRUE)
+		{
+			Dist = RootTip - GetTipPathLength(N);
+			N->Length += Dist;
+			if(N->Length < 0)
+			{
+				printf("Tree\t%d\tTip\t%s\tcannot be made into an ultrametric tree.\n", TNo, N->Taxa->Name);
+				exit(0);
+			}
+	//		printf("%s\t%30.30f\n", N->Taxa->Name, Dist);
+		}
+	}
+
+//	exit(0);
+}
+
+void	MakeUM(TREES* Trees)
+{
+	int	Index;
+	double RootTip;
+
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
+	{
+		RootTip = GetRootToTip(Trees->Tree[Index].Root);
+
+//		printf("Tree\t%d\t%f\n", Index, RootTip); 
+
+		MakeTreeUM(Trees, Index, RootTip);
+	}
+
+//	exit(0);
+}

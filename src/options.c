@@ -274,6 +274,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	
 	fprintf(Str, "Seed                             %lu\n", Opt->Seed);
 
+	if(Opt->MakeUM == TRUE)
+		fprintf(Str, "Make UM                      True\n");
+
 	if(Opt->Analsis == ANALML)
 	{
 		fprintf(Str, "Analsis Type:                    Maximum Likelihood\n" );
@@ -908,6 +911,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->SoloTreeMove	=	FALSE;
 	Ret->Seed			=	GetSeed();
+
+	Ret->MakeUM			=	FALSE;
+
 	return Ret; 
 }
 
@@ -3107,6 +3113,17 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		else
 			printf("SetSeed take an unsinged intger.\n");
 		
+	}
+
+	if(Command == CMAKEUM)
+	{
+
+		MakeUM(Opt->Trees);
+	/*	if(Opt->MakeUM == TRUE)
+			Opt->MakeUM = FALSE;
+		else
+			Opt->MakeUM = TRUE;
+	*/
 	}
 
 	return FALSE;

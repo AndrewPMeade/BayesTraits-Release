@@ -52,7 +52,6 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 			MallocErr();
 	#endif
 
-
 	Trees->UseCovarion	= Opt->UseCovarion;
 
 	if(Opt->DataType == CONTINUOUS)

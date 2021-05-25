@@ -102,6 +102,7 @@ typedef enum
 	CSCHEDULE,
 	CSTREEMOVE,
 	CSETSEED,
+	CMAKEUM,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -165,6 +166,7 @@ static char    *COMMANDSTRINGS[] =
 	"schedule",		"sch",
 	"solotreemove",	"stree",
 	"setseed",		"ss",
+	"makeum",		"mum",
 	""
 };
 
@@ -617,6 +619,7 @@ typedef struct
 
 	int			SoloTreeMove;
 	long		Seed;
+	int			MakeUM;
 } OPTIONS;
 
 

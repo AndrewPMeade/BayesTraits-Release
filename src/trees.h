@@ -29,4 +29,6 @@ void	SetNOSPerSite(OPTIONS *Opt);
 void	AddNewRecNode(TREES* Trees, RECNODE RecNode);
 void	SetNodeTipData(NODE N, TREE* Tree, TREES *Trees);
 
+void	MakeUM(TREES* Trees);
+
 #endif
