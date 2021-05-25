@@ -1790,7 +1790,8 @@ int	CalcInvV(TREES *Trees, TREE *Tree)
 #endif
 
 #ifdef BTLAPACK
-	return btlapack_FindInvV(Trees, Tree);
+	btlapack_FindInvV(Trees, Tree);
+	return FALSE;
 #endif
 
 #ifdef USE_MLK
@@ -2122,13 +2123,10 @@ TEMPCONVAR* AllocTempConVars(OPTIONS *Opt, TREES* Trees)
 
 	Ret = (TEMPCONVAR*) SMalloc(sizeof(TEMPCONVAR));
 	
-	/* Statics form FindInvV */
 	Ret->T1 = (double*)SMalloc(sizeof(double)*Trees->NoTaxa);
 	Ret->T2 = (int*)SMalloc(sizeof(int)*Trees->NoTaxa);
 	Ret->TMat = AllocMatrix(Trees->NoTaxa, Trees->NoTaxa);
-	
-
-	/* Statics from FindMLRagVals */
+		
 	if(Opt->AlphaZero == FALSE)
 	{
 		Ret->X		= AllocMatrix(Trees->NoTaxa, Trees->NoSites + 1);
@@ -2144,7 +2142,6 @@ TEMPCONVAR* AllocTempConVars(OPTIONS *Opt, TREES* Trees)
 
 	Ret->Y	= (double*)malloc(sizeof(double) * Trees->NoTaxa);
 
-	/* Statics from FindRegVar */
 	if(Opt->AlphaZero == FALSE)
 		Size = Trees->NoSites+1;
 	else

@@ -226,7 +226,7 @@ int		EstData(TREES *Trees)
 
 void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 {
-	TAXA	*Taxa=NULL;
+	TAXA	*Taxa;
 	int		Index;
 
 	Taxa = FindTaxaFromName(Passed[0], Trees);
@@ -235,14 +235,17 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 	{
 		printf("Warrning: Taxa %s all ready had data, and will be over written\n", Taxa->Name);
 		free(Taxa->ConData);
+		fflush(stdout);
 	}
-
+	
 	Taxa->ConData		= (double*)SMalloc(sizeof(double)*Trees->NoSites);
+	
+	Taxa->Exclude = FALSE;
 
 	for(Index=1;Index<Trees->NoSites+1;Index++)
 	{
 		Taxa->ConData[Index-1] = atof(Passed[Index]);
-	
+		
 		if((Taxa->ConData[Index-1] == 0.0) && (ValidDouble(Passed[Index])== FALSE))
 		{
 			if((strcmp(Passed[Index], "*") == 0) || (strcmp(Passed[Index], "-") == 0))
@@ -743,10 +746,8 @@ void	SquashDep(TREES	*Trees)
 	Trees->NoSites = 1;
 	free(Trees->SymbolList);
 	
-	Trees->SymbolList = (char*)malloc(sizeof(char)*strlen("0123")+1);
-	if(Trees->SymbolList == NULL)
-		MallocErr();
-	strcpy(Trees->SymbolList, "0123");
+
+	Trees->SymbolList = StrMake("0123");
 }
 
 void	RemoveConMissingData(TREES* Trees)
@@ -761,6 +762,12 @@ void	RemoveConMissingData(TREES* Trees)
 		{
 			RemoveTaxa(Trees, Trees->Taxa[Index]->Name);
 			Index=-1;
+		}
+
+		if(Trees->NoTaxa == 1)
+		{
+			printf("Deleting taxa, 1 remaining taxa.\n");
+			exit(1);
 		}
 	}
 

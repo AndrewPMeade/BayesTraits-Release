@@ -235,8 +235,6 @@ void	SetDefMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates, 	gsl_rng *RN
 
 	if(Rates->NoEstData > 0)
 		SetEstDataFromPrior(Rates);
-	
-
 }
 
 double		ValidMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -316,7 +314,7 @@ void	RandRatesFromPrior(OPTIONS *Opt, TREES *Trees, RATES *Rates, gsl_rng *RNG)
 	int TNo, RIndex;
 
 
-	for(TNo=0;TNo<10000;TNo++)
+	for(TNo=0;TNo<1000000;TNo++)
 	{
 		for(RIndex=0;RIndex<Rates->NoOfRates;RIndex++)
 			Rates->Rates[RIndex] = RandFromPriorPosition(RIndex, Opt, Trees, Rates, RNG);
@@ -467,12 +465,8 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 	Heat += NRates->LnHastings;
 
 	if(log(RandDouble(CRates->RS)) <= Heat)
-	{
-//		printf("Yes\n");
 		return TRUE;
-	}
 
-//	printf("No\n");
 	return FALSE;
 }
 
@@ -614,20 +608,8 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *Shed)
 				&& StonesStarted(Opt->Stones, Itters) == FALSE)
 			{
 				UpDateHMean(Opt, CRates);
-
-				if(Itters == 11000)
-					Likelihood(CRates, Trees, Opt);
-
-			//	TLh = CRates->Lh;
-				TLh = Likelihood(CRates, Trees, Opt);
-
-				if(TLh != CRates->Lh)
-				{
-					printf("eer. %llu\n", Itters);
-					exit(0);
-				}
-
-		//		CRates->Lh = Likelihood(CRates, Trees, Opt);
+												
+				CRates->Lh = Likelihood(CRates, Trees, Opt);
 
 				#ifndef JNIRUN
 					PrintMCMCSample(Itters, Shed, Opt, CRates, stdout);

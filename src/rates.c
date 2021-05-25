@@ -320,9 +320,8 @@ void	FindEmpPis(RATES *Rates, OPTIONS *Opt)
 
 	Trees = Opt->Trees;
 
-	TempPis = (double*)malloc(sizeof(double)*Trees->NoStates);
-	if(TempPis == NULL)
-		MallocErr();
+	TempPis = (double*)SMalloc(sizeof(double)*Trees->NoStates);
+
 	for(SIndex=0;SIndex<Trees->NoStates;SIndex++)
 		TempPis[SIndex] = 0;
 
@@ -366,7 +365,7 @@ void	SetPiValues(RATES *Rates, OPTIONS *Opt)
 
 	Trees = Opt->Trees;
 
-	if(Opt->PiTypes == PIUNI)
+	if(Opt->PiTypes == PI_UNI)
 	{
 		for(Index=0;Index<Trees->NoStates;Index++)
 			Rates->Pis[Index] = (double)1/Trees->NoStates;
@@ -374,7 +373,7 @@ void	SetPiValues(RATES *Rates, OPTIONS *Opt)
 		return;
 	}
 
-	if(Opt->PiTypes == PINONE)
+	if(Opt->PiTypes == PI_NONE)
 	{
 		for(Index=0;Index<Trees->NoStates;Index++)
 			Rates->Pis[Index] = 1;

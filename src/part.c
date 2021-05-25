@@ -21,14 +21,10 @@ PART*	CreatPart(int NoTaxa)
 {
 	PART *Part;
 
-	Part = (PART*)malloc(sizeof(PART));
-	if(Part == NULL)
-		MallocErr();
+	Part = (PART*)SMalloc(sizeof(PART));
 
 	Part->NoTaxa = NoTaxa;
-	Part->Taxa = (int*)malloc(sizeof(int) * NoTaxa);
-	if(Part->Taxa == NULL)
-		MallocErr();
+	Part->Taxa = (int*)SMalloc(sizeof(int) * NoTaxa);
 	
 	return Part;
 }

@@ -797,6 +797,9 @@ double	CalcRegVarPrior(RATES* Rates)
 
 	Prior = GetPriorFromName("Var", Rates->Priors, Rates->NoPriors);
 
+	if(Prior == NULL)
+		return 0;
+
 	Ret = CalcLhPriorP(Var, Prior);
 
 	return Ret;

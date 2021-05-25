@@ -305,18 +305,18 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	else
 		fprintf(Str, "True\n");
 	
-	fprintf(Str, "Seed                             %lu\n", Opt->Seed);
+	fprintf(Str, "Seed:                            %lu\n", Opt->Seed);
 
 	if(Opt->FatTailNormal == TRUE)
 		fprintf(Str, "Fat Tail Normal:             True\n");
 
 	if(Opt->MakeUM == TRUE)
-		fprintf(Str, "Make UM :                    True\n");
+		fprintf(Str, "Make UM:                     True\n");
 
 	if(Opt->Analsis == ANALML)
 	{
 		fprintf(Str, "Analsis Type:                    Maximum Likelihood\n" );
-		fprintf(Str, "ML attempt per tree:             %d\n", Opt->MLTries);
+		fprintf(Str, "ML Attempt Per Tree:             %d\n", Opt->MLTries);
 		fprintf(Str, "ML Max Evaluations:              %d\n", Opt->MLMaxEVals);
 		fprintf(Str, "ML Tolerance:                    %f\n", Opt->MLTol);
 		fprintf(Str, "ML Algorithm:                    %s\n", Opt->MLAlg);
@@ -363,16 +363,16 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 
 	if(Opt->DataType == DISCRETE)
 	{
-		fprintf(Str, "Base frequency (PI's)            ");
+		fprintf(Str, "Base frequency (PI's):           ");
 		switch(Opt->PiTypes)
 		{
-			case PINONE:
+			case PI_NONE:
 				fprintf(Str, "None\n");
 				break;
-			case PIEMP:
+			case PI_EMP:
 				fprintf(Str, "Empirical\n");
 				break;
-			case PIUNI:
+			case PI_UNI:
 				fprintf(Str, "Uniform\n");
 				break;
 		}
@@ -403,16 +403,16 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		else
 			fprintf(Str, "False\n");
 
-		fprintf(Str, "Kappa                            ");
+		fprintf(Str, "Kappa:                            ");
 		PrintConPar(Str, Opt->UseKappa, Opt->EstKappa, Opt->FixKappa);
 
-		fprintf(Str, "Delta                            ");
+		fprintf(Str, "Delta:                            ");
 		PrintConPar(Str, Opt->UseDelta, Opt->EstDelta, Opt->FixDelta);
 
-		fprintf(Str, "Lambda                           ");
+		fprintf(Str, "Lambda:                           ");
 		PrintConPar(Str, Opt->UseLambda, Opt->EstLambda, Opt->FixLambda);
 
-		fprintf(Str, "OU                               ");
+		fprintf(Str, "OU:                               ");
 		PrintConPar(Str, Opt->UseOU, Opt->EstOU, Opt->FixOU);
 				
 		if(Opt->AlphaZero == TRUE)
@@ -451,7 +451,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 
 		if(Opt->UseRModel == TRUE)
 		{
-			fprintf(Str, "Using R Model\n");
+			fprintf(Str, "Using R Model:\n");
 			if(Opt->RModelP != -1)
 				fprintf(Str, "R Model Rates fixed to:          %f", Opt->RModelP);
 		}
@@ -625,13 +625,8 @@ char**	ModelARateName(OPTIONS* Opt)
 
 	Opt->NoOfRates = Opt->Trees->NoSites;
 
-	Ret = (char**)malloc(sizeof(char*)*Opt->NoOfRates);
-	if(Ret == NULL)
-		MallocErr();
-
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
+	Ret = (char**)SMalloc(sizeof(char*)*Opt->NoOfRates);
+	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
@@ -995,12 +990,13 @@ void	AllocRatePriors(OPTIONS *Opt, TREES *Trees)
 		
 		AddPriorToOpt(Opt, Prior);
 	}
-
+/*
 	if(Opt->Model == M_CONTRAST_REG)
 	{
 		Prior = CreateUniformPrior("Var", -100, 100);
 		AddPriorToOpt(Opt, Prior);
 	}
+*/
 }
 
 MODEL_TYPE	GetModelType(MODEL Model)
@@ -1165,7 +1161,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->RecNodeList	=	NULL;
 	Ret->NoOfRecNodes	=	0;
 	Ret->Summary		=	FALSE;
-	Ret->PiTypes		=	PINONE;
+	Ret->PiTypes		=	PI_NONE;
 
 	Ret->UseKappa		=	FALSE;
 	Ret->UseDelta		=	FALSE;
@@ -1178,7 +1174,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->EstLambda		=	FALSE;
 	Ret->EstGamma		=	FALSE;
 	Ret->EstOU			=	FALSE;
-//	Ret->EstOU			=	TRUE;
+
 
 	Ret->FixKappa		=	-1;
 	Ret->FixDelta		=	-1;
@@ -2287,19 +2283,19 @@ void	GetBasePis(OPTIONS *Opt, char* Type)
 
 	if(strcmp(Type, "emp")==0)
 	{
-		Opt->PiTypes = PIEMP;
+		Opt->PiTypes = PI_EMP;
 		return;
 	}
 
 	if(strcmp(Type, "uni")==0)
 	{
-		Opt->PiTypes = PIUNI;
+		Opt->PiTypes = PI_UNI;
 		return;
 	}
 
 	if(strcmp(Type, "none")==0)
 	{
-		Opt->PiTypes = PINONE;
+		Opt->PiTypes = PI_NONE;
 		return;
 	}
 

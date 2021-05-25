@@ -714,9 +714,7 @@ void	VarRatesCopy(RATES *R1, RATES *R2)
 		return;
 	}
 
-	NList = (VAR_RATES_NODE**)malloc(sizeof(VAR_RATES_NODE*) * P2->NoNodes);
-	if(NList == NULL)
-		MallocErr();
+	NList = (VAR_RATES_NODE**)SMalloc(sizeof(VAR_RATES_NODE*) * P2->NoNodes);
 
 	for(Index=0;Index<P2->NoNodes;Index++)
 		NList[Index] = CloneVarRatesNode(P2->NodeList[Index]);

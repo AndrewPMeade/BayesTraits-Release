@@ -185,16 +185,12 @@
 #define MAX_VR_LAMBDA	1
 #define MAX_VR_OU		100
 
-
-
 // Value for a normal distribution for a fat tail model
 #define FAT_TAIL_NORMAL_VAL 2.0
-
 
 // Minimum and maximum acceptance rates, set for Auto tuning  
 #define MIN_VALID_ACC 0.2
 #define MAX_VALID_ACC 0.4
-
 
 // 
 static char    *RJ_LOCAL_SCALAR_NAMES[] =
@@ -551,9 +547,9 @@ typedef enum
 
 typedef enum
 {
-	PIUNI,
-	PIEMP,
-	PINONE,
+	PI_UNI,
+	PI_EMP,
+	PI_NONE,
 } PITYPES;
 
 typedef enum

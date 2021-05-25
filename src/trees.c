@@ -1219,9 +1219,7 @@ void	RemoveTipNode(NODE TipNode)
 
 
 	Ans = TipNode->Ans;
-	NList = (NODE*)malloc(sizeof(NODE) * (Ans->NoNodes - 1));
-	if(NList == NULL)
-		MallocErr();
+	NList = (NODE*)SMalloc(sizeof(NODE) * (Ans->NoNodes - 1));
 	
 	Pos = 0;
 	for(NIndex=0;NIndex<Ans->NoNodes;NIndex++)

@@ -681,14 +681,15 @@ void	SetGammaBlank(RATES* Rates, OPTIONS* Opt)
 
 void	SetUpGamma(RATES* Rates, OPTIONS* Opt)
 {
-	static double	*RateW;
+	double	*RateW;
 	
 	SetGammaBlank(Rates, Opt);
 
-	if(RateW == NULL)
-		RateW = (double*)SMalloc(sizeof(double) * Opt->GammaCats);
+	RateW = (double*)SMalloc(sizeof(double) * Opt->GammaCats);
 
 	DiscreteGamma(RateW, Rates->GammaMults, Rates->Gamma, Rates->Gamma, Rates->GammaCats, 0);
+
+	free(RateW);
 }
 
 void	ProcessGamma(RATES *Rates, TREES* Trees)

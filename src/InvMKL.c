@@ -2,6 +2,7 @@
 
 #include "typedef.h"
 #include "genlib.h"
+#include "Threaded.h"
 
 
 #ifdef USE_MLK
@@ -39,16 +40,17 @@ int			InvMLK(TREES *Trees, TREE *Tree)
 	Mat = Tree->ConVars->InvV->me[0];
 	Temp = TempCon->TMat->me[0];
 
-	WorkSize = Trees->NoOfTaxa * Trees->NoOfTaxa;
+	WorkSize = Trees->NoTaxa * Trees->NoTaxa;
 
-	dgetrf(&Trees->NoOfTaxa, &Trees->NoOfTaxa, Mat, &Trees->NoOfTaxa, TempCon->T2, &Info);
+	dgetrf(&Trees->NoTaxa, &Trees->NoTaxa, Mat, &Trees->NoTaxa, TempCon->T2, &Info);
 
-	Tree->ConVars->LogDetOfV = GetLnDet(Tree->ConVars->InvV->me, Trees->NoOfTaxa);
+	Tree->ConVars->LogDetOfV = GetLnDet(Tree->ConVars->InvV->me, Trees->NoTaxa);
 	
 	if(Info != 0)
 		return Info;
 
-	dgetri(&Trees->NoOfTaxa, Mat, &Trees->NoOfTaxa, TempCon->T2, Temp, &WorkSize, &Info);
+	dgetri(&Trees->NoTaxa, Mat, &Trees->NoTaxa, TempCon->T2, Temp, &WorkSize, &Info);
+
 
 	return Info;
 }

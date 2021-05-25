@@ -133,6 +133,7 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	int		Index, RootS;
 	NODE	Root;
 	FILE	*OutF;
+
 	return;
 //	BuildAllSateDS(Trees);
 
@@ -140,10 +141,8 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	RS = CreateSeededRandStates(Opt->Seed);
 
-	Rates->Rates[0] = 1;
-	Rates->Rates[1] = 10;
-	Rates->Rates[2] = 10;
-	Rates->Rates[3] = 1;
+	Rates->Rates[0] = 0.5;
+	Rates->Rates[1] = 1;
 
 //	for(Index=0;Index<Rates->NoOfRates;Index++)
 //		Rates->Rates[Index] = 1.0;
