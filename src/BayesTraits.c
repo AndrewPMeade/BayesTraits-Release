@@ -35,6 +35,7 @@
 #ifdef BTOCL
 #include "btocl_runtime.h"
 #include "btocl_runtime_kernels.h"
+#include "btdebug.h"
 #endif
 
 // #include "btdebug.h"   -- igor
@@ -211,7 +212,9 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 
 // ./Seq/mammal-1.trees ./Seq/MammalBrainBodyGtEst.txt < in.txt > sout.txt
 
-extern double igam(double a, double x);
+// ./Seq/Marsupials.trees ./Seq/Marsupials.txt < in.txt > sout.txt
+
+//extern double igam(double a, double x);
 
 
 int main(int argc, char** argv)
@@ -229,7 +232,16 @@ int main(int argc, char** argv)
 
 	if(argc == 2)
 	{
+		#ifdef BTOCL
+		btocl_init_runtime(CL_DEVICE_TYPE_GPU);
+		#endif
+
 		BatchRun(argv[1]);
+
+		#ifdef BTOCL
+		btocl_free_runtime();
+		#endif
+
 		return 0;
 	}
 
@@ -255,8 +267,11 @@ int main(int argc, char** argv)
 	#ifdef BTOCL
 	btocl_init_runtime(CL_DEVICE_TYPE_GPU);
 	//btocl_load_all(Opt,Trees);
-	btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE,
-			Trees->NoOfStates, Trees->NoOfSites); 
+	if (btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE,
+			Trees->NoOfStates, Trees->NoOfSites) != 0) {
+		printf("Error: Couldn't load OpenCL kernels\n");
+		return 1;
+	}
 	#endif
 	
 	PreProcess(Opt, Trees);

@@ -3,7 +3,23 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <ctype.h>
 
+// Copy
+double* btlin_matrix_newcopy(double* a, int m, int n) {
+	double *ret,*p;
+	int i,size;
+	size = m*n;
+	ret = (double*)malloc(sizeof(double)*size);
+	// Alternatives: Copy in chunks (2^n blocks)
+	p = ret;
+	for(i=0; i < size; i++) {
+		(*p) = (*a);
+		p++; a++;
+	}
+		//ret[i] = a[i];
+	return ret;
+}
 
 // Copy Lower triangle to upper triangle of square matrix
 void btlin_copylow(double* m, int n) 
@@ -69,8 +85,22 @@ void btlin_makeSymmetric(char uplo, double* a, int n) {
   }
 }
 
-
-
+// r = transpose(s)
+void btlin_transpose(double* r, double* s, int n) {
+	int i,j;
+	double *pr, *ps, *ps_start, temp;
+	pr = r;
+	ps_start = s;
+	for(i=0; i < n; i++) {
+		ps = ps_start;
+		for(j=0; j < n; j++) {
+			pr = ps;
+			pr++;
+			ps += n;
+		}
+		ps_start++;
+	}
+}
 
 
 

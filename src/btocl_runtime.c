@@ -15,8 +15,67 @@ cl_bool deviceSupportsFP64(cl_device_id *device);
 cl_int deviceIsLittleEndian(cl_device_id *device, cl_bool *littleEndian);
 void printDeviceVectorWidths(cl_device_id *device);
 
+/* Variables and array */
 
 BTOCL_RUNTIME* rt = NULL;
+
+// matcched against error codes in cl.h
+unsigned short size_ocl_emsgs = 65;
+const char *ocl_emsgs[] = {
+	"SUCCESS",							// #define CL_SUCCESS                                  0
+	"DEVICE_NOT_FOUND",					// #define CL_DEVICE_NOT_FOUND                         -1
+	"DEVICE_NOT_AVAILABLE",				// #define CL_DEVICE_NOT_AVAILABLE                     -2
+	"COMPILER_NOT_AVAILABLE",			// #define CL_COMPILER_NOT_AVAILABLE                   -3
+	"MEM_OBJECT_ALLOCATION_FAILURE",	// #define CL_MEM_OBJECT_ALLOCATION_FAILURE            -4
+	"OUT_OF_RESOURCES",					// #define CL_OUT_OF_RESOURCES                         -5
+	"OUT_OF_HOST_MEMORY",				// #define CL_OUT_OF_HOST_MEMORY                       -6
+	"PROFILING_INFO_NOT_AVAILABLE",		// #define CL_PROFILING_INFO_NOT_AVAILABLE             -7
+	"MEM_COPY_OVERLAP",					// #define CL_MEM_COPY_OVERLAP                         -8
+	"IMAGE_FORMAT_MISMATCH",			// #define CL_IMAGE_FORMAT_MISMATCH                    -9
+	"IMAGE_FORMAT_NOT_SUPPORTED",		// #define CL_IMAGE_FORMAT_NOT_SUPPORTED               -10
+	"BUILD_PROGRAM_FAILURE",			// #define CL_BUILD_PROGRAM_FAILURE                    -11
+	"MAP_FAILURE",						// #define CL_MAP_FAILURE                              -12
+	"MISALIGNED_SUB_BUFFER_OFFSET",		// #define CL_MISALIGNED_SUB_BUFFER_OFFSET             -13
+	"EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST",		// #define CL_EXEC_STATUS_ERROR_FOR_EVENTS_IN_WAIT_LIST -14
+	"", "","","","","","","", "","",	// 15 - 24
+	"", "","","","",  					// 25 - 29
+	"INVALID_VALUE",					// #define CL_INVALID_VALUE                            -30
+	"INVALID_DEVICE_TYPE",				// #define CL_INVALID_DEVICE_TYPE                      -31
+	"INVALID_PLATFORM",					// #define CL_INVALID_PLATFORM                         -32
+	"INVALID_DEVICE",					// #define CL_INVALID_DEVICE                           -33
+	"INVALID_CONTEXT",					// #define CL_INVALID_CONTEXT                          -34
+	"INVALID_QUEUE_PROPERTIES",			// #define CL_INVALID_QUEUE_PROPERTIES                 -35
+	"INVALID_COMMAND_QUEUE",			// #define CL_INVALID_COMMAND_QUEUE                    -36
+	"INVALID_HOST_PTR",					// #define CL_INVALID_HOST_PTR                         -37
+	"INVALID_MEM_OBJECT",				// #define CL_INVALID_MEM_OBJECT                       -38
+	"INVALID_IMAGE_FORMAT_DESCRIPTOR",	// #define CL_INVALID_IMAGE_FORMAT_DESCRIPTOR          -39
+	"INVALID_IMAGE_SIZE",				// #define CL_INVALID_IMAGE_SIZE                       -40
+	"INVALID_SAMPLER",					// #define CL_INVALID_SAMPLER                          -41
+	"INVALID_BINARY",					// #define CL_INVALID_BINARY                           -42
+	"INVALID_BUILD_OPTIONS",			// #define CL_INVALID_BUILD_OPTIONS                    -43
+	"INVALID_PROGRAM",					// #define CL_INVALID_PROGRAM                          -44
+	"INVALID_PROGRAM_EXECUTABLE",		// #define CL_INVALID_PROGRAM_EXECUTABLE               -45
+	"INVALID_KERNEL_NAME",				// #define CL_INVALID_KERNEL_NAME                      -46
+	"INVALID_KERNEL_DEFINITION",		// #define CL_INVALID_KERNEL_DEFINITION                -47
+	"INVALID_KERNEL",					// #define CL_INVALID_KERNEL                           -48
+	"INVALID_ARG_INDEX",				// #define CL_INVALID_ARG_INDEX                        -49
+	"INVALID_ARG_VALUE",				// #define CL_INVALID_ARG_VALUE                        -50
+	"INVALID_ARG_SIZE"					// #define CL_INVALID_ARG_SIZE                         -51
+	"INVALID_KERNEL_ARGS",				// #define CL_INVALID_KERNEL_ARGS                      -52
+	"INVALID_WORK_DIMENSION",			// #define CL_INVALID_WORK_DIMENSION                   -53
+	"INVALID_WORK_GROUP_SIZE",			// #define CL_INVALID_WORK_GROUP_SIZE                  -54
+	"INVALID_WORK_ITEM_SIZE",			// #define CL_INVALID_WORK_ITEM_SIZE                   -55
+	"INVALID_GLOBAL_OFFSET",			// #define CL_INVALID_GLOBAL_OFFSET                    -56
+	"INVALID_EVENT_WAIT_LIST",			// #define CL_INVALID_EVENT_WAIT_LIST                  -57
+	"INVALID_EVENT",					// #define CL_INVALID_EVENT                            -58
+	"INVALID_OPERATION",				// #define CL_INVALID_OPERATION                        -59
+	"INVALID_GL_OBJECT",				// #define CL_INVALID_GL_OBJECT                        -60
+	"INVALID_BUFFER_SIZE",				// #define CL_INVALID_BUFFER_SIZE                      -61
+	"INVALID_MIP_LEVEL",				// #define CL_INVALID_MIP_LEVEL                        -62
+	"INVALID_GLOBAL_WORK_SIZE",			// #define CL_INVALID_GLOBAL_WORK_SIZE                 -63
+	"INVALID_PROPERTY",					// #define CL_INVALID_PROPERTY                         -64		
+	 };
+
 
 /* Interface */
 
@@ -31,9 +90,9 @@ cl_int btocl_init_runtime(cl_device_type device_type) {
   int i;
   
   if (device_type == CL_DEVICE_TYPE_CPU) {
-	printf("Initializing OpenCL with CPU\n");
+	printf("Initializing OpenCL for CPU\n");
   } else if (device_type == CL_DEVICE_TYPE_GPU) {
-	printf ("Initializing OpenCL with GPU\n");
+	printf ("Initializing OpenCL for GPU\n");
   } else {
 	printf("Incorrect device type\n");
 	return 1;
@@ -45,42 +104,50 @@ cl_int btocl_init_runtime(cl_device_type device_type) {
 
   rt = (BTOCL_RUNTIME*)malloc(sizeof(BTOCL_RUNTIME));
   
-  rt->kernel_dir = NULL;
-  rt->kernel_dir = getenv("BTOCL_KERNEL_DIR");
+  //rt->kernel_dir = NULL;
+  //rt->kernel_dir = getenv("BTOCL_KERNEL_DIR");
 
   /* Access the first installed platform */
   /* Changed: Max of 4 platforms considered */
    err = clGetPlatformIDs(4, NULL, &rt->num_platforms);
    if(err < 0) {
-      perror("Couldn't find any platforms");
-      return 1;
+      perror("Couldn't find any OpenCL platforms");
+      //return 1;
+	  exit(0);
    }
    rt->platforms = (cl_platform_id*)malloc(sizeof(cl_platform_id) * rt->num_platforms);
    clGetPlatformIDs(rt->num_platforms, rt->platforms, NULL);
    
-   printPlatformsInfo(rt->platforms,rt->num_platforms);
+   // Only prin when debuggung
+   //printPlatformsInfo(rt->platforms,rt->num_platforms);
 	
    //rt->gpuPlatform = getFirstDevice(rt->platforms,rt->num_platforms,device_type,&rt->device);
    rt->platform = getFirstDevice(rt->platforms,rt->num_platforms,device_type,&rt->device);
 	
    if (rt->platform >= rt->num_platforms) {
      printf("Couldn't find device of indicated type\n");
-     return 1;
+     //return 1;
+	 exit(0);
    } else {
      printf("Found device type in Platform %d\n",rt->platform);
      printDeviceInfoAll(rt->device);
    }
 	
    rt->context = clCreateContext(NULL,1,&rt->device,NULL,NULL,&err);
+   if (err != CL_SUCCESS) {
+	   printf("Couldn't create OpenCL context\n");
+	   exit(0);
+   }
 	
    // Create queue
-   printf("Creating queue\n");
+   //printf("Creating queue\n");
    rt->queue = clCreateCommandQueue(rt->context,rt->device,0,&err);
    if (err < 0) {
      printf("Couldn't create command queue\n");
-     return err;
+     //return err;
+	 exit(0);
    }
-   printf("queue created\n");
+   //printf("queue created\n");
    
    // Prepares kernel structures
    initialise_kernel_info();
@@ -94,13 +161,14 @@ cl_int btocl_init_runtime(cl_device_type device_type) {
 void btocl_free_runtime () {
 	int i;
 
-	for (i=0; i < NUM_KERNELS; i++)
-		if (rt->kernel_use[i])
-			if (rt->kernels[i] != NULL) clReleaseKernel(rt->kernels[i]);
+	//printf("inside free runtime\n");
+	BTOCL_RUNTIME* rt = btocl_getruntime();
+	btocl_clear_kernels(rt);
+
 	if (rt->queue != NULL) clReleaseCommandQueue(rt->queue);
-	if(rt->program != NULL) clReleaseProgram(rt->program);
 	if(rt->context != NULL) clReleaseContext(rt->context);
-	if (rt->platforms != NULL) (rt->platforms);	
+	if (rt->platforms != NULL) (rt->platforms);
+	rt = NULL;
 }
 
 
@@ -339,6 +407,14 @@ char* btocl_getKernelName(cl_ushort index) {
   }
 }
 
+cl_mem btocl_clCreateBuffer(const char* buffer_desc, cl_context context, cl_mem_flags flags, size_t size, void *host_ptr, cl_int *errcode_ret) {
+	cl_mem buffer;
+	// simple version
+	buffer = clCreateBuffer(context,flags,size,host_ptr,errcode_ret);
+	btocl_checkErrorCode(*errcode_ret,"Creating",buffer_desc);
+	return buffer;
+}
+
 void btocl_printBufferInfo(cl_mem buffer) {
 	size_t buffer_size;
 	clGetMemObjectInfo(buffer, CL_MEM_SIZE,sizeof(buffer_size),&buffer_size,NULL);
@@ -348,21 +424,34 @@ void btocl_printBufferInfo(cl_mem buffer) {
 	return;
 }
 
+// Check cl.h for more error constants
 void btocl_printRuntimeError(cl_int err) {
-	printf("Error (%d): ",err);
-	switch (err) {
-		case CL_INVALID_CONTEXT: printf("Invalid context\n"); break;
-		case CL_INVALID_COMMAND_QUEUE: printf("invalid command queue\n"); break;
-		case CL_INVALID_MEM_OBJECT: printf("invalid mem object\n");break;
-		case CL_INVALID_VALUE: printf("invalid value\n"); break;
-		case CL_INVALID_EVENT_WAIT_LIST: printf("event wait list\n"); break;
-		case CL_MEM_OBJECT_ALLOCATION_FAILURE: printf("object allocation failure\n"); break;
-		case CL_OUT_OF_HOST_MEMORY: printf("out of host memory\n"); break;
-		case CL_OUT_OF_RESOURCES: printf("out of resources\n"); break;
-		case CL_INVALID_OPERATION: printf("invalid operation\n"); break;
-		default: printf("unknown\n");
+	if ((err > 0) || (err <= -size_ocl_emsgs)) {
+		printf("Error code unknown: %d\n", err);
+		return;
 	}
+	printf("OpenCL error (%d): %s\n",err,ocl_emsgs[-err]);
 	return;
+}
+
+// Checks if operation (using the resulting error code) was succesful.
+// If not:
+// - prints the operations error msg (operation and object) and OpenCL's error code.
+// - exits the program
+void btocl_checkErrorCode(cl_int error_code, const char* operation, const char* object) {
+	BTOCL_RUNTIME* rt; rt = btocl_getruntime();
+	if(error_code != CL_SUCCESS) {
+		printf("Error: %s %s\n",operation,object);
+		btocl_printRuntimeError(error_code);
+		// Clean up OCL runtime before leaving
+		rt = btocl_getruntime();
+		if (rt==NULL) {
+			btocl_clear_kernels(rt);
+			btocl_free_runtime();
+		}		
+		exit(0);
+	}
+
 }
 
 #endif // if BTOCL defined

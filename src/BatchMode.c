@@ -11,6 +11,10 @@
 #include "mcmc.h"
 #include "ml.h"
 
+#ifdef BTOCL
+#include "btocl_runtime.h"
+#include "btocl_kernels_bayestraits.h"
+#endif
 
 char**	MakeCommands(char *Command, int *NoC)
 {
@@ -109,6 +113,15 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	PrintOptions(stdout, Opt);
 
 	CheckOptions(Opt);
+	
+	#ifdef BTOCL
+	//printf("Loading kernels\n");
+	if (btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE,
+			Trees->NoOfStates, Trees->NoOfSites) != 0) {
+		printf("Error: Couldn't load OpenCL kernels\n");
+		exit(0);
+	}
+	#endif
 
 	PreProcess(Opt, Trees);
 
@@ -121,6 +134,11 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	NoSites = Trees->NoOfSites;
 	FreeTrees(Trees, Opt);
 	FreeOptions(Opt, NoSites);
+	
+	#ifdef BTOCL
+	//printf("Removing kernels\n");
+	btocl_clear_kernels(btocl_getruntime());
+	#endif
 
 //	exit(0);
 }

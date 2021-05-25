@@ -1,9 +1,9 @@
 #ifndef BTOCL_CONTINUOUS_H
 #define BTOCL_CONTINUOUS_H
 
-#ifdef BTOCL_CON
+#ifdef BTOCL
 #include "btocl_runtime.h"
-#include "btocl_runtime_kernels.h"
+#include "btocl_kernels_bayestraits.h"
 #include "btocl_lin.h"
 
 void	btocl_FindInvV(TREES *Trees, TREE* Tree);

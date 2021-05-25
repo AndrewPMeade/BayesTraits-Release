@@ -1106,7 +1106,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 void	PrintModelChoic(TREES *Trees)
 {
-	printf("Please Select the model of evolution to use.\n");
+	printf("Please select the model of evolution to use.\n");
 	printf("1)	MultiState\n");
 	if((Trees->NoOfSites == 2) && (Trees->NoOfStates == 2))
 	{
@@ -1302,7 +1302,7 @@ ANALSIS	GetAnalsis(TREES *Trees)
 	{
 		if(Comment == FALSE)
 		{
-			printf("Please Select the analysis method to use.\n");
+			printf("Please select the analysis method to use.\n");
 			printf("1)	Maximum Likelihood.\n");
 			printf("2)	MCMC\n");
 		}
@@ -2230,6 +2230,10 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 
 	if(Opt->DataType == CONTINUOUS)
 	{
+		if((Opt->Model != M_CONTRAST) && (Command == CVARRATES))
+			return FALSE;
+		
+
 		if(Opt->Model == M_CONTRAST_CORREL)
 		{
 			if(Command == CNODE)
@@ -2250,8 +2254,6 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CHPRJ)		||
 			(Command == CHPALL)		||
 			(Command == CFOSSIL)	||
-//			(Command == CPRIORALL)	||
-//			(Command == CPRIOR)		||
 			(Command == CPIS)		||
 			(Command == CPRECISION) ||
 			(Command == CNOSPERSITE)|| 
@@ -2273,7 +2275,6 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CNODEDATA)  ||
 			(Command == CDEPSITE)   ||
 			(Command == CDATADEV)	||
-			(Command == CPHYLOPLASTY) ||
 			(Command == CVARRATES)
 	
 			)
@@ -2304,12 +2305,12 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command ==	CHPALL)			||
 			(Command ==	CREVJUMP)		||
 			(Command == CMCMCMLSTART)	||
-			(Command == CPHYLOPLASTY)	||
 			(Command == CCAPRJRATES)	||
 			(Command == CVARRATES)		||
 			(Command == CSAVEMODELS)	||
 			(Command == CLOADMODELS)	||
-			(Command == CSHEDULE)
+			(Command == CSHEDULE)		||
+			(Command == CVARRATES)
 			)
 		{
 			printf("Command %s (%s) is not valid with the ML model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -3818,7 +3819,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	*/
 	}
 
-	if((Command == CPHYLOPLASTY) || (Command == CVARRATES))
+	if(Command == CVARRATES)
 	{
 		if(Opt->Trees->NoOfTrees > 1)
 		{

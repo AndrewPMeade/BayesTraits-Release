@@ -4,7 +4,7 @@
 #ifdef BTOCL
 
 #include "btocl_runtime.h"
-#include "btocl_runtime_kernels.h"
+#include "btocl_kernels_bayestraits.h"
 #include "btocl_lin.h"
 #include "btlin_dmatrix.h"
 #include "btlapack.h"

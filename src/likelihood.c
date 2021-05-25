@@ -22,7 +22,7 @@
 #include "modelfile.h"
 #include "QuadDouble.h"
 
-#ifdef BTOCL_DSC
+#ifdef BTOCL
 	#include "btocl_discrete.h"
 #endif
 
@@ -1173,7 +1173,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		else
 			RateMult = Rates->GammaMults[GammaCat];
 
-#ifndef BTOCL_DSC
+#ifndef BTOCL
 		Err = SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
 #else
 		// use GPU for setting PMatrix

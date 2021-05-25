@@ -196,7 +196,11 @@ double RandDouble(RANDSTATES* RS)
 
 	y = RandUSLong(RS);
 
-	return( (double) y / (unsigned long) 0xffffffff);
+//	0 - 1 Exclusive
+	return (((unsigned)y + 1.0)/0x100000002);
+
+	//	0 - 1 Inclusive
+//	return( (double) y / (unsigned long) 0xffffffff);
 }
 
 

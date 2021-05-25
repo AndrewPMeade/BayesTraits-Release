@@ -4,6 +4,8 @@
 
 #include "btocl_lin.h"
 
+#include "btdebug.h"
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -15,7 +17,7 @@ int btocl_dbcholupdmat(cl_command_queue q, cl_ushort kernel_type, cl_kernel k, c
 // *** Auxiliary Lower Triangular Inverse
 int btocl_ltri_LowerByMatrix(cl_ushort kernel_type,cl_kernel kernel,cl_mem buffer,double alpha,int L_idx,int M_idx,int MT_idx, int m, int n,int lda);
 int btocl_ltri_MatrixByLower(cl_ushort kernel_type,cl_kernel kernel,cl_mem buffer,double alpha,int MT_idx,int M_idx,int L_idx, int m, int n, int lda);
-int btocl_ltri_LTbyL(cl_mem buffer,int n);
+
 
 
 int btocl_invcholesky(cl_mem buffer, double* m, int n,  double* det,int cbs, int mbs) {
@@ -55,22 +57,27 @@ int btocl_invcholesky_pure(cl_mem buffer, double* m, int n,  double* det,int cbs
 
 	queue =  btocl_getCommandQueue();
 
+	//btdebug_enter("cholesky");
 	info = btocl_cholesky(buffer,m,n,det,cbs,mbs);
 	// buffer and m are identical due to memory swaps in algorithm
 	if (info != 0) {
 		printf("Error Cholesky Factorization\n");
 		return info;
 	}
-
+	//btdebug_exit("cholesky");
 	
 	//dpotri_(&uplo, &n, m, &n, &info);
 	
 	// invert L
+	//btdebug_enter("Linv");
 	btocl_ltri_inv(buffer, m, n, &det2, 128);
-	printf("End ltri_inv\n");
+	//btdebug_exit("Linv");
+	//printf("End ltri_inv\n");
 	// L**-T * L^(-1)
+	//btdebug_enter("LtbyL");
 	btocl_ltri_LTbyL(buffer,n);
-	printf("End ltri_lybyl\n"); 
+	//btdebug_exit("LtbyL");
+	//printf("End ltri_lybyl\n"); 
 
 	clEnqueueReadBuffer(queue,buffer,CL_TRUE,0,n*n*sizeof(double),m,0,0,NULL);
 
@@ -117,37 +124,40 @@ int btocl_cholesky(cl_mem buffer, double* mat, int mat_dim, double* det,int cbs,
 		
 	kernel_type1 = BTOCL_CHOLUPDCOL_PURE;
 	kernel1 = btocl_getKernel(kernel_type1);
-		
+
+
 	if (kernel1 == NULL) {
 		printf("Error: Couldn't load kernel %s\n",btocl_getKernelName(kernel_type1));
 		exit(1);
-	} else {
-		printf("loaded %s\n",btocl_getKernelName(kernel_type1));
 	}
+	//else {
+	//		printf("loaded %s\n",btocl_getKernelName(kernel_type1));
+	//}
 	
 	// The matrix update kernel needs to know the block size of the Cholesky part
 	// TODO: Use one kernel with compilation directive if possible
-	switch (cbs) {
-		case 4: kernel_type2 = BTOCL_CHOLUPDMAT_P4; break;
-		case 8: kernel_type2 = BTOCL_CHOLUPDMAT_P8; break;
-		case 16: kernel_type2 = BTOCL_CHOLUPDMAT_P16; break;
-		case 32: kernel_type2 = BTOCL_CHOLUPDMAT_P32; break;
-		case 64: kernel_type2 = BTOCL_CHOLUPDMAT_P64; break;
-		case 128: kernel_type2 = BTOCL_CHOLUPDMAT_P128; break;
-		default: kernel_type2 = BTOCL_CHOLUPDMAT_P8; // default to 8
-	}
+	//switch (cbs) {
+	//	case 4: kernel_type2 = BTOCL_CHOLUPDMAT_P4; break;
+	//	case 8: kernel_type2 = BTOCL_CHOLUPDMAT_P8; break;
+	//	case 16: kernel_type2 = BTOCL_CHOLUPDMAT_P16; break;
+	//	case 32: kernel_type2 = BTOCL_CHOLUPDMAT_P32; break;
+	//	case 64: kernel_type2 = BTOCL_CHOLUPDMAT_P64; break;
+	//	case 128: kernel_type2 = BTOCL_CHOLUPDMAT_P128; break;
+	//	default: kernel_type2 = BTOCL_CHOLUPDMAT_P8; // default to 8
+	//}
 	// New kernel that does not take advantage of symmetry
 	// Used instead of others because (row,col) calculations were causing kernel timeout problems
 	kernel_type2 = BTOCL_CHOLUPDMAT_PURE;
 	
-	printf("cbs %d  using kernel %s\n",cbs,btocl_getKernelName(kernel_type2));
+	//printf("cbs %d  using kernel %s\n",cbs,btocl_getKernelName(kernel_type2));
 	kernel2 = btocl_getKernel(kernel_type2);
 	if (kernel1 == NULL) {
 		printf("Error: Couldn't load kernel %s\n",btocl_getKernelName(kernel_type2));
 		exit(1);
-	} else {
-		printf("loaded %s\n",btocl_getKernelName(kernel_type2));
-	}
+	} 
+	//else {
+	//		printf("loaded %s\n",btocl_getKernelName(kernel_type2));
+	//}
 	
 	*det = 0.0;
 	m = mat;
@@ -207,7 +217,7 @@ int btocl_cholesky(cl_mem buffer, double* mat, int mat_dim, double* det,int cbs,
 		// info = btlin_dbcholupdcol(pcol,next_n,pdiag,nb,lda);
 		//printf("UpdChol-----");
 		info = btocl_dbcholupdcol(queue,kernel1,buffer,col_idx,next_n,diag_idx,cbs,lda);
-		if(err != CL_SUCCESS) {
+		if(info != CL_SUCCESS) {
 			printf("BTOCL Cholesky: Error updating block column\n");
 			btocl_printRuntimeError(err);
 			exit(0);
@@ -466,9 +476,112 @@ int btocl_writeLtoU(cl_mem buffer,int mat_idx, int mat_dim, int lda, int mbs) {
 	clEnqueueNDRangeKernel(queue,kernel,1,NULL,&kernel_work_size,NULL,0,NULL,NULL);
 	//__kernel void btocl_cholupdmat_kernel(__global double* matrix, int mat_idx, int dim_mat, int col_idx, int nb, int lda, int dimBlocks)
 	
-	return 0;
+	return 1;
 
 }
+
+// Kronecker Product with vector multiplication
+// vres = v * [ sigma *K* mat ]
+// dim(vres) = dim(v) = dim(sigma)*dim(mat)
+// dim(sigma) ONE
+int btocl_kronecker_vectmult_one(cl_mem vres_buffer, cl_mem v_buffer, double sigma, cl_mem mat_buffer, int mat_dim) {
+	cl_command_queue queue;
+	cl_kernel kernel;
+	cl_context context;
+	cl_ushort kernel_type;
+	int argnum, err;
+	size_t globalws[3];
+	size_t localws[3];  // number of wokitems per dimension
+	int dim, usewg, local_memSize, localv_memSize;  
+	int LS, dim_tiled_mat;
+	int new_mat_dim;
+
+
+	context = btocl_getContext();
+	queue =  btocl_getCommandQueue();
+
+	//kernel_type = BTOCL_KRON_ACCUM_SIGMA1;
+	kernel_type = BTOCL_KRON_TILES1;
+
+	kernel = btocl_getKernel(kernel_type);		
+	if (kernel == NULL) {
+		printf("Error: Couldn't load kernel %s\n",btocl_getKernelName(kernel_type));
+		return 1;
+	}
+	//else {
+	//	printf("loaded %s\n",btocl_getKernelName(kernel_type));
+	//}
+
+	// set arguments
+	argnum = 0;
+	if ((err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &vres_buffer)) < 0)
+		return 0;
+	if ((err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &v_buffer)) < 0)
+		return 0;
+	if ((err = clSetKernelArg(kernel,argnum++,sizeof(double), &sigma)) < 0)
+		return 0;
+	if ((err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &mat_buffer)) < 0)
+		return 0;
+	if ((err = clSetKernelArg(kernel,argnum++,sizeof(int), &mat_dim)) < 0)
+		return 0;
+
+	dim = 1;
+	usewg = 1;
+	if (kernel_type == BTOCL_KRON_ACCUM_SIGMA1) {
+		LS = 128;
+		localws[0] = mat_dim / LS;
+		if ( (mat_dim % LS) != 0)  // it was truncated by division
+			localws[0]++;
+		globalws[0] = mat_dim*localws[0];
+		local_memSize = sizeof(double)*localws[0];
+
+		if ((err = clSetKernelArg(kernel,argnum++,local_memSize, NULL)) < 0)
+			return 1;
+		if ((err = clSetKernelArg(kernel,argnum++,sizeof(int), &LS)) < 0)
+			return 1;
+	
+	} else if (kernel_type == BTOCL_KRON_TILES1) {
+		LS = 16; // LS=8 is ok
+		dim_tiled_mat = mat_dim / LS;
+		if ((mat_dim % LS) != 0) {
+			dim_tiled_mat++;
+		}
+		new_mat_dim = LS* dim_tiled_mat;
+		localws[0] = LS * LS;  
+		globalws[0] = LS * new_mat_dim; 
+		local_memSize = sizeof(double)*localws[0];
+		localv_memSize = sizeof(double)*LS;
+
+		if ((err = clSetKernelArg(kernel,argnum++,local_memSize, NULL)) < 0)
+			return 1;
+		if ((err = clSetKernelArg(kernel,argnum++,sizeof(int), &LS)) < 0)
+			return 1;
+		
+	} else  {
+		printf("Error Kronecker product: Unknown kernel\n");
+		return 1;
+	}
+
+	
+	// call kernel
+	if (usewg) {  // yes
+	  //printf("mat %d global %lu local %lu\n",mat_dim,globalws[0],localws[0]);
+	  err = clEnqueueNDRangeKernel(queue,kernel,dim,NULL,globalws,localws,0,NULL,NULL);
+	} else {
+	  err = clEnqueueNDRangeKernel(queue,kernel,dim,NULL,globalws,NULL,0,NULL,NULL);
+	}
+
+	if (err != CL_SUCCESS) {
+		printf("Error: Kronecker Vect product (sigma one) - clEnqueueNDRangeKernel\n");
+		return err;
+	}
+
+	// don't need to copy result buffer - stored in vres_buffer
+
+	return 0;
+} 
+
+
 
 // Kronecker Product with vector multiplication
 // vres = v * [ sigma *K* mat ]
@@ -487,6 +600,7 @@ int btocl_kronecker_vectmult(cl_mem vres_buffer, cl_mem v_buffer, cl_mem sigma_b
 	context = btocl_getContext();
 	queue =  btocl_getCommandQueue();
 	
+
 	// set kernel type
 	//kernel_type = BTOCL_KRON_BASIC;
 	//kernel_type = BTOCL_KRON_ACCUM;
@@ -498,36 +612,37 @@ int btocl_kronecker_vectmult(cl_mem vres_buffer, cl_mem v_buffer, cl_mem sigma_b
 	kernel = btocl_getKernel(kernel_type);		
 	if (kernel == NULL) {
 		printf("Error: Couldn't load kernel %s\n",btocl_getKernelName(kernel_type));
-		exit(1);
-	} else {
-		printf("loaded %s\n",btocl_getKernelName(kernel_type));
-	}
+		return 1;
+	} 
+	//else {
+	//	printf("loaded %s\n",btocl_getKernelName(kernel_type));
+	//}
 
 	// set arguments
 	argnum = 0;
 	if ((err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &vres_buffer)) < 0)
-		return 0;
+		return 1;
 	if ((err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &v_buffer)) < 0)
-		return 0;
+		return 1;
 	if ((err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &sigma_buffer)) < 0)
-		return 0;
+		return 1;
 	if ((err = clSetKernelArg(kernel,argnum++,sizeof(int), &sigma_dim)) < 0)
-		return 0;
+		return 1;
 	if ((err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &mat_buffer)) < 0)
-		return 0;
+		return 1;
 	if ((err = clSetKernelArg(kernel,argnum++,sizeof(int), &mat_dim)) < 0)
-		return 0;
+		return 1;
 	if (kernel_type == BTOCL_KRON_ACCUM) {
 		LS = 128;   // 2^k
 		local_memSize = sizeof(double)*LS;
 		if ((err = clSetKernelArg(kernel,argnum++,local_memSize, NULL)) < 0) // accumulator
-			return 0;
+			return 1;
 	} else if (kernel_type == BTOCL_KRON_LOG1) {
 		local_memSize = sizeof(double)*sigma_dim;
 		if ((err = clSetKernelArg(kernel,argnum++,local_memSize, NULL)) < 0) // log accumulator
-			return 0;
+			return 1;
 		if ((err = clSetKernelArg(kernel,argnum++,sizeof(int), &LS)) < 0)
-		return 0;
+			return 1;
 	}
 		
 	dim = 1;
@@ -537,8 +652,9 @@ int btocl_kronecker_vectmult(cl_mem vres_buffer, cl_mem v_buffer, cl_mem sigma_b
 		usewg = 1;
 		localws[0] = sigma_dim;
 	} else if (kernel_type == BTOCL_KRON_LOG1) {
-		//printf("LOG version!");
+		printf("LOG version!");
 		globalws[0] = mat_dim*LS;
+		printf("globalws %d\n",globalws[0]);
 		usewg = 1;
 		localws[0] = LS;
 	} 
@@ -557,7 +673,7 @@ int btocl_kronecker_vectmult(cl_mem vres_buffer, cl_mem v_buffer, cl_mem sigma_b
 
 	// don't need to copy result buffer - stored in vres_buffer
 
-	return 1;
+	return 0;
 } 
 
 int  btocl_ltri_inv(cl_mem buffer, double* pMat, int mat_dim, double* det,int nb) {
@@ -819,7 +935,7 @@ Output:
 - buffer: symmetric matrix containing the result of L^t by L.
 
   ****************************************** */
-int btocl_ltri_LTbyL(cl_mem buffer,int n) {
+int btocl_ltri_LTbyLOld(cl_mem buffer,int n) {
 	cl_command_queue queue;
 	cl_context context;
 	cl_mem buffer_diag;
@@ -903,6 +1019,172 @@ int btocl_ltri_LTbyL(cl_mem buffer,int n) {
 
 	return 0;
 }
+
+// Calculates the product LT ** L using a blocked algorithm of incremental dot products from bottom to top
+int btocl_ltri_LTbyL(cl_mem buffer,int n) {
+	cl_command_queue queue;
+	cl_context context;
+	cl_mem buffer_diag;
+	cl_int err;
+	cl_kernel kernel0, kernel1, kernel2, kernel01;
+	cl_ushort kernel_type0, kernel_type1, kernel_type2;
+	int argnum,mat_idx, mat_dim, lda;
+	size_t globalws[3];
+	//size_t localws[3];
+	int current_bs, dim, BS, is_first,iter;
+	double* diag_test, *m_test;
+
+	//BS = 512;
+	//BS = 128;
+	//BS = 64;
+	BS=32;
+
+	//printf("Inside ocl LT by L\n");
+
+	context = btocl_getContext();
+	buffer_diag = clCreateBuffer(context, CL_MEM_READ_WRITE, sizeof(double)*n, NULL, &err);
+	if (err != CL_SUCCESS) {
+		printf("Error: Couldn't allocate diagonal buffer\n");
+		btocl_printRuntimeError(err);
+		err;
+	}
+	queue =  btocl_getCommandQueue();
+	
+	kernel_type0 = BTOCL_LTRI_LTBYL_B0;
+	kernel_type1 = BTOCL_LTRI_LTBYL_B;
+	kernel_type2 = BTOCL_WRITEUTOL_DIAG;
+
+	kernel0 = btocl_getKernel(kernel_type0);	
+	if (kernel0 == NULL) {
+		printf("Error: Couldn't load kernel %s\n",btocl_getKernelName(kernel_type0));
+		return 1;
+	}
+	
+	kernel1 = btocl_getKernel(kernel_type1);	
+	if (kernel1 == NULL) {
+		printf("Error: Couldn't load kernel %s\n",btocl_getKernelName(kernel_type1));
+		return 1;
+	}
+	
+	kernel2 = btocl_getKernel(kernel_type2);	
+	if (kernel2 == NULL) {
+		printf("Error: Couldn't load kernel %s\n",btocl_getKernelName(kernel_type2));
+		return 1;
+	}
+
+
+	// Test
+	//diag_test = (double*)malloc(sizeof(double)*n);
+	//m_test = (double*)malloc(sizeof(double)*n*n);
+	//err = clEnqueueReadBuffer(queue,buffer,CL_TRUE,0,sizeof(double)*n*n,m_test,0,0,NULL);
+
+	//printf("Before loop\n");
+	//btlin_print(m_test,n,n);
+
+	// Main loop
+	mat_dim = n;
+	current_bs = n % BS;
+	if (current_bs == 0)
+		current_bs = BS;
+	is_first = 1;
+	iter=0;
+	while(mat_dim > 0) {
+		// ************* kernel1 : perform multiplication using lower block *******************
+		//iter++;
+		//printf("iter %d Mat Dim %d Current bs %d\n",iter,mat_dim,current_bs);
+
+		//if(iter > 2) break;
+
+		dim = 1;
+		//globalws[0] = mat_dim*mat_dim;  -- old version used whole matrix
+		globalws[0] = mat_dim*(mat_dim+1) >> 1;
+		
+		//printf("Number workiterms %d\n",globalws[0]);
+
+		lda = n;
+
+		if (is_first == 1)
+			kernel01 = kernel0;
+		else
+			kernel01 = kernel1;
+	
+		// Arguments to kernel1
+		argnum = 0;
+		if ((err = clSetKernelArg(kernel01,argnum++,sizeof(cl_mem), &buffer)) < 0)
+			return argnum;
+		if ((err = clSetKernelArg(kernel01,argnum++,sizeof(cl_mem), &buffer_diag)) < 0)
+			return argnum;
+		if ((err = clSetKernelArg(kernel01,argnum++,sizeof(int), &mat_dim)) < 0)
+			return argnum;
+		if ((err = clSetKernelArg(kernel01,argnum++,sizeof(int), &lda)) < 0)
+			return argnum;
+		if ((err = clSetKernelArg(kernel01,argnum++,sizeof(int), &current_bs)) < 0)
+			return argnum;
+		if ((err = clSetKernelArg(kernel01,argnum++,sizeof(int), &is_first)) < 0)
+			return argnum;
+
+		//printf("Arguments mat_dim %d lda %d currrent_bs %d is_first %d\n",mat_dim,lda,current_bs,is_first);
+
+		err = clEnqueueNDRangeKernel(queue,kernel01,dim,NULL,globalws,NULL,0,NULL,NULL);
+		if (err != CL_SUCCESS) {
+			printf("Error while executing kernel\n");
+			btocl_printRuntimeError(err);
+			return err;
+		}
+
+		// wait until kernel ends
+		clFinish(queue);
+
+		// testing
+		//err = clEnqueueReadBuffer(queue,buffer,CL_TRUE,0,sizeof(double)*n*n,m_test,0,0,NULL);
+		//err = clEnqueueReadBuffer(queue,buffer_diag,CL_TRUE,0,sizeof(double)*n,diag_test,0,0,NULL);
+		
+		//printf("after iteration\n");
+		//btlin_print(m_test,n,n);
+		//printf("Diagonal\n");
+		//btlin_print(diag_test,1,n);
+
+		// update control variables
+		mat_dim -= current_bs;
+		current_bs = BS;
+		is_first = 0;
+	}
+
+	// after break
+	//return;
+
+
+		// ************** kernel2 : Copy Diagonal back and do half-transpose (U -> L)
+	mat_idx = 0;
+	mat_dim = n;
+	globalws[0] = mat_dim*mat_dim;
+	argnum = 0;
+	if ((err = clSetKernelArg(kernel2,argnum++,sizeof(cl_mem), &buffer)) < 0)
+		return argnum;
+	if ((err = clSetKernelArg(kernel2,argnum++,sizeof(cl_mem), &buffer_diag)) < 0)
+		return argnum;
+	if ((err = clSetKernelArg(kernel2,argnum++,sizeof(int), &mat_idx)) < 0)
+		return argnum;
+	if ((err = clSetKernelArg(kernel2,argnum++,sizeof(int), &mat_dim)) < 0)
+		return argnum;
+	if ((err = clSetKernelArg(kernel2,argnum++,sizeof(int), &lda)) < 0)
+		return argnum;
+		// Arguments to kernel1
+
+	//printf("Transpose mat_idx %d mat_dim %d lda %d dim %d globalws %d\n",mat_idx,mat_dim,lda,dim,globalws[0]);
+	clEnqueueNDRangeKernel(queue,kernel2,dim,NULL,globalws,NULL,0,NULL,NULL);
+
+	
+	//printf("Finished ltbyl blocked %d\n",n);
+	
+	
+	clReleaseMemObject(buffer_diag);
+	
+	
+	return 0;
+
+}
+
 
 
 

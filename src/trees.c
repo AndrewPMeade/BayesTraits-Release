@@ -197,10 +197,11 @@ void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 		FreeQuadLh(Opt, Trees);
 #endif
 
-#ifdef BTOCL_DSC
+#ifdef BTOCL
 	// Do this before individual trees are deallocated
 	if(Opt->ModelType == MT_DISCRETE) {
-		btocl_FreeLhInfo(Trees);
+		// not used, but keeping code
+		//btocl_FreeLhInfo(Trees);
 	}
 #endif
 

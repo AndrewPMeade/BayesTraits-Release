@@ -1,4 +1,4 @@
-#ifdef BTOCL_CON
+#ifdef BTOCL
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -25,14 +25,14 @@ void	btocl_FindInvV(TREES *Trees, TREE* Tree)
 	CopyMatrix(Tree->ConVars->InvV, Tree->ConVars->V);
 		
 	cbs = 256;
-	if (Tree->ConVars->InvV->NoOfRows < 200) {
-		cbs = 64;
+	while (cbs > Tree->ConVars->InvV->NoOfRows) {
+		cbs /= 2;
 	}
-	//cbs = 32;
+	//printf("CBS = %d\n",cbs);
 	
 	//btdebug_enter("btoclcholesky");
-	err = btocl_invcholesky(Tree->ConVars->buffer_invV, Tree->ConVars->InvV->me[0],Tree->ConVars->InvV->NoOfRows, &Tree->ConVars->LogDetOfV,cbs,32);
-	//err = btocl_invcholesky_pure(Tree->ConVars->buffer_invV, Tree->ConVars->InvV->me[0],Tree->ConVars->InvV->NoOfRows, &Tree->ConVars->LogDetOfV,cbs,32);
+	//err = btocl_invcholesky(Tree->ConVars->buffer_invV, Tree->ConVars->InvV->me[0],Tree->ConVars->InvV->NoOfRows, &Tree->ConVars->LogDetOfV,cbs,32);
+	err = btocl_invcholesky_pure(Tree->ConVars->buffer_invV, Tree->ConVars->InvV->me[0],Tree->ConVars->InvV->NoOfRows, &Tree->ConVars->LogDetOfV,cbs,32);
 	//btdebug_exit("btoclcholesky");	
 	
 	//printf("LogDetOfV=%f;\n", Tree->ConVars->LogDetOfV);
@@ -66,9 +66,18 @@ void    btocl_VectByKroneckerMult(TREE* Tree) {
 	// Load ZA
 	clEnqueueWriteBuffer(queue,convar->buffer_ZA,CL_TRUE,0,mat_dim*sigma_dim*sizeof(double),convar->ZA,0,0,NULL);
 	
-	btocl_kronecker_vectmult(convar->buffer_ZATemp, convar->buffer_ZA, convar->buffer_invSigma, 
-	sigma_dim, convar->buffer_invV, mat_dim);
 	
+
+	if (sigma_dim == 1) {
+		//btocl_kronecker_vectmult_one(cl_mem vres_buffer, cl_mem v_buffer, double sigma, cl_mem mat_buffer, int mat_dim)
+		btocl_kronecker_vectmult_one(convar->buffer_ZATemp, convar->buffer_ZA, convar->InvSigma->me[0][0],
+		convar->buffer_invV, mat_dim);
+	} else {
+		btocl_kronecker_vectmult(convar->buffer_ZATemp, convar->buffer_ZA, convar->buffer_invSigma, 
+		sigma_dim, convar->buffer_invV, mat_dim);
+	}
+
+
 	// Read ZATemp
 	clEnqueueReadBuffer(queue,convar->buffer_ZATemp,CL_TRUE,0,mat_dim*sigma_dim*sizeof(double),
 	convar->ZATemp,0,0,NULL);

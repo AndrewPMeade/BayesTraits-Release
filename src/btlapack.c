@@ -10,6 +10,8 @@
 #include "btlapack.h"
 #include "btlin_alg.h"
 
+#include "btdebug.h"
+
 
 // square matrix
 int btlapack_cholesky(double* a, int n, double* det) {
@@ -258,7 +260,9 @@ int btlapack_invldlW(double* a, double* w, int n, double* det) {
 
   uplo = 'L';
 
+  btdebug_enter("lapackfactor");
   dsytrf_(&uplo, &n, a, &n,IPIV,w,&LWORK, &info);
+  btdebug_exit("lapackfactor");
 
     //printf("Factored matrix\n");
     //btlapack_printDMATRIX(dm);
@@ -293,7 +297,9 @@ int btlapack_invldlW(double* a, double* w, int n, double* det) {
   }
 
   // now do the inverse.
+  btdebug_enter("lapackfinish");
   dsytri_(&uplo, &n, a, &n, IPIV, w, &info);
+  btdebug_exit("lapackfinish");
 
   btlin_makeSymmetric('L',a,n);
 

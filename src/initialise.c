@@ -25,6 +25,10 @@
 #include "QuadDouble.h"
 #include "contrasts.h"
 
+#ifdef BTOCL
+#include "btocl_discrete.h"
+#endif
+
 OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 {
 	OPTIONS		*Opt;
@@ -127,8 +131,9 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		InitQuadDoubleLh(Opt, Trees);
 #endif
 
-#ifdef BTOCL_DSC
-		btocl_AllocLhInfo(Trees);
+#ifdef BTOCL
+		btocl_AllocPMatrixInfo(Trees);
+		//btocl_AllocLhInfo(Trees);
 #endif
 
 	}

@@ -1,5 +1,5 @@
-#ifndef BTLIN_H
-#define BTLIN_H
+#ifndef BTLIN_ALG_H
+#define BTLIN_ALG_H
 
 #include "btlin_basic.h"
 

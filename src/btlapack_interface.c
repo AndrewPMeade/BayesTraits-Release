@@ -13,6 +13,8 @@
 #include "btlapack_interface.h"
 
 
+
+
 // Open CL to find the invers of V and log det of inv V
 // V is in Tree->ConVars->V 
 // InvV should be stroed in Tree->ConVars->InvV
@@ -26,8 +28,10 @@ void	btlapack_FindInvV(TREES *Trees, TREE* Tree)
 	CopyMatrix(Tree->ConVars->InvV, Tree->ConVars->V);
 
 	//printf("size %d\n",Tree->ConVars->InvV->NoOfRows);
-	err = btlapack_invldlW(Tree->ConVars->InvV->me[0], Trees->TempConVars->TMat->me[0]  , Tree->ConVars->InvV->NoOfRows, &Tree->ConVars->LogDetOfV);
 	
+	//err = btlapack_invldlW(Tree->ConVars->InvV->me[0], Trees->TempConVars->TMat->me[0]  , Tree->ConVars->InvV->NoOfRows, &Tree->ConVars->LogDetOfV);
+	err = btlapack_invcholesky(Tree->ConVars->InvV->me[0], Tree->ConVars->InvV->NoOfRows, &Tree->ConVars->LogDetOfV);
+
 	//printf("LogDetOfV=%f;\n", Tree->ConVars->LogDetOfV);
 	//btlin_print(Tree->ConVars->InvV->me[0],Tree->ConVars->InvV->NoOfRows,Tree->ConVars->InvV->NoOfRows);
 

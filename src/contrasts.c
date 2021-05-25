@@ -1534,6 +1534,8 @@ void FreeContrastRates(RATES *Rates)
 
 	if(Rates->Contrast->SigmaInvInfo != NULL)
 		FreeMatInvertInfo(Rates->Contrast->SigmaInvInfo);
+
+	free(CR);
 }
 
 void	MapConValsToRates(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR)

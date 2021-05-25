@@ -171,6 +171,7 @@ void	FreePlasty(PLASTY* Plasty)
 		free(Plasty->NodeList);
 	}
 
+	free(Plasty->TempList);
 	free(Plasty->ScaleBL);
 	free(Plasty->ValidNode);
 	free(Plasty);
@@ -687,26 +688,9 @@ void	LogPPResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, int It)
 
 	fprintf(Out, "%d\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, P->NoNodes);
 
-	if(Opt->Model == M_CONTRAST_CORREL)
-	{
-		Sigma = Rates->Contrast->SigmaMat->me[0][0];
-		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
-	}
-
+	Sigma = Rates->Contrast->Sigma[0];
+	fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
 	
-	if(Opt->Model == M_CONTRAST)
-	{
-		Sigma = Rates->Contrast->Sigma[0];
-		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->Alpha[0], Sigma, P->Alpha);
-	}
-
-	if(Opt->Model == M_CONTRAST_REG)
-	{
-		fprintf(Out, "%f\t%f\t%f\t", Rates->Contrast->RegAlpha, -1, P->Alpha);
-	}
-
-
-
 	for(Index=0;Index<P->NoNodes;Index++)
 	{
 		PNode = P->NodeList[Index];

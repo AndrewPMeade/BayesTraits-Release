@@ -19,7 +19,7 @@
 #include "randdists.h"
 #include "part.h"
 
-#ifdef BTOCL_CON
+#ifdef BTOCL
 	#include "btocl_continuous.h"
 #endif
 
@@ -586,7 +586,7 @@ void	FreeConVar(CONVAR* ConVar, int NoTaxa)
 	if(ConVar->MultiVarNormTemp != NULL)
 		free(ConVar->MultiVarNormTemp);
 		
-	#ifdef BTOCL_CON
+	#ifdef BTOCL
 	btocl_FreeConVar(ConVar);
 	#endif
 
@@ -717,7 +717,7 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 	Ret->LogDetOfSigma	= 1;
 	Ret->LogDetOfV		= 1;
 	
-	#ifdef BTOCL_CON
+	#ifdef BTOCL
 	btocl_AllocConVar(Ret,Trees);
 	#endif
 
@@ -1761,7 +1761,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	//	PrintMatrix(Tree->ConVars->V, "V = ", stdout);
 	//	PrintMathematicaTFMatrix(Tree->ConVars->V, "V = ", stdout);
-#ifdef BTOCL_CON
+#ifdef BTOCL
 		btocl_FindInvV(Trees, Tree);
 #else
 #ifdef BTLAPACK
@@ -1814,12 +1814,15 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 //	KroneckerProduct(Tree->ConVars->InvSigma, Tree->ConVars->InvV, Tree->ConVars->InvKProd);
 //	VectByMatrixMult(Tree->ConVars->ZA, Tree->ConVars->InvKProd, Tree->ConVars->ZATemp);
-//#ifdef BTOCL_CON
-    // only helps for sigma > 1
-//	btocl_VectByKroneckerMult(Tree);
-//#else
+//	btdebug_enter("kronecker");
+#ifdef BTOCL
+    // only helps for dim > 2000 or sigma > 1
+	btocl_VectByKroneckerMult(Tree);
+#else
 	VectByKroneckerMult(Tree->ConVars->ZA, Tree->ConVars->InvSigma, Tree->ConVars->InvV,Tree->ConVars->ZATemp);
-//#endif
+#endif
+//	btdebug_exit("kronecker");
+
 
 
 	if(Opt->Model == M_CONTINUOUS_REG)
@@ -1976,7 +1979,7 @@ void	InitContinusTree(OPTIONS *Opt, TREES* Trees, int TreeNo)
 	
 	CalcZ(Trees, Trees->Tree[TreeNo], Opt);
 	
-#ifdef BTOCL_CON
+#ifdef BTOCL
 	btocl_FindInvV(Trees, Trees->Tree[TreeNo]);
 #else
 #ifdef BTLAPACK

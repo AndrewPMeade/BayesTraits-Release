@@ -84,7 +84,7 @@ void	SetStonesP(STONES *Stones)
 	}
 }
 
-STONES*	CratesStones(int K, int Sample, double Alpha, double Beta)
+STONES*	CratesStones(int NoS, int Sample, double Alpha, double Beta)
 {
 	STONES *Ret;
 	int Index;
@@ -93,17 +93,19 @@ STONES*	CratesStones(int K, int Sample, double Alpha, double Beta)
 	if(Ret == NULL)
 		MallocErr();
 
-	Ret->MLh = (double*)malloc(sizeof(double) * K);
-	Ret->Power = (double*)malloc(sizeof(double) * K);
+	Ret->NoStones = NoS;
+
+	Ret->MLh = (double*)malloc(sizeof(double) * Ret->NoStones);
+	Ret->Power = (double*)malloc(sizeof(double) * Ret->NoStones);
 	if((Ret->MLh == NULL) || (Ret->Power == NULL))
 		MallocErr();
 
-	for(Index=0;Index<K;Index++)
+	for(Index=0;Index<Ret->NoStones;Index++)
 		Ret->MLh[Index] = 0.0;
 
 	Ret->Alpha = Alpha;
 	Ret->Beta = Beta;
-	Ret->NoStones = K;
+	
 
 	Ret->ItPerStone = Sample;
 	Ret->ItStart	= -1;

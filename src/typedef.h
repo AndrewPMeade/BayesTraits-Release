@@ -12,14 +12,8 @@
 //#define THREADED
 //#define BIG_LH
 
-
-//#define BTOCL_CON
-//#define BTOCL_DSC
 // define BTOCL
 //#define BTLAPACK
-
-
-// #if defined (BTOCL_CON)  || defined (BTOCL_DSC)
 
 #ifdef BTOCL
 	#include "btocl_runtime.h"
@@ -32,7 +26,7 @@
 // #define	PHONEIM_RUN
 
 //#define NLOPT_BT
-//#define QUAD_DOBULE
+//#define QUAD_DOUBLE
 
 #ifdef BIG_LH
 	#include <gmp.h>
@@ -75,6 +69,7 @@
 
 // Used to test if tree transforms are normalised, so there is no cahnge in tree lenght. 
 #define		NORM_TRANSFORMS		TRUE
+//#define		NORM_TRANSFORMS		FALSE
 
 /* If defined Sigma for "Independent Contrast: Full" usning MCMC is restricted to a value. */
 //#define RES_SIGMA	0.1
@@ -220,7 +215,6 @@ typedef enum
 	CNOSPERSITE,
 	CSETSEED,
 	CMAKEUM,
-	CPHYLOPLASTY,
 	CEQUALTREES,
 	CPRECISION,
 	CCORES,
@@ -295,7 +289,6 @@ static char    *COMMANDSTRINGS[] =
 	"fitnospersite","nps",
 	"seed",			"se",
 	"makeum",		"mum",
-	"phyloplasty",	"pp",
 	"equaltrees",	"eqt",
 	"precision",	"pre",
 	"cores",		"cor",
@@ -607,7 +600,7 @@ typedef struct
 	MATRIX		*InvSigma;
 //	MATRIX		*KProd;
 //	MATRIX		*InvKProd;
-#ifdef BTOCL_CON
+#ifdef BTOCL   // continuous: V matrix and Z,ZA for Kronecker product
 	cl_mem      buffer_invV;
 	cl_mem		buffer_invSigma;
 	cl_mem		buffer_ZA;
@@ -661,7 +654,7 @@ typedef	struct
 	CONVAR*		ConVars;
 	
 // information needed to traverse the tree and accumulate partial results
-#ifdef BTOCL_DSC
+#ifdef BTOCL
     int* groups;
 	int* groupsIdx;  // start/end
 	int* children;
@@ -694,7 +687,8 @@ typedef	struct
 	double		*val;
 	MATRIX		*Q;
 	MATRIX		*A;
-#ifdef BTOCL_DSC   // may want to separate InvInfo and PMatrix related 
+#ifdef BTOCL    // discrete: Set PMatrix related
+	// may want to separate InvInfo and PMatrix related 
 	double*     vect_t;
 	int*        vect_id;
 	double*     vect_test;
@@ -773,9 +767,13 @@ typedef struct
 	double		NormConst;
 
 	int			JStop;
-#ifdef BTOCL_DSC	
+#ifdef BTOCL
+	// discrete: SetPMatrix related 
 	cl_mem 		buffer_pmatrix; // MaxNodes*NOS*NOS  write-only NO read/write!
+	cl_mem      buffer_exp_eigen;  // MaxNodes*NOS Read/Write
 	cl_mem      buffer_error;
+	double* check_pmatrix;
+	// discrete: compute partialLH related
 	cl_mem      buffer_partialLh;
 	cl_mem		buffer_groups;
 	cl_mem		buffer_groupsIdx;
@@ -787,7 +785,6 @@ typedef struct
 	double* previous_plh;
 	double* plhFactor;
 	double* temp_plh;
-	double* check_pmatrix;
 	double* debug_plhFactor;
 	// new version
 	cl_mem      buffer_parentInfo;
