@@ -13,8 +13,8 @@
 #include "randdists.h"
 #include "RandLib.h"
 #include "Prob.h"
-#include "gsl\gsl_cdf.h"
-#include "gsl\gsl_randist.h"
+#include <gsl/gsl_cdf.h>
+#include <gsl/gsl_randist.h>
 
 
 
@@ -177,6 +177,23 @@ PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta)
 	return Ret;
 }
 
+PRIOR*		CreateLogNormalPrior(char *Name, double Location, double Scale)
+{
+	int		NoP;
+	PRIOR	*Ret;
+
+	NoP = DISTPRAMS[LOGNORMAL];
+	Ret = AllocBlankPrior(NoP);
+
+	Ret->Dist = LOGNORMAL;
+	Ret->DistVals[0] = Location;
+	Ret->DistVals[1] = Scale;
+
+	Ret->Name = StrMake(Name);
+
+	return Ret;
+}
+
 void		SetHPDistParam(int Pos, PRIOR* Prior)
 {
 	int OS;
@@ -293,27 +310,6 @@ double FindBetaAlpha(double Mean, double Scale, double Beta)
 
 */
 
-double	PBetaWidth(double X, double Alpha, double Beta, double Width)
-{
-	double	P1, P2;
-	double	X1, X2;
-	double	Scale;
-//	int		Cat;
-
-	Scale = 100;
-	
-	X1 = (X+Width) / Scale;
-	X2 = X / Scale;
-		
-	if(X1 > 1.0 || X2 > 1.0)
-		return 0.0;
-
-	P1 = CDFBeta(X1, Alpha, Beta);
-	P2 = CDFBeta(X2, Alpha, Beta);
-
-	return P1 - P2;
-}
-
 /*
 double	RateToBetaLh(double Rate, int NoOfCats, double* Prams)
 {
@@ -418,6 +414,24 @@ double	RateToBetaLh(double Rate, int NoOfCats, double* Prams)
 */
 
 
+double	LogLogNormalP(double X, PRIOR *Prior)
+{
+	double Ret, A, B;
+
+	if(X < 0.0)
+		return ERRLH;
+
+	if(Prior->Discretised == FALSE)
+		Ret = gsl_ran_lognormal_pdf(X, Prior->DistVals[0], Prior->DistVals[1]);
+	else
+	{
+		A = gsl_cdf_lognormal_P (X, Prior->DistVals[0], Prior->DistVals[1]);
+		B = gsl_cdf_lognormal_P (X+Prior->Width, Prior->DistVals[0], Prior->DistVals[1]);
+		Ret = B - A;
+	}
+
+	return log(Ret);
+}
 
 double	LogGammaP(double X, PRIOR *Prior)
 {
@@ -472,7 +486,7 @@ double LogChiSquaredP(double X, PRIOR *Prior)
 
 double LogSGammaP(double X, PRIOR *Prior)
 {
-	double Ret, A, B;
+	double Ret;
 
 	if(X < 0.0)
 		return ERRLH;
@@ -530,8 +544,6 @@ double	CalcLhPriorP(double X, PRIOR *Prior)
 {
 	double Ret;
 
-	ChiSTest();
-
 	switch(Prior->Dist)
 	{
 		case GAMMA:
@@ -553,10 +565,44 @@ double	CalcLhPriorP(double X, PRIOR *Prior)
 		case SGAMMA:
 			Ret = LogSGammaP(X, Prior);
 		break;
+
+		case LOGNORMAL:
+			Ret = LogLogNormalP(X, Prior);
+		break;
 	}
 
 	return Ret;
 }
+
+double		RandFromPrior(gsl_rng *RNG, PRIOR *Prior)
+{
+	switch(Prior->Dist)
+	{
+		case GAMMA:
+			return gsl_ran_gamma(RNG, Prior->DistVals[0], Prior->DistVals[1]);
+	
+		case UNIFORM:
+			return gsl_ran_flat(RNG,  Prior->DistVals[0], Prior->DistVals[1]);
+		
+		case EXP:
+			return gsl_ran_exponential(RNG, Prior->DistVals[0]);
+
+		case CHI:
+			return gsl_ran_chisq(RNG, Prior->DistVals[0]);
+
+		case SGAMMA:
+			return gsl_ran_gamma(RNG, Prior->DistVals[0], Prior->DistVals[1]);
+
+		case LOGNORMAL:
+			return gsl_ran_lognormal(RNG, Prior->DistVals[0], Prior->DistVals[1]);
+	}
+
+	printf("Prior dist not found for %s.\n", Prior->Name);
+	exit(1);
+
+	return -1.0;
+}
+
 
 
 double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
@@ -630,10 +676,10 @@ double CalcRJDummyPriors(OPTIONS *Opt, RATES* Rates)
 	{
 		DC = RJDummy->DummyList[Index];
 		
-		P = PDFNorm(DC->Beta[0],  0.0, 1.0);
+		P = gsl_ran_gaussian_pdf(DC->Beta[0], 1.0);
 
 		if(DC->Type == RJDUMMY_INTER_SLOPE)
-			P *= PDFNorm(DC->Beta[1],  0.0, 1.0);
+			P *= gsl_ran_gaussian_pdf(DC->Beta[1], 1.0);
 				
 		Ret += log(P);
 	}
@@ -898,6 +944,9 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 
 	if(PD == EXP)
 		Ret = CreateExpPrior(Name, PVal[0]);
+
+	if(PD == LOGNORMAL)
+		Ret = CreateLogNormalPrior(Name, PVal[0], PVal[1]);
 
 	free(PVal);
 

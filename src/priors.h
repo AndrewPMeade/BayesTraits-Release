@@ -1,6 +1,8 @@
 #ifndef PRIOR_H
 #define PRIOR_H
 
+#include <gsl/gsl_randist.h>
+
 void		AddPriorToOpt(OPTIONS *Opt, PRIOR *Prior);
 void		RemovePriorFormOpt(char *Name, OPTIONS *Opt);
 void		ReplacePrior(OPTIONS *Opt, PRIOR *Prior);
@@ -9,6 +11,7 @@ PRIOR*		GetPriorFromName(char *Name, PRIOR** PList, int NoPrior);
 PRIOR*		ClonePrior(PRIOR *Prior);
 PRIOR**		ClonePriors(PRIOR **PList, int NoPriors);
 
+double		RandFromPrior(gsl_rng *RNG, PRIOR *Prior);
 
 double		CalcLhPriorP(double X, PRIOR *Prior);
 void		CalcPriors(RATES* Rates, OPTIONS* Opt);
@@ -26,6 +29,7 @@ PRIOR*		CreateUniformPrior(char *Name, double Min, double Max);
 PRIOR*		CreateChiPrior(char *Name, double Mean);
 PRIOR*		CreateExpPrior(char *Name, double Alpha);
 PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta);
+PRIOR*		CreateLogNormalPrior(char *Name, double Location, double Scale);
 
 PRIOR*		CreatePrior(char *Name, PRIORDIST PDist, double *PVal);
 PRIOR*		CreateHyperPrior(char *Name, PRIORDIST PDist, double *PVal);
@@ -36,7 +40,5 @@ PRIORDIST	StrToPriorDist(char* Str);
 
 PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed);
 PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed);
-
-double		RandFromPrior(RANDSTATES *RS, PRIOR* Prior);
 
 #endif

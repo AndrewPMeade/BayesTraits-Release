@@ -14,11 +14,7 @@
 #include "priors.h"
 #include "TransformTree.h"
 
-#include "gsl\gsl_cdf.h"
-
-
-extern double gamma(double x);
-extern double ndtr(double a);
+#include <gsl/gsl_cdf.h>
 
 int		UseNonParametricMethods(OPTIONS *Opt)
 {
@@ -266,12 +262,8 @@ void	SetVRScalar(OPTIONS *Opt, RATES *Rates, VAR_RATES_NODE *PNode)
 	PRIOR *Prior;
 
 	Prior = GetPriorFromRJRatesScalar(Opt, PNode->Type);
-
-	if(PNode->Type == VR_LAMBDA)
-		PNode->Scale = RandDouble(Rates->RS);
-	else
-		PNode->Scale = RandFromPrior(Rates->RS, Prior);
-//	PNode->Scale = 0;
+	
+	PNode->Scale = RandFromPrior(Rates->RNG, Prior);
 }
 
 int		CountPlasyID(long long ID, VARRATES *Plasty)
@@ -1065,17 +1057,6 @@ void	PrintVarRatesOutput(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 	LogPPResults(Opt, Trees, Rates, It);
 }
 
-double	GammPDF(double x, double Shape, double Scale)
-{
-	double T1, T2;
-
-	T1 = 1.0 / (Scale * gamma(Shape));
-
-	T2 = pow((x / Scale), Shape-1);
-	T2 = T2 * exp((-x)/Scale);
-
-	return T1 * T2;
-}
 
 void	NormalTest(void)
 {

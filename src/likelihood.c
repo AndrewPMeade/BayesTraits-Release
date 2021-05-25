@@ -30,18 +30,12 @@
 	#include "btocl_discrete.h"
 #endif
 
-#ifndef isnan
-	extern int isnan2(double x);
-#endif
-
-extern int isnan2(double);
-
 
 double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et);
 
 int		IsNum(double n)
 {
-	if(isnan2(n) == 1)
+	if(isnan(n) != 0)
 		return FALSE;
 
 	if(n == n + 1)
@@ -960,12 +954,17 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		GammaCat;
 	double	RateMult;
 
+	
  	if(Rates->ModelFile == NULL)
 		MapRates(Rates, Opt);
 	else
 		MapModelFile(Opt, Rates);
-
+	
 	LhTransformTree(Rates, Trees, Opt);
+
+	if(Opt->NoLh == TRUE)
+		return -1.0;
+
 
 	if(Opt->ModelType == MT_FATTAIL)
 		return CalcTreeStableLh(Opt, Trees, Rates);

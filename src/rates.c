@@ -750,9 +750,15 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->FatTailRates	=	NULL;
 	
 	Ret->DistDataRates	=	NULL;
+
+	Ret->NoPriors		=	0;
+	Ret->Priors			=	NULL;
 	
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
+	Ret->RNG			=	gsl_rng_alloc(gsl_rng_mt19937);
+	gsl_rng_set(Ret->RNG, Opt->Seed);
+
 	SetRatesLocalRates(Ret, Opt);
 
 	if(Opt->UseDistData == TRUE)
@@ -2757,8 +2763,9 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 	for(Index=0;Index<MaxT;Index++)
 		FreeRandStates(Rates->RSList[Index]);
 	free(Rates->RSList);
-
-
+	
+	gsl_rng_free(Rates->RNG);
+	
 	if(Rates->Hetero != NULL)
 		FreeHetero(Rates->Hetero);
 

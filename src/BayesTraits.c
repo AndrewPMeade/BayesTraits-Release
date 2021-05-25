@@ -19,10 +19,6 @@
 #include "RandLib.h"
 #include "BatchMode.h"
 
-
-#include "mathlib.h"
-//#include "./MathLib/mconf.h"
-
 #ifdef	OPENMP_THR
 	#include <omp.h>
 #endif

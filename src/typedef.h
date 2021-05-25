@@ -6,6 +6,7 @@
 #pragma warning(disable : 4996)
 #include <stdio.h>
 #include <assert.h>
+#include <gsl/gsl_randist.h>
 
 #include "matrix.h"
 #include "RandLib.h"
@@ -185,7 +186,6 @@
 // Value for a normal distribution for a fat tail model
 #define FAT_TAIL_NORMAL_VAL 2.0
 
-#define NO_PRIOR_DIST 5
 
 // Minimum and maximum acceptance rates, set for Auto tuning  
 #define MIN_VALID_ACC 0.2
@@ -281,6 +281,7 @@ typedef enum
 	CADDTAG,
 	CLOCALTRANSFORM,
 	CDISTDATA,
+	CNOLH,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -357,6 +358,7 @@ static char    *COMMANDSTRINGS[] =
 	"addtag",		"at",
 	"localtransform",	"lt",
 	"distdata",			"dd",
+	"nolh",			"nl",
 	""
 };
 
@@ -441,6 +443,7 @@ static char    *DEPHETROPRAMS[] =
 	""
 };
 
+#define NO_PRIOR_DIST 6
 
 static char    *DISTNAMES[] =
 {
@@ -448,7 +451,8 @@ static char    *DISTNAMES[] =
 	"uniform",
 	"chi",
 	"exp",
-	"sgamma"
+	"sgamma",
+	"lognormal"
 };
 
 static int	DISTPRAMS[] =
@@ -457,6 +461,7 @@ static int	DISTPRAMS[] =
 	2,
 	1,
 	1,
+	2,
 	2
 };
 
@@ -467,7 +472,8 @@ typedef enum
 	UNIFORM,
 	CHI,
 	EXP,
-	SGAMMA
+	SGAMMA,
+	LOGNORMAL
 } PRIORDIST;
 
 typedef enum
@@ -1155,6 +1161,8 @@ typedef struct
 	DIST_DATA	*DistData;
 	int			UseDistData;
 
+	int			NoLh;
+	
 } OPTIONS;
 
 typedef struct
@@ -1303,6 +1311,7 @@ typedef struct
 
 	RANDSTATES		*RS;
 	RANDSTATES		**RSList;
+	gsl_rng			*RNG;
 
 	VARRATES		*VarRates;
 	CONTRASTR		*Contrast;

@@ -80,7 +80,7 @@ void	TransformTreeKappa(NODE N, double Kappa, int Norm)
 	ScaleSubTree(N, Scale);
 }
 
-
+/*
 
 void	GetOUTTaxaDistRec(NODE N, int ID, double *Dist)
 {
@@ -151,6 +151,8 @@ void	RecTransContNodeOU(TREES *Trees, NODE N, double OU, double T, double PathLe
 //	N->Length = CaclOU(PathLen+N->Length, OU, T, Dist) - CaclOU(PathLen, OU, T, Dist);
 	N->Length = CaclOU(PathLen+N->Length, OU, T, Dist1) - CaclOU(PathLen, OU, T, Dist2);
 
+	printf("Len:\t%f\n", N->Length);
+
 	if(N->Tip == TRUE)
 		return;
 
@@ -220,9 +222,9 @@ void	TransformTreeOU(TREES *Trees, NODE N, double OU, int Norm)
 
 	
 }
+*/
 
 
-/*
 double	CaclOU(double PathLen, double OU, double T)
 {
 	double Ret;
@@ -284,8 +286,6 @@ void	TransformTreeOU(TREES *Trees, NODE N, double OU, int Norm)
 	double SumBL,Scale, T;
 	int Index;
 
-	TestNOUT(N);
-	exit(0);
 
 	if(Norm == TRUE)
 		SumBL = SumNodeBL(N);
@@ -302,10 +302,9 @@ void	TransformTreeOU(TREES *Trees, NODE N, double OU, int Norm)
 	Scale = SumBL / SumNodeBL(N);
 	ScaleSubTree(N, Scale);
 
-	SaveTrees("testout.trees", Trees);
+//	SaveTrees("testout.trees", Trees);
 }
 
-*/
 
 void	RecTransContNodeLambda(NODE N, double Lambda,  double PathLen)
 {

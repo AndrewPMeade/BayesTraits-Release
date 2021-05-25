@@ -10,10 +10,6 @@
 	#define M_PI       3.14159265358979323846
 #endif
 
-extern double igamc ( double, double );
-extern double igam (double a, double x);
-extern double incbet(double aa, double bb, double xx );
-
 
 double	PDFNorm(double x, double Mean, double Var)
 {
@@ -97,29 +93,4 @@ double		CDFNorm(double X, double Mean, double Var)
 	return Ret;
 }
 
-double		CDFExp(double X, double Alpha)
-{
-	double Ret;
-
-	Ret = 1.0 - exp(-Alpha * X);
-	
-	return Ret;
-}
-
-double		CDFGamma(double X, double Shape, double Scale)
-{
-	return igam(Shape, X/Scale);
-}
-
-double		CDFBeta(double X, double Alpha, double Beta)
-{
-	return incbet(Alpha, Beta, X);
-}
-
-double		CDFChi(double X, double Alpha, double Beta);
-
-double CDFInvGamma(double X, double Alpha, double Beta)
-{
-	return igamc(Alpha, Beta / X);
-}
 

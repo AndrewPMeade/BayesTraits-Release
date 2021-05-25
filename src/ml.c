@@ -232,9 +232,12 @@ double	LhPraxis(void* P, double *List)
 	memcpy(MLMap->PVal, List, sizeof(double) * MLMap->NoP);
 	
 	Ret = LikelihoodML(MLMap ,  PState->Opt, PState->Trees, PState->Rates);
-	
+
 	PState->NoLhCalls++;
 
+	if(ValidLh(Ret) == FALSE)
+		return -ERRLH;
+	
 	return -Ret;
 }
 
@@ -292,6 +295,21 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	return Ret;
 }
 
+void	MLTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double OU, Lh;
+
+	for(OU=0.0001;OU<10.0;OU+=0.01)
+	{
+		Rates->OU = OU;
+		Lh = Likelihood(Rates, Trees, Opt);
+
+		printf("%f\t%f\n", OU, Lh);
+	}
+
+	exit(0);
+}
+
 //./Seq/AASacra.trees ./Seq/AASacra.txt < in.txt > sout.txt
 //./Seq/a67.1000.trees ./Seq/descent.txt < in.txt > sout.txt
 
@@ -302,6 +320,8 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	ML_MAP*	CMap, *BMap;
 	double CLh, BLh;
 	int Index;
+
+//	MLTest(Opt, Trees, Rates);
 		
 	BMap = AllocMLMap();
 
@@ -335,9 +355,10 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FreeMLMap(BMap);
 }
 
+
 void	FindML(OPTIONS *Opt, TREES *Trees)
 {
-	RATES *Rates;
+	RATES *Rates; 
 	int Index;
 	double Lh;
 	double	TStart, TEnd;
@@ -475,7 +496,7 @@ double	Opt1DFunc(double Pram)
 
 void Opt1DAcc(double *BLh, double *BVal, double *CLh, double *CVal)
 {
-	if(*CLh == ERRLH)
+	if(ValidLh(*CLh) == FALSE)
 		return;
 
 	if(*CLh > *BLh)

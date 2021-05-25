@@ -1431,9 +1431,9 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	if(Opt->Model == M_CONTRAST_REG)
 		Rates->Lh = CaclRegContrastLh(Opt, Trees, Rates);
 		
-	if(Rates->Lh != Rates->Lh)
-		return ERRLH;
-
+	if(ValidLh(Rates->Lh) == FALSE)
+		Rates->Lh = ERRLH;
+	
 	return Rates->Lh;
 }
 

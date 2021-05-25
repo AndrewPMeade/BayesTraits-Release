@@ -48,7 +48,7 @@ PRIOR*	GetPriorFromRJRatesScalar(OPTIONS *Opt, TRANSFORM_TYPE Type)
 		return GetPriorFromName("Lambda", Opt->AllPriors, Opt->NoAllPriors);
 
 	if(Type == VR_DELTA)
-		return GetPriorFromName("Detla", Opt->AllPriors, Opt->NoAllPriors);
+		return GetPriorFromName("Delta", Opt->AllPriors, Opt->NoAllPriors);
 
 	if(Type == VR_OU)
 		return GetPriorFromName("OU", Opt->AllPriors, Opt->NoAllPriors);

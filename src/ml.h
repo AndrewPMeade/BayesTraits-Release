@@ -10,6 +10,6 @@
 #endif
 
 void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates);
-void	SetRandStaes(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+
 
 #endif

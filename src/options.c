@@ -1171,6 +1171,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->UseDistData = FALSE;
 	Ret->DistData = NULL;
+
+	Ret->NoLh = FALSE;
 	
 	free(Buffer);
 
@@ -3140,7 +3142,7 @@ void	SetScaleTree(OPTIONS *Opt, char **Passed, int Tokes)
 
 int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 {
-	if(Tokes != 3)
+	if(Tokes != 2)
 	{
 		printf("RJ Local Scalar take a scalar names (kappa, lambda, delta, OU).\n");
 		return FALSE;
@@ -3352,6 +3354,14 @@ void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)
 
 	Opt->DistData = LoadDistData(Opt->Trees, Passed[1]);
 	Opt->UseDistData = TRUE;
+}
+
+void	SetNoLh(OPTIONS *Opt)
+{
+	if(Opt->NoLh == TRUE)
+		Opt->NoLh = FALSE;
+	else
+		Opt->NoLh = TRUE;
 }
 
 void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
@@ -3906,6 +3916,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CDISTDATA)
 		SetDistData(Opt, Tokes, Passed);
+
+	if(Command == CNOLH)
+		SetNoLh(Opt);
 
 	return FALSE;
 }

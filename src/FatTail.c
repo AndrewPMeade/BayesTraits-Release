@@ -1001,9 +1001,7 @@ void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		MapRatesToFatTailRate(Rates, Rates->FatTailRates);
 
 	} while(ValidMCMCParameters(Opt, Trees, Rates) == ERRLH);
-
-
-
+	
 	return;
 }
 

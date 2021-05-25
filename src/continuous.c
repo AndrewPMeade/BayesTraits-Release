@@ -1501,10 +1501,10 @@ void	CalcOU(TREES *Trees, TREE *Tree, MATRIX *V,  double Alpha)
 			V->me[y][x] = T1;
 		}
 	}
-
-//	VToTree(V, Tree);
-//	SaveTrees("vtree.trees", Trees);
-//	PrintMatrix(V, "V=", stdout);exit(0);
+		
+	VToTree(V, Tree);
+	SaveTrees("vtree.trees", Trees);
+	PrintMatrix(V, "V=", stdout);exit(0);
 }
 
 
@@ -1805,8 +1805,6 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 		if(Opt->FixLambda != -1)
 			CalcLambda(Tree->ConVars->V, Opt->FixLambda);
-
-		
 
 	//	PrintMatrix(Tree->ConVars->V, "V = ", stdout);
 	//	PrintMathematicaTFMatrix(Tree->ConVars->V, "V = ", stdout);
