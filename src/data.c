@@ -1063,6 +1063,8 @@ void	SetNewConTaxaData(TAXA *Taxa, RECNODE RNode, TREES* Trees)
 
 void	SetNewConTaxa(TAXA* Taxa, RECNODE RNode, TREES* Trees)
 {
+	int	Index;
+
 	Taxa->Name			= StrMake(RNode->Name);
 	Taxa->No			= GetFreeTaxaNo(Trees);
 	Taxa->DesDataChar	= NULL;

@@ -23,7 +23,6 @@
 */
 #endif
 
-#define PPCOST 3
 
 #define MINRATE 1.0e-16
 #define MAXRATE	1000
@@ -244,8 +243,7 @@ static char    *SHEDOP[] =
 	"Prior Change",
 	"Est Data",
 	"Var Data",
-	"Solo Tree Move",
-	"PP Move"
+	"Solo Tree Move"
 };
 
 static int	DISTPRAMS[] =
@@ -269,7 +267,7 @@ typedef enum
 	GAMMA=1,
 	UNIFORM=2,
 	CHI=3,
-	EXP=4
+	EXP=04
 } PRIORDIST;
 
 typedef enum
@@ -303,12 +301,6 @@ typedef enum
 	PIEMP,
 	PINONE,
 } PITYPES;
-
-typedef enum
-{
-	PPNODE,
-	PPBRANCH
-} PLASTYTYPE;
 
 typedef struct
 {
@@ -406,6 +398,26 @@ typedef struct
 
 typedef struct
 {
+	int		x;
+	int		y;
+
+	double	Sum;
+
+	int		No;
+	NODE	*NList;
+
+} PPCOVARPAIR;
+
+typedef struct
+{
+	int				No;
+	PPCOVARPAIR		**List;
+
+} PPCOVARV;
+
+
+typedef struct
+{
 	MATRIX		*TrueV;
 	MATRIX		*V;
 	MATRIX		*InvV;
@@ -439,6 +451,7 @@ typedef struct
 
 	double		*DepVect;
 
+	PPCOVARV	*PPCoVarV;
 } CONVAR;
 
 typedef	struct
@@ -544,31 +557,29 @@ typedef struct
 
 typedef struct
 {
-	NODE		Node;
-	double		Scale;
-	PLASTYTYPE	Type;	
-} PLASTYNODE;
+	NODE	Node;
+	int		NoTaxa;
+	double	Scale;
+} PPSCALENODE;
 
 typedef struct
 {
-	int			NoNodes;
-	PLASTYNODE **NodeList;
-	
-	
+	double			*RealBL;
+	int				NoBL;
 
-	int			NoTrees;
-	double		**TrueBL;
-} PLASTY;
+	PPSCALENODE**	NodeList;
+	int				NoNodes;
+/*	double		*Rates;
+	int			NoRates;
+	int			NoDiffRates;
+
+	int			InvV; */
+} PHYLOPLASTY;
 
 typedef struct
 {
 	double*	Alpha;
 	double* Sigma;
-
-	double*	EstAlpha;
-	double*	EstSigma;
-
-	double	AlphaErr;
 } CONTRASTR;
 
 typedef struct
@@ -609,7 +620,6 @@ typedef struct
 	char		*DataFN;
 	FILE		*LogFile;
 	FILE		*LogFileRead;
-	FILE		*PPTree;
 	char		*LogFileBuffer;
 	char		**PassedOut;
 
@@ -755,8 +765,8 @@ typedef struct
 	int		VarDataSite;
 
 	RANDSTATES		*RandStates;
+	PHYLOPLASTY		*PhyloPlasty;
 
-	PLASTY			*Plasty;
 	CONTRASTR		*Contrast;
 } RATES;
 

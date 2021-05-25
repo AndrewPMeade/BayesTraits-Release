@@ -15,8 +15,8 @@
 #include "data.h"
 #include "matrix.h"
 #include "randdists.h"
-#include "contrasts.h"
 #include "phyloplasty.h"
+#include "contrasts.h"
 
 double**	LoadModelFile(RATES* Rates, OPTIONS *Opt);
 void		SetFixedModel(RATES *Rates, OPTIONS *Opt);
@@ -94,9 +94,6 @@ double	FindRateVal(int Pos, RATES *Rates, OPTIONS *Opt)
 void	MapMCMCConRates(RATES* Rates, OPTIONS *Opt)
 {
 	int	Index;
-
-	if(Opt->Model == CONTRASTM)
-		return;
 
 	if(Opt->Model == CONTINUOUSREG)
 	{
@@ -307,9 +304,6 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 
 	if(Opt->Analsis == ANALMCMC)
 	{
-		
-			
-
 		Rates->NoOfRates = Opt->Trees->NoOfSites;
 		
 		switch(Opt->Model)
@@ -332,42 +326,32 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 
 		}
 
-		if(Opt->Model == CONTRASTM)
+		Rates->NoOfFullRates = Rates->NoOfRates;
+
+		Rates->Rates = (double*)malloc(sizeof(double) * Rates->NoOfRates);
+		if(Rates->Rates == NULL)
+			MallocErr();
+
+		for(Index=0;Index<Rates->NoOfRates;Index++)
+			Rates->Rates[Index] = 0;
+
+		if(Opt->Model == CONTINUOUSREG)
+			Rates->Means = (double*)malloc(sizeof(double) * 1);
+		else
+			Rates->Means = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
+		
+		if(Rates->Means == NULL)
+			MallocErr();
+
+		if((Opt->Model == CONTINUOUSDIR) || (Opt->Model == CONTINUOUSREG))
 		{
-			Rates->NoOfFullRates = 0;
-			Rates->NoOfRates = 0;
-			Rates->Means = NULL;
-			Rates->Rates = NULL;
-			Rates->Beta	 = NULL;
+			Rates->Beta = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
+			if(Rates->Beta== NULL)
+				MallocErr();
 		}
 		else
-		{
-			Rates->NoOfFullRates = Rates->NoOfRates;
+			Rates->Beta = NULL;
 
-			Rates->Rates = (double*)malloc(sizeof(double) * Rates->NoOfRates);
-			if(Rates->Rates == NULL)
-				MallocErr();
-
-			for(Index=0;Index<Rates->NoOfRates;Index++)
-				Rates->Rates[Index] = 0;
-
-			if(Opt->Model == CONTINUOUSREG)
-				Rates->Means = (double*)malloc(sizeof(double) * 1);
-			else
-				Rates->Means = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
-			
-			if(Rates->Means == NULL)
-				MallocErr();
-
-			if((Opt->Model == CONTINUOUSDIR) || (Opt->Model == CONTINUOUSREG))
-			{
-				Rates->Beta = (double*)malloc(sizeof(double) * Opt->Trees->NoOfSites);
-				if(Rates->Beta== NULL)
-					MallocErr();
-			}
-			else
-				Rates->Beta = NULL;
-		}
 
 		if(Opt->UseVarData == TRUE)
 			Rates->VarDataSite = 0;
@@ -432,11 +416,11 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 		SetFixedModel(Rates, Opt);	
 	}
 
+	if(Opt->UsePhyloPlasty == TRUE)
+		Rates->PhyloPlasty = CreatPhyloPlasty(Opt, Rates);
+
 	if(Opt->Model == CONTRASTM)
 		Rates->Contrast = AllocContrastRates(Opt, Rates);
-
-	if(Opt->UsePhyloPlasty == TRUE)
-		Rates->Plasty = CreatPlasty(Rates, Trees, Opt);
 }
 
 int		FindNoEstData(TREES *Trees, OPTIONS *Opt)
@@ -520,7 +504,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->Lambda			=	-1;
 	Ret->Delta			=	-1;
 
-	Ret->Plasty			=	NULL;
+	Ret->PhyloPlasty	=	NULL;
 	Ret->RandStates		=	CreateRandStates();
 
 	if(Opt->UseGamma == TRUE)
@@ -708,15 +692,6 @@ void	PrintRatesHeadderCon(FILE* Str, OPTIONS *Opt)
 	if(Opt->UseModelFile == TRUE)
 		fprintf(Str, "Model No\t");
 
-	if(Opt->Model == CONTRASTM)
-	{
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			fprintf(Str, "Alpha %d\t", Index+1);
-
-		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
-			fprintf(Str, "Sigma %d\t", Index+1);
-	}
-
 	if((Opt->Model == CONTINUOUSDIR) || (Opt->Model == CONTINUOUSRR))
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
@@ -724,7 +699,9 @@ void	PrintRatesHeadderCon(FILE* Str, OPTIONS *Opt)
 			fprintf(Str, "Alpha Trait %d\t", Index+1);
 		}
 	}
-	
+	else
+		fprintf(Str, "Alpha\t");
+
 	if(Opt->Model == CONTINUOUSDIR)
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
@@ -733,8 +710,6 @@ void	PrintRatesHeadderCon(FILE* Str, OPTIONS *Opt)
 
 	if(Opt->Model == CONTINUOUSREG)
 	{
-		fprintf(Str, "Alpha\t");
-
 		for(Index=0;Index<Opt->Trees->NoOfSites+1;Index++)
 		{
 			if(Index != Opt->DependantSite)
@@ -749,8 +724,7 @@ void	PrintRatesHeadderCon(FILE* Str, OPTIONS *Opt)
 
 		PrintConRegVarCoVarHeadder(Str, Opt->Trees->NoOfSites, Opt->DependantSite);
 	}
-	
-	if((Opt->Model == CONTINUOUSDIR) || (Opt->Model == CONTINUOUSRR))
+	else
 	{
 		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 			fprintf(Str, "Trait %d Var\t", Index+1);
@@ -1129,10 +1103,14 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	int		MinNodes, MaxNodes;
 	TAXA	*Taxa;
 	double	HMean;
-	TREES	*Trees;
-
-	Trees = Opt->Trees;
 	
+	if(Opt->Model == CONTRASTM)
+	{
+		fprintf(Str, "%d\t%f\t", Rates->TreeNo, Rates->Lh);
+		fprintf(Str, "%f\t%f\t", Rates->Contrast->Alpha[0], Rates->Contrast->Sigma[0]);
+		return;
+	}
+
 	ConVar = Opt->Trees->Tree[Rates->TreeNo].ConVars;
 
 	fprintf(Str, "%d\t", Rates->TreeNo+1);
@@ -1149,44 +1127,26 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if((Opt->Model == CONTINUOUSRR) || (Opt->Model == CONTINUOUSDIR))
 	{
-		for(Index=0;Index<Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 		{
 			fprintf(Str, "%f\t", ConVar->Alpha[Index]);
 			if(Opt->Model == CONTINUOUSDIR)
 				fprintf(Str, "%f\t", ConVar->Beta[Index]);
 		}	
-			for(Index=0;Index<Trees->NoOfSites;Index++)
+			for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 				fprintf(Str, "%f\t", TransVarCoVar(Opt->Trees->NoOfTaxa, ConVar->Sigma->me[Index][Index]));
 		
-			for(x=0;x<Trees->NoOfSites;x++)
-				for(y=x+1;y<Trees->NoOfSites;y++)
+	//		CalcR(ConVar->Sigma->me[x][y], ConVar->Sigma->me[x][x], ConVar->Sigma->me[y][y]);
+
+			for(x=0;x<Opt->Trees->NoOfSites;x++)
+				for(y=x+1;y<Opt->Trees->NoOfSites;y++)
 					fprintf(Str, "%f\t", CalcR(ConVar->Sigma->me[x][y], ConVar->Sigma->me[x][x], ConVar->Sigma->me[y][y]));
+				/*	fprintf(Str, "%f\t", TransVarCoVar(Opt->Trees->NoOfTaxa, ConVar->Sigma->me[x][y])); */
 	}
-
-	if(Opt->Model == CONTRASTM)
-	{
-		if(Opt->Analsis == ANALML)
-		{
-			for(Index=0;Index<Trees->NoOfSites;Index++)
-				fprintf(Str, "%f\t", Rates->Contrast->Alpha[Index]);
-
-			for(Index=0;Index<Trees->NoOfSites;Index++)
-				fprintf(Str, "%f\t", Rates->Contrast->Sigma[Index]);
-		}
-		else
-		{
-			for(Index=0;Index<Trees->NoOfSites;Index++)
-				fprintf(Str, "%f\t", Rates->Contrast->EstAlpha[Index]);
-
-			for(Index=0;Index<Trees->NoOfSites;Index++)
-				fprintf(Str, "%f\t", Rates->Contrast->EstSigma[Index]);
-		}
-	}
-
-	if(Opt->Model == CONTINUOUSREG)
+	else
 	{
 		fprintf(Str, "%f\t", ConVar->Alpha[0]);
-		for(Index=0;Index<Trees->NoOfSites;Index++)
+		for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
 			fprintf(Str, "%f\t", ConVar->Beta[Index]);
 
 		fprintf(Str, "%f\t", ConVar->Sigma->me[0][0]);
@@ -1243,10 +1203,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		fprintf(Str, "%f\t", Rates->EstData[Index]);
 
 	if(Opt->UsePhyloPlasty == TRUE)
-	{
-		fprintf(Str, "%d\t", Rates->Plasty->NoNodes);
-		PrintPPTree(Opt, Trees, Rates);
-	}	
+		fprintf(Str, "%d\t", Rates->PhyloPlasty->NoNodes);
 }
 
 void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates, OPTIONS *Opt)
@@ -1509,13 +1466,10 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 			memcpy(A->EstDescData, B->EstDescData, sizeof(int)*A->NoEstData);
 	}
 
-	if(Opt->Model == CONTRASTM)
-		CopyContrastRates(A, B, Opt->Trees->NoOfSites);
+	A->VarDataSite = B->VarDataSite;
 
 	if(Opt->UsePhyloPlasty == TRUE)
-		PlastyCopy(A, B);
-
-	A->VarDataSite = B->VarDataSite;
+		CopyPhyloPlasty(A->PhyloPlasty, B->PhyloPlasty);
 } 
 
 
@@ -1857,12 +1811,6 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 			}
 			else
 			{
-				if(Opt->Model == CONTRASTM)
-				{
-					MutateContrastRates(Opt, Opt->Trees, Rates);
-					break;
-				}
-
 				for(Index=0;Index<Rates->NoOfRates;Index++)
 					Rates->Rates[Index] += (GenRandState(Rates->RandStates) * Opt->RateDevList[Index]) - (Opt->RateDevList[Index] / 2.0);
 
@@ -1951,7 +1899,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE*	Shed)
 		break;
 
 		case(SPPMOVE):
-			PlastyMove(Rates, Opt->Trees, Opt);
+			PhyloPlasyMove(Rates);
 		break;
 	}
 
@@ -1992,9 +1940,6 @@ void	FreeRates(RATES *Rates)
 
 	if(Rates->EstDescData != NULL)
 		free(Rates->EstDescData);
-
-	if(Rates->Plasty != NULL)
-		FreePlasty(Rates->Plasty);
 
 	FreeRandStates(Rates->RandStates);
 	free(Rates);

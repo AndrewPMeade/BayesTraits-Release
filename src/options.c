@@ -807,7 +807,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->HPDev		= 1;
 	Ret->DependantSite= -1;
 
-	Ret->PPTree		= NULL;
 	Ret->ModelFile	= NULL;
 	Ret->UseModelFile= FALSE;
 

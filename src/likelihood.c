@@ -1171,9 +1171,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	MapRates(Rates, Opt);
 
 	if(Opt->Model == CONTRASTM)
-	{
 		return CalcContrastLh(Opt, Trees, Rates);
-	}
 
 	if(Opt->DataType == CONTINUOUS)
 		return LHRandWalk(Opt, Trees, Rates);
