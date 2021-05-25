@@ -81,6 +81,7 @@ void	PrintMatrix(MATRIX *Matrix, char* Headder, FILE*	Str)
 	int	RIndex, CIndex;
 
 	fprintf(Str, "Matrix: %s\n", Headder);
+
 	fprintf(Str, "%d\t%d\n", Matrix->NoOfRows, Matrix->NoOfCols);
 
 	for(RIndex=0;RIndex<Matrix->NoOfRows;RIndex++)

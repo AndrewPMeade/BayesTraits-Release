@@ -40,7 +40,7 @@
 
 #define ERRLH -999999
 
-#define NOOFOPERATORS	11
+#define NOOFOPERATORS	10
 #define ZERORATENO		-1
 
 //extern double LhPraxis(LhPraxisdouble *);
@@ -553,9 +553,9 @@ typedef struct
 	double		*Rates;
 	int			NoRates;
 
-	int			OnePos;
-
 	int			InvV;
+
+	
 } PHYLOPLASTY;
 
 typedef struct
@@ -769,9 +769,9 @@ typedef enum
 	SPPROR=6,
 	SESTDATA=7,
 	SVARDATA=8,
-	SSOLOTREEMOVE=9,
-	SPPMOVE=10
+	SSOLOTREEMOVE
 } OPERATORS;
+
 
 typedef struct
 {

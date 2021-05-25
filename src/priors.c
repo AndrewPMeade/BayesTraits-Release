@@ -423,6 +423,7 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 
 	Rates->LhPrior = 0;
 	NLh = 0;
+	
 	for(PIndex=0;PIndex<Rates->NoOfRates;PIndex++)
 	{
 		if(Opt->UseRJMCMC == FALSE)

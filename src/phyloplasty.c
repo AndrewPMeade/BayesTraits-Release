@@ -5,8 +5,6 @@
 #include "typedef.h"
 #include "genlib.h"
 #include "phyloplasty.h"
-#include "matrix.h"
-#include "rand.h"
 
 int			FindNoPPLists(int NoTaxa)
 {
@@ -230,38 +228,4 @@ void	MapPhyloPlastyToV(TREES	*Trees, TREE *Tree)
 		ConVar->V->me[x][y] = Dist;
 		ConVar->V->me[y][x] = Dist;
 	}
-
-	CopyMatrix(ConVar->TrueV, ConVar->V);
-}
-
-void	PhyloPlasyMove(RATES *Rates)
-{
-	PHYLOPLASTY *PP;
-	int Pos;
-	int	NC;
-
-	PP = Rates->PhyloPlasty;
-	Rates->Rates[0] = 3.720719;
-
-	do
-	{
-		Pos = rand() % PP->NoCats;
-	}while(Pos == 0);
-
-	if(	(PP->Cats[Pos] != PP->OnePos) && 
-		(GenRandState(Rates->RandStates) < 0.5))
-	{
-		PP->Cats[Pos] = PP->OnePos;
-		return;
-	}
-
-	do
-	{
-		NC = rand() % PP->NoRates;
-	} while(NC == PP->Cats[Pos]);
-
-//	Rates->LhPrior = 1000;
-
-
-	PP->Cats[Pos] = NC;
 }

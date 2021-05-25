@@ -1286,21 +1286,22 @@ void	SetPhyloPlastyV(TREES* Trees, RATES* Rates)
 	int		Index;
 
 	Tree = &Trees->Tree[Rates->TreeNo];
-
+/*
 	MapRateToTree(Trees, Rates);
 //	CalcPVarCoVar(Trees, Tree); 
 	MapPhyloPlastyToV(Trees, Tree);
 
 	return;
-
+*/
 	printf("Stat\t");
 	PrintTime(stdout);
 	printf("\n");
 	fflush(stdout);
-	for(Index=0;Index<10000;Index++)
+	for(Index=0;Index<1000000;Index++)
 	{
 		MapRateToTree(Trees, Rates);
 		MapPhyloPlastyToV(Trees, Tree);
+//		CalcPVarCoVar(Trees, Tree);
 
 		CopyMatrix(Tree->ConVars->TrueV, Tree->ConVars->V);
 		if(Index%1000==0)
@@ -1309,7 +1310,7 @@ void	SetPhyloPlastyV(TREES* Trees, RATES* Rates)
 			fflush(stdout);
 		}
 
-		FindInvV(Trees, Tree);
+//		FindInvV(Trees, Tree);
 	}
 	printf("End\t");
 	PrintTime(stdout);
