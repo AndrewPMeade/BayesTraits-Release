@@ -53,9 +53,7 @@ void	SetNodeList(TREE *Tree)
 	Tree->NoNodes = 0;
 	GetNoNodes(Tree->Root, &Tree->NoNodes);
 	
-	Tree->NodeList = (NODE*)malloc(sizeof(NODE) * Tree->NoNodes);
-	if(Tree->NodeList == NULL)
-		MallocErr();
+	Tree->NodeList = (NODE*)SMalloc(sizeof(NODE) * Tree->NoNodes);
 
 	Tree->NoNodes = 0;
 	SetNodes(Tree->NodeList, Tree->Root, &Tree->NoNodes);
@@ -86,6 +84,8 @@ NODE	AllocNode(void)
 
 	Ret->VPosX			=	-1;
 	Ret->VPosY			=	-1;
+
+	Ret->PatternNo		=	-1;
 	
 	return Ret;
 }
@@ -223,7 +223,11 @@ void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 	}
 
 	if(Trees->InvInfo != NULL)
-		FreeInvInfo(Trees->InvInfo);
+	{
+		for(Index=0;Index<Opt->NoPatterns + 1; Index++)
+			FreeInvInfo(Trees->InvInfo[Index]);
+		free(Trees->InvInfo);
+	}
 
 	if(Trees->RemovedTaxa != NULL)
 	{

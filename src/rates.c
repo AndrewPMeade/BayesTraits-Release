@@ -722,6 +722,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->Pis			= NULL;
 	Ret->FullRates		= NULL;
+	Ret->NoPatterns		= 0;
 	Ret->Means			= NULL;
 	Ret->Beta			= NULL;
 	Ret->MappingVect	= NULL;
@@ -823,6 +824,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 		CreatCRates(Opt, Ret);
 		return Ret;
 	}
+
+	Ret->NoPatterns = Opt->NoPatterns + 1;
 
 	if(Ret->NoOfRates > 0)
 		Ret->Rates = (double*)SMalloc(sizeof(double)*Ret->NoOfRates);

@@ -83,38 +83,22 @@ INVINFO*	AllocInvInfo(int NOS)
 	Ret->A			= AllocMatrix(NOS, NOS);
 	Ret->TempA		= AllocMatrix(NOS, NOS);
 
-	Ret->val = (double*)malloc(sizeof(double)*NOS);
-	if(Ret->val == NULL)
-		MallocErr();
-
-	Ret->TempVect1	= (double*)malloc(sizeof(double)*NOS);
-	if(Ret->TempVect1 == NULL)
-		MallocErr();
-	Ret->TempVect2	= (double*)malloc(sizeof(double)*NOS);
-	if(Ret->TempVect2 == NULL)
-		MallocErr();
-	Ret->TempVect3	= (double*)malloc(sizeof(double)*NOS);
-	if(Ret->TempVect3 == NULL)
-		MallocErr();
-	Ret->TempVect4	= (double*)malloc(sizeof(double)*NOS);
-	if(Ret->TempVect4 == NULL)
-		MallocErr();
+	Ret->val = (double*)SMalloc(sizeof(double)*NOS);
+	Ret->TempVect1	= (double*)SMalloc(sizeof(double)*NOS);
+	Ret->TempVect2	= (double*)SMalloc(sizeof(double)*NOS);
+	Ret->TempVect3	= (double*)SMalloc(sizeof(double)*NOS);
+	Ret->TempVect4	= (double*)SMalloc(sizeof(double)*NOS);
 	
 	Ret->NoThreads = GetMaxThreads();
-	Ret->Ets = (double**)malloc(sizeof(double*) * Ret->NoThreads);
-	Ret->As = (MATRIX**)malloc(sizeof(MATRIX*) * Ret->NoThreads);
-	if((Ret->Ets == NULL) || (Ret->As == NULL))
-		MallocErr();
+	Ret->Ets = (double**)SMalloc(sizeof(double*) * Ret->NoThreads);
+	Ret->As = (MATRIX**)SMalloc(sizeof(MATRIX*) * Ret->NoThreads);
+
 	for(Index=0;Index<Ret->NoThreads;Index++)
 	{
 		Ret->As[Index] = AllocMatrix(NOS, NOS);
-		Ret->Ets[Index] = (double*)malloc(sizeof(double) * NOS );
-		if(Ret->Ets[Index] == NULL)
-			MallocErr();
+		Ret->Ets[Index] = (double*)SMalloc(sizeof(double) * NOS );
 	}
-
-
-
+	
 	return Ret;
 }
 
@@ -149,11 +133,15 @@ void	FreeInvInfo(INVINFO* InvInfo)
 
 void	AllocLHInfo(TREES *Trees, OPTIONS *Opt)
 {
-	int	NOS;
+	int	Index, NOS, NoPatterns;
 	
 	NOS = Trees->NoStates;
+	NoPatterns = Opt->NoPatterns + 1;
 
-	Trees->InvInfo = AllocInvInfo(NOS);
+	Trees->InvInfo = (INVINFO**)SMalloc(sizeof(INVINFO*) * NoPatterns);
+
+	for(Index=0;Index<NoPatterns;Index++)
+		Trees->InvInfo[Index] = AllocInvInfo(NOS);
 
 	Trees->PList = AllocMultiMatrixLinMem(Trees->MaxNodes, NOS, NOS);
 }
@@ -531,7 +519,9 @@ void	PrintTipData(TREES* Trees, int TreeNo)
 	}
 }
 
-int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
+
+/*
+int		SetUpAMatrixOld(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
 	int		Err;
 	HETERO *Hetero;
@@ -587,6 +577,72 @@ int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		Err = 1;
 
 	return Err;
+}
+*/
+
+int		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *InvInfo, double *RateP, double *Pi)
+{
+	int Err;
+
+	if(Model == M_MULTISTATE)
+	{
+		if(Trees->UseCovarion == FALSE)
+			return CreateMSAMatrix(InvInfo, NOS, RateP, Pi);
+		else
+			return CreateMSAMatrixCoVar(InvInfo, Rates, Trees, RateP, Pi);
+	}
+	
+	if(Model == M_DESCDEP)
+	{
+		if(Trees->UseCovarion == FALSE)
+			return CreateDEPAMatrix(InvInfo, Rates, Trees, RateP);
+		else
+			return CreateDEPAMatrixCoVar(InvInfo, Rates, Trees, RateP);
+	}
+
+	if(Model == M_DESCINDEP)
+	{
+		if(Trees->UseCovarion == FALSE)
+			return CreateInDEPAMatrix(InvInfo, RateP, Rates, Trees);
+		else
+			return CreateInDEPAMatrixCoVar(InvInfo, Rates, Trees);
+	}
+
+	if(Model == M_DESCCV)
+		return CreateDepCVAMatrix(InvInfo, RateP, Rates, Trees);
+
+	if(Model == M_DESCHET)
+	{
+		if(Trees->UseCovarion == FALSE)
+		{
+			Err = CreateInDEPAMatrix(Rates->Hetero->ModelInv[0], Rates, Trees, RateP);
+			Err += CreateDEPAMatrix(Rates->Hetero->ModelInv[1], Rates, Trees, &RateP[4]);
+		}
+		else
+			exit(0);
+		if(Err > 1)
+			return 1;
+	}
+
+	return 0;
+}
+
+int		SetUpAllAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
+{
+	int PIndex, Pos, Err;
+
+	Pos = 0;
+
+	for(PIndex=0;PIndex<Rates->NoPatterns;PIndex++)
+	{
+		Err = SetUpAMatrix(Opt->Model, Rates, Trees, Trees->NoStates, Opt->UseCovarion, Trees->InvInfo[PIndex], &Rates->FullRates[Pos], Rates->Pis);
+		if(Err != 0)
+			return Err;
+
+		Pos += Opt->DefNoRates;
+	}
+
+	return 0;
 }
 
 void	SetGammaBlank(RATES* Rates, OPTIONS* Opt)
@@ -1061,7 +1117,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	if(Opt->AnalyticalP == FALSE)
 	{
-		Err = SetUpAMatrix(Rates, Trees, Opt);
+		Err = SetUpAllAMatrix(Rates, Trees, Opt);
 
 		if(Err == ERROR)
 			return ERRLH;

@@ -26,6 +26,7 @@
 #include "contrasts.h"
 #include "FatTail.h"
 #include "Fossil.h"
+#include "Pattern.h"
 
 #ifdef BTOCL
 #include "btocl_discrete.h"
@@ -56,10 +57,11 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 
 void	PreProcess(OPTIONS *Opt, TREES* Trees)
 {
-	int		Index;
-	int		ID;
-
+	int		Index, ID;
+	
 	CheckSingleDescendent(Trees);
+
+	SetPatternNo(Opt, Trees);
 
 	if(Opt->ScaleTrees != -1.0)
 		ScaleUserTrees(Trees, Opt->ScaleTrees);
@@ -85,12 +87,8 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 	#ifdef JNIRUN
 		Opt->LogFileRead = OpenRead(Opt->LogFN);
-		Opt->LogFileBuffer = (char*)malloc(sizeof(char) * LOGFILEBUFFERSIZE);
-		if(Opt->LogFileBuffer == NULL)
-			MallocErr();
-		Opt->PassedOut = (char**)malloc(sizeof(char*) * LOGFILEBUFFERSIZE);
-		if(Opt->PassedOut == NULL)
-			MallocErr();
+		Opt->LogFileBuffer = (char*)SMalloc(sizeof(char) * LOGFILEBUFFERSIZE);
+		Opt->PassedOut = (char**)SMalloc(sizeof(char*) * LOGFILEBUFFERSIZE);
 	#endif
 
 	Trees->UseCovarion	= Opt->UseCovarion;

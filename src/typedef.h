@@ -295,6 +295,7 @@ typedef enum
 	CSAVETREES,
 	CCSCHED, 
 	CADDTIMESLICE,
+	CADDPATTERN,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -378,6 +379,7 @@ static char    *COMMANDSTRINGS[] =
 	"savetrees",	"st",
 	"customschedule", "csched", 
 	"addtimeslice", "ats",
+	"addpattern", "ap",
 	""
 };
 
@@ -702,6 +704,7 @@ struct INODE
 	
 	int			*FossilMask;
 
+	int			PatternNo;
 
 	CONDATA		*ConData;
 	FATTAILNODE	*FatTailNode;
@@ -897,7 +900,7 @@ typedef struct
 	int			NoUserSites;
 	int			NoStates;
 
-	INVINFO*	InvInfo;
+	INVINFO**	InvInfo;
 
 	double		*PMem;
 	MATRIX		**PList;
@@ -995,11 +998,6 @@ typedef struct
 	MATRIX_INVERT	*SigmaInvInfo;
 	MATRIX			*SigmaMat;
 	double			*SigmaInvVec;
-//	MATRIX*	EstSigma;
-
-//	double*	EstAlpha;
-//	double*	EstSigma;
-//	double*	AlphaErr;
 	
 	double	RegSigma;
 	double	RegAlpha;
@@ -1052,12 +1050,22 @@ typedef struct
 
 typedef struct
 {
+	char	*Name;
+	TAG		**TagList;
+	int		NoTags;
+} PATTERN;
+
+typedef struct
+{
 	MODEL		Model;
 	ANALSIS		Analsis;
 	MODEL_TYPE	ModelType;
 
 	int			NoOfRates;
 	char		**RateName;
+
+	int			DefNoRates;
+	char		**DefRateNames;
 
 	RESTYPES	*ResTypes;
 	int			*ResNo;
@@ -1085,7 +1093,6 @@ typedef struct
 	char		*DataFN;
 	FILE		*LogFile;
 	FILE		*LogFileRead;
-//	FILE		*PPTree;
 	FILE		*OutTrees;
 	FILE		*VarRatesLog;
 	FILE		*LogFatTail;
@@ -1211,6 +1218,8 @@ typedef struct
 
 	TIME_SLICES		*TimeSlices;
 
+	PATTERN		**PatternList;
+	int			NoPatterns;
 } OPTIONS;
 
 typedef struct
@@ -1317,6 +1326,7 @@ typedef struct
 	double	LnHastings;
 	double	LnJacobion;
 
+	int			NoPatterns;
 
 	PRIOR		**Priors;
 	int			NoPriors;	

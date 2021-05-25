@@ -21,6 +21,7 @@
 #include "schedule.h"
 #include "TimeSlices.h"
 #include "NLOptBT.h"
+#include "Pattern.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHT_INDENT	4
@@ -511,6 +512,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	}
 
 	PrintTimeSlices(Str, Opt->TimeSlices);
+	PrintPatterns(Str, Opt->NoPatterns, Opt->PatternList);
 
 	PrintTreesInfo(Str, Opt->Trees, Opt->DataType);
 	fflush(Str);
@@ -520,12 +522,13 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 {
 	int		Index;
 	
-	if((Opt->Model == M_MULTISTATE) || (Opt->DataType == CONTINUOUS))
-	{
-		for(Index=0;Index<Opt->NoOfRates;Index++)
-			free(Opt->RateName[Index]);
-		free(Opt->RateName);
-	}
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+		free(Opt->RateName[Index]);
+	free(Opt->RateName);
+
+	for(Index=0;Index<Opt->DefNoRates;Index++)
+		free(Opt->DefRateNames[Index]);
+	free(Opt->DefRateNames);
 
 	if(Opt->AllPriors != NULL)
 	{
@@ -595,6 +598,12 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	}
 
 	FreeTimeSlices(Opt->TimeSlices);
+
+	for(Index=0;Index<Opt->NoPatterns;Index++)
+		FreePattern(Opt->PatternList[Index]);
+	
+	if(Opt->PatternList != NULL)
+		free(Opt->PatternList);
 
 	free(Opt);
 }
@@ -840,12 +849,20 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 	return NULL;
 }
 
+void	SetOptRateNamesFixed(OPTIONS *Opt, int NoRates, char *Rates[])
+{
+	int Index;
+
+	Opt->NoOfRates = NoRates;
+	Opt->RateName = (char**)SMalloc(sizeof(char*) * NoRates);
+
+	for(Index=0;Index<NoRates;Index++)
+		Opt->RateName[Index] = StrMake(Rates[Index]);
+}
+
 void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 {
-	int		Inner;
-	int		Outter;
-	int		Index;
-
+	int		Index, Inner, Outter;
 
 	if(Opt->DataType == CONTINUOUS)
 	{
@@ -854,36 +871,21 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 	}
 
 	if(Opt->Model == M_DESCINDEP)
-	{
-		Opt->NoOfRates	= 4;
-		Opt->RateName	= INDEPPRAMS;
-		return;
-	}
+		SetOptRateNamesFixed(Opt, 4, INDEPPRAMS);
 
 	if(Opt->Model == M_DESCDEP)
-	{
-		Opt->NoOfRates	= 8;
-		Opt->RateName	= DEPPRAMS;
-	}
+		SetOptRateNamesFixed(Opt, 8, DEPPRAMS);
 
 	if(Opt->Model == M_DESCCV)
-	{
-		Opt->NoOfRates = 20;
-		Opt->RateName = DEPCVPRAMS;
-	}
-
+		SetOptRateNamesFixed(Opt, 20, DEPCVPRAMS);
+	
 	if(Opt->Model == M_DESCHET)
-	{
-		Opt->NoOfRates = 12;
-		Opt->RateName = DEPHETROPRAMS;
-	}
-
+		SetOptRateNamesFixed(Opt, 12, DEPHETROPRAMS);
+	
 	if(Opt->Model == M_MULTISTATE)
 	{
 		Opt->NoOfRates	= (NOS * NOS) - NOS;
-		Opt->RateName	= (char**)malloc(sizeof(char*)*Opt->NoOfRates);
-		if(Opt->RateName == NULL)
-			MallocErr();
+		Opt->RateName	= (char**)SMalloc(sizeof(char*)*Opt->NoOfRates);
 
 		for(Outter=0,Index=0;Outter<NOS;Outter++)
 		{
@@ -903,14 +905,18 @@ void		AllocRestictions(OPTIONS *Opt)
 {
 	int	Index;
 
-	Opt->ResTypes		= (RESTYPES*)malloc(sizeof(RESTYPES) * Opt->NoOfRates);
-	Opt->ResNo			= (int*)malloc(sizeof(int) * Opt->NoOfRates);
-	Opt->ResConst		= (double*)malloc(sizeof(double) * Opt->NoOfRates);
-
-	if( (Opt->ResTypes == NULL) ||
-		(Opt->ResNo == NULL) ||
-		(Opt->ResConst == NULL))
-		MallocErr();
+	if(Opt->ResTypes != NULL)
+		free(Opt->ResTypes);
+	
+	if(Opt->ResNo != NULL)
+		free(Opt->ResNo);
+ 
+	if(Opt->ResConst != NULL)
+		free(Opt->ResConst);
+	
+	Opt->ResTypes		= (RESTYPES*)SMalloc(sizeof(RESTYPES) * Opt->NoOfRates);
+	Opt->ResNo			= (int*)SMalloc(sizeof(int) * Opt->NoOfRates);
+	Opt->ResConst		= (double*)SMalloc(sizeof(double) * Opt->NoOfRates);
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
@@ -1012,6 +1018,17 @@ MODEL_TYPE	GetModelType(MODEL Model)
 	return MT_DISCRETE;
 }
 
+void		SetDefRates(OPTIONS *Opt)
+{
+	int Index;
+
+	Opt->DefNoRates = Opt->NoOfRates;
+	Opt->DefRateNames = (char**)SMalloc(sizeof(char*) * Opt->DefNoRates);
+
+	for(Index=0;Index<Opt->DefNoRates;Index++)
+		Opt->DefRateNames[Index] = StrMake(Opt->RateName[Index]);
+}
+
 OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char *DataFN, char *SymbolList, TREES* Trees)
 {
 	OPTIONS *Ret;
@@ -1063,10 +1080,19 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		Ret->DataType	= CONTINUOUS;
 	}
 
+	Ret->ResConst	= NULL;
+	Ret->ResTypes	= NULL;
+	Ret->ResNo		= NULL;
+
+	Ret->DefNoRates	= -1;
+	Ret->DefRateNames= NULL;
+
 	SetOptRates(Ret, NOS, SymbolList);
+
+	SetDefRates(Ret);
 	
 	AllocRestictions(Ret);
-		
+			
 	Ret->TreeFN = StrMake(TreeFN);
 	Ret->DataFN = StrMake(DataFN);
 
@@ -1215,6 +1241,10 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->CShedList = NULL;
 	
 	Ret->TimeSlices = CreateTimeSlices();
+
+
+	Ret->NoPatterns = 0;
+	Ret->PatternList = NULL;
 
 	free(Buffer);
 
@@ -2311,7 +2341,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CPIS)		||
 			(Command == CPRECISION) ||
 			(Command == CNOSPERSITE)|| 
-			(Command == CSYMMETRICAL)
+			(Command == CSYMMETRICAL) ||
+			(Command == CADDPATTERN)
 			)
 		{
 			printf("Command %s (%s) is not valid with the current model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -3583,6 +3614,58 @@ void	OptAddTimeSlice(OPTIONS *Opt, int Tokes, char **Passed)
 		AddTimeSlicePriors(TS, Opt);
 }
 
+void	RemoveRateNamePriors(OPTIONS *Opt)
+{
+	int Index;
+
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+		RemovePriorFormOpt(Opt->RateName[Index], Opt);
+}
+
+void	AddRateNamePriors(OPTIONS *Opt)
+{
+	int Index;
+	PRIOR *Prior;
+
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+	{
+		Prior = CreateUniformPrior(Opt->RateName[Index], 0, 100);
+		AddPriorToOpt(Opt, Prior);
+	}
+}
+
+void	OptAddPattern(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	int Index;
+	TAG *Tag;
+
+	if(Tokes < 2)
+	{
+		printf("AddPattern takes a pattern name and one or more tags.\n");
+		exit(0);
+	}
+	
+	for(Index=2;Index<Tokes;Index++)
+	{
+		Tag = GetTagFromName(Opt, Passed[Index]);
+		if(Tag == NULL)
+		{
+			printf("%s is not a valid tag.\n", Passed[Index]);
+			exit(1);
+		}
+	}
+
+	AddPattern(Opt, Passed[1], Tokes-2, &Passed[2]);
+
+	if(Opt->Analsis == ANALMCMC)
+		RemoveRateNamePriors(Opt);
+
+	SetPatternRateNames(Opt);
+	AllocRestictions(Opt);
+
+	if(Opt->Analsis == ANALMCMC)
+		AddRateNamePriors(Opt);
+}
 
 void SetOptCustomSchedule(OPTIONS *Opt, int Tokes, char **Passed)
 {
@@ -4280,6 +4363,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CADDTIMESLICE)
 		OptAddTimeSlice(Opt, Tokes, Passed);
+
+	if(Command == CADDPATTERN)
+		OptAddPattern(Opt, Tokes, Passed);
 
 	return FALSE;
 }

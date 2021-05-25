@@ -149,7 +149,7 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	Lh = Likelihood(Rates, Trees, Opt);
 	printf("SimTreeLh:\t%f\n", Lh);
 
-	Err = SetUpAMatrix(Rates, Trees, Opt);
+	Err = SetUpAllAMatrix(Rates, Trees, Opt);
 
 	if(Err > 0)
 	{

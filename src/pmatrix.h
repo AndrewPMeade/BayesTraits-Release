@@ -3,16 +3,17 @@
 
 #include "typedef.h"
 
-int	CreateMSAMatrix(INVINFO *InvInfo, RATES* Rates, TREES* Trees);
-int	CreateMSAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees);
+int	CreateMSAMatrix(INVINFO *InvInfo, int NOS, double *Rates, double *Pis);
+int	CreateMSAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *RateP, double *Pi);
 
-int	CreateDEPAMatrix(INVINFO* InvInfo, double *R, RATES* Rates, TREES* Trees);
-int	CreateDEPAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees);
 
-int	CreateInDEPAMatrix(INVINFO* InvInfo, double *R, RATES* Rates, TREES* Trees);
-int	CreateInDEPAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees);
+int	CreateDEPAMatrix(INVINFO* InvInfo, RATES* Rates, TREES* Trees, double *RateP);
+int	CreateDEPAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *RateP);
 
-int	CreateDepCVAMatrix(INVINFO *InvInfo, double *R, RATES* Rates, TREES* Trees);
+int	CreateInDEPAMatrix(INVINFO* InvInfo, RATES* Rates, TREES* Trees, double *RateP);
+int	CreateInDEPAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *RateP);
+
+int	CreateDepCVAMatrix(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *R);
 
 
 double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, int NOS, int ThrNo);
