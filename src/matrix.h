@@ -13,6 +13,7 @@ typedef	struct
 MATRIX*	AllocMatrix(int NoOfRows, int NoOfCols);
 void	FreeMatrix(MATRIX *Matrix);
 void	PrintMatrix(MATRIX *Matrix, char* Headder, FILE*	Str);
+void	PrintMatrixBinary(MATRIX *Matrix, char* Headder, FILE*	Str);
 void	CopyMatrix(MATRIX *A, MATRIX *B);
 double** AllocMatMem(int NoOfRows, int NoOfCols);
 void	FreeMatMem(double** Mat);

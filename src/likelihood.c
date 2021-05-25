@@ -8,7 +8,6 @@
 #include "likelihood.h"
 #include "matrix.h"
 #include "genlib.h"
-#include "linalg.h"
 #include "rates.h"
 #include "continuous.h"
 #include "gamma.h"
@@ -18,9 +17,8 @@
 #include "contrasts.h"
 #include "threaded.h"
 #include "BigLh.h"
-
-
-int	DB = FALSE;
+#include "pmatrix.h"
+#include "linalg.h"
 
 #ifndef isnan
 	extern int isnan(double x);
@@ -60,438 +58,6 @@ double  AddLog(double a, double b)
 }
 
 
-int	PreCalc(INVINFO	*InvInfo, TREES *Trees, RATES *Rates)
-{
-	int				Ret;
-	int				NoOfStates;
-	int				*iwork;
-	double			*work;
-	double			*vi;
-	
-	NoOfStates = Trees->NoOfStates;
-
-	iwork = (int*)InvInfo->TempVect2;
-	work = InvInfo->TempVect3;
-	vi = InvInfo->TempVect4;
-
-	CopyMatrix(InvInfo->Q, InvInfo->A);
-
-	if(DB == TRUE)
-	{
-		PrintMatrix(InvInfo->A, "A Matrix", stdout);		
-	}
-
-	Ret = EigenRealGeneral(NoOfStates, InvInfo->A->me, InvInfo->val, vi, InvInfo->vec->me, iwork, work);
-
-	if(DB == TRUE)
-		PrintMatrix(InvInfo->vec, "egi Vec Matrix", stdout);
-
-	if(Ret != NO_ERROR)
-	{
-	/*	for(Ret=0;Ret<Rates->NoOfRates;Ret++)
-			printf("%d\t%f\n", Ret, Rates->Rates[Ret]);
-		printf("\n\n\n");
-		PrintMatrix(InvInfo->Q, "QMat", stdout);
-		PrintMathematicaMatrix(InvInfo->Q, "Q", stdout);
-		exit(0); 
-		*/
-		// TODO Phoneim remove 
-		return ERROR;
-	}
-
-	CopyMatrix(InvInfo->Q, InvInfo->vec);
-	Ret = InvertMatrix(InvInfo->Q->me, NoOfStates, work, iwork, InvInfo->inv_vec->me);
-	if(Ret != NO_ERROR)
-		PrintMatrix(InvInfo->inv_vec, "inv vec", stdout);
-
-	if(Ret != NO_ERROR)
-	{
-		printf("%s::%d Inver Err\n", __FILE__, __LINE__);
-		exit(0);
-		return ERROR;
-	}
-
-	if(DB == TRUE)
-	{
-		CreatFullPMatrix(1, InvInfo, Trees->PList[0], Trees, Trees->InvInfo->A, Trees->InvInfo->TempVect1);
-		PrintMatrix(Trees->PList[0], "My P", stdout);
-	}
-
-	return NO_ERROR;
-}
-
-
-int	CreateMSAMatrix(INVINFO *InvInfo, RATES* Rates, TREES* Trees)
-{
-	int		Outter,Inner, RPos;
-	double	Tot;
-	MATRIX *A;
-	
-	A = InvInfo->A;
-
-	RPos = 0;
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-	{
-		Tot = 0;
-		for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-		{
-			if(Inner != Outter)
-			{
-				A->me[Outter][Inner] = Rates->FullRates[RPos] * Rates->Pis[Inner];
-				Tot += A->me[Outter][Inner];
-				RPos++;
-			}
-		}
-
-		A->me[Outter][Outter] = -Tot;
-	}
-
-//	PrintMatrix(A, "A = ", stdout);
-//	exit(0);
-
-	return PreCalc(InvInfo, Trees, Rates);
-}
-
-void	SetUpCoVarMatrix(MATRIX *A, RATES* Rates, TREES* Trees)
-{
-	int		Outter;
-	int		Inner;
-	int		NOS;
-	int		RPos=0;
-
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-		for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-			A->me[Outter][Inner] = 0;
-
-	NOS = Trees->NoOfStates / 2;
-
-	for(Outter=0;Outter<NOS;Outter++)
-		for(Inner=0;Inner<NOS;Inner++)
-			A->me[Outter][Inner] = 0;
-
-	Outter = 0;
-	Inner = NOS;
-	for(Outter=0;Outter<NOS;Outter++, Inner++)
-		A->me[Outter][Inner] = Rates->OffToOn;
-
-	Outter = NOS;
-	Inner = 0;
-	for(Outter=NOS;Outter<Trees->NoOfStates;Outter++, Inner++)
-		A->me[Outter][Inner] = Rates->OnToOff;
-}
-
-int	CreateMSAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees)
-{
-	int		Outter,Inner, NOS, RPos;
-	double	Tot;
-	MATRIX *A;
-
-	A = InvInfo->A;
-	RPos = 0;
-	NOS = Trees->NoOfStates / 2;
-
-	SetUpCoVarMatrix(A, Rates, Trees);
-
-	for(Outter=NOS;Outter<Trees->NoOfStates;Outter++)
-	{
-		Tot = 0;
-		for(Inner=NOS;Inner<Trees->NoOfStates;Inner++)
-		{
-			if(Inner != Outter)
-			{
-				A->me[Outter][Inner] = Rates->FullRates[RPos] * Rates->Pis[Inner];
-				Tot += A->me[Outter][Inner];
-				RPos++;
-			}
-			else
-				A->me[Outter][Inner] = 0;
-		}
-	}
-
-	/*  Set man diagonal to -row */
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-	{
-		Tot = 0;
-		for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-			Tot += A->me[Outter][Inner];
-		A->me[Outter][Outter] = -Tot;
-	}
-
-	return PreCalc(InvInfo, Trees, Rates);
-}
-
-int	CreateDEPAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees)
-{
-	int		Inner,Outter;
-	double	Tot;
-	MATRIX *A;
-
-	A = InvInfo->A;
-
-	SetUpCoVarMatrix(A, Rates, Trees);
-
-/*	A->me[4][4] = -(Rates->FullRates[0] + Rates->FullRates[1]); */
-	A->me[4][5] = Rates->FullRates[0];
-	A->me[4][6] = Rates->FullRates[1];
-	A->me[4][7] = 0;
-
-	A->me[5][4] = Rates->FullRates[2];
-/*	A->me[5][5] = -(Rates->FullRates[2] + Rates->FullRates[3]); */
-	A->me[5][6] = 0;
-	A->me[5][7] = Rates->FullRates[3];
-
-	A->me[6][4] = Rates->FullRates[4];
-	A->me[6][5] = 0;
-/*	A->me[6][6] = -(Rates->FullRates[4] + Rates->FullRates[5]); */
-	A->me[6][7] = Rates->FullRates[5];
-
-	A->me[7][4] = 0;
-	A->me[7][5] = Rates->FullRates[6];
-	A->me[7][6] = Rates->FullRates[7];
-/*	A->me[7][7] = -(Rates->FullRates[6] + Rates->FullRates[7]); */
-
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-	{
-		Tot = 0;
-		for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-			Tot += A->me[Outter][Inner];
-		A->me[Outter][Outter] = -Tot;
-	}
-
-	return PreCalc(InvInfo, Trees, Rates);
-
-}
-
-int	CreateInDEPAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees)
-{
-	int		Inner,Outter;
-	double	Alpha1, Beta1, Alpha2, Beta2;
-	double	Tot;
-	MATRIX *A;
-
-	A = InvInfo->A;
-
-	SetUpCoVarMatrix(A, Rates, Trees);
-
-	Alpha1	= Rates->FullRates[0];
-	Beta1	= Rates->FullRates[1];
-	Alpha2	= Rates->FullRates[2];
-	Beta2	= Rates->FullRates[3];
-
-	A->me[4][5] = Alpha2;
-	A->me[4][6] = Alpha1;
-	A->me[4][7] = 0;
-
-	A->me[5][4] = Beta2;
-	A->me[5][6] = 0;
-	A->me[5][7] = Alpha1;
-
-	A->me[6][4] = Beta1;
-	A->me[6][5] = 0;
-	A->me[6][7] = Alpha1;
-
-	A->me[7][4] = 0;
-	A->me[7][5] = Beta1;
-	A->me[7][6] = Beta2;
-
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
-	{
-		Tot = 0;
-		for(Inner=0;Inner<Trees->NoOfStates;Inner++)
-			Tot += A->me[Outter][Inner];
-		A->me[Outter][Outter] = -Tot;
-	}
-
-	return PreCalc(InvInfo, Trees, Rates);
-
-}
-
-int	CreateInDEPAMatrix(INVINFO* InvInfo, double *R, RATES* Rates, TREES* Trees)
-{
-	double	Alpha1, Beta1, Alpha2, Beta2;
-	MATRIX *A;
-	
-	A = InvInfo->A;
-
-	Alpha1	= R[0];
-	Beta1	= R[1];
-	Alpha2	= R[2];
-	Beta2	= R[3];
-
-	A->me[0][0] = -(Alpha2 + Alpha1);
-	A->me[0][1] = Alpha2;
-	A->me[0][2] = Alpha1;
-	A->me[0][3] = 0;
-
-	A->me[1][0] = Beta2;
-	A->me[1][1] = -(Beta2 + Alpha1);
-	A->me[1][2] = 0;
-	A->me[1][3] = Alpha1;
-
-	A->me[2][0] = Beta1;
-	A->me[2][1] = 0;
-	A->me[2][2] = -(Beta1 + Alpha2);
-	A->me[2][3] = Alpha2;
-
-	A->me[3][0] = 0;
-	A->me[3][1] = Beta1;
-	A->me[3][2] = Beta2;
-	A->me[3][3] = -(Beta1 + Beta2);
-
-	return PreCalc(InvInfo, Trees, Rates);
-}
-
-
-int	CreateDEPAMatrix(INVINFO* InvInfo, double *R, RATES* Rates, TREES* Trees)
-{
-	MATRIX *A;
-	
-	A = InvInfo->A;
-
-	A->me[0][0] = -(R[0] + R[1]);
-	A->me[0][1] = R[0];
-	A->me[0][2] = R[1];
-	A->me[0][3] = 0;
-
-	A->me[1][0] = R[2];
-	A->me[1][1] = -(R[2] + R[3]);
-	A->me[1][2] = 0;
-	A->me[1][3] = R[3];
-
-	A->me[2][0] = R[4];
-	A->me[2][1] = 0;
-	A->me[2][2] = -(R[4] + R[5]);
-	A->me[2][3] = R[5];
-
-	A->me[3][0] = 0;
-	A->me[3][1] = R[6];
-	A->me[3][2] = R[7];
-	A->me[3][3] = -(R[6] + R[7]);
-
-	return PreCalc(InvInfo, Trees, Rates);
-}
-
-void	SetADiag(MATRIX *A)
-{
-	int i,j;
-	double Total;
-
-	for(i=0;i<A->NoOfRows;i++)
-	{
-		Total = 0;
-		A->me[i][i] = 0;
-		for(j=0;j<A->NoOfCols;j++)
-		{
-			Total += A->me[i][j];
-		}
-		A->me[i][i] = -Total;
-	}
-}
-
-int	CreateDepCVAMatrix(INVINFO *InvInfo, double *R, RATES* Rates, TREES* Trees)
-{
-	double Alpha1, Beta1, Alpha2, Beta2;
-	double q12,q13,q21,q24,q31,q34,q42,q43;
-	double 	qDI,qID;
-	int		i;
-	MATRIX *A;
-
-	A = InvInfo->A;
-
-	FillMatrix(A, 0);
-
-	Alpha1	= R[0];
-	Beta1	= R[1];
-	Alpha2	= R[2];
-	Beta2	= R[3];
-
-	q12		= R[4];
-	q13		= R[5];
-	q21		= R[6];
-	q24		= R[7];
-	q31		= R[8];
-	q34		= R[9];
-	q42		= R[10];
-	q43		= R[11];
-
-	qDI		= R[12];
-	qID		= R[13];
-
-	A->me[0][1] = Alpha2;
-	A->me[0][2] = Alpha1;
-
-	A->me[1][0] = Beta2;
-	A->me[1][3] = Alpha1;
-
-	A->me[2][0] = Beta1;
-	A->me[2][3] = Alpha2;
-
-	A->me[3][1] = Beta1;
-	A->me[3][2] = Beta2;
-
-	A->me[4][5] = q12;
-	A->me[4][6] = q13;
-
-	A->me[5][4] = q21;
-	A->me[5][7] = q24;
-
-	A->me[6][4] = q31;
-	A->me[6][7] = q34;
-
-	A->me[7][5] = q42;
-	A->me[7][6] = q43;
-
-	A->me[4][0] = qDI;
-	A->me[5][1] = qDI;
-	A->me[6][2] = qDI;
-	A->me[7][3] = qDI;
-
-	A->me[0][4] = qID;
-	A->me[1][5] = qID;
-	A->me[2][6] = qID;
-	A->me[3][7] = qID;
-
-	SetADiag(A);
-
-	return PreCalc(InvInfo, Trees, Rates);
-}
-
-double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et)
-{
-	int		i, j, k;
-	double	t1, t2;
-	int		NOS;
-	
-
-	NOS		= Trees->NoOfStates;
-	
-	for(i=0;i<NOS;i++)
-		Et[i] = exp(t*InvInfo->val[i]);
-
-	for(i=0;i<NOS;i++)
-		for(j=0;j<NOS;j++)
-			A->me[i][j] = InvInfo->vec->me[i][j] * Et[j];
-
-	t1 = 0.0;
-	for(i=0;i<NOS;i++)
-	{
-		t2=1.0;
-		for(j=0;j<NOS;j++)
-		{
-			Mat->me[i][j]=0.0;
-			for(k=0;k<NOS;k++)
-				Mat->me[i][j] += A->me[i][k] * InvInfo->inv_vec->me[k][j];
-
-			t2-=Mat->me[i][j];
-
-			if(Mat->me[i][j] < 0)
-				return 1000;
-		}
-		t1 += t2 * t2;
-	}
-
-	return t1;
-}
 
 INVINFO*	AllocInvInfo(int NOS)
 {
@@ -1060,7 +626,6 @@ void	SumLikeInDep(NODE N, TREES *Trees, double *Rates, int SiteNo)
 */
 
 /* Only for first site */
-
 void	PrintTipData(TREES* Trees, int TreeNo)
 {
 	int		NIndex;
@@ -1088,7 +653,7 @@ void	PrintTipData(TREES* Trees, int TreeNo)
 
 int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
-	int	Err;
+	int		Err;
 	HETERO *Hetero;
 
  	if(Opt->UseRModel == TRUE)
@@ -1129,8 +694,6 @@ int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		if(Trees->UseCovarion == FALSE)
 		{
 			Err = CreateInDEPAMatrix(Hetero->ModelInv[0], Rates->FullRates, Rates, Trees);
-
-			
 			Err += CreateDEPAMatrix(Hetero->ModelInv[1], &Rates->FullRates[4], Rates, Trees);
 		}
 		else
@@ -1142,6 +705,7 @@ int		SetUpAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	if(Err > 1)
 		Err = 1;
+
 	return Err;
 }
 
@@ -1207,8 +771,6 @@ void	ProcessGamma(RATES *Rates, TREES* Trees)
 	int		SIndex;
 	int		SiteIndex;
 	int		NOS;
-
-
 
 	Tree	= Trees->Tree[Rates->TreeNo];
 	Weight	= (double)1 / Rates->GammaCats;
@@ -1333,21 +895,6 @@ void SetDiscEstData(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	}
 }
 
-void	LongProc(int x)
-{
-	int i,j;
-	double	d;
-
-	
-	for(i=0;i<x;i++)
-		for(j=0;j<x;j++)
-		{
-			d = 999;
-			d = pow(d, 99);
-		}
-
-}
-
 int		SetStdPMatrix(INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gamma, double Kappa)
 {
 	double Len;
@@ -1362,7 +909,21 @@ int		SetStdPMatrix(INVINFO *InvInfo, TREES *Trees, NODE N, MATRIX *P, double Gam
 
 	ThrNo = GetThreadNo();
 	
-	ErrVal = CreatFullPMatrix(Len, InvInfo, P, Trees, InvInfo->As[ThrNo], InvInfo->Ets[ThrNo]);
+	switch(Trees->NoOfSites)
+	{
+		case 2:
+			ErrVal = Create2SPMat(Len, InvInfo, P, Trees, InvInfo->As[ThrNo], InvInfo->Ets[ThrNo]);
+		break;
+
+		case 4:
+			ErrVal = Create4SPMat(Len, InvInfo, P, Trees, InvInfo->As[ThrNo], InvInfo->Ets[ThrNo]);
+		break;
+
+		default:
+			ErrVal = CreatFullPMatrix(Len, InvInfo, P, Trees, InvInfo->As[ThrNo], InvInfo->Ets[ThrNo]);
+		break;
+	}
+	
 	if(ErrVal > 0.001)
 		return TRUE;
 
@@ -1390,9 +951,6 @@ int		SetRPMatrix(TREES *Trees, NODE N, MATRIX *P, double Gamma, double Kappa)
 	return FALSE;
 	/* Needs to be fiex for R model as its not fixed form polytomie code. */
 }
-
-
-
 
 int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma, double Kappa)
 {
@@ -1482,6 +1040,8 @@ void	SumLhLiner(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
 	TREE	*Tree;
 	
 	Tree = Trees->Tree[Rates->TreeNo];
+
+
 	for(GIndex=0;GIndex<Tree->NoPGroups;GIndex++)
 	{
 #ifndef THREADED
@@ -1510,7 +1070,7 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		{
 			NOS = Trees->NOSList[SiteNo];
 			for(Index=0;Index<NOS;Index++)
-				Rates->Pis[Index]  = (double)1/NOS;
+				Rates->Pis[Index]  = (double)1.0/NOS;
 		}
 		else
 			NOS = Trees->NoOfStates;
@@ -1533,6 +1093,7 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			return ERRLH;
 
 		Ret += log(SiteLh);
+
 #else
 		Ret += CombineBigLh(Rates, Trees, Opt, SiteNo, NOS);
 #endif
@@ -1542,20 +1103,22 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 }
 
 
+
 double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
 	double	Ret;
 	int		SiteNo;
 	TREE	*Tree;
-	int		Err=NO_ERROR;
+	int		Err;
 	int		GammaCat;
 	double	RateMult;
 //	int		Index, NOS;
 //	double	SiteLh, Sum;
-
+	
 
 	MapRates(Rates, Opt);
 
+	
 	if(Opt->Model == CONTRASTM)
 		return CalcContrastLh(Opt, Trees, Rates);
 	
@@ -1580,7 +1143,6 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	for(GammaCat=0;GammaCat<Rates->GammaCats;GammaCat++)
 	{
-
 		if(Opt->UseGamma == FALSE)
 			RateMult = 1;
 		else
@@ -1589,6 +1151,8 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		Err = SetAllPMatrix(Rates, Trees, Opt, RateMult, Rates->Kappa);
 		if(Err == TRUE)
 			return ERRLH;
+
+		
 
 		for(SiteNo=0;SiteNo<Trees->NoOfSites;SiteNo++)
 		{
@@ -1654,29 +1218,49 @@ double	LhPraxisCon(PRAXSTATE* PState, double *List)
 	return LHRandWalk(PState->Opt, PState->Trees, PState->Rates);
 }
 
+void	CheckRatesVec(double *Vec, int Size)
+{
+	int Index;
+
+	for(Index=0;Index<Size;Index++)
+	{
+/*		if(IsNum(Vec[Index]) == FALSE)
+			Vec[Index] = MINRATE;
+		else
+		{
+			if(Vec[Index] < MINRATE)
+				Vec[Index] = Vec[Index] * -1;
+		}
+*/		
+		if((Vec[Index] < MINRATE) || (IsNum(Vec[Index]) == FALSE))
+			Vec[Index] = MINRATE;
+	}
+
+}
+
 double	LhPraxis(void* P, double *List)
 {
-//	static	Called;
-	int		Index;
+//	static		Called;
+	int			Index;
 	double		Ret;
 	double		*TRates;
 	PRAXSTATE	*PState;
 
 	PState = (PRAXSTATE*)P;
-
+	
 	if(PState->Opt->DataType == CONTINUOUS)
 		return -LhPraxisCon(PState, List);
 
-	for(Index=0;Index<PState->Rates->NoOfRates;Index++)
-		if((List[Index] < MINRATE) || (IsNum(List[Index]) == FALSE))
-			List[Index] = MINRATE;
-
+	CheckRatesVec(List, PState->Rates->NoOfRates);
+	
 	TRates = PState->Rates->Rates;
 	PState->Rates->Rates = List;
 
 	Ret = Likelihood(PState->Rates, PState->Trees, PState->Opt);
 
 	PState->Rates->Rates = TRates;
+
+	PState->NoLhCalls++;
 
 	return -Ret;
 }

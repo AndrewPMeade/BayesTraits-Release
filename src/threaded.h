@@ -5,4 +5,6 @@
 int		GetThreadNo(void);
 int		GetMaxThreads(void);
 void	SetNoOfThreads(int No);
+double	GetSeconds(void);
+
 #endif

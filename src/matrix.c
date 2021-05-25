@@ -86,7 +86,25 @@ void	PrintMatrix(MATRIX *Matrix, char* Headder, FILE*	Str)
 	for(RIndex=0;RIndex<Matrix->NoOfRows;RIndex++)
 	{
 		for(CIndex=0;CIndex<Matrix->NoOfCols;CIndex++)
-			fprintf(Str, "%10.10f\t", Matrix->me[RIndex][CIndex]);
+			fprintf(Str, "%30.30f\t", Matrix->me[RIndex][CIndex]);
+		fprintf(Str, "\n");
+	}
+}
+
+void	PrintMatrixBinary(MATRIX *Matrix, char* Headder, FILE*	Str)
+{
+	int	RIndex, CIndex;
+
+	fprintf(Str, "Matrix: %s\n", Headder);
+	fprintf(Str, "%d\t%d\n", Matrix->NoOfRows, Matrix->NoOfCols);
+
+	for(RIndex=0;RIndex<Matrix->NoOfRows;RIndex++)
+	{
+		for(CIndex=0;CIndex<Matrix->NoOfCols;CIndex++)
+		{
+			PrintDoubleHex(Str, Matrix->me[RIndex][CIndex]);
+			fprintf(Str, "\t");
+		}
 		fprintf(Str, "\n");
 	}
 }

@@ -9,6 +9,7 @@
 	void	FindML(OPTIONS *Opt, TREES *Trees);
 #endif
 
-double	PraxisGo(OPTIONS *Opt, RATES *Rates, TREES *Trees);
-void	FindValidStartSet(double *Vec, RATES *Rates, TREES *Trees, OPTIONS *Opt);
+void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+
 #endif

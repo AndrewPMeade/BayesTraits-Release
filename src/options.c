@@ -290,6 +290,12 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "Iterations:                      %d\n", Opt->Itters);
 		fprintf(Str, "Burn in:                         %d\n", Opt->BurnIn);
 		fprintf(Str, "Rate Dev:                        %f\n", Opt->RateDev);
+		fprintf(Str, "MCMC ML Start:                   ");
+		if(Opt->MCMCMLStart == FALSE)
+			fprintf(Str, "False\n");
+		else
+			fprintf(Str, "True\n");
+
 		if(Opt->UseSchedule	== TRUE)
 			fprintf(Str, "Schedule File:                   %s\n", Opt->ScheduleFile);
 		if(Opt->DataType == CONTINUOUS)
@@ -897,9 +903,11 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->LogFileBuffer	= NULL;
 	Ret->PassedOut		= NULL;		
 
+	Ret->MLTries		= 10;
+	Ret->MCMCMLStart	= FALSE; 
+
 	if(Ret->Analsis == ANALML)
 	{
-		Ret->MLTries	=	10;
 		Ret->Itters		=	-1;
 		Ret->Sample		=	-1;
 		Ret->Priors		=	NULL;
@@ -911,7 +919,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	
 	if(Ret->Analsis == ANALMCMC)
 	{
-		Ret->MLTries	=	-1;
+		
 		Ret->Itters		=	5050000;
 		Ret->BurnIn		=	50000;
 
@@ -2216,6 +2224,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CMODELFILE) ||
 			(Command == CSCHEDULE)	||
 			(Command == CSTREEMOVE) ||
+			(Command == CMCMCMLSTART) ||
 			(Command == CPHYLOPLASTY)
 			)
 		{
@@ -2800,9 +2809,6 @@ void	OptSetSeed(OPTIONS *Opt, char	*CSeed)
 
 int	FossilNoPramOK(OPTIONS *Opt, char **Passed, int Tokes)
 {
-	int State;
-	char *Name;
-
 	if(Tokes < 5)
 		return FALSE;
 
@@ -2954,6 +2960,14 @@ void	SetSymmetrical(OPTIONS *Opt)
 		/* q43 = q34 */
 		ResRateNo(Opt, 7, 5);
 	}
+}
+
+void	SetMCMCMLStart(OPTIONS *Opt)
+{
+	if(Opt->MCMCMLStart == TRUE)
+		Opt->MCMCMLStart = FALSE;
+	else
+		Opt->MCMCMLStart = TRUE;	
 }
 
 int		PassLine(OPTIONS *Opt, char *Buffer)
@@ -3556,6 +3570,12 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 	if(Command == CSYMMETRICAL)
 	{
 		SetSymmetrical(Opt);
+		return FALSE;
+	}
+
+	if(Command == CMCMCMLSTART)
+	{
+		SetMCMCMLStart(Opt);
 		return FALSE;
 	}
 

@@ -905,3 +905,55 @@ void**	AddToList(int *No, void** OldList, void* Item)
 
 	return Ret;
 }
+
+
+void double2HexString(double a) 
+{ 
+   char *buf; // double is 8-byte long, so we have 2*8 + terminating \0 
+   char *d2c; 
+	char *n; 
+   int i; 
+
+  // buf = (char*)malloc(sizeof(double)+sizeof(double));
+
+ //  n = buf;
+
+   d2c = (char *) &a; 
+
+   for(i = 0; i < 8; i++) 
+   { 
+   //   sprintf(n, "%02X", *d2c++); 
+	  printf("%x", *d2c++); 
+ //     n += 2; 
+   }  
+  // *(n) = '\0'; 
+
+//   return buf;
+} 
+
+char		IntToHex(int i)
+{
+	if(i<10)
+		return '0'+i;
+	return 'A'+(i-10);
+}
+
+void		PrintDoubleHex(FILE *Str, double D)
+{
+	unsigned char *h, in;
+	int Index;
+	unsigned char t,b;
+
+	h = (unsigned char*)&D;
+	
+	for(Index=0;Index<sizeof(double);Index++)
+	{
+
+		in = h[Index];
+
+		b = in & 0x0f;
+		t = (in >> 4) & 0x0f;
+
+		printf("%c%c", IntToHex(b), IntToHex(t));
+	}
+}

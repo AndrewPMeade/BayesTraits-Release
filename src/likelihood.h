@@ -1,5 +1,5 @@
-#if !defined (LIKLIHEADDER)
-#define LIKLIHEADDER
+#ifndef LIKELIHOOD_HEADDER
+#define LIKELIHOOD_HEADDER
 
 #include "praxis.h"
 
@@ -11,5 +11,7 @@ INVINFO*	AllocInvInfo(int NOS);
 double	LhPraxis(void* PState, double *List);
 
 int		IsNum(double n);
+
+void	CheckRatesVec(double *Vec, int Size);
 
 #endif

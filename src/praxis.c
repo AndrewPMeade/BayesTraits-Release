@@ -29,6 +29,8 @@ void	BlankPraxisState(PRAXSTATE*	S)
 	S->step	= 1.0;
 	S->ktm	= 1;
 	S->prin	= 2;
+
+	S->NoLhCalls = 0;
 }
 
 PRAXSTATE*	AllocPraxState(void)

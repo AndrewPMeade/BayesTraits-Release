@@ -34,3 +34,13 @@ void	SetNoOfThreads(int No)
 	return; 
 #endif	
 }
+
+
+double	GetSeconds(void)
+{
+#ifndef THREADED
+	return  (double)time(NULL);
+#else
+	return omp_get_wtime();
+#endif
+}

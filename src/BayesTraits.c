@@ -98,7 +98,7 @@ int main(int argc, char** argv)
 
 // Big Lh + OpenMP
 // gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp
-// 
+// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DTHREADED -fopenmp -Dwarn_unused_result 
   
 // ./Seq/MamTrees-1.trees ./Seq/MamDataS1.txt < in.txt > sout.txt
 // ./Seq/Mammal-ArtPrim.trees ./Seq/Mammal-ArtPrim.txt < in.txt > sout.txt 

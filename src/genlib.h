@@ -81,4 +81,6 @@ void		GotoFileEnd(FILE *File, char *Buffer, int Size);
 void		PrintTime(FILE* Str);
 
 void**		AddToList(int *No, void** OldList, void* Item);
+
+void		PrintDoubleHex(FILE *Str, double D);
 #endif

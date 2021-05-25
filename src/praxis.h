@@ -157,13 +157,15 @@ typedef struct
 	TREES	*Trees;
 	OPTIONS	*Opt;
 
+	int		NoLhCalls;
+
 	/* Free pointer to carry other data strcts */
 	void	*Pt;
 
 
 } PRAXSTATE;
 
-double		rndom(void);
+//double		rndom(void);
 void		sort(PRAXSTATE* S);
 void		print(PRAXSTATE* S);
 void		matprint(char *s, double v[PNSIZE][PNSIZE], int n);

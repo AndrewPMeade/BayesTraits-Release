@@ -9,13 +9,10 @@
 #include "RandLib.h"
 
 // #define	JNIRUN
- #define THREADED
+// #define THREADED
 // #define BIG_LH
 
 //#define	PUBLIC_BUILD
-
-// To start the Chain from the ML values
-#define MCMC_ML_START
 
 // Information for the phomem cog est runs
 // #define	PHONEIM_RUN
@@ -30,7 +27,7 @@
 
 #ifdef	THREADED
 	#include <omp.h>
-	#define MIN_NODES_PER_PROC	2
+	#define MIN_NODES_PER_PROC	10
 #endif
 
 #ifdef	 JNIRUN
@@ -187,6 +184,7 @@ typedef enum
 	CPRECISION,
 	CCORES,
 	CSYMMETRICAL,
+	CMCMCMLSTART,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -256,6 +254,7 @@ static char    *COMMANDSTRINGS[] =
 	"precision",	"pre",
 	"cores",		"cor",
 	"symmetrical",	"sym", 
+	"mcmcmlstart",	"mls",
 	""
 };
 
@@ -769,6 +768,7 @@ typedef struct
 	int			LMaxFun;
 
 	int			UseRJMCMC;
+	int			MCMCMLStart;
 
 	PRIORS		*RJPrior;
 

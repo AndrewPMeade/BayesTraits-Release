@@ -612,6 +612,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->LastGamma		= -1;
 	Ret->GammaPrior		= NULL;
 	
+	Ret->Lh				= 0;
 
 	InitHMean(Ret, Opt);
 

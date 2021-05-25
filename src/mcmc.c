@@ -17,6 +17,7 @@
 #include "gamma.h"
 #include "ml.h"
 #include "phyloplasty.h"
+#include "threaded.h"
 
 #ifdef	 JNIRUN
 //	extern void	SetProgress(JNIEnv *Env, jobject Obj, int Progress);
@@ -213,97 +214,64 @@ void	InitPhonim(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	fflush(stdout);
 }
 
-void	MLMCMCStart(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	PraxisGo(Opt, Rates, Trees);
-}
 
 void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	double	*Vec;
-	int		Index;
-
 #ifdef PHONEIM_RUN
 	InitPhonim(Opt, Trees, Rates);
 	return;
 #endif
 
-#ifdef MCMC_ML_START
-	PraxisGo(Opt, Rates, Trees);
-#else
-	for(Index=0;Index<Rates->NoOfRates;Index++)
-		Rates->Rates[Index] = 1;
-#endif
+	Rates->TreeNo = 0;
+
+	if(Opt->MCMCMLStart == TRUE)
+		MLTree(Opt, Trees, Rates);
+	else
+		FindValidStartSet(Opt, Trees, Rates);
 	
 	if(Likelihood(Rates, Trees, Opt) != ERRLH)
 		return;
-
-	if(Opt->DataType == CONTINUOUS)
-	{
-		printf("Err (%s,%d): Could not get inish Lh:\n", __FILE__, __LINE__);
-		exit(0);
-	}
-
-	Vec = (double*)malloc(sizeof(double) * Rates->NoOfRates);
-	if(Vec == NULL)
-		MallocErr();
-
-	FindValidStartSet(Vec, Rates, Trees, Opt);
-	memcpy(Rates->Rates, Vec, sizeof(double) * Rates->NoOfRates);
-
-	free(Vec);
-}
-
-void	TestLHSurface(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	double Sig;
-
-	Rates->Contrast->EstAlpha[0] = -0.84678;
-	for(Sig=0;Sig<0.5;Sig+=0.0001)
-	{
-		Rates->Contrast->EstSigma[0] = Sig;
-		printf("%f\t%f\n", Sig, Likelihood(Rates, Trees, Opt));
-	}
-
-	exit(0);
-}
-
-void	MCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	int		Index;
-	int		RNo;
-//	int		RI;
-	double	f;
-
-	Rates->Lh = Likelihood(Rates, Trees, Opt);
-	printf("Lh\t%f\n", Rates->Lh);
 	
-	/*
-	for(Index=0;Index<10000;Index++)
-	{
-		f = ChangeRates(Rates, 1, Opt->RateDev);
-
-		printf("%f\n", f);
-	}
-	exit(0);
-	*/
-	for(Index=0;Index<100;Index++)
-	{
-	//	for(RI=0;RI<Rates->NoOfRJRates;RI++)
-		{			
-			RNo = RandUSLong(Rates->RS) % Rates->NoOfRJRates;
-	//		RNo = RI;
-			Rates->Rates[RNo] = RandDouble(Rates->RS) * 0.001;
-		//	Rates->Rates[RNo] = ChangeRates(Rates, Rates->Rates[RNo], Opt->RateDev);
-		}
-		
-		Rates->Lh = Likelihood(Rates, Trees, Opt);
-		printf("CLh\t%f\n", Rates->Lh);
-		fflush(stdout);
-	}
-
+	printf("Err (%s,%d): Could not get inish Lh:\n", __FILE__, __LINE__);
 	exit(0);
 }
+
+void	ShowTimeSec(double StartT, double EndT)
+{
+
+	printf("Sec:\t%f\n", EndT - StartT);
+}
+
+void	SetRates(RATES *Rates)
+{
+	Rates->Rates[0] = 0.916083;
+	Rates->Rates[1] = 0.082224;
+	Rates->Rates[2] = 0.335076;
+	Rates->Rates[3] = 0.082224;
+	Rates->Rates[4] = 0.839922;
+	Rates->Rates[5] = 0.839922;
+	Rates->Rates[6] = 0.195256;
+	Rates->Rates[7] = 0.002904;
+}
+
+
+void	STest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double StartT, EndT;
+	int Index;
+	
+	SetRates(Rates);
+	StartT = GetSeconds();
+
+	for(Index=0;Index<Opt->Itters;Index++)
+		Likelihood(Rates, Trees, Opt);
+	
+	EndT = GetSeconds();
+
+	printf("Time:\t%f\n", EndT - StartT);
+	exit(0);
+}
+
 
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
@@ -314,17 +282,19 @@ void	MCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	RATES*		CRates=NULL;
 	RATES*		NRates=NULL;
 	int			Itters;
-	double		Heat;
-	int			Acc=0;
-	FILE		*SumOut;
-	SUMMARY		*Summary;
-	char		Buffer[1024];
-	SCHEDULE*	Shed=NULL;
-	FILE*		ShedFile=NULL;
+	double		Heat, StartT, EndT;
+	int			Acc;
+	SCHEDULE*	Shed;
+	FILE*		ShedFile;
 	int			BurntIn, GBurntIn;
 #ifdef	JNIRUN
 	long		FP;
 #endif
+	
+	Shed		= NULL;
+	ShedFile	= NULL;
+	Acc			= 0;
+	CRates = NRates = NULL;
 
 	if(Opt->UseSchedule == TRUE)
 		ShedFile = OpenWrite(Opt->ScheduleFile);
@@ -334,13 +304,8 @@ void	MCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->UseSchedule == TRUE)
 		PrintShedHeadder(Opt, Shed, ShedFile);
 	
-	if(Opt->Summary == TRUE)
-		Summary = CreatSummary(Opt);
-
 	CRates	=	CreatRates(Opt);
 	NRates	=	CreatRates(Opt);
-	
-//	MCTest(Opt, Trees, CRates);
 
 	CreatPriors(Opt, CRates);
 	CreatPriors(Opt, NRates);
@@ -377,8 +342,9 @@ void	MCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		ProcessHeaders(Env, Obj, Opt);
 	#endif
 
-	InitMCMC(Opt, Trees, CRates);
+	//	STest(Opt, Trees, CRates);
 
+	InitMCMC(Opt, Trees, CRates);
 
 //	MCTest(Opt, Trees, CRates);
 	
@@ -393,6 +359,8 @@ void	MCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 // PrintTime(stdout); printf("\n");
 
+	StartT = GetSeconds();	
+
 	for(Itters=0;;Itters++)
 	{ 
 		CopyRates(NRates, CRates, Opt);
@@ -402,7 +370,6 @@ void	MCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			SetTreeAsData(Opt, Trees, NRates->TreeNo);
 
 		NRates->Lh = Likelihood(NRates, Trees, Opt);
-//		printf("CLh\t%f\t%f\n", CRates->Lh, NRates->Lh);fflush(stdout);
 
 		CalcPriors(NRates, Opt);
 
@@ -433,9 +400,6 @@ void	MCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 				PrintMCMCSample(Itters, Acc, Opt, CRates, Opt->LogFile);
 				fflush(Opt->LogFile);
-
-				if(Opt->Summary == TRUE)
-					UpDataSummary(Summary, CRates, Opt);
 
 				if(Opt->UseSchedule == TRUE)
 					PrintShed(Opt, Shed, ShedFile);
@@ -474,21 +438,12 @@ void	MCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 				free(Shed);
 
-				if(Opt->Summary == TRUE)
-				{
-					sprintf(&Buffer[0], "%s.%s", Opt->DataFN, SUMMARYFILEEXT);
-					SumOut = OpenWrite(Buffer);
-
-					PrintSummaryHeadder(SumOut, Summary, Opt);
-					PrintSummary(SumOut, Summary, Opt);
-
-					fclose(SumOut);
-
-					FreeSummary(Summary);
-				}
-
 				if(Opt->UseSchedule == TRUE)
 					fclose(ShedFile);
+
+				EndT = GetSeconds();
+
+				printf("Sec:\t%f\n", EndT - StartT);
 				return;
 			}
 
