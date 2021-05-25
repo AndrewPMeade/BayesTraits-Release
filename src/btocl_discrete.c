@@ -1,3 +1,32 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #ifdef BTOCL
 
 #include <stdio.h>
@@ -69,7 +98,7 @@ void btocl_AllocPMatrixInfo(TREES* Trees) {
 	Trees->buffer_error  = btocl_clCreateBuffer("Pmatrix error buffer",context, CL_MEM_WRITE_ONLY,
 		sizeof(int), NULL, &err);
 
-	btocl_AllocInvInfo(context, Trees->InvInfo, NOS, max_nnodes);
+	btocl_AllocInvInfo(context, Trees->InvInfo[0], NOS, max_nnodes);
 
 	// host
 	Trees->check_pmatrix = (double*)malloc(sizeof(double)*max_nnodes*NOS*NOS);  // used for debugging and error checking
@@ -80,7 +109,7 @@ void btocl_AllocPMatrixInfo(TREES* Trees) {
 
 
 void btocl_FreePMatrixInfo(TREES* Trees) {
-	INVINFO* InvInfo = Trees->InvInfo;
+	INVINFO* InvInfo = Trees->InvInfo[0];
 
 	// host
 	free(Trees->perror);
@@ -196,7 +225,7 @@ void printSetPMatrixResults(RATES *Rates, TREES *Trees, OPTIONS *Opt, double Rat
 	TREE* Tree;
 	int NOS;
 
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	Tree = Trees->Tree[Rates->TreeNo];
 	pmatrix = Trees->PList[0]->me[0];
 	NOS = Trees->NoStates;
@@ -217,7 +246,7 @@ void printPMatrixNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult,
 	TREE* Tree;
 	int NOS;
 
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	Tree = Trees->Tree[Rates->TreeNo];
 	pmatrix = Trees->PList[0]->me[0];
 	NOS = Trees->NoStates;
@@ -249,7 +278,7 @@ void printPMatrixCell(TREES *Trees, TREE* Tree,int node,int row,int col) {
 	double temp, temp2;
 	double *ptemp;
 
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	pmatrix = Trees->PList[0]->me[0];
 	NOS = Trees->NoStates;
 
@@ -395,7 +424,7 @@ int setExpqtArgs(cl_kernel kernel, TREES* Trees, TREE* Tree, KernelInfo k, cl_us
 	int NOS, NoNodes;
 	int argnum, local_memSize, num_cells;
 
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	NOS = Trees->NoStates;
 	NoNodes =  Tree->NoNodes;
 
@@ -624,7 +653,7 @@ void compare_pmatrix(TREES* Trees, TREE* Tree) {
 	double* pmatrix,*p;
 	int* IVect;
 
-	IVect = Trees->InvInfo->vect_id;
+	IVect = Trees->InvInfo[0]->vect_id;
 
 	nos = Trees->NoStates;
 	pmatrix = Trees->PList[0]->me[0];
@@ -725,14 +754,14 @@ int	btocl_SetAllPMatriCPU(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateM
 	TempM = AllocMatMem(NOS, NOS);
 
 	Tree = Trees->Tree[Rates->TreeNo];
-	GenTIDVectors(Tree, Trees->InvInfo, RateMult);
-	TVect = Trees->InvInfo->vect_t;
-	IVect = Trees->InvInfo->vect_id;
+	GenTIDVectors(Tree, Trees->InvInfo[0], RateMult);
+	TVect = Trees->InvInfo[0]->vect_t;
+	IVect = Trees->InvInfo[0]->vect_id;
 
 	for(Index=1;Index<Tree->NoNodes;Index++)
 	{
 		//N = Tree->NodeList[Index];
-		Err = CreatPMatrix(TVect[Index], Trees->InvInfo, Trees->PList[IVect[Index]]->me , NOS, TempM);
+		Err = CreatPMatrix(TVect[Index], Trees->InvInfo[0], Trees->PList[IVect[Index]]->me , NOS, TempM);
 		if(Err > 0.001)
 		{
 			printf("quitting pmatrix calculation due to error\n");
@@ -847,13 +876,13 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 	int argnum;
 
 	//btdebug_enter("pmatrix");
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	NOS = Trees->NoStates;
 	MaxNodes = Trees->MaxNodes;
 
 	Tree = Trees->Tree[Rates->TreeNo];
 	NoNodes =  Tree->NoNodes;
-	GenTIDVectors(Tree, Trees->InvInfo, RateMult);
+	GenTIDVectors(Tree, Trees->InvInfo[0], RateMult);
 
 	queue =  btocl_getCommandQueue();
 	context = btocl_getContext();
@@ -874,7 +903,7 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 	setExpqtKernelInfo(Trees,Tree,kernel_type,&k);
 
 	// the rest
-	btocl_loadInvInfoBuffers(queue,Trees->InvInfo, NOS, Tree->NoNodes,k);
+	btocl_loadInvInfoBuffers(queue,Trees->InvInfo[0], NOS, Tree->NoNodes,k);
 
 	// testing
 	//btdebug_enter("expeigen");
@@ -1014,7 +1043,7 @@ int btocl_computeExpComponent(TREES *Trees, TREE *Tree) {
 
 	NOS = Trees->NoStates;
 	NoNodes =  Tree->NoNodes;
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	MaxNodes = Trees->MaxNodes;  // real size of pmatrix
 
 

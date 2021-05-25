@@ -25,6 +25,9 @@ int btocl_ltri_LTbyL(cl_mem buffer,int n);
 int btocl_kronecker_vectmult(cl_mem vres, cl_mem v, cl_mem sigma, int sigma_dim, cl_mem mat, int mat_dim);
 int btocl_kronecker_vectmult_one(cl_mem vres, cl_mem v, double sigma, cl_mem mat, int mat_dim);
 
+
+
+
 #endif // if BTOCL defined
 
 #endif

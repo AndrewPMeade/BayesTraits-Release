@@ -42,7 +42,8 @@ extern void dtrtri_(char* uplo, char* diag, int* n, double* A, int* lda, int* IN
 
 int btlapack_cholesky(double* m, int n, double* det);
 int btlapack_invcholesky(double* m, int n, double* det);
-int btlapack_choleskytU(double* m, int n, double* det);  // for testing
+//int btlapack_choleskytU(double* m, int n, double* det);  // for testing
+int btlapack_choleskyU(double* a, int n, double* det);
 int btlapack_cholesky2(double* m, int n, double* det);  // unblocked
 
 int btlapack_invlu(double* m, int n, double* det);

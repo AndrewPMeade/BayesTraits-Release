@@ -1,3 +1,32 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #ifdef BTOCL
 
 #include <stdio.h>
@@ -596,7 +625,7 @@ void btocl_computePartialLhKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, cl_u
 	int argnum;
 
 	//btdebug_enter("pmatrix");
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	NOS = Trees->NoStates;
 	MaxNodes = Trees->MaxNodes;
 
@@ -921,7 +950,7 @@ int btocl_setPlhArgs(cl_kernel kernel, TREES* Trees, TREE* Tree, KernelInfo_lh k
 	int argnum, local_memSize;
 
 
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	nsites = Trees->NoSites;
 	NOS = Trees->NoStates;
 	NoNodes =  Tree->NoNodes;
