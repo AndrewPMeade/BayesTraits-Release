@@ -2650,7 +2650,7 @@ void	SetLambda(OPTIONS *Opt, int Tokes, char **Passed)
 		Val = atof(Passed[1]);
 		if(Val < MIN_LAMBDA)
 		{
-			printf("%f is lower than the minium lambda %f", Val, MIN_LAMBDA);
+			printf("%f is lower than the minium lambda %12.12f", Val, MIN_LAMBDA);
 			exit(1);
 		}
 

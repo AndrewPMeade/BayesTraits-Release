@@ -266,8 +266,7 @@ double	CalcGlobalR2(REG_CON_POST* RegConPost)
 	SST = 0;
 	for(Index=0;Index<RegConPost->NoContrasts;Index++)
 		SST += (Mean - RegConPost->Contrasts[Index][0]) * (Mean - RegConPost->Contrasts[Index][0]);
-
-
+	
 	Ret = 1.0 - (SSR / SST);
 	return Ret;
 }
