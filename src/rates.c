@@ -705,9 +705,7 @@ void	SetRatesLocalRates(RATES *Rates, OPTIONS *Opt)
 	if(Opt->NoLocalTransforms == 0)
 		return;
 
-	Rates->LocalTransforms = (LOCAL_TRANSFORM**)malloc(sizeof(LOCAL_TRANSFORM*) * Opt->NoLocalTransforms);
-	if(Rates->LocalTransforms == NULL)
-		MallocErr();
+	Rates->LocalTransforms = (LOCAL_TRANSFORM**)SMalloc(sizeof(LOCAL_TRANSFORM*) * Opt->NoLocalTransforms);
 
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
 		Rates->LocalTransforms[Index] = CloneLocalTransform(Opt->LocalTransforms[Index]);
@@ -716,6 +714,7 @@ void	SetRatesLocalRates(RATES *Rates, OPTIONS *Opt)
 	Rates->UseLocalTransforms = TRUE;
 
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+	{
 		if(Rates->LocalTransforms[Index]->Est == TRUE)
 		{
 			if(Rates->LocalTransforms[Index]->Type == VR_OU)
@@ -723,7 +722,10 @@ void	SetRatesLocalRates(RATES *Rates, OPTIONS *Opt)
 			else
 				Rates->LocalTransforms[Index]->Scale = 1.0;
 		}
+	}
 }
+
+void	Add
 
 void	SetDiscretisedPrior(PRIOR *Prior, OPTIONS *Opt)
 {
@@ -1219,6 +1221,10 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 	if(Opt->UseDistData == TRUE)
 		OutputDataDistHeadder(Str, Opt);
+
+
+	if(Opt->UseRJLandscapeRateGroup == TRUE)
+		fprintf(Str, "RJLandRateSig\t");
 
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
@@ -1796,6 +1802,9 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	if(Opt->UseDistData == TRUE)
 		OutputDataDist(Str, Rates, Opt);
 
+	if(Opt->UseRJLandscapeRateGroup == TRUE)
+		fprintf(Str, "%0.12f\t", Rates->LandscapeRateGroups->Sig);
+
 }
 
 double	GetPartailPi(RATES *Rates, NODE N, int StateNo, int SiteNo)
@@ -2202,6 +2211,23 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	A->NormConst = B->NormConst;
 	A->GlobablRate = B->GlobablRate;
 }
+
+
+double ChangeRateExp(double Value, double Dev, RANDSTATES *RS, double *LnHastings)
+{
+	double	Ret, Scale;
+
+	Scale = exp(Dev * (RandDouble(RS) - 0.5));
+
+	Ret = Value * Scale;
+
+
+	// Working ish with 1.
+	*LnHastings += log(Ret / Value);
+
+	return Ret;
+}
+
 
 double ChangeRate(RATES *Rates, double RateV, double dev)
 {
@@ -2861,12 +2887,12 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case S_LAND_RATE_MOVE:
-			if(It > 100000)
-				SwapRateGroupParam(Rates);
+			SwapRateGroupParam(Rates);
 		break;
 
 		case S_LAND_RATE_CHANGE:
-				ChangeLandRateGoup(Rates, Shed);
+//				ChangeLandRateGoup(Rates, Shed);
+				ChangeLandRateGroupSigDist(Rates,  Shed);
 		break;
 	}
 }

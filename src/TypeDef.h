@@ -634,6 +634,7 @@ typedef struct
 
 	RATE_GROUP	**RateGroupList;
 
+	double	Sig;
 } LAND_RATE_GROUPS;
 
 typedef struct

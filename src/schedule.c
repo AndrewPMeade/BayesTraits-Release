@@ -259,8 +259,9 @@ void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 	
 	if(Opt->UseRJLandscapeRateGroup == TRUE)
 	{
-		Shed->OptFreq[S_LAND_RATE_MOVE] = 0.5;
-//		Shed->OptFreq[S_LAND_RATE_CHANGE] = 0.2;
+		Shed->OptFreq[S_LAND_RATE_MOVE] = 0.8;
+		Shed->OptFreq[S_RATES] = 0.1;
+		Shed->OptFreq[S_LAND_RATE_CHANGE] = 0.1;
 	}
 
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);

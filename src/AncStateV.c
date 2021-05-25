@@ -50,8 +50,6 @@ NODE	GetNodeFromID(TREE *Tree, int ID)
 
 double		NodeDistToRoot(NODE N)
 {
-	double Ret;
-
 	return N->DistToRoot;
 }
 
@@ -86,7 +84,7 @@ NODE		GetCommonNode(NODE N)
 
 double		NodeToNodeDist(TREE *Tree, int ID_x, int ID_y)
 {
-	NODE X, Y, C, Index;
+	NODE X, Y, C;
 
 	X = GetNodeFromID(Tree, ID_x);
 	if(ID_x == ID_y)
@@ -209,7 +207,7 @@ void	MultiVarNorma(MATRIX *V)
 void MakeAncVMatrix(OPTIONS *Opt, TREES *Trees)
 {
 	MATRIX *VMat;
-	int N, Index;
+	int N;
 	TREE *Tree;
 	int NoEstNodes;
 	int *EstID;

@@ -505,8 +505,12 @@ double	LogNormalP(double X, PRIOR *Prior)
 		B = gsl_cdf_gaussian_P(X + Prior->Width, Prior->DistVals[1]);
 		Ret = B - A;
 	}
+	Ret = log(Ret);
 
-	return log(Ret);
+	if(ValidPriorLh(Ret) == FALSE)
+		return ERRLH;
+
+	return Ret;
 }
 
 void	TestGammaPrior(PRIOR *Prior)

@@ -16,6 +16,8 @@ void		PrintRatesHeadder(FILE* Str, OPTIONS *Opt);
 void		PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed);
 
 
+double		ChangeRateExp(double Value, double Dev, RANDSTATES *RS, double *LnHastings);
+
 int			FindNoOfRates(OPTIONS *Opt);
 int			FindRatePos(int Rate, OPTIONS *Opt);
 void		MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It);

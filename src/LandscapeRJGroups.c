@@ -9,6 +9,7 @@
 #include "GenLib.h"
 #include "LandscapeRJGroups.h"
 #include "Priors.h"
+#include "Rates.h"
 
 void FreeRateGroup(RATE_GROUP *RateGroup)
 {
@@ -36,7 +37,8 @@ LAND_RATE_GROUPS*	AllocLandRateGroup(int NoRates)
 
 	Ret->NoGroups = 0;
 	Ret->RateGroupList = (RATE_GROUP**)SMalloc(sizeof(RATE_GROUP*) * NoRates);
-	
+	Ret->Sig = -1;
+
 	return Ret;
 }
 
@@ -100,11 +102,25 @@ RATE_GROUP*	GetRateGroup(LAND_RATE_GROUPS* LandRGroup, int PNo, int *Pos)
 	return NULL;
 }
 
+void	SetDiscretisedDist(LAND_RATE_GROUPS* LandRGroup)
+{
+	int Index;
+	double CDF_P, X;
+
+	for(Index=0;Index<LandRGroup->NoGroups;Index++)
+	{
+		CDF_P = ((Index+1) - 0.5) / (double)LandRGroup->NoGroups;
+
+		X = gsl_cdf_gaussian_Pinv(CDF_P, LandRGroup->Sig);
+
+		LandRGroup->RateGroupList[Index]->Rate = X;
+	}
+}
 
 void	FixedBetaDiscretised(RATES *Rates, LAND_RATE_GROUPS* LandRGroup, RANDSTATES *RS, int NoGroup)
 {
 	int Index, GNo;
-	double CDF_P, X, P, Sig;
+	double P, Sig;
 	RATE_GROUP*	RateG;
 	PRIOR *Prior;
 
@@ -115,22 +131,15 @@ void	FixedBetaDiscretised(RATES *Rates, LAND_RATE_GROUPS* LandRGroup, RANDSTATES
 
 	LandRGroup->NoGroups = NoGroup;
 
-	for(Index=0;Index<NoGroup;Index++)
-	{
-		CDF_P = ((Index+1) - 0.5) / (double)NoGroup;
-	
-		X = gsl_cdf_gaussian_Pinv(CDF_P, Sig );
-		P = gsl_ran_gaussian_pdf(X, Sig);
+	LandRGroup->Sig = Sig;
+	SetDiscretisedDist(LandRGroup);
 
-		LandRGroup->RateGroupList[Index]->Rate = X;
-		LandRGroup->RateGroupList[Index]->NoRates = 0;
-	}
 
 	for(Index=0;Index<LandRGroup->NoRates;Index++)
 	{
 		GNo = RandUSInt(RS) % LandRGroup->NoGroups;
 
-		GNo = NoGroup / 2;
+//		GNo = NoGroup / 2;
 		
 		RateG = LandRGroup->RateGroupList[GNo];
 
@@ -227,9 +236,11 @@ void				CopyLandRateGroups(LAND_RATE_GROUPS* A, LAND_RATE_GROUPS* B)
 {
 	int Index;
 
+	A->Sig = B->Sig;
+
 	A->NoGroups = B->NoGroups;
 	A->NoRates = B->NoRates;
-
+	
 	for(Index=0;Index<B->NoGroups;Index++)
 		CopyRateGroup(A->RateGroupList[Index], B->RateGroupList[Index]);
 }
@@ -388,24 +399,32 @@ double CalcPriorLandRateGoup(RATES *Rates)
 	int Index;
 	LAND_RATE_GROUPS* LandRateGroups;
 	
+	return 0;
+
 	LandRateGroups = Rates->LandscapeRateGroups;
 
 	Prior = GetPriorFromName("RJ_Landscape_Rate_Group", Rates->Priors, Rates->NoPriors);
+	
+//	LandRateGroups->Sig = 3.4761097485661408e-17;
+	Prior->DistVals[1] = LandRateGroups->Sig;
 
+	
 	Ret = 0;
 	for(Index=0;Index<LandRateGroups->NoGroups;Index++)
 	{
 		RateG = LandRateGroups->RateGroupList[Index];
 		BetaPrior = CalcLhPriorP(RateG->Rate, Prior);
 
+//		printf("%d\t%f\t%f\n", Index, RateG->Rate, BetaPrior);
+
 		if(BetaPrior == ERRLH)
 			return ERRLH;
 
 		if(RateG->Rate != 0)
-			Ret += BetaPrior * RateG->NoRates;
-	//		Ret += BetaPrior;
+	//		Ret += BetaPrior * RateG->NoRates;
+			Ret += BetaPrior;
 	}
-
+//	exit(0);
 	return Ret;
 }
 
@@ -431,4 +450,20 @@ void ChangeLandRateGoup(RATES *Rates,  SCHEDULE* Shed)
 	RateG = LandRateGroups->RateGroupList[RateGNo];
 
 	RateG->Rate += RandNormal(Rates->RS, 0, Dev);
+}
+
+void	ChangeLandRateGroupSigDist(RATES *Rates,  SCHEDULE* Shed)
+{
+	LAND_RATE_GROUPS* LandRateGroups;
+	double Dev;
+
+	Shed->CurrentAT = Shed->LandscapeRateChangeAT; 
+
+	Dev = Shed->CurrentAT->CDev;
+
+	LandRateGroups = Rates->LandscapeRateGroups;
+
+	LandRateGroups->Sig = ChangeRateExp(LandRateGroups->Sig, Dev, Rates->RS, &Rates->LnHastings);
+
+	SetDiscretisedDist(LandRateGroups);
 }
