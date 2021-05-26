@@ -6,10 +6,11 @@
 #include "typedef.h"
 #include "trees.h"
 #include "genlib.h"
-
-
+/*
 void	SetNodePartition(NODE N, int* List, int *No)
 {
+	int Index;
+
 	if(N->Tip == TRUE)
 	{
 		if(List != NULL)
@@ -18,12 +19,17 @@ void	SetNodePartition(NODE N, int* List, int *No)
 		return;
 	}
 
-	SetNodePartition(N->Left, List, No);
-	SetNodePartition(N->Right, List, No);
+	for(Index=0;Index<N->NoNodes;Index++)
+		SetNodePartition(N->NodeList[Index], List, No);
 }
 
-int PartComp(int *a, int *b)
+int PartComp(const void *av, const void *bv)
 {
+	int *a, *b;
+
+	a = (int*)av;
+	b = (int*)bv;
+
 	if(*a > *b)
 		return 1;
 
@@ -32,31 +38,7 @@ int PartComp(int *a, int *b)
 
 	return 0;
 }
-/*
-void	SetPartition(NODE N, TAXA *Taxa)
-{
-	int	No;
 
-	if(N->Tip == TRUE)
-		return;
-
-	N->PSize = 0;
-	
-	SetNodePartition(N, NULL, &N->PSize);
-
-	N->Part = (int*)malloc(sizeof(int) * (N->PSize));
-	if(N->Part == NULL)
-		MallocErr();
-
-	No = 0;
-	SetNodePartition(N, N->Part, &No);
-
-	qsort(N->Part, N->PSize, sizeof(int), (void*)PartComp);
-
-	SetPartition(N->Left, Taxa);
-	SetPartition(N->Right, Taxa);
-}
-*/
 void	SetPart(NODE N)
 {
 	int	No;
@@ -79,7 +61,7 @@ void	SetPart(NODE N)
 	No = 0;
 	SetNodePartition(N, N->Part, &No);
 
-	qsort(N->Part, N->PSize, sizeof(int), (void*)PartComp);
+	qsort(N->Part, N->PSize, sizeof(int), PartComp);
 }
 
 int		IsPartEqual(int *Part1, int Len1, int* Part2, int Len2)
@@ -105,11 +87,11 @@ void	FreePartitions(TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		Tree = &Trees->Tree[TIndex];
+		Tree = Trees->Tree[TIndex];
 
-		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 		{
-			N = &Tree->NodeList[NIndex];
+			N = Tree->NodeList[NIndex];
 			if(N->Part != NULL)
 				free(N->Part);
 			N->Part = NULL;
@@ -127,11 +109,11 @@ void	SetPartitions(TREES *Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		Tree = &Trees->Tree[TIndex];
+		Tree = Trees->Tree[TIndex];
 
-		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 		{
-			N = &Tree->NodeList[NIndex];
+			N = Tree->NodeList[NIndex];
 			if(N->Tip == FALSE)
 			{
 				if(N->Part != NULL)
@@ -175,7 +157,7 @@ NODE	FindNode(RECNODE RNode, TREE *Tree, int *Depth, int NoOfNodes)
 
 	for(NIndex=0;NIndex<NoOfNodes;NIndex++)
 	{
-		TempNode = &Tree->NodeList[NIndex];
+		TempNode = Tree->NodeList[NIndex];
 		
 		if(IsPartEqual(TempNode->Part, TempNode->PSize, RNode->TaxaID, RNode->NoOfTaxa) == TRUE)
 		{
@@ -218,7 +200,7 @@ void	SetTaxaIDList(RECNODE RNode)
 	for(Index=0;Index<RNode->NoOfTaxa;Index++)
 		RNode->TaxaID[Index] = RNode->Taxa[Index]->No;
 	
-	qsort(RNode->TaxaID, RNode->NoOfTaxa, sizeof(int), (void*)PartComp);
+	qsort(RNode->TaxaID, RNode->NoOfTaxa, sizeof(int), PartComp);
 }
 
 void	SetRecNodes(RECNODE RNode, OPTIONS *Opt)
@@ -235,7 +217,7 @@ void	SetRecNodes(RECNODE RNode, OPTIONS *Opt)
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
 		Depth = 0;
-		N = FindNode(RNode, &Trees->Tree[TIndex], &Depth, Trees->NoOfNodes);
+		N = FindNode(RNode, Trees->Tree[TIndex], &Depth, Trees->Tree[TIndex]->NoNodes);
 		RNode->TreeNodes[TIndex] = N;
 
 		if(N != NULL)
@@ -249,44 +231,4 @@ void	SetRecNodes(RECNODE RNode, OPTIONS *Opt)
 	}
 }
 
-/*
-
-struct RNODE
-{
-	NODETYPE	NodeType;
-	char*		Name;
-	
-	int			NoOfTaxa;
-	int			PresInTrees;
-	int			FossilState;
-
-	TAXA		**Taxa;
-
-	int			Hits;
-	NODE*		TreeNodes;
-
-	struct		RNODE *Next;
-};
-
-  
-void	FindAllINodes(RECNODE RNode, OPTIONS *Opt)
-{
-	int	Index;
-	int	Depth;
-	
-	RNode->Hits= 0;
-	for(Index=0;Index<Opt->Trees->NoOfTrees;Index++)
-	{
-		Depth = 0;
-		RNode->TreeNodes[Index] = FindRecNode(RNode, Opt, Index, &Depth);
-		if(RNode->TreeNodes[Index] != NULL)
-		{
-			if((RNode->NodeType == MRCA) ||(RNode->NodeType == FOSSIL))
-				RNode->Hits += Depth;
-
-			if(RNode->NodeType == NODEREC)
-				RNode->Hits++;
-		}
-	}
-}
-*/
+ */

@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "genlib.h"
+#include "typedef.h"
 #include "treepasser.h"
 
 #define	NEXUSTAG	"#NEXUS"
@@ -28,6 +29,10 @@ int		FindNexusStart(char** TreeFile, int NoOfLines, int MaxLine)
 	for(Index=0;Index<NoOfLines;Index++)
 	{
 		strcpy(Buffer, TreeFile[Index]);
+
+		RemoveChar(';', Buffer);
+		RemoveChar(' ', Buffer);
+		RemoveChar('\t', Buffer);
 		
 		MakeUpper(Buffer);
 
@@ -308,7 +313,7 @@ void	GetTreeName(NTREE *Tree, char** Passed)
 	strcpy(Tree->Tag, Passed[Index]);
 }
 
-NNODE	AllocNode()
+NNODE	AllocNodeI()
 {
 	NNODE	Ret;
 	
@@ -339,7 +344,7 @@ NNODE	AddDescendant(NNODE N)
 	int		Index;
 	NNODE*	NewList;
 
-	Ret = AllocNode();
+	Ret = AllocNodeI();
 	Ret->Ans = N;
 
 	if(N->NoOfNodes == 0)
@@ -367,72 +372,56 @@ NNODE	AddDescendant(NNODE N)
 	return Ret;
 }
 
-double	GetLength(char *TreeString, int *Pos)
+double	GetLength(char *TreeString, int *Pos, char* Buffer)
 {
-	static char	*IDBuffer=NULL;
 	int		Index;
 	double	Ret;
-
-	if(IDBuffer == NULL)
-	{
-		IDBuffer = (char*)malloc(sizeof(char) * (BUFFERSIZE + 1));
-		if(IDBuffer == NULL)
-			MallocErr();
-	}
-
+	
 	Index=0;
 	do
 	{
-		IDBuffer[Index] = TreeString[*Pos];
+		Buffer[Index] = TreeString[*Pos];
 		(*Pos)++;
 		Index++;
 	} while((TreeString[*Pos] != ',') &&
 			(TreeString[*Pos] != ')') && 
 			(TreeString[*Pos] != ';'));
 
-	IDBuffer[Index] = '\0';
+	Buffer[Index] = '\0';
 
-	Ret = atof(&IDBuffer[0]);
+	Ret = atof(Buffer);
 
 	return Ret;
 }
 
-void	GetTip(NNODE Node, char *TreeString, int* Pos)
+void	GetTip(NNODE Node, char *TreeString, int* Pos, char *Buffer)
 {
-	static char	*IDBuffer=NULL;
 	int		Index;
-
-	if(IDBuffer == NULL)
-	{
-		IDBuffer = (char*)malloc(sizeof(char) * (BUFFERSIZE + 1));
-		if(IDBuffer == NULL)
-			MallocErr();
-	}
 
 	Node->Tip = TRUE;
 
 	Index=0;
 	do
 	{
-		IDBuffer[Index] = TreeString[*Pos];
+		Buffer[Index] = TreeString[*Pos];
 		(*Pos)++;
 		Index++;
 	} while((TreeString[*Pos] != ',') &&
 			(TreeString[*Pos] != ')') &&
 			(TreeString[*Pos] != ':'));
 
-	IDBuffer[Index] = '\0';
+	Buffer[Index] = '\0';
 
-	Node->TaxaID = atoi(&IDBuffer[0]);
+	Node->TaxaID = atoi(Buffer);
 
 	if(TreeString[*Pos] == ':')
 	{
 		(*Pos)++;
-		Node->Length = GetLength(TreeString, Pos);
+		Node->Length = GetLength(TreeString, Pos, Buffer);
 	}
 }
 
-void	PassTree(NNODE CNode, char *TreeString, int* Pos)
+void	PassTree(NNODE CNode, char *TreeString, int* Pos, char *Buffer)
 {
 	NNODE	NNode;
 
@@ -444,11 +433,11 @@ void	PassTree(NNODE CNode, char *TreeString, int* Pos)
 		
 		if(TreeString[(*Pos)] == '(')
 		{
-			PassTree(NNode, TreeString, Pos);
+			PassTree(NNode, TreeString, Pos, Buffer);
 		}
 		else
 		{
-			GetTip(NNode, TreeString , Pos);
+			GetTip(NNode, TreeString , Pos, Buffer);
 		}
 	} while (TreeString[*Pos] == ',') ;
 
@@ -456,7 +445,7 @@ void	PassTree(NNODE CNode, char *TreeString, int* Pos)
 	if(TreeString[(*Pos)] == ':')
 	{
 		(*Pos)++;
-		CNode->Length = GetLength(TreeString, Pos);
+		CNode->Length = GetLength(TreeString, Pos, Buffer);
 	}
 }
 
@@ -491,7 +480,7 @@ void	CheckBrackets(char* TreeString, int TreeNo)
 int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int TreeStart)
 {
 	int		Index;
-	char*	Buffer;
+	char	*Buffer, *PBuffer;
 	char**	Passed;
 	int		Tokes;
 	int		NoOfTrees;
@@ -502,8 +491,9 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 
 	Buffer = (char*)malloc(sizeof(char) * (MaxLine+1));
 	Passed = (char**)malloc(sizeof(char*) * (MaxLine));
+	PBuffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
 
-	if((Buffer == NULL) || (Passed == NULL))
+	if((Buffer == NULL) || (Passed == NULL) || (PBuffer == NULL))
 		MallocErr();
 
 
@@ -522,10 +512,10 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 
 					Pos = 0;
 
-					Trees->Trees[NoOfTrees].Root = AllocNode();
+					Trees->Trees[NoOfTrees].Root = AllocNodeI();
 
 					CheckBrackets(Passed[Tokes-1], NoOfTrees);
-					PassTree(Trees->Trees[NoOfTrees].Root, Passed[Tokes-1], &Pos);
+					PassTree(Trees->Trees[NoOfTrees].Root, Passed[Tokes-1], &Pos, PBuffer);
 
 					Trees->Trees[NoOfTrees].NoOfNodes = 0;
 					FindNoOfNodes(Trees->Trees[NoOfTrees].Root, &Trees->Trees[NoOfTrees].NoOfNodes);
@@ -538,6 +528,7 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 
 	free(Buffer);
 	free(Passed);
+	free(PBuffer);
 
 	return NoOfTrees;
 }
@@ -612,7 +603,7 @@ NTREES*	LoadNTrees(char* FileName, char** Err)
 	if(NexusStart == -1)		
 	{
 		FreeTextFile(TreeFile);
-		*Err = CopyStr("Does have a #NEXUS tag in.");
+		*Err = CopyStr("Tree file does not have a valid nexus tag.\n");
 		return NULL;
 	}
 
@@ -782,13 +773,11 @@ int	FindNoOfTaxa(NNODE N)
 
 	if(N->Tip == TRUE)
 		return 1;
-	else
-	{
-		Ret = 0;
-		for(Index=0;Index<N->NoOfNodes;Index++)
-			Ret += FindNoOfTaxa(N->NodeList[Index]);
-	}
-
+	
+	Ret = 0;
+	for(Index=0;Index<N->NoOfNodes;Index++)
+		Ret += FindNoOfTaxa(N->NodeList[Index]);
+	
 	return Ret;
 }
 
@@ -800,16 +789,19 @@ void	SetPartitionTaxa(NNODE N, int* List, int *No)
 	{
 		List[(*No)] = N->TaxaID;
 		(*No)++;
+		return;
 	}
-	else
-	{
-		for(Index=0;Index<N->NoOfNodes;Index++)
-			SetPartitionTaxa(N->NodeList[Index], List, No);
-	}
+
+	for(Index=0;Index<N->NoOfNodes;Index++)
+		SetPartitionTaxa(N->NodeList[Index], List, No);
 }
 
-int	TaxaIDComp(int *P1, int *P2)
+int	TaxaIDComp(const void *Pv1, const void *Pv2)
 {
+	int *P1, *P2;
+
+	P1 = (int*)Pv1;
+	P2 = (int*)Pv2;
 
 	if(*P1 > *P2)
 		return 1;
@@ -846,8 +838,7 @@ PARTITION* GetPartition(NNODE N)
 {
 	PARTITION*	Ret;
 	int			No;
-
-
+	
 	Ret = (PARTITION*)malloc(sizeof(PARTITION));
 	if(Ret == NULL)
 		MallocErr();
@@ -860,11 +851,12 @@ PARTITION* GetPartition(NNODE N)
 	Ret->TaxaNo	= (int*)malloc(sizeof(int) * Ret->No);
 	if(Ret->TaxaNo == NULL)
 		MallocErr();
+	memset(Ret->TaxaNo, 0, sizeof(int)*Ret->No);
 
 	No = 0;
 	SetPartitionTaxa(N, Ret->TaxaNo, &No);
 
-	qsort(Ret->TaxaNo, Ret->No, sizeof(int), (void *)TaxaIDComp);
+	qsort(Ret->TaxaNo, Ret->No, sizeof(int), TaxaIDComp);
 
 	return Ret;
 }
@@ -925,8 +917,15 @@ void	AddPartitonsToList(PARTITION**	PList, int *No, PARTITION* Part)
 	(*No)++;
 }
 
-int		CompPartFreq(PARTITION **P1, PARTITION **P2)
+//int		CompPartFreq(PARTITION **Pv1, PARTITION **P2)
+int		CompPartFreq(const void *Pv1, const void *Pv2)
 {
+	PARTITION **P1, **P2;
+
+	P1 = (PARTITION**)Pv1;
+	P2 = (PARTITION**)Pv2;
+
+
 	if((*P1)->Prob>= (*P2)->Prob)
 		return -1;
 
@@ -975,7 +974,7 @@ void	GetPartitons(NTREES *Trees)
 		Trees->PartList[PIndex]->Prob = (double)Trees->PartList[PIndex]->Freq / (double)Trees->NoOfTrees;
 	}
 
-	qsort(Trees->PartList, Trees->NoOfParts, sizeof(PARTITION*), (void*)CompPartFreq);
+	qsort(Trees->PartList, Trees->NoOfParts, sizeof(PARTITION*), CompPartFreq);
 
 	free(TempList);
 }
@@ -1343,53 +1342,6 @@ int		GetTaxaID(NTREES* Trees, char *TaxaName)
 	}
 
 	return -1;
-}
-
-void	NNI(NTREE* T)
-{
-	NNODE	p, u, v, a, b, c;
-	int		r;
-
-	do
-	{
-		r = rand() % T->NoOfNodes;
-		p = T->NodeList[r]; 
-	}
-	while((p == T->Root) || (p->Tip == TRUE));
-	
-	u = p;
-	v = u->Ans;
-	a = u->NodeList[0];
-	b = u->NodeList[1];
-
-	if(v->NodeList[0] == u)
-		c = v->NodeList[1];
-	else
-		c = v->NodeList[0];
-
-	if(rand() % 100 < 50)
-	{
-		if(v->NodeList[0] == u)
-			v->NodeList[1] = b;
-		else
-			v->NodeList[0] = b;
-
-		u->NodeList[0] = a;
-		u->NodeList[1]=c;
-		a->Ans = c->Ans = u;
-		b->Ans = v;
-	}
-	else
-	{
-		if(v->NodeList[0] == u)
-			v->NodeList[1] = a;
-		else
-			v->NodeList[0] = a;
-		u->NodeList[0] = b;
-		u->NodeList[1] = c;
-		b->Ans = c->Ans = u;
-		a->Ans = v;
-	}
 }
 
 

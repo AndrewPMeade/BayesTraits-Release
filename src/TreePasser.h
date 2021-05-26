@@ -1,5 +1,5 @@
-#if !defined (TRESSHEADDER)
-#define TRESSHEADDER
+#if !defined (TRESSPASSER_HEADDER)
+#define TRESSPASSER_HEADDER
 
 static char    *TREETAGS[] =
 {

@@ -6,6 +6,9 @@
 #include "data.h"
 #include "genlib.h"
 #include "trees.h"
+#include "treenode.h"
+#include "part.h"
+
 
 void	PrintTaxaData(OPTIONS *Opt, TREES* Trees)
 {
@@ -15,13 +18,13 @@ void	PrintTaxaData(OPTIONS *Opt, TREES* Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Taxa = &Trees->Taxa[TIndex];
+		Taxa = Trees->Taxa[TIndex];
 
 		printf("%s\t", Taxa->Name);
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 		{
 			if(Opt->DataType == DISCRETE)
-				printf("%d\t", Taxa->DesDataChar[SIndex]);
+				printf("%s\t", Taxa->DesDataChar[SIndex]);
 			else
 				printf("%f\t", Taxa->ConData[SIndex]);
 		}
@@ -29,19 +32,21 @@ void	PrintTaxaData(OPTIONS *Opt, TREES* Trees)
 	}
 }
 
-void	PrintData(TREES* Trees)
+void	PrintDataDesc(TREES* Trees)
 {
 	int		NIndex;
 	int		SiteIndex,StateIndex;
 	TAXA	*T;
+	TREE	*Tree;
 	NODE	N;
 
+	Tree = Trees->Tree[0];
 
 	printf("Symbol List: %s\n", Trees->SymbolList);
 
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N =&Trees->Tree[0].NodeList[NIndex];
+		N = Tree->NodeList[NIndex];
 			
 		if(N->Tip == TRUE)
 		{
@@ -50,6 +55,7 @@ void	PrintData(TREES* Trees)
 			printf("%s\t", T->Name);
 			for(SiteIndex=0;SiteIndex<Trees->NoOfSites;SiteIndex++)
 			{
+				
 				for(StateIndex=0;StateIndex<Trees->NoOfStates;StateIndex++)
 				{
 					printf("%1.0f", N->Partial[SiteIndex][StateIndex]);
@@ -58,10 +64,41 @@ void	PrintData(TREES* Trees)
 
 			printf("\n");
 		}
-
-		
 	}
 }
+
+void	PrintDataCon(TREES* Trees, OPTIONS *Opt)
+{
+	int		TIndex;
+	int		SIndex;
+	TAXA	*Taxa;
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		Taxa = Trees->Taxa[TIndex];
+
+		printf("%s\t", Taxa->Name);
+		if(strcmp(Taxa->Name, "donii") == 0)
+			printf("Yetp\n");
+		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+			printf("%f\t", Taxa->ConData[SIndex]);
+		if(Opt->Model == M_CONTINUOUS_REG)
+			printf("|\t%f", Taxa->Dependant);
+		printf("\n");
+	}
+}
+
+void	PrintData(TREES* Trees, OPTIONS *Opt)
+{
+	if(Opt->DataType == CONTINUOUS)
+	{
+		PrintDataCon(Trees, Opt);
+		return;
+	}	
+
+	PrintDataDesc(Trees);
+}
+
 
 TAXA*	FindTaxaFromName(char *Name, TREES* Trees)
 {
@@ -69,8 +106,8 @@ TAXA*	FindTaxaFromName(char *Name, TREES* Trees)
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
-		if(strcmp(Trees->Taxa[Index].Name, Name) == 0)
-			return &Trees->Taxa[Index];
+		if(strcmp(Trees->Taxa[Index]->Name, Name) == 0)
+			return Trees->Taxa[Index];
 	}
 
 	return NULL;
@@ -100,6 +137,36 @@ int		ValidDouble(char *Str)
 	return TRUE;
 }
 
+void	AllocEstDataInfo(TAXA *Taxa, int NoSites)
+{
+	int	Index;
+
+	if(Taxa->EstDataP != NULL)
+		return;
+
+	Taxa->EstData = FALSE;
+	Taxa->EstDataP = (char*)malloc(sizeof(char) * NoSites);
+	if(Taxa->EstDataP == NULL)
+		MallocErr();
+
+	for(Index=0;Index<NoSites;Index++)
+		Taxa->EstDataP[Index] = FALSE;
+}
+
+
+int		HadEstData(char *Site)
+{
+	
+	while(*Site != '\0')
+	{
+		if(*Site == '?')
+			return TRUE;
+		Site++;
+	}
+
+	return FALSE;
+}
+
 void	AddDesTaxaData(int Tokes, char** Passed, TREES* Trees)
 {
 	TAXA	*Taxa=NULL;
@@ -120,23 +187,48 @@ void	AddDesTaxaData(int Tokes, char** Passed, TREES* Trees)
 
 	Taxa->DesDataChar = (char**)malloc(sizeof(char*)*Trees->NoOfSites);
 	
+	AllocEstDataInfo(Taxa, Trees->NoOfSites);
+
 	for(Index=1;Index<Trees->NoOfSites+1;Index++)
 	{
-		Taxa->DesDataChar[Index-1] = (char*)malloc(sizeof(char)*strlen(Passed[Index])+1);
-		if(Taxa->DesDataChar[Index-1] == NULL)
-			MallocErr();
+		if(HadEstData(Passed[Index]) == FALSE)
+		{
+			Taxa->DesDataChar[Index-1] = (char*)malloc(sizeof(char)*strlen(Passed[Index])+1);
+			if(Taxa->DesDataChar[Index-1] == NULL)
+				MallocErr();
+			strcpy(Taxa->DesDataChar[Index-1], Passed[Index]);
+		}
+		else
+		{
+			Taxa->DesDataChar[Index-1] = (char*)malloc(sizeof(char)*2);
+			Taxa->DesDataChar[Index-1][0] = '-';
+			Taxa->DesDataChar[Index-1][1] = '\0';
 
-		strcpy(Taxa->DesDataChar[Index-1], Passed[Index]);
+			Taxa->EstDataP[Index-1] = TRUE;
+			Taxa->EstData = TRUE;
+		}
 	}
 }
 
 int		EstData(TREES *Trees)
 {
+	TAXA	*Taxa;
 	int	TIndex;
+	int	SIndex;
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
-		if(Trees->Taxa[TIndex].EstData == TRUE)
+	{
+		Taxa  = Trees->Taxa[TIndex];
+
+		if(Taxa->EstDepData == TRUE)
 			return TRUE;
+
+		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+		{
+			if(Taxa->EstDataP[SIndex] == TRUE)
+				return TRUE;
+		}
+	}
 
 	return FALSE;
 }
@@ -163,12 +255,7 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 	if(Taxa->ConData == NULL)
 		MallocErr();
 
-	Taxa->EstDataP		= (char*)malloc(sizeof(char)*Trees->NoOfSites);
-	if(Taxa->EstDataP == NULL)
-		MallocErr();
-
-	for(Index=0;Index<Trees->NoOfSites;Index++)
-		Taxa->EstDataP[Index] = FALSE;
+	AllocEstDataInfo(Taxa, Trees->NoOfSites);
 
 	for(Index=1;Index<Trees->NoOfSites+1;Index++)
 	{
@@ -181,7 +268,10 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 			else
 			{
 				if(strcmp(Passed[Index], "?") == 0)
+				{
 					Taxa->EstDataP[Index-1] = TRUE;
+					Taxa->EstData = TRUE;
+				}
 				else
 					Trees->ValidCData = FALSE;
 			}
@@ -191,10 +281,10 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 
 void	LoadTaxaData(char* FileName, TREES* Trees)
 {
-	char*	Buffer=NULL;
-	char**	Passed=NULL;
-	int		Tokes;
-	int		Line=0;
+	char*		Buffer;
+	char**		Passed;
+	int			Tokes;
+	int			Line;
 	TEXTFILE	*DataFile;
 
 	Buffer = (char*)malloc(sizeof(char)*BUFFERSIZE);
@@ -251,7 +341,7 @@ void	BildSymbolList(TREES *Trees)
 	char*	Temp=NULL;
 	int		TIndex,SIndex,TokeIndex;
 
-	Temp = (char*)malloc(sizeof(char) * (Trees->NoOfTaxa * Trees->NoOfTaxa) + 1);
+	Temp = (char*)malloc(sizeof(char) * BUFFERSIZE);
 	if(Temp == NULL)
 		MallocErr();
 	Temp[0]='\0';
@@ -260,19 +350,26 @@ void	BildSymbolList(TREES *Trees)
 	{
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 		{
-			for(TokeIndex=0;TokeIndex<(int)strlen(Trees->Taxa[TIndex].DesDataChar[SIndex]);TokeIndex++)
+			for(TokeIndex=0;TokeIndex<(int)strlen(Trees->Taxa[TIndex]->DesDataChar[SIndex]);TokeIndex++)
 			{
-				if(IsSymbolInList(Trees->Taxa[TIndex].DesDataChar[SIndex][TokeIndex], Temp) == FALSE)
+				if(IsSymbolInList(Trees->Taxa[TIndex]->DesDataChar[SIndex][TokeIndex], Temp) == FALSE)
 				{
 					Temp[strlen(Temp)+1] = '\0';
-					Temp[strlen(Temp)] = Trees->Taxa[TIndex].DesDataChar[SIndex][TokeIndex];
+					Temp[strlen(Temp)] = Trees->Taxa[TIndex]->DesDataChar[SIndex][TokeIndex];
 				}
 			}
 		}
 	}
 
+	/* To add a hiden state */
+/*	Temp[2] = '\0';
+	if(Temp[0] == '0')
+		Temp[1] = '1';
+	else
+		Temp[1] = '0';
+*/
 	Trees->SymbolList = (char*)malloc(sizeof(char)*strlen(Temp)+1);
-
+	
 	if(Trees->SymbolList == NULL)
 		MallocErr();
 	strcpy(Trees->SymbolList, Temp);
@@ -282,13 +379,57 @@ void	BildSymbolList(TREES *Trees)
 	free(Temp);
 }
 
-int CompChars(char *char1, char *char2)
+//int CompChars(char *char1, char *char2)
+int CompChars(const void* c1, const void *c2)
 {
-  if (*char1 <  *char2) 
-	  return -1;
-  if (*char1 == *char2) 
-	  return  0;
+	char *char1, *char2;
+	
+	char1 = (char*)c1;
+	char2 = (char*)c2;
+
+	if (*char1 <  *char2) 
+		return -1;
+	
+	if (*char1 == *char2) 
+		return  0;
   return 1;
+}
+
+void	FindSiteSymbols(TREES *Trees, int SiteNo)
+{
+	int		TIndex;
+	TAXA	*Taxa;
+	char	*Buffer;
+	char	*DP;
+	int		DPLen;
+	int		DPIndex;
+
+	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
+	if(Buffer == NULL)
+		MallocErr();
+	Buffer[0] = '\0';
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		Taxa = Trees->Taxa[TIndex];
+		DP = Taxa->DesDataChar[SiteNo];
+		DPLen = strlen(DP);
+		for(DPIndex=0;DPIndex<DPLen;DPIndex++)
+		{
+			if(IsSymbolInList(DP[DPIndex], Buffer) == FALSE)
+			{
+				Buffer[strlen(Buffer)+1] = '\0';
+				Buffer[strlen(Buffer)] = DP[DPIndex];
+			}
+		}
+	}
+
+//	qsort(Buffer, strlen(Buffer), sizeof(char), (void *)CompChars);
+	qsort(Buffer, strlen(Buffer), sizeof(char), CompChars);
+	Trees->SiteSymbols[SiteNo] = StrMake(Buffer);
+	Trees->NOSList[SiteNo] = strlen(Trees->SiteSymbols[SiteNo]);
+
+	free(Buffer);	
 }
 
 int		ValidDescDataStr(char* Str)
@@ -311,7 +452,7 @@ void	CheckDescData(TREES* Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Taxa = &Trees->Taxa[TIndex];
+		Taxa = Trees->Taxa[TIndex];
 		for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 		{
 			if(ValidDescDataStr(Taxa->DesDataChar[SIndex]) == FALSE)
@@ -328,9 +469,9 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 	FILE*	ErrFile;
 	char	ErrFileName[1024];
 
-	if(Model == MULTISTATE)
+	if(Model == M_MULTISTATE)
 	{
-		qsort(Trees->SymbolList, Trees->NoOfStates, sizeof(char), (void *)CompChars);
+		qsort(Trees->SymbolList, Trees->NoOfStates, sizeof(char), CompChars);
 
 		if(strlen(Trees->SymbolList) == 1)
 		{
@@ -345,13 +486,13 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 	}
 	else
 	{
-		if((Model == DESCDEP) || (Model == DESCINDEP))
+		if((Model == M_DESCDEP) || (Model == M_DESCINDEP))
 		{
 			CheckDescData(Trees);
 		}
 	}
 
-	if((Model == DESCDEP) || (Model == DESCINDEP) || (Model == MULTISTATE))
+	if((Model == M_DESCDEP) || (Model == M_DESCINDEP) || (Model == M_MULTISTATE))
 		SetMinBL(Trees);
 }
 
@@ -359,59 +500,77 @@ void	LoadData(char* FileName, TREES *Trees)
 {
 	int		Index;
 
+
 	LoadTaxaData(FileName, Trees);
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
-		if(Trees->Taxa[Index].DesDataChar == NULL)
+		if(Trees->Taxa[Index]->DesDataChar == NULL)
 		{
-			printf("Could not load data for taxa %s\n", Trees->Taxa[Index].Name);
+			printf("Could not load data for taxa %s\n", Trees->Taxa[Index]->Name);
 			exit(0);
 		}
 	}
-
+/*
+	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	{
+		printf("SData:\t%s\t%s\t%s\n", Trees->Taxa[Index]->Name, Trees->Taxa[Index]->DesDataChar[0], Trees->Taxa[Index]->DesDataChar[1]);
+	}
+	exit(0);
+*/	
 	BildSymbolList(Trees);
 
 	return;
 }
 
-void	FreeData(TREES* Trees, MODEL Model)
+void	FreeTaxa(TAXA *Taxa, int NoOfSites)
+{
+	int		SIndex;
+
+	if(Taxa->DesDataChar != NULL)
+	{
+		for(SIndex=0;SIndex<NoOfSites;SIndex++)
+			free(Taxa->DesDataChar[SIndex]);
+		free(Taxa->DesDataChar);
+	}
+
+	if(Taxa->ConData != NULL)
+		free(Taxa->ConData);
+		
+	if(Taxa->EstDataP != NULL)
+		free(Taxa->EstDataP);
+
+	free(Taxa->Name);
+
+	free(Taxa);
+}
+
+void	FreeData(OPTIONS *Opt)
 {
 	int		Index;
-	int		SIndex;
 	TAXA	*Taxa;
 	int		NOS;
+	TREES	*Trees;
+
+	Trees = Opt->Trees;
 
 	NOS = Trees->NoOfSites;
-	if(Model == CONTINUOUSREG)
+	if(Opt->Model == M_CONTINUOUS_REG)
 		NOS++;
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Opt->Trees->NoOfTaxa;Index++)
 	{
-		Taxa = &Trees->Taxa[Index];
-
-		if(Taxa->DesDataChar != NULL)
-		{
-			for(SIndex=0;SIndex<NOS;SIndex++)
-				free(Taxa->DesDataChar[SIndex]);
-			free(Taxa->DesDataChar);
-		}
-
-		if(Taxa->ConData != NULL)
-			free(Taxa->ConData);
-		
-		if(Taxa->EstDataP != NULL)
-			free(Taxa->EstDataP);
-
-		free(Taxa->Name);
+		Taxa = Opt->Trees->Taxa[Index];
+		FreeTaxa(Taxa, NOS);
 	}
 }
 
-char*	SetDescUnknownStates(char** Sites)
+/* char*	SetDescUnknownStates(char** Sites) */
+char*	SetDescUnknownStates(char S1, char S2)
 {
 	char	*Ret=NULL;
 	
-	if((Sites[0][0] == UNKNOWNSTATE) && (Sites[1][0] == UNKNOWNSTATE))
+	if((S1 == UNKNOWNSTATE) && (S2 == UNKNOWNSTATE))
 	{
 		Ret = (char*)malloc(sizeof(char)*5);
 		if(Ret == NULL)
@@ -431,28 +590,28 @@ char*	SetDescUnknownStates(char** Sites)
 
 	Ret[2] = '\0';
 
-	if((Sites[0][0] == '0') && (Sites[1][0] == UNKNOWNSTATE))
+	if((S1 == '0') && (S2 == UNKNOWNSTATE))
 	{
 		Ret[0] = '0';
 		Ret[1] = '1';
 		return Ret;
 	}
 
-	if((Sites[0][0] == '1') && (Sites[1][0] == UNKNOWNSTATE))
+	if((S1 == '1') && (S2 == UNKNOWNSTATE))
 	{
 		Ret[0] = '2';
 		Ret[1] = '3';
 		return Ret;
 	}
 
-	if((Sites[0][0] == UNKNOWNSTATE) && (Sites[1][0] == '0'))
+	if((S1 == UNKNOWNSTATE) && (S2 == '0'))
 	{
 		Ret[0] = '0';
 		Ret[1] = '2';
 		return Ret;
 	}
 
-	if((Sites[0][0] == UNKNOWNSTATE) && (Sites[1][0] == '1'))
+	if((S1 == UNKNOWNSTATE) && (S2 == '1'))
 	{
 		Ret[0] = '1';
 		Ret[1] = '3';
@@ -460,6 +619,51 @@ char*	SetDescUnknownStates(char** Sites)
 	}
 
 	return Ret;
+}
+
+int		Dep01Site(char *Site)
+{
+	int S0, S1, SM, Index, Len;
+
+	S0 = S1 = SM = FALSE;
+	Len = strlen(Site);
+	for(Index=0;Index<Len;Index++)
+	{
+		if(Site[Index] == '0')
+			S0 = TRUE;
+		
+		if(Site[Index] == '1')
+			S1 = TRUE;
+
+		if(Site[Index] == UNKNOWNSTATE)
+			SM = TRUE;
+	}
+
+	if((S0 == TRUE) && (S1 == TRUE))
+		return TRUE;
+
+	if(SM == TRUE)
+		return TRUE;
+	
+	return FALSE;
+}
+
+void	SetDep01Unknown(TAXA *Taxa)
+{
+	if(Taxa->EstData == TRUE)
+		return;
+
+	if(Dep01Site(Taxa->DesDataChar[0]) == TRUE)
+	{
+		Taxa->DesDataChar[0][0] = UNKNOWNSTATE;
+		Taxa->DesDataChar[0][1] = '\0';
+	}
+
+	if(Dep01Site(Taxa->DesDataChar[1]) == TRUE)
+	{
+		Taxa->DesDataChar[1][0] = UNKNOWNSTATE;
+		Taxa->DesDataChar[1][1] = '\0';
+	}
 }
 
 void	SquashDep(TREES	*Trees)
@@ -471,8 +675,20 @@ void	SquashDep(TREES	*Trees)
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Taxa = &Trees->Taxa[TIndex];
+		Taxa = Trees->Taxa[TIndex];
 		Seen = FALSE;
+		
+		if(Taxa->EstData == TRUE)
+		{
+			Taxa->RealData = (char*)malloc(sizeof(char) * 3);
+			if(Taxa->RealData == NULL)
+				MallocErr();
+			Taxa->RealData[0] = Taxa->DesDataChar[0][0];
+			Taxa->RealData[1] = Taxa->DesDataChar[1][0];
+			Taxa->RealData[2] = '\0';
+		}
+		
+		SetDep01Unknown(Taxa);
 
 		if((Taxa->DesDataChar[0][0] == '0') && (Taxa->DesDataChar[1][0] == '0') && (Seen == FALSE))
 		{
@@ -504,7 +720,7 @@ void	SquashDep(TREES	*Trees)
 
 		if((Taxa->DesDataChar[0][0] == UNKNOWNSTATE) || (Taxa->DesDataChar[1][0] == UNKNOWNSTATE))
 		{
-			TempS = SetDescUnknownStates(Taxa->DesDataChar);
+			TempS = SetDescUnknownStates(Taxa->DesDataChar[0][0], Taxa->DesDataChar[1][0]);
 
 			free(Taxa->DesDataChar[0]);
 			Taxa->DesDataChar[0] = TempS;
@@ -525,21 +741,24 @@ void	SquashDep(TREES	*Trees)
 	if(Trees->SymbolList == NULL)
 		MallocErr();
 	strcpy(Trees->SymbolList, "0123");
-
 }
 
 void	RemoveConMissingData(TREES* Trees)
 {
-	int	Index;
+	int		Index;
+
+	FreeParts(Trees);
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
-		if(Trees->Taxa[Index].Exclude == TRUE)
+		if(Trees->Taxa[Index]->Exclude == TRUE)
 		{
-			RemoveTaxa(NULL, Trees, Trees->Taxa[Index].Name);
+			RemoveTaxa(NULL, Trees, Trees->Taxa[Index]->Name);
 			Index=-1;
 		}
 	}
+
+	SetParts(Trees);
 }
 
 int		NoOfNodesBelow(NODE N)
@@ -574,12 +793,15 @@ double	RootToTipLen(NODE N)
 void	SetTreeAsData(OPTIONS *Opt, TREES *Trees, int TreeNo)
 {
 	int		NIndex;
+	TREE	*Tree;
 	TAXA	*Taxa;
 	NODE	N;
 
-	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+	Tree = Trees->Tree[TreeNo];
+
+	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
-		N = &Trees->Tree[TreeNo].NodeList[NIndex];
+		N = Tree->NodeList[NIndex];
 
 		if(N->Tip == TRUE)
 		{
@@ -639,13 +861,12 @@ void	LoadVarDataTaxa(OPTIONS *Opt, TEXTFILE* File)
 		exit(0);
 	}
 
-
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
 
-		if(TaxaInList(Trees->Taxa[TIndex].Name, Passed, Trees->NoOfTaxa) == FALSE)
+		if(TaxaInList(Trees->Taxa[TIndex]->Name, Passed, Trees->NoOfTaxa) == FALSE)
 		{
-			printf("Error could not find matching coloum for taxa %s\n", Trees->Taxa[TIndex].Name);
+			printf("Error could not find matching coloum for taxa %s\n", Trees->Taxa[TIndex]->Name);
 			exit(0);
 		}
 	}
@@ -747,7 +968,7 @@ void	OrderVarData(OPTIONS *Opt)
 	
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Pos = GetVarDataTaxaPos(Trees->Taxa[TIndex].Name, Opt->VarData, Trees->NoOfTaxa);
+		Pos = GetVarDataTaxaPos(Trees->Taxa[TIndex]->Name, Opt->VarData, Trees->NoOfTaxa);
 		for(Index=0;Index<Opt->VarData->NoPoints;Index++)
 			Data[Index][TIndex] = Opt->VarData->Data[Index][Pos];
 		TempC[TIndex] = Opt->VarData->TaxaNames[Pos];
@@ -768,7 +989,6 @@ void	LoadVarData(OPTIONS* Opt)
 {
 	VARDATA		*Ret;
 	TEXTFILE	*File;
-/*	int			TIndex,Index; */
 
 	File = LoadTextFile(Opt->VarDataFile, FALSE);
 
@@ -832,5 +1052,157 @@ void	SetVarData(TREES* Trees, VARDATA *VarData, int Site)
 	int	TIndex;
 
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
-		Trees->Taxa[TIndex].ConData[0] = VarData->Data[Site][TIndex];
+		Trees->Taxa[TIndex]->ConData[0] = VarData->Data[Site][TIndex];
+}
+
+
+
+int		FreeTaxaNo(int No, TREES* Trees)
+{
+	int	Index;
+
+	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	{
+		if(Trees->Taxa[Index]->No == No)
+			return FALSE;
+	}
+
+	return TRUE;
+}
+
+int		GetFreeTaxaNo(TREES* Trees)
+{
+	int	No;
+
+	No = Trees->NoOfTaxa;
+	while(FreeTaxaNo(No, Trees)==FALSE)
+		No--;
+
+	return No;
+}
+/*
+	Taxa
+	int		No;
+	char*	Name;
+	char**	DesDataChar;
+	double*	ConData;
+	int		Exclude;
+	double	Dependant;
+
+	int		EstData;
+	char	*EstDataP;
+	int		EstDepData;
+*/
+
+void	SetNewConTaxaData(TAXA *Taxa, RECNODE RNode, TREES* Trees)
+{
+	int	Index;
+
+	Taxa->ConData		= (double*)malloc(sizeof(double) * Trees->NoOfSites);
+	if(Taxa->ConData == NULL)
+		MallocErr();
+
+/* Will have to chagne */
+
+	Taxa->EstDataP		= (char*)malloc(sizeof(char) * Trees->NoOfSites);
+	if(Taxa->EstDataP == NULL)
+		MallocErr();
+
+	Taxa->EstData		= FALSE;
+	
+	for(Index=0;Index<Trees->NoOfSites;Index++)
+	{
+		if(strcmp(RNode->ConData[Index], "?") == 0)
+		{
+			Taxa->EstData = TRUE;
+			Taxa->EstDataP[Index] = TRUE;	
+			Taxa->ConData[Index] = 0;
+		}
+		else
+		{
+			Taxa->EstDataP[Index] = FALSE;
+			Taxa->ConData[Index] = atof(RNode->ConData[Index]);
+		}
+	}
+	
+}
+
+TAXA*	SetNewConTaxa(RECNODE RNode, TREES* Trees)
+{
+	TAXA *Ret;
+	Ret = (TAXA*)malloc(sizeof(TAXA));
+	if(Ret == NULL)
+		MallocErr();
+
+	Ret->Name			= StrMake(RNode->Name);
+	Ret->No				= GetFreeTaxaNo(Trees);
+	Ret->DesDataChar	= NULL;
+
+	Ret->Exclude		= FALSE;
+	Ret->EstDepData		= FALSE;
+
+	SetNewConTaxaData(Ret, RNode, Trees);
+	
+	return Ret;
+}
+
+void	AddNewConTaxa(TREES* Trees, RECNODE	RNode)
+{
+	TAXA	**NewTaxa;
+
+	NewTaxa = (TAXA**)malloc(sizeof(TAXA*) * (Trees->NoOfTaxa + 1));
+	if(NewTaxa == NULL)
+		MallocErr();
+
+	memcpy(NewTaxa, Trees->Taxa, sizeof(TAXA*) * Trees->NoOfTaxa);
+
+	NewTaxa[Trees->NoOfTaxa] = SetNewConTaxa(RNode, Trees);
+	
+	free(Trees->Taxa);
+	Trees->Taxa = NewTaxa;
+	Trees->NoOfTaxa++;
+}
+
+void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
+{
+	int		Index;
+	RECNODE	RNode;
+
+	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
+	{
+		RNode = Opt->RecNodeList[Index];
+		AddNewConTaxa(Trees, RNode);
+		AddNewRecNode(Trees, RNode);
+	}
+
+	SetTaxaIndex(Trees);
+
+	FreeParts(Trees);
+	SetParts(Trees);
+
+	SetTreesDistToRoot(Trees);
+}
+
+
+void		SetDataRegTC(OPTIONS *Opt)
+{
+	int TIndex, SIndex;
+	TREES *Trees;
+	TAXA	*Taxa;
+
+	Trees = Opt->Trees;
+
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		Taxa = Trees->Taxa[TIndex];
+		printf("%s\t", Taxa->Name);
+		for(SIndex=1;SIndex<Trees->NoOfSites;SIndex++)
+		{
+			Taxa->ConData[SIndex] = 1;
+			printf("%f\t", Taxa->ConData[SIndex]);
+		}
+		printf("\n");
+	}
+//	exit(0);
 }

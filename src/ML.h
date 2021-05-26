@@ -3,6 +3,13 @@
 
 #include "typedef.h"
 
-void	FindML(OPTIONS *Opt, TREES* Trees);
-double	PraxisGo(OPTIONS *Opt, RATES *Rates, TREES *Trees);
+#ifdef	 JNIRUN
+	void	FindML(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj);
+#else
+	void	FindML(OPTIONS *Opt, TREES *Trees);
+#endif
+
+void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void	FindValidStartSet(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void	SetRandStaes(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 #endif

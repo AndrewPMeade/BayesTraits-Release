@@ -1,15 +1,7 @@
-#if !defined (CKAPPAHEADDER)
-#define CKAPPAHEADDER
+#ifndef CKAPPA_HEADDER
+#define CKAPPA_HEADDER
 
-void	InitCKappa(OPTIONS	*Opt, TREES	*Trees);
-
-void	InitCKappaTree(TREES *Trees, TREE* Tree);
-void	FreeCKappaTree(CONVAR *ConVar, int NoOfTaxa);
-
-void	KappaVarCoVar(TREES	*Trees, TREE *Tree);
-
-void	MakeKappaV(TREES *Trees, TREE	*Tree, double Kappa);
-
-
+void	MakeKappaV(TREES* Trees, TREE *Tree, double Kappa);
 
 #endif
+

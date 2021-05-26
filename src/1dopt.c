@@ -6,6 +6,7 @@
 #include "genlib.h"
 #include "1dopt.h"
 #include "likelihood.h"
+#include "RandLib.h"
 
 #define R 0.61803399 
 #define C (1.0-R)
@@ -102,6 +103,9 @@ double	Opt1DFunc(double Pram)
 	if(FOpt->EstLambda == TRUE)
 		FRates->Lambda = Pram;
 
+	if(FOpt->EstOU == TRUE)
+		FRates->OU = Pram;
+
 	if(FOpt->DataType == DISCRETE)
 		FRates->Rates[0] = Pram;
 
@@ -177,7 +181,6 @@ void	mnbrak(double *ax, double *bx, double *cx, double *fa, double *fb, double *
 		SHFT3(*fa, *fb, *fc, fu)
 	}
 }
-
 double	Opt1DDesc(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 {
 	double	BestLh;
@@ -220,39 +223,290 @@ double	Opt1DDesc(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 	return BestP;
 }
 
-
-void	Opt1D(OPTIONS *Opt, RATES *Rates, TREES *Trees)
+double	GetConP(OPTIONS *Opt, RATES *Rates)
 {
-	double	xmin;
-	FTrees	= Trees;
-	FRates	= Rates;
-	FOpt	= Opt;
+	if(Opt->EstDelta == TRUE)
+		return Rates->Delta;
 
+	if(Opt->EstKappa == TRUE)
+		return Rates->Kappa;
+
+	if(Opt->EstLambda == TRUE)
+		return Rates->Lambda;
+
+	if(Opt->EstOU == TRUE)
+		return Rates->OU;
+
+	exit(0);
+}
+
+void	SetConP(OPTIONS *Opt, RATES *Rates, double P)
+{
 	if(Opt->EstDelta == TRUE)
 	{
-		golden(500, 1, 0, 2, 3, Opt1DFunc, 0.000001, &xmin);
-		Rates->Delta = xmin;
+		Rates->Delta = P;
+		return;
 	}
 
 	if(Opt->EstKappa == TRUE)
 	{
-		golden(500, 1, 0, 1.5, 3, Opt1DFunc, 0.00001, &xmin);
-		Rates->Kappa = xmin;
+		Rates->Kappa = P;
+		return;
 	}
 
 	if(Opt->EstLambda == TRUE)
 	{
-		golden(500, 1, 0, 0.5, 1.1 , Opt1DFunc, 0.00001, &xmin);
-		Rates->Lambda = xmin;
+		Rates->Lambda = P;
+		return;
 	}
+
+	if(Opt->EstOU == TRUE)
+	{
+		Rates->OU = P;
+		return;
+	}
+
+	exit(0);
+}
+
+void	UpDateBestLh(OPTIONS *Opt, RATES *Rates, double *BestLh, double *BestP)
+{
+	if(Rates->Lh > *BestLh)
+	{
+		*BestLh = Rates->Lh;
+		*BestP = GetConP(Opt, Rates);
+	}
+}
+
+double	SetDefConP(OPTIONS *Opt)
+{
+	if(Opt->EstDelta == TRUE)
+		return 1.0;
+	
+	if(Opt->EstKappa == TRUE)
+		return 1.0;
+
+	if(Opt->EstLambda == TRUE)
+		return 1.0;
+
+	if(Opt->EstOU == TRUE)
+		return MIN_OU + MIN_OU;
+
+	return -1;
+}
+
+double	SetMinConP(OPTIONS *Opt)
+{
+	if(Opt->EstDelta == TRUE)
+		return MIN_DELTA;
+	
+	if(Opt->EstKappa == TRUE)
+		return MIN_KAPPA;
+
+	if(Opt->EstLambda == TRUE)
+		return MIN_LAMBDA;
+
+	if(Opt->EstOU == TRUE)
+		return MIN_OU;
+
+	return -1;
+}
+
+
+double	SetMaxConP(OPTIONS *Opt)
+{
+	if(Opt->EstDelta == TRUE)
+		return MAX_DELTA;
+	
+	if(Opt->EstKappa == TRUE)
+		return MAX_KAPPA;
+
+	if(Opt->EstLambda == TRUE)
+		return MAX_LAMBDA;
+
+	if(Opt->EstOU == TRUE)
+		return MAX_OU;
+
+	return -1;
+}
+
+double	MidPoint(double Min, double Max)
+{
+	double Ret;
+
+	Ret = (Max - Min) * 0.5;
+	return Ret + Min;
+}
+
+double	SetAveConP(OPTIONS *Opt)
+{
+	if(Opt->EstDelta == TRUE)
+		return MidPoint(MIN_DELTA, MAX_DELTA);
+	
+	if(Opt->EstKappa == TRUE)
+		return MidPoint(MIN_KAPPA, MAX_KAPPA);
+		
+	if(Opt->EstLambda == TRUE)
+		return MidPoint(MIN_LAMBDA, MAX_LAMBDA);
+		
+	if(Opt->EstOU == TRUE)
+		return MidPoint(MIN_OU, MAX_OU);
+
+	return -1;
+}
+
+double	RandPoint(RANDSTATES *RS, double Min, double Max)
+{
+	double Ret;
+	
+	Ret = (Max - Min) * RandDouble(RS);
+	return Ret + Min;
+}
+
+double	GetRandRates(OPTIONS *Opt, RATES *Rates)
+{
+
+	if(Opt->EstDelta == TRUE)
+		return RandPoint(Rates->RS, MIN_DELTA, MAX_DELTA);
+	
+	if(Opt->EstKappa == TRUE)
+		return RandPoint(Rates->RS, MIN_KAPPA, MAX_KAPPA);
+		
+	if(Opt->EstLambda == TRUE)
+		return RandPoint(Rates->RS, MIN_LAMBDA, MAX_LAMBDA);
+		
+	if(Opt->EstOU == TRUE)
+		return RandPoint(Rates->RS, MIN_OU, MAX_OU);
+
+	return -1;
+}
+
+void	SetRandConRates(OPTIONS *Opt, RATES *Rates, TREES *Trees, double *BestLh, double *BestP)
+{
+	*BestP = SetDefConP(Opt);
+	SetConP(Opt, Rates, *BestP);
+	*BestLh = Likelihood(Rates, Trees, Opt);
+	return;
+	
+	SetConP(Opt, Rates, GetRandRates(Opt, Rates));
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+	UpDateBestLh(Opt, Rates, BestLh, BestP);
+	
+	return;
+
+	SetConP(Opt, Rates, SetMinConP(Opt));
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+	UpDateBestLh(Opt, Rates, BestLh, BestP);
+
+	SetConP(Opt, Rates, SetMaxConP(Opt));
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+	UpDateBestLh(Opt, Rates, BestLh, BestP);
+	
+	SetConP(Opt, Rates, SetAveConP(Opt));
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+	UpDateBestLh(Opt, Rates, BestLh, BestP); 
+	
+	
+	
+/*	*BestP = GetRandRates(Opt, Rates);
+	SetConP(Opt, Rates, *BestP);
+	*BestLh = Likelihood(Rates, Trees, Opt);
+	return;
+
+	SetConP(Opt, Rates, SetMinConP(Opt));
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+	UpDateBestLh(Opt, Rates, BestLh, BestP);
+
+	SetConP(Opt, Rates, SetMaxConP(Opt));
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+	UpDateBestLh(Opt, Rates, BestLh, BestP);
+	
+	SetConP(Opt, Rates, SetAveConP(Opt));
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+	UpDateBestLh(Opt, Rates, BestLh, BestP); */
+}
+
+void	Opt1D(OPTIONS *Opt, RATES *Rates, TREES *Trees)
+{
+	double	Tol, xmin, Start;
+	double	BestLh, BestP;
+	int Index;
+
+	Tol = 0.000001;
+
+	Tol = 0.00001;
+	FTrees	= Trees;
+	FRates	= Rates;
+	FOpt	= Opt;
+
 
 	if(Opt->DataType == DISCRETE)
 	{
-	/*	golden(500, 1, 0, 500, 1000, Opt1DFunc, 0.00001, &xmin);
-		Rates->Rates[0] = xmin; 
-	*/
 		Rates->Rates[0] = Opt1DDesc(Opt, Rates, Trees);
+		return;
 	}
+	/*
+	BestP = 0;
+	for(Index=0;Index<1000;Index++)
+	{
+		Rates->OU = BestP;
+		BestLh = Likelihood(Rates, Trees, Opt);
+
+		printf("%f\t%f\n", BestP, BestLh);fflush(stdout);
+		BestP += 0.01;
+	}
+
+	exit(0);
+	*/
+
+	SetRandConRates(Opt, Rates, Trees, &BestLh, &BestP);
+	
+	for(Index=0;Index<Opt->MLTries;Index++)
+	{
+		if(Index > 0)
+			Start = GetRandRates(Opt, Rates);
+		else
+			Start = BestP; 
+
+		SetConP(Opt, Rates, Start);
+
+		if(Opt->EstDelta == TRUE)
+		{
+			golden(500, 1, MIN_DELTA, Start, MAX_DELTA, Opt1DFunc, Tol, &xmin);
+		}
+
+		if(Opt->EstKappa == TRUE)
+		{
+			golden(500, 1, MIN_KAPPA, Start, MAX_KAPPA, Opt1DFunc, Tol, &xmin);
+		}
+
+		if(Opt->EstLambda == TRUE)
+		{
+			golden(500, 1, MIN_LAMBDA,Start, MAX_LAMBDA , Opt1DFunc, Tol, &xmin);
+		}
+
+		if(Opt->EstOU == TRUE)
+		{
+			golden(500, 1, MIN_OU, Start, MAX_OU, Opt1DFunc, Tol, &xmin);
+		}
+
+		SetConP(Opt, Rates, xmin);
+		Rates->Lh = Likelihood(Rates, Trees, Opt);
+
+//		printf("ETest\t%d\t%f\t%f\t%f\n", Index, Start, Rates->Lh, xmin);fflush(stdout);
+
+		if(Rates->Lh > BestLh)
+		{
+			BestLh = Rates->Lh;
+			BestP = xmin;
+		}
+	}
+
+	SetConP(Opt, Rates, BestP);
+
+	Rates->Lh = Likelihood(Rates, Trees, Opt);
+
+//	printf("Best\t%d\t%f\t%f\n", Index, Rates->Lh, BestP);
 }
 
 

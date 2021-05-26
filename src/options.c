@@ -9,11 +9,16 @@
 #include "trees.h"
 #include "priors.h"
 #include "treenode.h"
+#include "RandLib.h"
+#include "threaded.h"
+#include "part.h"
+#include "rates.h"
+#include "stones.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHTINDENT		4
 
-void	FreeRecNodes(OPTIONS *Opt);
+void	FreeRecNodes(OPTIONS *Opt, int NoSites);
 
 char*	FormatRateName(char* RateName)
 {
@@ -39,6 +44,8 @@ void	PrintOptRes(FILE* Str, OPTIONS *Opt)
 	int		Index;
 	char*	FRateName;
 
+	if((Opt->AnalyticalP == TRUE) || (Opt->UseRModel == TRUE) || (Opt->NOSPerSite == TRUE))
+		return;
 
 	fprintf(Str, "Restrictions:\n");
 	for(Index=0;Index<Opt->NoOfRates;Index++)
@@ -48,26 +55,22 @@ void	PrintOptRes(FILE* Str, OPTIONS *Opt)
 
 		free(FRateName);
 
-		if(Opt->UseRJMCMC == TRUE)
+		switch(Opt->ResTypes[Index])
 		{
-			fprintf(Str, "RJ MCMC\n");
-		}
-		else
-		{
-			switch(Opt->ResTypes[Index])
-			{
-				case RESNONE:
+			case RESNONE:
+				if(Opt->UseRJMCMC == TRUE)
+					fprintf(Str, "RJ MCMC\n");
+				else
 					fprintf(Str, "None\n");
-				break;
+			break;
 
-				case RESCONST:
-					fprintf(Str, "%f\n", Opt->ResConst[Index]);
-				break;
+			case RESCONST:
+				fprintf(Str, "%f\n", Opt->ResConst[Index]);
+			break;
 
-				case RESRATE:
-					fprintf(Str, "%s\n", Opt->RateName[Opt->ResNo[Index]]);
-				break;
-			}
+			case RESRATE:
+				fprintf(Str, "%s\n", Opt->RateName[Opt->ResNo[Index]]);
+			break;
 		}
 
 	}
@@ -87,38 +90,16 @@ void	PrintPriorVals(PRIORS	*P, FILE* Str)
 	else
 	{
 		for(VIndex=0;VIndex<DISTPRAMS[P->Dist];VIndex++)
-			printf("(%2.2f,%2.2f) ", P->HP[VIndex*2], P->HP[(VIndex*2)+1]);
+			fprintf(Str, "(%2.2f,%2.2f) ", P->HP[VIndex*2], P->HP[(VIndex*2)+1]);
 	}
 	fprintf(Str, "\n");
 }
 
-int		DepPrior(OPTIONS* Opt, PRIORS	*P)
-{
-	char*	Buffer;
 
-	if(Opt->Model != CONTINUOUSREG)
-		return FALSE;
-
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
-
-	sprintf(Buffer, "Beta-%d", Opt->DependantSite + 1);
-
-	if(strcmp(Buffer, P->RateName) == 0)
-	{
-		free(Buffer);
-		return TRUE;
-	}
-
-	free(Buffer);
-	return FALSE;
-}
 
 void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 {
 	int		Index;
-	int		VIndex;
 	PRIORS	*P;
 	char	*FRateName;
 
@@ -127,17 +108,8 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 
 	if(Opt->UseRJMCMC == TRUE)
 	{
-		fprintf(Str, "    RJ Prior                     %s ", DISTNAMES[(int)Opt->RJPrior->Dist]);
-		if(Opt->RJPrior->HP == FALSE)
-		{
-			for(VIndex=0;VIndex<DISTPRAMS[Opt->RJPrior->Dist];VIndex++)
-				fprintf(Str, "%2.2f ", Opt->RJPrior->DistVals[VIndex]);
-		}
-		else
-		{
-			for(VIndex=0;VIndex<DISTPRAMS[Opt->RJPrior->Dist];VIndex++)
-				fprintf(Str, "(%2.2f,%2.2f) ", Opt->RJPrior->HP[VIndex*2], Opt->RJPrior->HP[(VIndex*2)+1]);
-		}
+		fprintf(Str, "    RJ Prior                     ");
+		PrintPriorVals(Opt->RJPrior, Str);
 		fprintf(Str, "\n");
 	}
 
@@ -149,7 +121,7 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 
 		P = Opt->Priors[Index];
 
-		if((Opt->ResTypes[Index] == RESNONE) && (Opt->UseRJMCMC == FALSE) && (DepPrior(Opt, P) == FALSE))
+		if((Opt->ResTypes[Index] == RESNONE) && (Opt->UseRJMCMC == FALSE))
 		{
 			PrintPriorVals(P, Str);
 		}
@@ -162,19 +134,15 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 	if(Opt->EstGamma == TRUE)
 	{
 		fprintf(Str, "        Gamma                    ");
-		P = Opt->PriorGamma;
 
-		fprintf(Str, "%s ", DISTNAMES[(int)P->Dist]);
-		if(P->UseHP == FALSE)
-		{
-			for(VIndex=0;VIndex<DISTPRAMS[P->Dist];VIndex++)
-				fprintf(Str, "%2.2f ", P->DistVals[VIndex]);
-		}
-		else
-		{
-			for(VIndex=0;VIndex<DISTPRAMS[P->Dist];VIndex++)
-				printf("(%2.2f,%2.2f) ", P->HP[VIndex*2], P->HP[(VIndex*2)+1]);
-		}
+		PrintPriorVals(Opt->PriorGamma, Str);
+		fprintf(Str, "\n");
+	}
+
+	if(Opt->EstOU == TRUE)
+	{
+		fprintf(Str, "    OU                           ");
+		PrintPriorVals(Opt->PriorOU, Str);
 		fprintf(Str, "\n");
 	}
 
@@ -209,45 +177,41 @@ void	PrintConPar(FILE* Str, int InUse, int Est, double Const)
 	fprintf(Str, "Not in use\n");
 }
 
-int		AnyEstDataPoints(OPTIONS *Opt)
-{
-	int	Index;
-	int	EstData;
-	TREES *Trees;
-
-	EstData = FALSE;
-
-	Trees = Opt->Trees;
-
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		if(Trees->Taxa[Index].EstDataP[Opt->DependantSite] == TRUE)
-			EstData = TRUE;
-
-	return EstData;
-}
-
 void	PrintEstData(FILE *Str, OPTIONS *Opt)
 {
-	int	Index;
-	int	Print;
-	TREES *Trees;
-
-	if(Opt->Model != CONTINUOUSREG)
-		return;
-
-	Print = AnyEstDataPoints(Opt);
+	int		TIndex;
+	int		SIndex;
+	TREES	*Trees;
+	TAXA	*Taxa;
 
 	Trees = Opt->Trees;
 
-	if(Print == FALSE)
+	if(EstData(Trees) == FALSE)
 		return;
 
-	fprintf(Str, "Data Deviation:                  %f\n", Opt->EstDataDev);
-	fprintf(Str, "Estimating dependent values for taxa\n");
+	if(Opt->DataType == CONTINUOUS)
+	{
+		fprintf(Str, "Data Deviation:                  %f\n", Opt->EstDataDev);
+		fprintf(Str, "Estimating values for taxa and Sites\n");
+	}
+	else
+		fprintf(Str, "Estimating values for taxa and Sites\n");
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		if(Trees->Taxa[Index].EstDataP[Opt->DependantSite] == TRUE)
-			fprintf(Str, "\t%s\n", Trees->Taxa[Index].Name);
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		Taxa = Trees->Taxa[TIndex];
+		if(Taxa->EstData == TRUE)
+		{
+			fprintf(Str, "\t");
+			PrintFixSize(Taxa->Name, 20, Str);
+			for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
+			{
+				if(Taxa->EstDataP[SIndex] == TRUE)
+					fprintf(Str, "%d ", SIndex+1);
+			}
+			fprintf(Str, "\n");
+		}
+	}
 }
 
 void	PrintOptions(FILE* Str, OPTIONS *Opt)
@@ -273,11 +237,19 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	else
 		fprintf(Str, "True\n");
 
+	fprintf(Str, "Seed                             %lu\n", Opt->Seed);
+
+	if(Opt->MakeUM == TRUE)
+		fprintf(Str, "Make UM                      True\n");
+
 	if(Opt->Analsis == ANALML)
 	{
 		fprintf(Str, "Analsis Type:                    Maximum Likelihood\n" );
 		fprintf(Str, "ML attempt per tree:             %d\n", Opt->MLTries);
 	}
+
+	fprintf(Str, "Precision:                       %d bits\n", Opt->Precision);
+	fprintf(Str, "Cores:                           %d\n", Opt->Cores);
 
 	if(Opt->Analsis == ANALMCMC)
 	{
@@ -285,12 +257,44 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "Sample Period:                   %d\n", Opt->Sample);
 		fprintf(Str, "Iterations:                      %d\n", Opt->Itters);
 		fprintf(Str, "Burn in:                         %d\n", Opt->BurnIn);
-		fprintf(Str, "Rate Dev:                        %f\n", Opt->RateDev);
 
-		if(Opt->UseModelFile == TRUE)
-			fprintf(Str, "Models taken form:               %s\n", Opt->ModelFile);
+		fprintf(Str, "MCMC ML Start:                   ");
+
+		if(Opt->MCMCMLStart == FALSE)
+			fprintf(Str, "False\n");
+		else
+			fprintf(Str, "True\n");
+
+		if(Opt->UseRJMCMC == TRUE)
+		{
+			fprintf(Str, "Use RJ MCMC:                     True\n");
+			if(Opt->CapRJRatesNo != -1)
+				fprintf(Str, "Cap RJ Rate Number:              %d\n", Opt->CapRJRatesNo);
+		}
+
+		if(Opt->UseSchedule	== TRUE)
+			fprintf(Str, "Schedule File:                   %s.Schedule.txt\n", Opt->LogFN);
+
+		if(Opt->AutoTuneRD == TRUE)
+			fprintf(Str, "Rate Dev:                        AutoTune\n");
+		else
+		{
+			fprintf(Str, "Rate Dev:                        %f\n", Opt->RateDev);
+
+			if(Opt->DataType == CONTINUOUS)
+			{
+				for(Index=0;Index<Opt->NoOfRates;Index++)
+				{
+					fprintf(Str, "    ");
+					PrintFixSize(Opt->RateName[Index], 29, Str);
+					fprintf(Str, "%f\n", Opt->RateDevList[Index]);
+				}
+			}
+		}
 	}
 
+	if(Opt->NOSPerSite == TRUE)
+		fprintf(Str, "Fit no of states per Site:       Yes\n");
 	fprintf(Str, "No of Rates:                     %d\n", Opt->NoOfRates);
 
 	if(Opt->DataType == DISCRETE)
@@ -301,9 +305,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			case PINONE:
 				fprintf(Str, "None\n");
 				break;
-			case PIEST:
-				fprintf(Str, "Estimate\n");
-				break;
 			case PIEMP:
 				fprintf(Str, "Empirical\n");
 				break;
@@ -312,9 +313,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 				break;
 		}
 
-		fprintf(Str, "Character Symbols                ");
+		fprintf(Str, "Character Symbols:               ");
 
-		if(Opt->Model == MULTISTATE)
+		if(Opt->Model == M_MULTISTATE)
 		{
 			NOS = Opt->Trees->NoOfStates;
 			if(Opt->UseCovarion == TRUE)
@@ -327,6 +328,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			fprintf(Str, "00,01,10,11\n");
 
 
+//		fprintf(Str, "Normalisation Constant:          %20.20f\n", Opt->Trees->NormConst);
 	}
 
 	if(Opt->DataType == CONTINUOUS)
@@ -337,9 +339,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		else
 			fprintf(Str, "False\n");
 
-		if(Opt->Model == CONTINUOUSREG)
-			fprintf(Str, "Dependant Site:                  %d\n", Opt->DependantSite+1);
-
 		fprintf(Str, "Kappa                            ");
 		PrintConPar(Str, Opt->UseKappa, Opt->EstKappa, Opt->FixKappa);
 
@@ -348,6 +347,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 
 		fprintf(Str, "Lambda                           ");
 		PrintConPar(Str, Opt->UseLambda, Opt->EstLambda, Opt->FixLambda);
+
+		fprintf(Str, "OU                               ");
+		PrintConPar(Str, Opt->UseOU, Opt->EstOU, Opt->FixOU);
 
 		if(Opt->AlphaZero == TRUE)
 			fprintf(Str, "Alpha through zero:              True\n");
@@ -361,7 +363,8 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		if(Opt->UseVarData == TRUE)
 			fprintf(Str, "Varable Data form file:          %s\n", Opt->VarDataFile);
 
-		PrintEstData(Str, Opt);
+		if(Opt->UseVarRates == TRUE)
+			fprintf(Str, "Using PhyloPlasty:               True\n");
 	}
 	else
 	{
@@ -392,15 +395,32 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		}
 	}
 
+	if(Opt->SaveModels == TRUE)
+		fprintf(Str, "Save Model:                      %s\n", Opt->SaveModelsFN);
+
+	if(Opt->LoadModels == TRUE)
+		fprintf(Str, "Load Model:                      %s\n", Opt->LoadModelsFN);
+
+	PrintEstData(Str, Opt);
+
+	if(Opt->AnalyticalP == TRUE)
+		fprintf(Str, "Analytical P:                    True\n");
+
+	if(Opt->Model == M_DESCHET)
+	{
+		fprintf(Str, "Tree 1 Partitions :			   \t");
+	//	PrintTreePart(Str, Opt->Trees, 0);
+	}
+
 	PrintOptRes(Str, Opt);
 	if(Opt->Analsis == ANALMCMC)
 		PrintPriorOpt(Str, Opt);
 
 	RNode = Opt->RecNode;
-	while(RNode != NULL)
+	while((RNode != NULL) && (Opt->Model != M_CONTINUOUS_RR) && (Opt->Model != M_CONTINUOUS_DIR))
 	{
 		if(RNode->NodeType == MRCA)
-			fprintf(Str, "NRCA:         %s                    %f\n", RNode->Name, FindAveNodeDepth(RNode, Opt));
+			fprintf(Str, "MRCA:         %s                    %f\n", RNode->Name, FindAveNodeDepth(RNode, Opt));
 
 
 		if(RNode->NodeType == NODEREC)
@@ -410,7 +430,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		if(RNode->NodeType == FOSSIL)
 			fprintf(Str, "Fossil:       %s                    %f (%d)\n", RNode->Name, FindAveNodeDepth(RNode, Opt), RNode->FossilState);
 
-		for(Index=0;Index<RNode->NoOfTaxa;Index++)
+		for(Index=0;Index<RNode->Part->NoTaxa;Index++)
 			fprintf(Str, "             %d\t%s\n", RNode->Taxa[Index]->No, RNode->Taxa[Index]->Name);
 
 		RNode = RNode->Next;
@@ -424,15 +444,15 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	}
 
 
-	PrintTrees(Str, Opt->Trees, Opt->DataType);
+	PrintTreesInfo(Str, Opt->Trees, Opt->DataType);
 	fflush(stdout);
 }
 
-void	FreeOptions(OPTIONS *Opt)
+void	FreeOptions(OPTIONS *Opt, int NoSites)
 {
 	int		Index;
 
-	if((Opt->Model == MULTISTATE) || (Opt->DataType == CONTINUOUS))
+	if((Opt->Model == M_MULTISTATE) || (Opt->DataType == CONTINUOUS))
 	{
 		for(Index=0;Index<Opt->NoOfRates;Index++)
 			free(Opt->RateName[Index]);
@@ -449,17 +469,55 @@ void	FreeOptions(OPTIONS *Opt)
 		FreePrior(Opt->RJPrior);
 	}
 
+	if(Opt->PriorDelta != NULL)
+		FreePrior(Opt->PriorDelta);
+
+	if(Opt->PriorLambda!= NULL)
+		FreePrior(Opt->PriorLambda);
+
+	if(Opt->PriorKappa != NULL)
+		FreePrior(Opt->PriorKappa);
+
+	if(Opt->PriorOU != NULL)
+		FreePrior(Opt->PriorOU);
+
+	if(Opt->EstDataSites != NULL)
+		free(Opt->EstDataSites);
+
+	if(Opt->RateDevList != NULL)
+		free(Opt->RateDevList);
+
 	free(Opt->DataFN);
 	free(Opt->TreeFN);
 	free(Opt->LogFN);
 	fclose(Opt->LogFile);
 
+	if(Opt->LogFileRead != NULL)
+		fclose(Opt->LogFileRead);
+
+	if(Opt->LogFileBuffer != NULL)
+		free(Opt->LogFileBuffer);
+
+	if(Opt->PassedOut != NULL)
+		free(Opt->PassedOut);
 
 	free(Opt->ResTypes);
 	free(Opt->ResNo);
 	free(Opt->ResConst);
 
-	FreeRecNodes(Opt);
+	if(Opt->SaveTrees != NULL)
+		free(Opt->SaveTrees);
+
+	FreeRecNodes(Opt, NoSites);
+
+	if(Opt->SaveModelsFN != NULL)
+		free(Opt->SaveModelsFN);
+
+	if(Opt->LoadModelsFN != NULL)
+		free(Opt->LoadModelsFN);
+
+	if(Opt->Stones != NULL)
+		FreeStones(Opt->Stones);
 
 	free(Opt);
 }
@@ -506,7 +564,8 @@ char**	ModelBRateName(OPTIONS* Opt)
 {
 	char**	Ret;
 	char*	Buffer;
-	int		Index;
+	int		No, Index;
+
 
 	Opt->NoOfRates = Opt->Trees->NoOfSites * 2;
 
@@ -521,9 +580,15 @@ char**	ModelBRateName(OPTIONS* Opt)
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
 		if(Index<Opt->Trees->NoOfSites)
-			sprintf(Buffer, "Alpha-%d", Index+1);
+		{
+			No = Index+1;
+			sprintf(Buffer, "Alpha-%d", No);
+		}
 		else
-			sprintf(Buffer, "Beta-%d", Index+1);
+		{
+			No = (Index - Opt->Trees->NoOfSites) + 1;
+			sprintf(Buffer, "Beta-%d", No);
+		}
 
 		Ret[Index] = StrMake(Buffer);
 	}
@@ -538,7 +603,7 @@ char**	RetModelRateName(OPTIONS* Opt)
 	char*	Buffer;
 	int		Index;
 
-	Opt->NoOfRates = Opt->Trees->NoOfSites + 1;
+	Opt->NoOfRates = Opt->Trees->NoOfSites;
 
 	Ret = (char**)malloc(sizeof(char*)*Opt->NoOfRates);
 	if(Ret == NULL)
@@ -553,8 +618,91 @@ char**	RetModelRateName(OPTIONS* Opt)
 
 	for(Index=1;Index<Opt->NoOfRates;Index++)
 	{
-		sprintf(Buffer, "Beta-%d", Index);
+		sprintf(Buffer, "Beta-%d", Index+1);
 		Ret[Index] = StrMake(Buffer);
+	}
+
+	free(Buffer);
+	return Ret;
+}
+
+char**	ContrastRateNames(OPTIONS *Opt)
+{
+	char	**Ret;
+	char	*Buffer;
+	int		Index, NOS, i;
+
+
+	Opt->NoOfRates = Opt->Trees->NoOfSites;
+
+	NOS = Opt->Trees->NoOfSites;
+
+	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
+	if((Ret == NULL) || (Buffer == NULL))
+		MallocErr();
+
+	i = 0;
+	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	{
+		sprintf(Buffer, "Alpha-%d", Index+1);
+		Ret[i++] = StrMake(Buffer);
+	}
+
+	free(Buffer);
+	return Ret;
+}
+
+char**	ContrastFullRateNames(OPTIONS *Opt)
+{
+	char	**Ret;
+	char	*Buffer;
+	int		Index, NOS, i;
+
+	Opt->NoOfRates = Opt->Trees->NoOfSites * 2;
+
+	NOS = Opt->Trees->NoOfSites;
+
+	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
+	if((Ret == NULL) || (Buffer == NULL))
+		MallocErr();
+
+	i = 0;
+	for(Index=0;Index<NOS;Index++)
+	{
+		sprintf(Buffer, "Alpha-%d", Index+1);
+		Ret[i++] = StrMake(Buffer);
+	}
+
+	for(Index=0;Index<NOS;Index++)
+	{
+		sprintf(Buffer, "Sigma-%d", Index+1);
+		Ret[i++] = StrMake(Buffer);
+	}
+
+	free(Buffer);
+	return Ret;
+}
+
+char**	ContrastRegRateNames(OPTIONS *Opt)
+{
+	char	**Ret;
+	char	*Buffer;
+	int		Index, Pos;
+
+	Opt->NoOfRates = (Opt->Trees->NoOfSites - 1);
+
+	Ret = (char**)malloc(sizeof(char**) * Opt->NoOfRates);
+	Buffer = (char*)malloc(sizeof(char*) * BUFFERSIZE);
+	if((Ret == NULL) || (Buffer == NULL))
+		MallocErr();
+
+	Pos = 0;
+	for(Index=1;Index<Opt->Trees->NoOfSites;Index++)
+	{
+		sprintf(Buffer, "Beta-%d", Index+1);
+		Ret[Pos++] = StrMake(Buffer);
 	}
 
 	free(Buffer);
@@ -565,51 +713,28 @@ char**	CreatContinusRateName(OPTIONS* Opt)
 {
 	switch(Opt->Model)
 	{
-		case CONTINUOUSRR:
+		case M_CONTINUOUS_RR:
 			return ModelARateName(Opt);
-		case CONTINUOUSDIR:
+
+		case M_CONTINUOUS_DIR:
 			return ModelBRateName(Opt);
-		case CONTINUOUSREG:
+
+		case M_CONTINUOUS_REG:
 			return RetModelRateName(Opt);
+
+		case M_CONTRAST:
+			return ContrastFullRateNames(Opt);
+
+		case M_CONTRAST_CORREL:
+			return ContrastRateNames(Opt);
+
+		case M_CONTRAST_REG:
+			return ContrastRegRateNames(Opt);
 	}
 
 	return NULL;
 }
-/*
-char**	CreatContinusRateName(OPTIONS* Opt)
-{
-	char**	Ret;
-	int		Index;
 
-	char	Buffer[1024];
-
-	if(Opt->Model == CONTINUOUSDIR)
-		Opt->NoOfRates = Opt->Trees->NoOfSites * 2;
-	else
-		Opt->NoOfRates = Opt->Trees->NoOfSites;
-
-	Ret = (char**)malloc(sizeof(char*) * Opt->NoOfRates);
-
-	if(Ret==NULL)
-		MallocErr();
-
-	for(Index=0;Index<Opt->NoOfRates;Index++)
-	{
-
-		if(Index<Opt->Trees->NoOfSites)
-			sprintf(&Buffer[0], "alpha-%d", Index);
-		else
-			sprintf(&Buffer[0], "beta-%d", Index - Opt->Trees->NoOfSites);
-
-		Ret[Index] = (char*)malloc(sizeof(char) * strlen(Buffer) + 1);
-		if(Ret[Index] == NULL)
-			MallocErr();
-		strcpy(Ret[Index], Buffer);
-	}
-
-	return Ret;
-}
-*/
 void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 {
 	int		Inner;
@@ -622,20 +747,32 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 		return;
 	}
 
-	if(Opt->Model == DESCINDEP)
+	if(Opt->Model == M_DESCINDEP)
 	{
 		Opt->NoOfRates	= 4;
 		Opt->RateName	= INDEPPRAMS;
 		return;
 	}
 
-	if(Opt->Model == DESCDEP)
+	if(Opt->Model == M_DESCDEP)
 	{
 		Opt->NoOfRates	= 8;
 		Opt->RateName	= DEPPRAMS;
 	}
 
-	if(Opt->Model == MULTISTATE)
+	if(Opt->Model == M_DESCCV)
+	{
+		Opt->NoOfRates = 14;
+		Opt->RateName = DEPCVPRAMS;
+	}
+
+	if(Opt->Model == M_DESCHET)
+	{
+		Opt->NoOfRates = 12;
+		Opt->RateName = DEPHETROPRAMS;
+	}
+
+	if(Opt->Model == M_MULTISTATE)
 	{
 		Opt->NoOfRates	= (NOS * NOS) - NOS;
 		Opt->RateName	= (char**)malloc(sizeof(char*)*Opt->NoOfRates);
@@ -651,7 +788,6 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 					Opt->RateName[Index] = CreatRateName(SymbolList[Outter], SymbolList[Inner]);
 					Index++;
 				}
-
 			}
 		}
 	}
@@ -678,35 +814,7 @@ void		AllocRestictions(OPTIONS *Opt)
 	}
 }
 
-PRIORS*	CreatDefPrior(OPTIONS *Opt)
-{
-	PRIORS *P;
 
-	P = (PRIORS*)malloc(sizeof(PRIORS));
-	if(P == NULL)
-		MallocErr();
-
-	P->Dist = UNIFORM;
-	P->DistVals = (double*)malloc(sizeof(double) * 2);
-	if(P->DistVals == NULL)
-		MallocErr();
-
-	if(Opt->DataType == DISCRETE)
-		P->DistVals[0] = 0;
-	else
-		P->DistVals[0] = -100;
-
-	P->DistVals[1] = 100;
-
-	P->RateNo = -1;
-
-	P->HP		= NULL;
-	P->UseHP	= FALSE;
-	P->OffSet	= 0;
-	P->RateName	= NULL;
-
-	return P;
-}
 
 void	AllocPrios(OPTIONS *Opt)
 {
@@ -718,25 +826,85 @@ void	AllocPrios(OPTIONS *Opt)
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
-		Opt->Priors[Index] = CreatDefPrior(Opt);
+		if(Opt->ModelType == DISCRETE)
+			Opt->Priors[Index] = CreatUniPrior(0, 100);
+		else
+			Opt->Priors[Index] = CreatUniPrior(-100, 100);
+
 		Opt->Priors[Index]->RateName = StrMake(Opt->RateName[Index]);
+
+		if((Opt->Model == M_CONTRAST) && (Index >= Opt->Trees->NoOfSites))
+			Opt->Priors[Index]->DistVals[0] = 0;
 	}
 
-	Opt->RJPrior = CreatDefPrior(Opt);
+	Opt->RJPrior = CreatUniPrior(0, 100);
+
+	Opt->PriorDelta = CreatUniPrior(MIN_DELTA, MAX_DELTA);
+	Opt->PriorKappa = CreatUniPrior(MIN_KAPPA, MAX_KAPPA);
+	Opt->PriorLambda= CreatUniPrior(MIN_LAMBDA, MAX_LAMBDA);
+
+//	Opt->PriorOU	= CreatUniPrior(MIN_OU, MAX_OU);
+	Opt->PriorOU	= CreatExpPrior(1.0);
+}
+
+void	SetAllRateDevs(OPTIONS *Opt, double Dev)
+{
+	int Index;
+
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+		Opt->RateDevList[Index] = Dev;
+	Opt->RateDev = Dev;
+}
+
+MODEL_TYPE	GetModelType(MODEL Model)
+{
+	switch(Model)
+	{
+		case	M_MULTISTATE:		return MT_DISCRETE; break;
+		case	M_DESCINDEP:		return MT_DISCRETE; break;
+		case	M_DESCDEP:			return MT_DISCRETE; break;
+		case	M_CONTINUOUS_RR:	return MT_CONTINUOUS; break;
+		case	M_CONTINUOUS_DIR:	return MT_CONTINUOUS; break;
+		case	M_CONTINUOUS_REG:	return MT_CONTINUOUS; break;
+		case	M_CONTRAST_CORREL:	return MT_CONTRAST; break;
+		case	M_CONTRAST_REG:		return MT_CONTRAST; break;
+		case	M_CONTRAST:			return MT_CONTRAST; break;
+		case	M_DESCCV:			return MT_DISCRETE; break;
+		case	M_DESCHET:			return MT_DISCRETE; break;
+	}
+
+	printf("Unkown model type (%s::%d)\n", __FILE__, __LINE__);
+	exit(1);
+
+	return MT_DISCRETE;
 }
 
 OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char *DataFN, char *SymbolList, TREES* Trees)
 {
-	OPTIONS *Ret=NULL;
-	char	Buffer[1024];
+	OPTIONS *Ret;
+	char	*Buffer;
+
+
+	if((Model == M_DESCDEP) || (Model == M_DESCINDEP) || (Model == M_DESCCV) || (Model == M_DESCHET))
+		SquashDep(Trees);
+
+	if((GetModelType(Model) == MT_CONTINUOUS) || (GetModelType(Model) == MT_CONTRAST))
+		RemoveConMissingData(Trees);
 
 	Ret = (OPTIONS*)malloc(sizeof(OPTIONS));
 	if(Ret == NULL)
 		MallocErr();
 
+	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
+	if(Buffer == NULL)
+		MallocErr();
+
 	Ret->Trees		= Trees;
 	Ret->Model		= Model;
 	Ret->Analsis	= Analsis;
+
+	Ret->ModelType	= GetModelType(Model);
+
 	Ret->TestCorrel	= FALSE;
 	Ret->UseCovarion= FALSE;
 
@@ -744,60 +912,69 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->NodeBLData = FALSE;
 	Ret->AlphaZero	= FALSE;
 	Ret->HPDev		= 1;
-	Ret->DependantSite= -1;
 
-	Ret->ModelFile	= NULL;
-	Ret->UseModelFile= FALSE;
+	Ret->PPTree		= NULL;
+	Ret->PPLog		= NULL;
 
-	Ret->UseRModel = FALSE;
+
+	Ret->UseRModel	= FALSE;
 	Ret->RModelP	= -1;
 	Ret->EstDataDev	= 0.2;
 
+	Ret->VarRatesScaleDev = PPSCALEDEV;
+	Ret->AutoTuneVarRates = FALSE;
 
-	if((Ret->Model == MULTISTATE) ||
-		(Ret->Model == DESCINDEP) ||
-		(Ret->Model == DESCDEP))
+	Ret->NoEstDataSite	=	0;
+	Ret->EstDataSites	=	NULL;
+	Ret->NoEstChanges	=	5;
+
+	Ret->NOSPerSite		=	FALSE;
+	Ret->RateDevList	=	NULL;
+
+
+	if(Ret->ModelType == MT_DISCRETE);
 		Ret->DataType = DISCRETE;
 
-
-	if((Ret->Model == CONTINUOUSRR) || (Ret->Model == CONTINUOUSDIR) || (Ret->Model == CONTINUOUSREG))
+	if((Ret->ModelType == MT_CONTINUOUS) || (Ret->ModelType == MT_CONTRAST))
 	{
 		Ret->TestCorrel = TRUE;
 		Ret->DataType	= CONTINUOUS;
-
-		if(Ret->Model == CONTINUOUSREG)
-			Ret->DependantSite = 0;
 	}
 
 	SetOptRates(Ret, NOS, SymbolList);
 
 	AllocRestictions(Ret);
 
-	Ret->TreeFN = (char*)malloc(sizeof(char)*strlen(TreeFN)+1);
-	Ret->DataFN = (char*)malloc(sizeof(char)*strlen(DataFN)+1);
+	Ret->TreeFN = StrMake(TreeFN);
+	Ret->DataFN = StrMake(DataFN);
 
-	if((Ret->TreeFN == NULL) || (Ret->DataFN == NULL))
-		MallocErr();
+	sprintf(Buffer, "%s.%s", DataFN, LOGFILEEXT);
+	Ret->LogFN = StrMake(Buffer);
 
-	strcpy(Ret->TreeFN, TreeFN);
-	strcpy(Ret->DataFN, DataFN);
+	Ret->LogFile		= NULL;
+	Ret->LogFileRead	= NULL;
+	Ret->LogFileBuffer	= NULL;
+	Ret->PassedOut		= NULL;
+	Ret->UseSchedule	= FALSE;
 
-	sprintf(&Buffer[0], "%s.%s", DataFN, LOGFILEEXT);
+	Ret->MLTries		= 10;
+	Ret->MCMCMLStart	= FALSE;
+	Ret->AutoTuneRD		= FALSE;
+	Ret->AutoTuneDD		= FALSE;
+	Ret->RateDevPerParm	= TRUE;
 
-	Ret->LogFN = (char*)malloc(sizeof(char)*strlen(Buffer)+1);
-	if(Ret->LogFN== NULL)
-		MallocErr();
-	strcpy(Ret->LogFN, &Buffer[0]);
-
-	Ret->LogFile = NULL;
+	Ret->PriorGamma		=	NULL;
+	Ret->PriorKappa		=	NULL;
+	Ret->PriorLambda	=	NULL;
+	Ret->PriorDelta		=	NULL;
+	Ret->PriorOU		=	NULL;
+	Ret->Priors			=	NULL;
+	Ret->PriorCats		=	-1;
 
 	if(Ret->Analsis == ANALML)
 	{
-		Ret->MLTries	=	10;
 		Ret->Itters		=	-1;
 		Ret->Sample		=	-1;
-		Ret->Priors		=	NULL;
-		Ret->PriorCats	=	-1;
 		Ret->RateDev	=	-1;
 		Ret->BurnIn		=	-1;
 		Ret->RJPrior		=	NULL;
@@ -805,14 +982,45 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	if(Ret->Analsis == ANALMCMC)
 	{
-		Ret->MLTries	=	-1;
+
 		Ret->Itters		=	5050000;
-		Ret->Sample		=	100;
-		Ret->PriorCats	=	100;
-		Ret->RateDev	=	2;
-		Ret->EstDataDev	=	.05;
 		Ret->BurnIn		=	50000;
+
+		Ret->Itters		=	1010000;
+		Ret->BurnIn		=	10000;
+		Ret->Sample		=	1000;
+
+//		Set short run time, good for testing.
+
+		/*
+		Ret->BurnIn		=	10000;
+		Ret->Sample		=	100;
+		Ret->Itters		=	1000;
+		Ret->Itters		=	101000;
+		*/
+		Ret->PriorCats	=	100;
+		Ret->RateDev	=	1;
+		Ret->AutoTuneRD	=	TRUE;
+		Ret->EstDataDev	=	.05;
+
 		AllocPrios(Ret);
+
+//		Ret->UseSchedule	= TRUE;
+		Ret->UseSchedule	= FALSE;
+	}
+
+	if(Ret->DataType == CONTINUOUS)
+	{
+		Ret->RateDevList = (double*)malloc(sizeof(double)  * Ret->NoOfRates);
+		if(Ret->RateDevList == NULL)
+			MallocErr();
+		SetAllRateDevs(Ret, Ret->RateDev);
+	}
+	else
+	{
+		Ret->RateDevList = (double*)malloc(sizeof(double));
+		if(Ret->RateDevList == NULL)
+			MallocErr();
 	}
 
 	Ret->RecNode		=	NULL;
@@ -825,25 +1033,32 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->UseDelta		=	FALSE;
 	Ret->UseLambda		=	FALSE;
 	Ret->UseGamma		=	FALSE;
+	Ret->UseOU			=	FALSE;
 
 	Ret->EstKappa		=	FALSE;
 	Ret->EstDelta		=	FALSE;
 	Ret->EstLambda		=	FALSE;
 	Ret->EstGamma		=	FALSE;
+	Ret->EstOU			=	FALSE;
+//	Ret->EstOU			=	TRUE;
 
 	Ret->FixKappa		=	-1;
 	Ret->FixDelta		=	-1;
 	Ret->FixLambda		=	-1;
 	Ret->FixGamma		=	-1;
+	Ret->FixOU			=	-1;
+
+	Ret->RateDevKappa	=	1.0;
+	Ret->RateDevLambda	=	1.0;
+	Ret->RateDevDelta	=	1.0;
+	Ret->RateDevOU		=	1.0;
 
 	Ret->InvertV		=	FALSE;
 
-	Ret->PriorGamma		=	NULL;
-	Ret->PriorKappa		=	NULL;
-	Ret->PriorLambda	=	NULL;
-	Ret->PriorDelta		=	NULL;
+
 
 	Ret->UseRJMCMC		=	FALSE;
+	Ret->CapRJRatesNo	=	-1;
 
 	Ret->FindCF			=	FALSE;
 	Ret->CFRate			=	NULL;
@@ -854,100 +1069,225 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->UseVarData		=	FALSE;
 	Ret->VarDataFile	=	NULL;
 
+
+	Ret->AnalyticalP	=	FALSE;
+
+
+	Ret->Seed			=	GetSeed();
+
+	Ret->MakeUM			=	FALSE;
+
+	Ret->UseVarRates	=	FALSE;
+
+	Ret->UseEqualTrees	=	FALSE;
+	Ret->ETreeBI		=	-1;
+
+	Ret->SaveTrees		=	NULL;
+
+
+	Ret->Precision		=	sizeof(double) * 8;
+#ifdef BIG_LH
+	Ret->Precision		=	256;
+#endif
+
+	Ret->Cores			=	GetMaxThreads();
+
+	Ret->SaveModels		=	FALSE;
+	Ret->SaveModelsFN	=	NULL;
+
+	Ret->LoadModels		=	FALSE;
+	Ret->LoadModelsFN	=	NULL;
+
+	Ret->Stones			=	NULL;
+
+	free(Buffer);
 	return Ret;
+}
+
+void	PrintModelChoic(TREES *Trees)
+{
+	printf("Please select the model of evolution to use.\n");
+	printf("1)	MultiState\n");
+	if((Trees->NoOfSites == 2) && (Trees->NoOfStates == 2))
+	{
+		printf("2)	Discrete: Independent\n");
+		printf("3)	Discrete: Dependant\n");
+	}
+
+	if(Trees->ValidCData == TRUE)
+	{
+		printf("4)	Continuous: Random Walk (Model A)\n");
+		printf("5)	Continuous: Directional (Model B)\n");
+
+		if(Trees->NoOfSites > 1)
+			printf("6)	Continuous: Regression\n");
+
+		if(EstData(Trees) == FALSE)
+		{
+			printf("7)	Independent Contrast\n");
+
+			printf("8)	Independent Contrast: Correlation\n");
+
+			if(Trees->NoOfSites > 1)
+				printf("9)	Independent Contrast: Regression\n");
+		}
+	}
+
+	if((Trees->NoOfSites == 2) && (Trees->NoOfStates == 2))
+		printf("10)	Discrete: Covarion\n");
+#ifndef PUBLIC_BUILD
+	printf("9)	Discrete: Heterogeneous \n");
+#endif
+}
+
+int		GetModelInt()
+{
+	char	*Buffer;
+	int		Ret;
+
+	Ret = -1;
+
+	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
+	if(Buffer == NULL)
+		MallocErr();
+
+	if(fgets(Buffer, BUFFERSIZE, stdin) == NULL)
+	{
+		printf("Fatal error Reading model choice\n");
+		exit(0);
+	}
+
+	ReplaceChar('\n', '\0', Buffer);
+
+	if(IsValidInt(Buffer) == FALSE)
+		printf("%s is not a valid model choice\n", Buffer);
+	else
+		Ret = atoi(Buffer);
+
+	free(Buffer);
+
+	return Ret;
+}
+
+int		ValidModelChoice(TREES *Trees, MODEL Model)
+{
+	if(Model == M_MULTISTATE)
+		return TRUE;
+
+	if((Model == M_DESCINDEP) || (Model == M_DESCINDEP) || (Model == M_DESCCV) || (Model == M_DESCHET))
+	{
+		if((Trees->NoOfSites != 2) || (Trees->NoOfStates != 2))
+		{
+			printf("Discrete analisis requiers two two state characters\n");
+			printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
+			return FALSE;
+		}
+		return TRUE;
+	}
+
+	if(Trees->ValidCData == FALSE)
+	{
+		printf("Model requires continues data.\n");
+		return FALSE;
+	}
+
+	if((Model == M_CONTINUOUS_REG) || (Model == M_CONTRAST_REG))
+	{
+		if(Trees->NoOfSites < 2)
+		{
+			printf("Regression, requires two or more sites.\n");
+			return FALSE;
+		}
+	}
+
+	if(EstData(Trees) == TRUE)
+	{
+		if((Model == M_CONTRAST) || (Model == M_CONTRAST_CORREL) || (Model == M_CONTRAST_REG))
+		{
+			printf("Currently estimating unknown data values is not supported in independent contrast methods, please use the continues models.\n");
+			return FALSE;
+		}
+	}
+
+	return TRUE;
+}
+
+MODEL	IntToModel(int No)
+{
+	if(No == 1)
+		return M_MULTISTATE;
+
+	if(No == 2)
+		return M_DESCINDEP;
+
+	if(No == 3)
+		return M_DESCDEP;
+
+	if(No == 4)
+		return M_CONTINUOUS_RR;
+
+	if(No == 5)
+		return M_CONTINUOUS_DIR;
+
+	if(No == 6)
+		return M_CONTINUOUS_REG;
+
+	if(No == 7)
+		return M_CONTRAST;
+
+	if(No == 8)
+		return M_CONTRAST_CORREL;
+
+	if(No == 9)
+		return M_CONTRAST_REG;
+
+	if(No == 10)
+		return M_DESCCV;
+
+	if(No == 11)
+		return M_DESCHET;
+
+	printf("Unkown model\n");
+	exit(0);
+}
+
+
+//./Seq/MamBigTrim.trees ./Seq/MamBigTrim.txt < BigMamIn.txt > sout.txt
+void	GetModelChoice(TREES *Trees, MODEL *Model, int *Valid)
+{
+	int		No;
+	MODEL	M;
+
+	*Valid = FALSE;
+
+	No = GetModelInt();
+	if(No == -1)
+		return;
+
+	M = IntToModel(No);
+
+	if(ValidModelChoice(Trees, M) == FALSE)
+		return;
+
+	*Valid = TRUE;
+	*Model = M;
+
 }
 
 MODEL	GetModel(TREES *Trees)
 {
-	char	Buffer[1024];
-	int		Comment;
+	MODEL	Model;
+	int		Valid;
 
-	Comment = FALSE;
-	for(;;)
+	do
 	{
-		if(Comment == FALSE)
-		{
-			printf("Please Select the model of evolution to use.\n");
-			printf("1)	MultiState.\n");
-			printf("2)	Discrete: Independent\n");
-			printf("3)	Discrete: Depend\n");
+		PrintModelChoic(Trees);
 
-			if(Trees->ValidCData == TRUE)
-			{
-				printf("4)	Continuous: Random Walk (Model A)\n");
-				printf("5)	Continuous: Directional (Model B)\n");
-
-				if(Trees->NoOfSites > 1)
-					printf("6)	Continuous: Regression\n");
-			}
-		}
-
-		if(fgets(&Buffer[0], 1024, stdin) != NULL)
-		{
-			if(Buffer[0] != '#')
-			{
-				Comment = FALSE;
-				switch (atoi(&Buffer[0]))
-				{
-					case 1:
-						return 	MULTISTATE;
-					break;
-
-					case 2:
-						if((Trees->NoOfSites != 2) || (Trees->NoOfStates > 2))
-						{
-							printf("Discrete analisis requiers two two state characters\n");
-							printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
-							break;
-						}
-						return DESCINDEP;
-					break;
-
-					case 3:
-						if((Trees->NoOfSites != 2) || (Trees->NoOfStates > 2))
-						{
-							printf("Descete analisis requiers two two stat characters\n");
-							printf("There are %d states and %d sites in the current data set.\n", Trees->NoOfStates, Trees->NoOfSites);
-							break;
-						}
-
-						return DESCDEP;
-					break;
-
-					case 4:
-						if(Trees->ValidCData == TRUE)
-							return CONTINUOUSRR;
-					break;
-
-					case 5:
-						if(Trees->ValidCData == TRUE)
-							return CONTINUOUSDIR;
-					break;
-
-					case 6:
-						if(Trees->ValidCData == TRUE)
-						{
-							if(Trees->NoOfSites > 1)
-								return CONTINUOUSREG;
-							else
-								printf("Continuous: Regression model requires more than one site\n");
-						}
-					break;
+		GetModelChoice(Trees, &Model, &Valid);
+	} while(Valid == FALSE);
 
 
-					default:
-						if(Trees->ValidCData == FALSE)
-							printf("%s is not a valid choice please enter a number between 1 and 3 followed by a return.\n", Buffer);
-						else
-							printf("%s is not a valid choice please enter a number between 1 and 5 followed by a return.\n", Buffer);
-				}
-			}
-			else
-				Comment = TRUE;
-		}
-	}
-
-	return -1;
+	return Model;
 }
 
 
@@ -962,7 +1302,7 @@ ANALSIS	GetAnalsis(TREES *Trees)
 	{
 		if(Comment == FALSE)
 		{
-			printf("Please Select the analsis method to use.\n");
+			printf("Please select the analysis method to use.\n");
 			printf("1)	Maximum Likelihood.\n");
 			printf("2)	MCMC\n");
 		}
@@ -988,10 +1328,7 @@ ANALSIS	GetAnalsis(TREES *Trees)
 		else
 			Comment = TRUE;
 	}
-
 }
-
-
 
 COMMANDS	StringToCommand(char *Str)
 {
@@ -1004,7 +1341,7 @@ COMMANDS	StringToCommand(char *Str)
 	do
 	{
 		if((strcmp(Str, COMMANDSTRINGS[SIndex]) == 0) || (strcmp(Str, COMMANDSTRINGS[SIndex+1]) == 0))
-			return CIndex;
+			return (COMMANDS)CIndex;
 
 		SIndex+=2;
 		CIndex++;
@@ -1030,8 +1367,6 @@ int		RestrictToConst(OPTIONS *Opt, int Tokes, char *argv[], double Const)
 {
 	int	Index;
 	int	RateNo;
-
-	printf("Restring to const\n");
 
 	for(Index=1;Index<Tokes-1;Index++)
 	{
@@ -1162,15 +1497,18 @@ void		RestrictAll(OPTIONS *Opt, char *To)
 
 void		Restrict(OPTIONS *Opt, int Tokes, char *argv[])
 {
-	RESTYPES	*BackRes=NULL;
-	double		*BackConst=NULL;
-	int			*BackNo=NULL;
+	RESTYPES	*BackRes;
+	double		*BackConst;
+	int			*BackNo;
 	double		Const;
 	int			Safe;
 
 	BackRes		= (RESTYPES*)malloc(sizeof(RESTYPES) * Opt->NoOfRates);
 	BackConst	= (double*)malloc(sizeof(double) * Opt->NoOfRates);
 	BackNo		= (int*)malloc(sizeof(int) * Opt->NoOfRates);
+
+	if((BackRes == NULL) || (BackConst == NULL) || (BackNo == NULL))
+		MallocErr();
 
 	memcpy(BackRes, Opt->ResTypes, sizeof(RESTYPES) * Opt->NoOfRates);
 	memcpy(BackConst, Opt->ResConst, sizeof(double) * Opt->NoOfRates);
@@ -1237,18 +1575,81 @@ void	UnRestictAll(OPTIONS *Opt)
 
 PRIORDIST	StrToPriorDist(char* Str)
 {
-	int			Index=0;
+	int			Index;
 
+	MakeLower(Str);
+
+	Index = 0;
 	do
 	{
 		if(strcmp(Str, DISTNAMES[Index])==0)
-			return BETA+Index;
+			return (PRIORDIST)(BETA+Index);
 		Index++;
 	} while(DISTNAMES[Index][0] != '\0');
 
-	return -1;
+	return (PRIORDIST)-1;
 }
 
+int	SetPriorNo(OPTIONS *Opt, PRIORS *P, int Tokes, char *argv[])
+{
+	PRIORDIST	Dist;
+	double		Num;
+	int			Index;
+
+	Dist = StrToPriorDist(argv[0]);
+
+	if(Dist == -1)
+	{
+		printf("Could not conver %s to a valid distriubntion\n", argv[0]);
+		printf("Valid distiubtions are 	beta, gamma, uniform, exp\n");
+		return FALSE;
+	}
+
+/*	if((Opt->DataType == CONTINUOUS) && (Dist != UNIFORM))
+	{
+		printf("Only uniform priors can be used with continuous data.\n");
+		return FALSE;
+	}
+*/
+	if(Tokes!=DISTPRAMS[Dist]+1)
+	{
+		printf("Prior %s equires %d parmeters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
+		return FALSE;
+	}
+
+	for(Index=1;Index<Tokes;Index++)
+	{
+		Num = atof(argv[Index]);
+		if((Num == 0) && (strcmp(argv[Index], "0")!=0))
+		{
+			printf("Could not conver Prior paramiter %s to a valid number\n", argv[Index]);
+			return FALSE;
+		}
+	}
+
+	free(P->DistVals);
+
+	P->DistVals = (double*)malloc(sizeof(double) * DISTPRAMS[Dist]);
+	if(P->DistVals == NULL)
+		MallocErr();
+
+	P->Dist = Dist;
+
+	for(Index=0;Index<DISTPRAMS[Dist];Index++)
+		P->DistVals[Index] = atof(argv[1+Index]);
+
+	if(P->UseHP == TRUE)
+	{
+		free(P->HP);
+		P->HP = NULL;
+		P->UseHP = FALSE;
+	}
+
+	return TRUE;
+}
+
+
+/*
 int	SetPriorNo(OPTIONS *Opt, int RateNo, int Tokes, char *argv[])
 {
 	PRIORDIST	Dist;
@@ -1265,9 +1666,15 @@ int	SetPriorNo(OPTIONS *Opt, int RateNo, int Tokes, char *argv[])
 		return FALSE;
 	}
 
+	if((Opt->DataType == CONTINUOUS) && (Dist != UNIFORM))
+	{
+		printf("Only uniform priors can be used with continuous data.\n");
+		return FALSE;
+	}
+
 	if(Tokes!=DISTPRAMS[Dist]+1)
 	{
-		printf("Prior %s equires %d paramiters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
+		printf("Prior %s equires %d parmeters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
 		return FALSE;
 	}
 
@@ -1303,8 +1710,26 @@ int	SetPriorNo(OPTIONS *Opt, int RateNo, int Tokes, char *argv[])
 
 	return TRUE;
 }
+*/
+void	SetOUPrior(OPTIONS *Opt, int Tokes, char **argv)
+{
+	char *PName;
 
-void	SetPrior(OPTIONS *Opt, int Tokes, char *argv[])
+	if(Opt->EstOU == FALSE)
+		return;
+
+	PName = StrMake(argv[1]);
+	MakeUpper(PName);
+	if(strcmp(PName, "OU") == 0)
+	{
+		SetPriorNo(Opt, Opt->PriorOU, Tokes-2, &argv[2]);
+	}
+
+	free(PName);
+	return;
+}
+
+void	SetPrior(OPTIONS *Opt, int Tokes, char **argv)
 {
 	int			Rate;
 
@@ -1314,6 +1739,8 @@ void	SetPrior(OPTIONS *Opt, int Tokes, char *argv[])
 		return;
 	}
 
+	SetOUPrior(Opt, Tokes, argv);
+
 	Rate = StrToRate(Opt, argv[1]);
 	if(Rate == -1)
 	{
@@ -1321,7 +1748,7 @@ void	SetPrior(OPTIONS *Opt, int Tokes, char *argv[])
 		return;
 	}
 
-	SetPriorNo(Opt, Rate, Tokes-2, &argv[2]);
+	SetPriorNo(Opt, Opt->Priors[Rate], Tokes-2, &argv[2]);
 }
 
 void	SetAllPriors(OPTIONS *Opt, int Tokes, char *argv[])
@@ -1335,18 +1762,22 @@ void	SetAllPriors(OPTIONS *Opt, int Tokes, char *argv[])
 	}
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
-		SetPriorNo(Opt, Index, Tokes-1, &argv[1]);
+	{
+		SetPriorNo(Opt, Opt->Priors[Index], Tokes-1, &argv[1]);
+	}
 
 }
 
 void	PrintUnderNode(NODE N)
 {
+	int	Index;
+
 	if(N->Tip == TRUE)
 		printf("%s\t", N->Taxa->Name);
 	else
 	{
-		PrintUnderNode(N->Left);
-		PrintUnderNode(N->Right);
+		for(Index=0;Index<N->NoNodes;Index++)
+			PrintUnderNode(N->NodeList[Index]);
 	}
 }
 
@@ -1398,38 +1829,75 @@ Symbol	0,0	0,1	1,0	1,1
 23		-	X	X	X
 */
 
+int	ValidDescFossileState(int FNo)
+{
+	if((FNo >= 0) && (FNo <= 3))
+		return TRUE;
+
+	if((FNo >= 10) && (FNo <= 15))
+		return TRUE;
+
+	if((FNo >= 20) && (FNo <= 23))
+		return TRUE;
+
+	printf("Unknown discrete fossilisation sate.\nKnown values are\n");
+
+	printf("X	Likilhood values unchanged\n");
+	printf("-	Likilhood set to zero\n\n");
+	printf("Symbol     0,0   0,1   1,0   1,1\n");
+	printf("0          X     -     -     -\n");
+	printf("1          -     X     -     -\n");
+	printf("2          -     -     X     -\n");
+	printf("3          -     -     -     X\n");
+	printf("\n");
+	printf("10         X     X     -     -\n");
+	printf("11         X     -     X     -\n");
+	printf("12         X     -     -     X\n");
+	printf("13         -     X     X     -\n");
+	printf("14         -     X     -     X\n");
+	printf("15         -     -     X     X\n");
+	printf("\n");
+	printf("20         X     X     X     -\n");
+	printf("21         X     X     -     X\n");
+	printf("22         X     -     X     X\n");
+	printf("23         -     X     X     X\n");
+
+
+	return FALSE;
+}
+
 /* Will have to add support for extra states (10 to 23) */
 int	DesFossilSate(char* State, OPTIONS *Opt)
 {
 	int	Ret;
 
-	Ret = atoi(State);
-	if((Ret > 3) || (Ret < 0))
+	if(IsValidInt(State) == FALSE)
 	{
-		printf("Discrete Fossil state must be between 0 and 3.\n\t0\t0,0\n\t1\t0,1\n\t2\t1,0\n\t3\t1,1\n");
+		printf("Could not convert %s to a valid Discrete state", State);
 		return -1;
 	}
+
+	Ret = atoi(State);
+	if(ValidDescFossileState(Ret) == FALSE)
+		return -1;
 
 	return Ret;
 }
 
 int	FossilState(char *State, OPTIONS *Opt)
 {
-	if((atoi(State) == 0) && (strcmp(State, "0") != 0))
-	{
-		printf("Could not convert %s to a valid state\n", State);
-		return -1;
-	}
+	int	Index;
 
-	if(Opt->Model == MULTISTATE)
+	if(Opt->Model == M_MULTISTATE)
 	{
-		if(atoi(State) >= Opt->Trees->NoOfStates)
+		for(Index=0;Index<Opt->Trees->NoOfStates;Index++)
 		{
-			printf("State %s is invalid\n", State);
-			return -1;
+			if(State[0] == Opt->Trees->SymbolList[Index])
+				return Index;
 		}
 
-		return atoi(State);
+		printf("State %s is invalid\n", State);
+		return -1;
 	}
 
 	return DesFossilSate(State, Opt);
@@ -1441,9 +1909,9 @@ int		GetTaxaNoFormName(char* Name, TREES* Trees, int *No)
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
-		if(strcmp(Name, Trees->Taxa[Index].Name) == 0)
+		if(strcmp(Name, Trees->Taxa[Index]->Name) == 0)
 		{
-			*No = Trees->Taxa[Index].No;
+			*No = Trees->Taxa[Index]->No;
 			return TRUE;
 		}
 	}
@@ -1471,7 +1939,7 @@ int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 
 			if(GetTaxaFromID(TaxaNo, Opt->Trees->Taxa, Opt->Trees->NoOfTaxa) == NULL)
 			{
-				printf("Could not convert %s to a vlid taxa number\n", List[Index]);
+				printf("Could not convert %s to a valid taxa number\n", List[Index]);
 				return FALSE;
 			}
 		}
@@ -1479,7 +1947,7 @@ int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 		{
 			if(GetTaxaNoFormName(List[Index], Opt->Trees, &TaxaNo) == FALSE)
 			{
-				printf("Could not convert %s to a vlid taxa name\n", List[Index]);
+				printf("Could not convert %s to a valid taxa name\n", List[Index]);
 				return FALSE;
 			}
 		}
@@ -1496,19 +1964,51 @@ TAXA*	GetTaxaFromNameNo(char *ID, TREES* Trees)
 		return GetTaxaFromID(atoi(ID), Trees->Taxa, Trees->NoOfTaxa);
 
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
-		if(strcmp(ID, Trees->Taxa[Index].Name) == 0)
-			return &Trees->Taxa[Index];
+		if(strcmp(ID, Trees->Taxa[Index]->Name) == 0)
+			return Trees->Taxa[Index];
 
 	return NULL;
+}
+
+char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char *argv[])
+{
+	int		Index;
+	char	**Ret;
+
+	if(Opt->DataType == DISCRETE)
+		return NULL;
+
+	Ret = (char**)malloc(sizeof(char*) * Opt->Trees->NoOfSites);
+	if(Ret == NULL)
+		MallocErr();
+
+
+	for(Index=0;Index<Opt->Trees->NoOfSites;Index++)
+	{
+		if(NodeType != FOSSIL)
+			Ret[Index] = StrMake(ESTDATAPOINT);
+		else
+			Ret[Index] = StrMake(argv[Index]);
+	}
+
+	return Ret;
 }
 
 void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 {
 	RECNODE		RNode;
-	int			Index;
-	int			FState;
+	int			Index, FState, NoTaxa;
+	char**		ConFState;
+
+	if(Opt->ModelType == MT_CONTRAST)
+	{
+		printf("Independent constant cannot be used to reconstruct internal nodes, please see manual and model A instead.\n");
+		return;
+	}
 
 	FState = -1;
+
+	ConFState = NULL;
 
 	if(OptFindRecNode(Opt, argv[1]) != NULL)
 	{
@@ -1520,11 +2020,25 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 
 	if(NodeType == FOSSIL)
 	{
-		FState = FossilState(argv[2], Opt);
-		if(FState == -1)
-			return;
+		if(Opt->DataType == DISCRETE)
+		{
+			FState = FossilState(argv[2], Opt);
+			if(FState == -1)
+				return;
 
-		Index++;
+			Index++;
+		}
+		else
+		{
+			Index += Opt->Trees->NoOfSites;
+		}
+	}
+
+	if(Opt->DataType == CONTINUOUS)
+	{
+		ConFState = SetConFState(Opt, NodeType, &argv[Index]);
+		if(NodeType == FOSSIL)
+			Index += Opt->Trees->NoOfSites;
 	}
 
 	if(ValidTaxaList(argv, Index, Tokes, Opt) == FALSE)
@@ -1534,9 +2048,12 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	if(RNode == NULL)
 		MallocErr();
 
-	RNode->TaxaID	= NULL;
+	RNode->Part		= NULL;
+	RNode->ConData	= NULL;
+	if(Opt->DataType == CONTINUOUS)
+		RNode->ConData	= ConFState;
 
-	RNode->Name = (char*)malloc(sizeof(char)*strlen(argv[1])+1);
+	RNode->Name = (char*)malloc(sizeof(char)*(strlen(argv[1])+1));
 	if(RNode->Name == NULL)
 		MallocErr();
 	strcpy(RNode->Name, argv[1]);
@@ -1548,21 +2065,23 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 		RNode->NodeType = MRCA;
 
 	if(NodeType == FOSSIL)
-		RNode->NoOfTaxa = Tokes - 3;
+		NoTaxa = Tokes - 3;
 	else
-		RNode->NoOfTaxa = Tokes - 2;
+		NoTaxa= Tokes - 2;
 
-	RNode->Taxa = (TAXA**)malloc(sizeof(TAXA*)*RNode->NoOfTaxa);
+	RNode->Taxa = (TAXA**)malloc(sizeof(TAXA*)*NoTaxa);
 	if(RNode->Taxa == NULL)
 		MallocErr();
 
-	for(Index=0;Index<RNode->NoOfTaxa;Index++)
+	for(Index=0;Index<NoTaxa;Index++)
 	{
 		if(NodeType == FOSSIL)
 			RNode->Taxa[Index] = GetTaxaFromNameNo(argv[Index+3], Opt->Trees);
 		else
 			RNode->Taxa[Index] = GetTaxaFromNameNo(argv[Index+2], Opt->Trees);
 	}
+
+	RNode->Part = CreatPart(NoTaxa);
 
 	RNode->Next = Opt->RecNode;
 	Opt->RecNode = RNode;
@@ -1571,7 +2090,7 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char *argv[])
 	if(RNode->TreeNodes == NULL)
 		MallocErr();
 
-	SetRecNodes(RNode, Opt);
+	SetRecNodes(RNode, Opt->Trees);
 
 	Opt->NoOfRecNodes++;
 
@@ -1630,153 +2149,30 @@ void	DelRecNode(OPTIONS *Opt, char* NodeName)
 }
 
 
-void	AddToRecNode(OPTIONS *Opt, int Tokes, char *argv[])
-{
-	RECNODE RNode=NULL;
-	int		TIndex;
-	int		AddIndex;
-	TAXA	**NewTaxaList;
-
-	RNode = OptFindRecNode(Opt, argv[1]);
-	if(RNode == NULL)
-	{
-		printf("Node %s could not be found\n", argv[1]);
-		return;
-	}
-
-	for(AddIndex=2;AddIndex<Tokes;AddIndex++)
-	{
-		if((atoi(argv[AddIndex]) == 0) && (strcmp(argv[AddIndex], "0") != 0))
-		{
-			printf("Could not convert %s to a valid taxa number\n", argv[AddIndex]);
-			return;
-		}
-		if(GetTaxaFromID(atoi(argv[AddIndex]), Opt->Trees->Taxa, Opt->Trees->NoOfTaxa) == NULL)
-		{
-			printf("Could not convert %s to a valid taxa number\n", argv[AddIndex]);
-			return;
-		}
-
-		for(TIndex=0;TIndex<RNode->NoOfTaxa;TIndex++)
-		{
-			if(atof(argv[AddIndex]) == RNode->Taxa[TIndex]->No)
-			{
-				printf("Could not added taxa %s as it is allready in the list\n", argv[AddIndex]);
-				return;
-			}
-		}
-	}
-
-
-	NewTaxaList = (TAXA**)malloc(sizeof(TAXA*) * ((Tokes-2) + (RNode->NoOfTaxa)));
-	if(NewTaxaList == NULL)
-		MallocErr();
-
-	TIndex=0;
-	for(AddIndex=0;AddIndex<RNode->NoOfTaxa;AddIndex++,TIndex++)
-		NewTaxaList[TIndex] = GetTaxaFromID(RNode->Taxa[TIndex]->No, Opt->Trees->Taxa, Opt->Trees->NoOfTaxa);
-
-	for(AddIndex=2;AddIndex<Tokes;TIndex++,AddIndex++)
-		NewTaxaList[TIndex] = GetTaxaFromID(atoi(argv[AddIndex]), Opt->Trees->Taxa, Opt->Trees->NoOfTaxa);
-
-	RNode->NoOfTaxa += Tokes-2;
-	free(RNode->Taxa);
-	RNode->Taxa = NewTaxaList;
-
-	SetRecNodes(RNode, Opt);
-
-	fflush(stdout);
-}
-
-void	DelToRecNode(OPTIONS *Opt, int Tokes, char *argv[])
-{
-	RECNODE RNode=NULL;
-	int		TIndex;
-	int		ArgIndex;
-	int		No;
-	int		Valid;
-	TAXA	**NewTaxaList=NULL;
-
-	RNode = OptFindRecNode(Opt, argv[1]);
-
-	if(RNode == NULL)
-	{
-		printf("Could not find node %s\n", argv[1]);
-		return;
-	}
-
-	if(RNode->NoOfTaxa - (Tokes -2) < 2)
-	{
-		printf("Each node must have two or more taxa in it. Use the DelNode command to remove the Node\n");
-		return;
-	}
-
-	for(ArgIndex=2;ArgIndex<Tokes;ArgIndex++)
-	{
-		No = atoi(argv[ArgIndex]);
-
-		if((No == 0) && (strcmp(argv[ArgIndex], "0")!=0))
-		{
-			printf("Could not conver %s to a valid taxa number\n", argv[ArgIndex]);
-			return;
-		}
-
-
-		Valid = FALSE;
-		for(TIndex=0;TIndex<RNode->NoOfTaxa;TIndex++)
-			if(RNode->Taxa[TIndex]->No == No)
-				Valid = TRUE;
-
-		if(Valid == FALSE)
-		{
-			printf("Taxa no %d is not a member of the Node\n", No);
-			return;
-		}
-	}
-
-	NewTaxaList = (TAXA**)malloc(sizeof(TAXA*)*(RNode->NoOfTaxa - (Tokes - 2)));
-	if(NewTaxaList == NULL)
-		MallocErr();
-
-	No = 0;
-	for(TIndex=0;TIndex<RNode->NoOfTaxa;TIndex++)
-	{
-		Valid = TRUE;
-		for(ArgIndex=2;ArgIndex<Tokes;ArgIndex++)
-			if(atoi(argv[ArgIndex]) == RNode->Taxa[TIndex]->No)
-				Valid = FALSE;
-		if(Valid == TRUE)
-			NewTaxaList[No++] = RNode->Taxa[TIndex];
-	}
-
-	free(RNode->Taxa);
-	RNode->Taxa = NewTaxaList;
-
-	RNode->NoOfTaxa = RNode->NoOfTaxa - (Tokes - 2);
-
-	SetRecNodes(RNode, Opt);
-}
-
 void	SetEvenRoot(TREES *Trees)
 {
 	int		TIndex;
+	int		NIndex;
 	double	t;
 	NODE	Root;
 
 	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		Root = Trees->Tree[TIndex].Root;
+		Root = Trees->Tree[TIndex]->Root;
 		t = 0;
 
-		t = (Root->Right->Length + Root->Left->Length) / 2;
-		Root->Left->Length = t;
-		Root->Right->Length = t;
+		for(NIndex=0;NIndex<Root->NoNodes;NIndex++)
+			t += Root->NodeList[NIndex]->Length;
+
+		t = t / (double)Root->NoNodes;
+		for(NIndex=0;NIndex<Root->NoNodes;NIndex++)
+			Root->NodeList[NIndex]->Length = t;
 	}
 }
 
 void	LogFile(OPTIONS *Opt, char *LogFN)
 {
-	FILE*	TempLogFile=NULL;
+	FILE*	TempLogFile;
 
 	TempLogFile = fopen(LogFN, "w");
 	if(TempLogFile == NULL)
@@ -1788,36 +2184,23 @@ void	LogFile(OPTIONS *Opt, char *LogFN)
 
 	free(Opt->LogFN);
 
-	Opt->LogFN = (char*)malloc(sizeof(char)*strlen(LogFN)+1);
-	if(Opt->LogFN == NULL)
-		MallocErr();
-	strcpy(Opt->LogFN, LogFN);
+	Opt->LogFN = StrMake(LogFN);
 }
 
 void	PreSet(OPTIONS *Opt, char* Set)
 {
 	MakeLower(Set);
 
-	if(strcmp(Set, "lang1ml")==0)
+	if(strcmp(Set, "m1p")==0)
 	{
 		RestrictAll(Opt, Opt->RateName[0]);
-	}
-
-	if(strcmp(Set, "lang1mcmc")==0)
-	{
-		RestrictAll(Opt, Opt->RateName[0]);
+		Opt->AnalyticalP = TRUE;
 	}
 }
 
 void	GetBasePis(OPTIONS *Opt, char* Type)
 {
 	MakeLower(Type);
-
-	if(strcmp(Type, "est")==0)
-	{
-		Opt->PiTypes = PIEST;
-		return;
-	}
 
 	if(strcmp(Type, "emp")==0)
 	{
@@ -1837,15 +2220,33 @@ void	GetBasePis(OPTIONS *Opt, char* Type)
 		return;
 	}
 
-	printf("The option %s, is unknown. Valid options are est, emp, uni and none\n");
+	printf("The option %s, is unknown. Valid options are est, emp, uni and none\n", Type);
 }
 
 int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 {
+#ifdef BTOCL
+	if(Command == CCOVARION)
+	{
+		printf("Covarion is not currently supported with OpenCL\n");
+		return FALSE;
+	}
+#endif
+
+
 	if(Opt->DataType == CONTINUOUS)
 	{
+		if((Opt->Model != M_CONTRAST) && (Command == CVARRATES))
+			return FALSE;
+
+
+		if(Opt->Model == M_CONTRAST_CORREL)
+		{
+			if(Command == CNODE)
+				return TRUE;
+		}
+
 		if( (Command == CNODE)		||
-			(Command == CMRCA)		||
 			(Command == CDELNODE)	||
 			(Command == CADDTAXA)	||
 			(Command == CDELTAXA)	||
@@ -1859,9 +2260,10 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CHPRJ)		||
 			(Command == CHPALL)		||
 			(Command == CFOSSIL)	||
-			(Command == CPRIORALL)	||
-			(Command == CPRIOR)		||
-			(Command == CPIS)
+			(Command == CPIS)		||
+			(Command == CPRECISION) ||
+			(Command == CNOSPERSITE)||
+			(Command == CSYMMETRICAL)
 			)
 		{
 			printf("Command %s (%s) is not valid with the current model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -1873,11 +2275,14 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 		if(
 			(Command == CDELTA)		||
 			(Command == CLAMBDA)	||
+			(Command == COU)		||
 			(Command == CALPHAZERO)	||
 			(Command == CNODEBLDATA)||
 			(Command == CNODEDATA)  ||
 			(Command == CDEPSITE)   ||
-			(Command == CDATADEV)
+			(Command == CDATADEV)	||
+			(Command == CVARRATES)
+
 			)
 		{
 			printf("Command %s (%s) is not valid with Discrete data\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -1897,11 +2302,21 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 	if(Opt->Analsis == ANALML)
 	{
 		if(
-			(Command ==	CHYPERPRIOR)||
-			(Command ==	CHPRJ)		||
-			(Command ==	CHPALL)		||
-			(Command ==	CREVJUMP)   ||
-			(Command == CMODELFILE)
+			(Command ==	CITTERS)		||
+			(Command ==	CBURNIN)		||
+			(Command ==	CSAMPLE)		||
+			(Command ==	CHYPERPRIOR)	||
+			(Command ==	CRATEDEV)		||
+			(Command ==	CHPRJ)			||
+			(Command ==	CHPALL)			||
+			(Command ==	CREVJUMP)		||
+			(Command == CMCMCMLSTART)	||
+			(Command == CCAPRJRATES)	||
+			(Command == CVARRATES)		||
+			(Command == CSAVEMODELS)	||
+			(Command == CLOADMODELS)	||
+			(Command == CSHEDULE)		||
+			(Command == CVARRATES)
 			)
 		{
 			printf("Command %s (%s) is not valid with the ML model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -1989,9 +2404,9 @@ void	PrintTaxaInfo(OPTIONS *Opt)
 	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
 		printf("    ");
-		sprintf(&Buffer[0], "%d", Trees->Taxa[TIndex].No);
+		sprintf(&Buffer[0], "%d", Trees->Taxa[TIndex]->No);
 		PrintFixSize(&Buffer[0], 5, stdout);
-		printf("%s", Trees->Taxa[TIndex].Name);
+		printf("%s", Trees->Taxa[TIndex]->Name);
 		printf("\n");
 	}
 }
@@ -2024,7 +2439,7 @@ void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
 
 	if(Tokes - 1 != DISTPRAMS[Dist])
 	{
-		printf("Prior %s take %d paramiters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
+		printf("Prior %s take %d parmeters\n", DISTNAMES[Dist], DISTPRAMS[Dist]);
 		return;
 	}
 
@@ -2051,7 +2466,8 @@ void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
 
 PRIORS*	NameToPrior(OPTIONS *Opt, char* Name)
 {
-	int	Index=0;
+	int	Index;
+
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 		if(strcmp(Opt->RateName[Index], Name)==0)
@@ -2115,7 +2531,6 @@ void	SetHyperPrior(OPTIONS *Opt, char* PName, char** Passed, int Tokes, PRIORS*	
 
 		PIndex+=2;
 	}
-
 
 	free(Prior->DistVals);
 
@@ -2208,7 +2623,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 
 		if(Opt->Analsis == ANALMCMC)
 		{
-			Opt->PriorGamma = CreatDefPrior(Opt);
+			Opt->PriorGamma = CreatUniPrior(0, 100);
 			Opt->PriorGamma->RateNo = -1;
 		}
 
@@ -2226,7 +2641,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 
 		if((Value < GAMMAMIN) || (Value > GAMMAMAX))
 		{
-			printf("Gamma shape parmiter must be grater than %f and less than %f\n", GAMMAMIN, GAMMAMAX);
+			printf("Gamma shape parmiter must be grater than %f and less than %f\n", (double)GAMMAMIN, (double)GAMMAMAX);
 			return;
 		}
 
@@ -2267,34 +2682,7 @@ void	SetCI(OPTIONS *Opt, char *Rate)
 	}
 }
 
-void	SetModelFile(OPTIONS *Opt, int Tokes, char **Passed)
-{
-	if(Tokes == 1)
-	{
-		if(Opt->ModelFile != NULL)
-		{
-			free(Opt->ModelFile);
-			Opt->ModelFile = NULL;
-		}
 
-		Opt->UseModelFile = FALSE;
-		return;
-	}
-
-	if(Tokes == 2)
-	{
-		if(Opt->ModelFile != NULL)
-			free(Opt->ModelFile);
-
-		Opt->ModelFile = StrMake(Passed[1]);
-		Opt->UseModelFile = TRUE;
-	}
-	else
-	{
-		printf("ModelFile (MF) command take 0 or 1 parameters, 0 to turn the use of a model file to off. 1 to specify the model file name.\n");
-		return;
-	}
-}
 
 void	SetVarDataFile(OPTIONS *Opt, int Tokes, char** Passed)
 {
@@ -2342,9 +2730,9 @@ void	FlattenRecNode(OPTIONS *Opt)
 		Opt->RecNodeList[Index] = RNode;
 }
 
-void	FreeRecNodes(OPTIONS *Opt)
+void	FreeRecNodes(OPTIONS *Opt, int NoSites)
 {
-	int	Index;
+	int	Index, CIndex;
 	RECNODE	R;
 
 	if(Opt->RecNodeList != NULL)
@@ -2356,10 +2744,17 @@ void	FreeRecNodes(OPTIONS *Opt)
 	{
 		R = Opt->RecNodeList[Index];
 
+		if(R->ConData != NULL)
+		{
+			for(CIndex=0;CIndex<NoSites;CIndex++)
+				free(R->ConData[CIndex]);
+			free(R->ConData);
+		}
 
 		free(R->TreeNodes);
 		free(R->Name);
-		free(R->TaxaID);
+		FreePart(R->Part);
+
 		free(R->Taxa);
 
 		free(R);
@@ -2374,18 +2769,24 @@ void	SetDataDev(OPTIONS *Opt, int Tokes, char ** Passed)
 {
 	double	NewVal;
 
+	if(Tokes == 0)
+	{
+		Opt->AutoTuneDD = TRUE;
+		return;
+	}
+
 	if(Opt->Analsis == ANALML)
 	{
 		printf("Missing Data can only be estimated under MCMC.\n");
 		return;
 	}
-
-	if(AnyEstDataPoints(Opt) == FALSE)
+/*
+	if(EstData(Opt->Trees) == FALSE)
 	{
 		printf("No Data is being estimated, DataDev cannot be set.\n");
 		return;
 	}
-
+*/
 	if(IsValidDouble(Passed[1]) == FALSE)
 	{
 		printf("Could not convert %s to a valid DataDev\n", Passed[1]);
@@ -2400,23 +2801,514 @@ void	SetDataDev(OPTIONS *Opt, int Tokes, char ** Passed)
 	}
 
 	Opt->EstDataDev = NewVal;
+	Opt->AutoTuneDD = FALSE;
 }
 
-int		PassLine(OPTIONS *Opt, char *Buffer)
+void	SetNOSPerSiteOpt(OPTIONS *Opt)
 {
-	char		*Passed[1024];
+	if(Opt->NOSPerSite == FALSE)
+	{
+		Opt->NOSPerSite = TRUE;
+		Opt->AnalyticalP = TRUE;
+		RestrictAll(Opt, Opt->RateName[0]);
+	}
+	else
+	{
+		Opt->NOSPerSite = FALSE;
+		Opt->AnalyticalP = FALSE;
+	}
+}
+
+
+
+void	SetConRateDev(OPTIONS *Opt, char *PName, char *PRateDev)
+{
+	int		RPos;
+	double	RD;
+
+	RPos = StrToRate(Opt, PName);
+	if(RPos == -1)
+	{
+		printf("Could not find parameter %s\n", PName);
+		return;
+	}
+
+	if(IsValidDouble(PRateDev) == FALSE)
+	{
+		printf("Could not convert %s to a valid double\n", PRateDev);
+		return;
+	}
+
+	RD = atof(PRateDev);
+	if(RD < 0)
+	{
+		printf("%s has to be a value grater then 0.\n", PRateDev);
+		return;
+	}
+
+	Opt->RateDevList[RPos] = RD;
+}
+
+void	OptSetSeed(OPTIONS *Opt, char	*CSeed)
+{
+	if(IsValidInt(CSeed) == FALSE)
+	{
+		printf("%s is not a valid Unsigned integer.\n", CSeed);
+		return;
+	}
+
+	Opt->Seed = atoi(CSeed);
+}
+
+int	FossilNoPramOK(OPTIONS *Opt, char **Passed, int Tokes)
+{
+	if(Tokes < 5)
+		return FALSE;
+
+	return TRUE;
+}
+
+void	SetEqualTrees(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	int NoTreeBI;
+	char *TreeBI;
+
+	if(Tokes == 1)
+	{
+		Opt->UseEqualTrees = FALSE;
+		return;
+	}
+
+	if(Tokes != 2)
+	{
+		printf("Equal trees takes no parameters to toggle off or 1 parameter, tree specific burn-in.\n");
+		return;
+	}
+
+	TreeBI = Passed[1];
+
+	if(IsValidInt(TreeBI) == FALSE)
+	{
+		printf("Cound not convert %s to a valid tree specific burn-in number.\n", TreeBI);
+		return;
+	}
+
+	NoTreeBI = atoi(TreeBI);
+	if(NoTreeBI < 0)
+	{
+		printf("Tree specific burn-in must be greater than 0\n");
+		return;
+	}
+
+	Opt->UseEqualTrees = TRUE;
+	Opt->ETreeBI = NoTreeBI;
+}
+
+void	SetPrecision(OPTIONS *Opt, char *Token)
+{
+	int Pre;
+
+	if(IsValidInt(Token) == FALSE)
+	{
+		printf("%s is not a valid precision. Precision must be an integer >= 64.\n", Token);
+		return;
+	}
+
+	Pre = atoi(Token);
+	if(Pre <= sizeof(double) * 8)
+	{
+		printf("%s is not a valid precision. Precision must be an integer >= 64.\n", Token);
+		return;
+	}
+
+	Opt->Precision = Pre;
+}
+
+void	SetCores(OPTIONS *Opt, int Tokes, char** Passed)
+{
+	int Cores;
+
+//#if !(CLIK_P || THREADED)
+#ifndef CLIK_P
+#ifndef THREADED
+	printf("Cores is not valid with this build. please use the threaded build.");
+	return;
+#endif
+#endif
+
+	if(Tokes != 2)
+	{
+		printf("Cores takes the number of cores to use.\n");
+		return;
+	}
+
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("Could not covert %s to a valid number of cores\n", Passed[0]);
+		return;
+	}
+
+	Cores = atoi(Passed[1]);
+	if(Cores < 1)
+	{
+		printf("the number of course must be >= 0\n");
+		return;
+	}
+
+	Opt->Cores = Cores;
+}
+
+void	ResRateNo(OPTIONS *Opt, int From, int To)
+{
+	Opt->ResTypes[From] = RESRATE;
+	Opt->ResNo[From] = To;
+}
+
+void	SetMSSymmetrical(OPTIONS *Opt)
+{
+	int		x, y, NOS, From, To;
+	char	FromS[4], ToS[4];
+
+	NOS = Opt->Trees->NoOfStates;
+
+	for(x=0;x<NOS;x++)
+	{
+		for(y=0;y<x;y++)
+		{
+			if(x != y)
+			{
+				sprintf(&FromS[0], "q%c%c", Opt->Trees->SymbolList[x], Opt->Trees->SymbolList[y]);
+				sprintf(&ToS[0], "q%c%c", Opt->Trees->SymbolList[y], Opt->Trees->SymbolList[x]);
+
+				From	= StrToRate(Opt, &FromS[0]);
+				To		= StrToRate(Opt, &ToS[0]);
+
+				ResRateNo(Opt, From, To);
+			}
+		}
+	}
+}
+
+void	SetSymmetrical(OPTIONS *Opt)
+{
+	UnRestictAll(Opt);
+
+	if(Opt->Model == M_MULTISTATE)
+	{
+		SetMSSymmetrical(Opt);
+	}
+
+	if(Opt->Model == M_DESCINDEP)
+	{
+		/* Beta 1 = Alpha 1 */
+		ResRateNo(Opt, 1, 0);
+
+		/* Beta 2 = Alpha 2 */
+		ResRateNo(Opt, 3, 2);
+	}
+
+	if(Opt->Model == M_DESCDEP)
+	{
+		/* q21 = q12 */
+		ResRateNo(Opt, 2, 0);
+
+		/* q31 = q13 */
+		ResRateNo(Opt, 4, 1);
+
+		/* q42 = q24 */
+		ResRateNo(Opt, 6, 3);
+
+		/* q43 = q34 */
+		ResRateNo(Opt, 7, 5);
+	}
+}
+
+void	SetMCMCMLStart(OPTIONS *Opt)
+{
+	if(Opt->MCMCMLStart == TRUE)
+		Opt->MCMCMLStart = FALSE;
+	else
+		Opt->MCMCMLStart = TRUE;
+}
+
+void	SetTestCorrel(OPTIONS *Opt)
+{
+	if(Opt->TestCorrel == FALSE)
+		Opt->TestCorrel = TRUE;
+	else
+		Opt->TestCorrel = FALSE;
+}
+
+void	CapRJRatesNo(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	int Cap;
+
+	if(Tokes > 2)
+	{
+		printf("CapRJRates takes the maximum number of RJ Rates to alow.\n");
+		return;
+	}
+
+	if(Tokes == 1)
+	{
+		Opt->CapRJRatesNo = -1;
+		return;
+	}
+
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("%s not a valid cap for RJ Rates.\n", Passed[1]);
+		return;
+	}
+
+	Cap = atoi(Passed[1]);
+	if(Cap < 1)
+	{
+		printf("%s not a valid cap for RJ Rates.\n", Passed[1]);
+		return;
+	}
+
+	Opt->CapRJRatesNo = Cap;
+}
+
+void	SetSaveModels(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes > 2)
+	{
+		printf("SaveModels command take zero paramiters to turn it off, or a file name to save the models to.\n");
+		return;
+	}
+
+	if(Opt->SaveModelsFN != NULL)
+		free(Opt->SaveModelsFN);
+
+	if(Tokes == 1)
+	{
+		Opt->SaveModels = FALSE;
+		return;
+	}
+
+	Opt->SaveModels = TRUE;
+	Opt->SaveModelsFN = StrMake(Passed[1]);
+}
+
+void	SetLoadModels(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes > 2)
+	{
+		printf("LoadModels command take zero paramiters to turn it off, or a file name to save the models to.\n");
+		return;
+	}
+
+	if(Opt->LoadModelsFN != NULL)
+		free(Opt->LoadModelsFN);
+
+	if(Tokes == 1)
+	{
+		Opt->LoadModels = FALSE;
+		return;
+	}
+
+	Opt->LoadModels = TRUE;
+	Opt->LoadModelsFN = StrMake(Passed[1]);
+}
+
+void	SetRateDev(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	double Temp;
+
+	if(Tokes == 0)
+	{
+		Opt->AutoTuneRD = TRUE;
+		return;
+	}
+
+//	MakeLower(Passed[0]);
+
+	if(Tokes == 1)
+	{
+		Temp = atof(Passed[0]);
+
+		if(Temp <= 0)
+			printf("Could not convert %s to a valid Rate deveation\n", Passed[1]);
+		else
+			Opt->RateDev  = Temp;
+
+		if(Opt->DataType == CONTINUOUS)
+			SetAllRateDevs(Opt, Opt->RateDev);
+
+		Opt->AutoTuneRD = FALSE;
+	}
+	else if ((Tokes == 2) && (Opt->DataType == CONTINUOUS))
+	{
+		SetConRateDev(Opt, Passed[0], Passed[1]);
+		Opt->AutoTuneRD = FALSE;
+	}
+	else
+		printf("The RateDev command requires a floating point number\n");
+}
+
+void	LineAddErr(TREES *Trees, char *Line)
+{
+	char *Buffer;
+	char **Passed;
+	int		Tokes, ID;
+	double	Err;
+
+	Buffer = StrMake(Line);
+	Passed = (char**)malloc(sizeof(char*) * strlen(Line));
+	if(Passed == NULL)
+		MallocErr();
+
+	Tokes = MakeArgv(Buffer, Passed, strlen(Line));
+
+	if(Tokes == 0)
+		return;
+
+	if(Tokes != 2)
+	{
+		printf("AddErr: %s is not a valid line.\n", Line);
+		printf("AddErr: Each line should contain a  taxa name and standard error.\n");
+		return;
+	}
+
+	if(GetTaxaNoFormName(Passed[0], Trees, &ID) == FALSE)
+	{
+		printf("AddErr: %s is an invalid taxa name\n", Passed[0]);
+		return;
+	}
+
+	if(IsValidDouble(Passed[1]) == FALSE)
+	{
+		printf("AddErr: Could not convert %s to a valid error\n", Passed[1]);
+		return;
+	}
+
+	Err = atof(Passed[1]);
+
+	AddTaxaErr(Trees, ID, Err);
+
+	free(Passed);
+	free(Buffer);
+}
+
+void	LoadAddErr(OPTIONS *Opt, char *FName)
+{
+	TEXTFILE *TF;
+	int	Index;
+
+	TF = LoadTextFile(FName, FALSE);
+
+	for(Index=0;Index<TF->NoOfLines;Index++)
+		LineAddErr(Opt->Trees, TF->Data[Index]);
+
+	FreeTextFile(TF);
+}
+
+void	SetSteppingstone(OPTIONS *Opt, char **Passed, int Tokes)
+{
+	int K, Sample;
+	double	Alpha, Beta;
+
+	if(Tokes == 1)
+	{
+		if(Opt->Stones != NULL)
+			FreeStones(Opt->Stones);
+		Opt->Stones = NULL;
+	}
+
+	Beta = 1.0;
+	Alpha= 0.4;
+
+	if((Tokes != 3) && (Tokes != 5))
+	{
+		printf("Stones takes the number of stones and length to sample each stone.\n");
+		printf("Or\nStones takes the number of stones, length to sample each stone, alpha and beta values of each stone.\n");
+		return;
+	}
+
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("Stones: could not convert %s to a valid number of stones.\n", Passed[1]);
+		return;
+	}
+
+	K = atoi(Passed[1]);
+	if(K < 1)
+	{
+		printf("Stones: could not convert %s to a valid number of stones.\n", Passed[1]);
+		return;
+	}
+
+	if(IsValidInt(Passed[2]) == FALSE)
+	{
+		printf("Stones: could not convert %s to a valid number of itterations per stone.\n", Passed[2]);
+		return;
+	}
+
+	Sample = atoi(Passed[2]);
+	if(Sample < 1)
+	{
+		printf("Stones: could not convert %s to a valid number of iterations per stone \n", Passed[2]);
+		return;
+	}
+
+	if(Tokes == 5)
+	{
+		if(IsValidDouble(Passed[3]) == FALSE)
+		{
+			printf("Stones: could not convert %s to a valid alpha.\n", Passed[3]);
+			return;
+		}
+
+		Alpha = atof(Passed[3]);
+		if(Alpha < 0)
+		{
+			printf("Stones: could not convert %s to a valid alpha.\n", Passed[3]);
+			return;
+		}
+
+		if(IsValidDouble(Passed[4]) == FALSE)
+		{
+			printf("Stones: could not convert %s to a valid beta.\n", Passed[4]);
+			return;
+		}
+
+		Beta = atof(Passed[4]);
+		if(Beta < 0)
+		{
+			printf("Stones: could not convert %s to a valid beta.\n", Passed[4]);
+			return;
+		}
+	}
+
+	if(Opt->Stones != NULL)
+		FreeStones(Opt->Stones);
+
+	Opt->Stones = CratesStones(K,  Sample,  Alpha,  Beta);
+}
+
+int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
+{
 	int			Tokes;
 	COMMANDS	Command;
 	int			Index;
 	int			Temp;
-	double		TempDouble;
 
 	ReplaceChar(';', ' ', Buffer);
 	ReplaceChar('=', ' ', Buffer);
 	ReplaceChar(',', ' ', Buffer);
 	RemoveChar('\n', Buffer);
 
-	Tokes = MakeArgv(Buffer, Passed, 1024);
+
+	Tokes = MakeArgv(Buffer, Passed, BUFFERSIZE);
+//	Tokes = MakeArgv(Buffer, Passed, 1024);
+
+	if(Tokes == BUFFERSIZE)
+	{
+		printf("%s - Command line is too long, please contract developers for a solution.\n", Buffer);
+		exit(0);
+	}
 
 	if(Tokes >= 1)
 		MakeLower(Passed[0]);
@@ -2429,7 +3321,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 	if(Command == CUNKNOWN)
 		printf("Unknown command: %s\n",Passed[0]);
 
-	if(CmdVailWithDataType(Opt,Command)==FALSE)
+	if(CmdVailWithDataType(Opt,Command) == FALSE)
 		return FALSE;
 
 	if(Command == CRUN)
@@ -2440,8 +3332,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		if(Tokes >= 3)
 			Restrict(Opt, Tokes, Passed);
 		else
-			printf("The Restrict command takes two parimiters a paramiter to restict and a constant or rate to restict it to.\n");
-
+			printf("The Restrict command takes two parimiters, a rate to restict and a constant or rate to restict it to.\n");
 	}
 
 	if(Command == CUNRES)
@@ -2471,7 +3362,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 			SetPrior(Opt, Tokes, Passed);
 		else
 		{
-			printf("Prior set the prior values, requires a rate paramiters, adistribution type and a number of paramiters\n");
+			printf("Prior set the prior values, requires a rate parmeters, adistribution type and a number of parmeters\n");
 			printf("E.G., Prior q01 Beta 6 24.5\n");
 		}
 	}
@@ -2519,7 +3410,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		}
 		else
 			printf("Itters requires a number that spesifies the number of descrete prior catagiores.\n");
-
 	}
 
 	if(Command == CMLTRIES)
@@ -2586,19 +3476,22 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 
 	if(Command == CADDTAXA)
 	{
-		if(Tokes >= 3)
+		printf("The AddTaxa command is no longer supported.\n");
+
+	/*	if(Tokes >= 3)
 			AddToRecNode(Opt, Tokes, Passed);
 		else
-			printf("The AddNode command takes at least two paramiters a Node Name and taxa number/s\n");
+			printf("The AddNode command takes at least two parmeters a Node Name and taxa number/s\n");*/
 	}
 
 
 	if(Command == CDELTAXA)
 	{
-		if(Tokes >= 3)
+		printf("The DelTaxa command is no longer supported.\n");
+/*		if(Tokes >= 3)
 			DelToRecNode(Opt, Tokes, Passed);
 		else
-			printf("The DelTaxa command requies 2 or more paramiters and Node Name and a list of taxa numbers to remove from that node\n");
+			printf("The DelTaxa command requies 2 or more parmeters and Node Name and a list of taxa numbers to remove from that node\n");*/
 	}
 
 	if(Command == CEVENROOT)
@@ -2616,16 +3509,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 
 	if(Command == CRATEDEV)
 	{
-		if(Tokes == 2)
-		{
-			TempDouble = atof(Passed[1]);
-			if(TempDouble <= 0)
-				printf("Could not convert %s to a valid Rate deveation\n");
-			else
-				Opt->RateDev  = TempDouble;
-		}
-		else
-			printf("The RateDev command requires a floating point number\n");
+		SetRateDev(Opt, Tokes-1, &Passed[1]);
 	}
 
 	if(Command == CPRESET)
@@ -2692,14 +3576,20 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 			printf("The Lambda command take 0 or 1 parameters, 0 to toggle Lambda (on / off) and 1 to fix it to a constant\n");
 	}
 
+	if(Command == COU)
+	{
+		if(SetConVar(Tokes, Passed, &Opt->UseOU, &Opt->EstOU, &Opt->FixOU) == FALSE)
+			printf("The OU command take 0 or 1 parameters, 0 to toggle OU (on / off) and 1 to fix it to a constant\n");
+	}
+
 	if(Command == CEXTTAXA)
 	{
 		if(Tokes > 1)
 		{
-			FreePartitions(Opt->Trees);
-			FreeRecNodes(Opt);
+			FreeParts(Opt->Trees);
+			FreeRecNodes(Opt, Opt->Trees->NoOfSites);
 			ExcludeTaxa(Opt, Tokes-1, &Passed[1]);
-			SetPartitions(Opt->Trees);
+			SetParts(Opt->Trees);
 		}
 		else
 		{
@@ -2716,18 +3606,24 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 	{
 		if(Tokes == 2)
 		{
-			PrintTree(Passed[1], Opt->Trees, Opt);
+			Opt->SaveTrees = StrMake(Passed[1]);
+		//	PrintTree(Passed[1], Opt->Trees, Opt);
 		}
 		else
-			printf("Save trees requies a file name.\n");
+		{
+			if(Opt->SaveTrees != NULL)
+			{
+				free(Opt->SaveTrees);
+				Opt->SaveTrees = NULL;
+			}
+			else
+				printf("Save trees requies a file name.\n");
+		}
 	}
 
 	if(Command == CTESTCORREL)
 	{
-		if(Opt->TestCorrel == FALSE)
-			Opt->TestCorrel = TRUE;
-		else
-			Opt->TestCorrel = FALSE;
+		SetTestCorrel(Opt);
 	}
 
 	if(Command == CSURFACE)
@@ -2754,7 +3650,19 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 
 	if(Command == CFOSSIL)
 	{
-		AddRecNode(Opt, FOSSIL, Tokes, Passed);
+		if(FossilNoPramOK(Opt, Passed, Tokes) == TRUE)
+			AddRecNode(Opt, FOSSIL, Tokes, Passed);
+		else
+		{
+			if(Opt->DataType == DISCRETE)
+			{
+				printf("Error: The fossil command take a node name, a state to fossilise in and a list of taxa that define the node of interest.\n");
+			}
+			else
+			{
+				printf("Error: The fossil command take a node name, a state to fossilise in for each site and a list of taxa that define the node of interests.\n");
+			}
+		}
 	}
 
 
@@ -2785,7 +3693,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 		}
 		else
 			printf("HyperPrior requires a rate, a distrubion and a set of upper and lower values for the paramtiers\n");
-
 	}
 
 	if(Command == CHPRJ)
@@ -2850,21 +3757,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 
 	if(Command == CDEPSITE)
 	{
-		if(Tokes == 2)
-		{
-			if(IsValidInt(Passed[1]) == TRUE)
-			{
-				Temp = atoi(Passed[1]);
-				if((Temp < 1) || (Temp > Opt->Trees->NoOfSites))
-					printf("The designated dependant site must be > 0 and <= %d\n", Opt->Trees->NoOfSites);
-				else
-					Opt->DependantSite = Temp-1;
-			}
-			else
-				printf("DepSite requires an integers to designated as the dependant value.\n");
-		}
-		else
-			printf("DepSite requires a site number to designated as the dependant value.\n");
+
 	}
 
 	if(Command == CHEADERS)
@@ -2875,9 +3768,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 			Opt->Headers = TRUE;
 
 	}
-
-	if(Command == CMODELFILE)
-		SetModelFile(Opt, Tokes, Passed);
 
 	if(Command == CVARDATA)
 		SetVarDataFile(Opt, Tokes, Passed);
@@ -2913,24 +3803,187 @@ int		PassLine(OPTIONS *Opt, char *Buffer)
 	if(Command == CDATADEV)
 		SetDataDev(Opt, Tokes, Passed);
 
+	if(Command == CNOSPERSITE)
+		SetNOSPerSiteOpt(Opt);
+
+	if(Command == CSETSEED)
+	{
+		if(Tokes == 2)
+			OptSetSeed(Opt, Passed[1]);
+		else
+			printf("SetSeed take an unsinged intger.\n");
+
+	}
+
+	if(Command == CMAKEUM)
+	{
+		MakeUM(Opt->Trees);
+	/*	if(Opt->MakeUM == TRUE)
+			Opt->MakeUM = FALSE;
+		else
+			Opt->MakeUM = TRUE;
+	*/
+	}
+
+	if(Command == CVARRATES)
+	{
+		if(Opt->Trees->NoOfTrees > 1)
+		{
+			printf("VarRates can only be used on a single tree.\n");
+
+		}
+		else
+		{
+			if(Opt->UseVarRates == FALSE)
+			{
+				Opt->UseVarRates = TRUE;
+				Opt->AutoTuneVarRates = TRUE;
+			}
+			else
+			{
+				Opt->UseVarRates = FALSE;
+				Opt->AutoTuneVarRates = FALSE;
+			}
+		}
+	}
+
+	if(Command == CEQUALTREES)
+	{
+		SetEqualTrees(Opt, Tokes, Passed);
+	}
+
+	if(Command == CPRECISION)
+	{
+#ifndef BIG_LH
+		printf("Precision is only valid with the Big Lh build of BayesTraits.\n");
+		return FALSE;
+#endif
+		SetPrecision(Opt, Passed[1]);
+	}
+
+	if(Command == CCORES)
+	{
+		SetCores(Opt, Tokes, Passed);
+
+		return FALSE;
+	}
+
+	if(Command == CSYMMETRICAL)
+	{
+		SetSymmetrical(Opt);
+		return FALSE;
+	}
+
+	if(Command == CMCMCMLSTART)
+	{
+		SetMCMCMLStart(Opt);
+		return FALSE;
+	}
+
+	if(Command == CCAPRJRATES)
+	{
+		CapRJRatesNo(Opt, Tokes ,Passed);
+		return FALSE;
+	}
+
+	if(Command == CSAVEMODELS)
+	{
+		SetSaveModels(Opt, Tokes, Passed);
+		return FALSE;
+	}
+
+	if(Command == CLOADMODELS)
+	{
+		SetLoadModels(Opt, Tokes, Passed);
+		return FALSE;
+	}
+
+	if(Command == CADDERR)
+	{
+		if(Tokes != 2)
+		{
+			printf("AddErr requires one parameter, a file with taxa names and error.\n");
+			printf("File names cannot contain spaces.\n");
+			return FALSE;
+		}
+
+		LoadAddErr(Opt, Passed[1]);
+	}
+
+	if(Command == CSTONES)
+	{
+		SetSteppingstone(Opt, Passed, Tokes);
+	}
+
+	if(Command == CSHEDULE)
+	{
+		if(Opt->UseSchedule == FALSE)
+			Opt->UseSchedule = TRUE;
+		else
+			Opt->UseSchedule = FALSE;
+	}
+
 	return FALSE;
+}
+
+void	GetOptionsArry(OPTIONS *Opt, int Size, char** OptStr)
+{
+	int		Index;
+	char	**Passed;
+
+	Passed = (char**)malloc(sizeof(char*)*BUFFERSIZE);
+	if(Passed == NULL)
+		MallocErr();
+
+	for(Index=0;Index<Size;Index++)
+		PassLine(Opt, OptStr[Index], Passed);
+
+	free(Passed);
 }
 
 void	GetOptions(OPTIONS *Opt)
 {
 	char	*Buffer;
+	char	**Passed;
 
+	Passed = (char**)malloc(sizeof(char*) * BUFFERSIZE);
 	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
+	if((Buffer == NULL) || (Passed == NULL))
 		MallocErr();
 
 	do
 	{
 		printf("> ");
 		fgets(Buffer, BUFFERSIZE, stdin);
-	} while(PassLine(Opt,Buffer) == FALSE);
-
-	FlattenRecNode(Opt);
+	} while(PassLine(Opt,Buffer, Passed) == FALSE);
 
 	free(Buffer);
+	free(Passed);
+}
+
+void	CheckOptions(OPTIONS *Opt)
+{
+	int NoFreeP;
+	printf("\n");
+
+	if(Opt->LoadModels == TRUE)
+	{
+		if(Opt->UseRJMCMC == TRUE)
+		{
+			printf("RJ MCMC and the use of a model file are mutuality exclusive.\n");
+			exit(0);
+		}
+	}
+
+	NoFreeP = FindNoOfRates(Opt);
+
+	if((Opt->UseRJMCMC == FALSE) && (Opt->DataType == DISCRETE))
+	{
+		if(FindNoOfRates(Opt) > 25)
+		{
+			printf("Too many free parameter to estimate (%d), try reducing the model or using RJ MCMC\n", NoFreeP);
+			printf("If you believe you data can support this number of free parameter please contact the developers to have this limitation removed.\n");
+			exit(0);
+		}
+	}
 }

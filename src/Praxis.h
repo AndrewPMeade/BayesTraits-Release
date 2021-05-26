@@ -77,27 +77,114 @@
 #ifndef PRAXIS
 #define PRAXIS
 
+#include "typedef.h"
+
 #define EPSILON 1.0e-8
 #define SQREPSILON 1.0e-16
 
+#define PNSIZE 90
 
-#define N 90
 
-double rndom(void);
-void sort(void);
-void print(void);
-void matprint(char *s,double v[N][N], int n);
-void vecprint(char *s, double x[N], int n);
-double flin(double l, int j);
+//void		BlankPraxisGlobal(void);
+//PRAXSTATE*	AllocPraxState(void);
+
+
+typedef struct
+{
+	/* control parameters */
+	double	tol;
+	double	scbd;
+	double	step;
+	int		ktm;
+	int		prin;
+	int		maxfun;
+	int		illc;
+
+	/* some global variables */
+	int		i;
+	int		j;
+	int		k;
+	int		k2;
+	int		nl; 
+	int		nf;
+	int		kl;
+	int		kt;
+
+	double	s;
+	double	sl;
+	double	dn;
+	double	dmin;
+	double	fx;
+	double	f1;
+	double	lds;
+	double	ldt;
+	double	sf;
+	double	df;
+	double	qf1;
+	double	qd0;
+	double	qd1;
+	double	qa;
+	double	qb;
+	double	qc;
+    double	m2;
+	double	m4;
+	double	small;
+	double	vsmall;
+	double	large;
+	double	vlarge;
+	double	ldfac;
+	double	t2;
+	double	d[PNSIZE];
+	double	y[PNSIZE];
+	double	z[PNSIZE];
+	double	q0[PNSIZE];
+	double	q1[PNSIZE];
+	double	v[PNSIZE][PNSIZE];
+
+	/* these will be set by praxis to point to its arguments */
+	int		n;
+	double	*x;
+	double	(*fun)(void*, double*);
+
+	/* these will be set by praxis to the global control parameters */
+	double	h;
+	double	macheps;
+	double	t;
+
+
+	/* Stuff i need */
+	RATES	*Rates;
+	TREES	*Trees;
+	OPTIONS	*Opt;
+
+	int		NoLhCalls;
+
+	/* Free pointer to carry other data strcts */
+	void	*Pt;
+
+
+} PRAXSTATE;
+
+//double		rndom(void);
+void		sort(PRAXSTATE* S);
+void		print(PRAXSTATE* S);
+void		matprint(char *s, double v[PNSIZE][PNSIZE], int n);
+void		vecprint(char *s, double x[PNSIZE], int n);
+double		flin(PRAXSTATE* S, double l, int j);
 
 #ifdef min1
        #undef min1
-       void min1(int j, int nits, double *d2, double *x1, double f1, int fk);
+       void min1(PRAXSTATE* S, int j, int nits, double *d2, double *x1, double f1, int fk);
+#endif
+
+void		quadprax(PRAXSTATE* S);
+//double	praxis(double(*_fun)(double*), double *_x, int _n, int pr, int il, int ktm2, int LMaxFun);
+
+
+PRAXSTATE*	IntiPraxis(double(*_fun)(void*, double*), double *_x, int _n, int pr, int il, int ktm2, int LMaxFun);
+void		FreePracxStates(PRAXSTATE* PS);
+double		praxis(PRAXSTATE* PState);
+
 
 #endif
 
-void quadprax(void);
-double praxis(double(*_fun)(double*), double *_x, int _n, int pr, int il, int ktm2, int LMaxFun);
-
-void	BlankPraxisGlobal(void);
-#endif

@@ -3,19 +3,19 @@
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
-
+#include <time.h>
 #include "genlib.h"
 
 
 void		MallocErrFull(char* FileName, int LineNo)
 {
-	fprintf(stderr, "Memory allocation error in file %s line %d\n", FileName, LineNo);
 	fprintf(stdout, "Memory allocation error in file %s line %d\n", FileName, LineNo);
+	fprintf(stdout, "Two main causes of memory allocation error, 1) running out of usable memory, 2) a programming error.\n");
 
 	exit(1);
 }
 
-char*		StrMake(char* Str)
+char*		StrMake(const char* Str)
 {
 	char*	Ret;
 
@@ -488,6 +488,46 @@ int	MakeArgv(char*	string, char *argv[], int argvsize)
 	return argc;
 }
 
+int			IsChar(char Break, char C)
+{
+	if(C == Break)
+		return FALSE;
+
+	return TRUE;
+}
+
+int			MakeArgvChar(char*	string, char *argv[], int argvsize, char Break)
+{
+	char*	p = string;
+	int		i;
+	int		argc = 0;
+
+	for(i=0; i<argvsize; i++)
+	{
+		/* Skip Leading whitespace */
+		while(*p == Break) p++;
+
+		if(*p != '\0')
+			argv[argc++] = p;
+		else
+		{
+			argv[argc] = 0;
+			break;
+		}
+
+		/* Scan over arg */
+		while(*p != '\0' && !(*p == Break))
+			p++;
+
+		/* Terminate argv */
+		if(*p != '\0' && i < argvsize - 1)
+			*p++ = '\0';
+
+	}
+
+	return argc;
+}
+
 int		IsValidDouble(char* Str)
 {
 	int	Point=FALSE;
@@ -853,4 +893,160 @@ void Swap(void** a, void** b)
 	t = *a;
 	*a = *b;
 	*b = t;
+}
+
+
+void	GotoFileEnd(FILE *File, char *Buffer, int Size)
+{
+	while(fgets(Buffer, Size, File) != NULL);
+}
+
+void	PrintTime(FILE* Str)
+{
+	time_t	*Now;
+	struct tm *Time;
+
+	Now = (time_t*)malloc(sizeof(time_t));
+
+	time(Now);
+	Time = localtime(Now);
+
+	fprintf(Str, "%02d/%02d/%d ", Time->tm_mday, Time->tm_mon+1, Time->tm_year+1900);
+	fprintf(Str, "%d:%02d:%02d", Time->tm_hour, Time->tm_min, Time->tm_sec);
+
+	free(Now);
+}
+
+void**	AddToList(int *No, void** OldList, void* Item)
+{
+	void	**Ret;
+
+	if(*No == 0)
+	{
+		Ret = (void**)malloc(sizeof(void*));
+		if(Ret == NULL)
+			MallocErr();
+		Ret[0] = Item;
+		(*No)++;
+		return Ret;
+	}
+
+	Ret = (void**)malloc(sizeof(void*) * (*No + 1));
+	if(Ret == NULL)
+		MallocErr();
+
+	memcpy(Ret, OldList, *No * sizeof(void*));
+	free(OldList);
+
+
+	Ret[*No] = Item;
+
+	(*No)++;
+
+	return Ret;
+}
+
+
+void double2HexString(double a) 
+{ 
+//   char *buf; // double is 8-byte long, so we have 2*8 + terminating \0 
+   char *d2c; 
+//	char *n; 
+   int i; 
+
+  // buf = (char*)malloc(sizeof(double)+sizeof(double));
+
+ //  n = buf;
+
+   d2c = (char *) &a; 
+
+   for(i = 0; i < 8; i++) 
+   { 
+   //   sprintf(n, "%02X", *d2c++); 
+	  printf("%x", *d2c++); 
+ //     n += 2; 
+   }  
+  // *(n) = '\0'; 
+
+//   return buf;
+} 
+
+char		IntToHex(int i)
+{
+	if(i<10)
+		return '0'+i;
+	return 'A'+(i-10);
+}
+
+void		PrintDoubleHex(FILE *Str, double D)
+{
+	unsigned char *h, in;
+	int Index;
+	unsigned char t,b;
+
+	h = (unsigned char*)&D;
+	
+	for(Index=0;Index<sizeof(double);Index++)
+	{
+
+		in = h[Index];
+
+		b = in & 0x0f;
+		t = (in >> 4) & 0x0f;
+
+		printf("%c%c", IntToHex(b), IntToHex(t));
+	}
+}
+
+void		CalcRSqr(double *x, double *y, int Size, double *R2, double *Slope, double *Intercept)
+{
+	double	sumOfX, sumOfY, sumOfXSq, sumOfYSq, ssX, ssY, sumCoVar;
+	double	MeanX, MeanY, RDenom, RNum, sCo;
+	int Index;
+	
+	sumOfX = sumOfY = sumOfXSq = sumOfYSq = ssX = ssY = sumCoVar = 0;
+	MeanX =  MeanY = 0;
+
+	for(Index=0;Index<Size;Index++)
+	{
+		sumCoVar += (x[Index] * y[Index]);
+		
+		sumOfX += x[Index];
+		sumOfY += y[Index];
+
+		sumOfXSq += (x[Index] * x[Index]);
+		sumOfYSq += (y[Index] * y[Index]);
+	}
+
+	ssX = sumOfXSq - ((sumOfX * sumOfX) / Size);
+	ssY = sumOfYSq - ((sumOfY * sumOfY) / Size);
+
+	RNum = (Size * sumCoVar) - (sumOfX * sumOfY);
+	
+	RDenom = (Size * sumOfXSq - (pow(sumOfX, 2))) * (Size * sumOfYSq - (pow(sumOfY, 2)));
+
+	sCo = sumCoVar - ((sumOfX * sumOfY) / Size);
+	
+	MeanX = sumOfX / Size;
+	MeanY = sumOfY / Size;
+
+	*Slope = sCo / ssX;
+	*Intercept = MeanY - (*Slope * MeanX);
+	*R2 = RNum / sqrt(RDenom);
+	*R2 = *R2 * *R2;
+}
+
+int			CountChar(char *Str, char C)
+{
+	int Ret;
+
+	Ret = 0;
+	while(*Str != '\0')
+	{
+		if(*Str == C)
+			Ret++;
+		Str++;
+	}
+
+	return Ret;
 }

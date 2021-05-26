@@ -120,6 +120,84 @@ int LUDecompose (double **a, int n, double *vv, int *indx, double *pd)
 
 	d = 1.0;
 	for (i = 0; i < n; i++)
+	{
+		big = 0.0;
+		for (j = 0; j < n; j++)
+		{
+			if ((temp = fabs(a[i][j])) > big)
+				big = temp;
+		}
+	
+		if (big == 0.0)
+		{
+		//	printf("singular matrix in routine LUDecompose\n");
+			return ERROR;
+		}
+		vv[i] = 1.0 / big;
+	}
+
+	for (j = 0; j < n; j++)
+	{
+		// lower tri
+		for (i = 0; i < j; i++)
+		{
+			sum = a[i][j];
+			for (k = 0; k < i; k++)
+				sum -= a[i][k] * a[k][j];
+			a[i][j] = sum;
+		}
+
+		big = 0.0;
+		for (i = j; i < n; i++)
+		{
+			sum = a[i][j];
+			for (k = 0; k < j; k++)
+				sum -= a[i][k] * a[k][j];
+			a[i][j] = sum;
+			dum = vv[i] * fabs(sum);
+			if (dum >= big)
+			{
+				big = dum;
+				imax = i;
+			}
+		}
+		
+		if (j != imax)
+		{
+			for (k = 0; k < n; k++)
+			{
+				dum = a[imax][k];
+				a[imax][k] = a[j][k];
+				a[j][k] = dum;
+			}	
+			d = -d;
+			vv[imax] = vv[j];
+		}
+		
+		indx[j] = imax;
+		if (a[j][j] == 0.0)
+			a[j][j] = TINY;
+		
+		if (j != n - 1)
+		{
+			dum = 1.0 / (a[j][j]);
+			for (i = j + 1; i < n; i++)
+				a[i][j] *= dum;
+		}
+	}
+
+	if (pd != NULL)
+		*pd = d;
+	return NO_ERROR;
+}
+
+/*
+{
+	int			i, imax, j, k;
+	double		big, dum, sum, temp, d;
+
+	d = 1.0;
+	for (i = 0; i < n; i++)
 		{
 		big = 0.0;
 		for (j = 0; j < n; j++)
@@ -129,7 +207,7 @@ int LUDecompose (double **a, int n, double *vv, int *indx, double *pd)
 			}
 		if (big == 0.0)
 			{
-			printf("singular matrix in routine LUDecompose");
+			printf("singular matrix in routine LUDecompose\n");
 			return ERROR;
 			}
 		vv[i] = 1.0 / big;
@@ -183,6 +261,7 @@ int LUDecompose (double **a, int n, double *vv, int *indx, double *pd)
 		*pd = d;
 	return NO_ERROR;
 }
+*/
 
 /*--------------------------------------------------------------------------------------------------
 |
@@ -292,7 +371,8 @@ int EigenRealGeneral (int n, double **a, double *v, double *vi, double **u, int 
 int EigenRG (int n, double **a, double *wr, double *wi, double **z, int *iv1, double *fv1)
 
 {
-	static int	is1, is2;
+//	static int	is1, is2;
+	int	is1, is2;
 	int			ierr;
 
 	Balanc (n, a, &is1, &is2, fv1);
