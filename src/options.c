@@ -453,11 +453,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		if(Opt->Model == M_FATTAIL)
 			fprintf(Str, "No Slice Sample Steps:           %d\n", Opt->NoSliceSampleSteps);
 
-		fprintf(Str, "Use StochasticBeta              ");
-		if(Opt->UseStochasticBeta == TRUE)
-			fprintf(Str, "True\n");
-		else
-			fprintf(Str, "False\n");
 	}
 
 	if(Opt->RJDummy == TRUE)
@@ -4212,24 +4207,6 @@ void	LoadRJRates(OPTIONS* Opt, int Tokes, char** Passed)
 	Opt->VarRatesCheckPoint = Str;
 }
 
-void	SetStochasticBeta(OPTIONS* Opt, int Tokes, char** Passed)
-{
-	PRIOR *Prior;
-
-	RemovePriorFormOpt("StochasticBeta", Opt);
-
-	if(Opt->UseStochasticBeta == TRUE)
-		Opt->UseStochasticBeta = FALSE;
-	else
-		Opt->UseStochasticBeta = TRUE;
-
-	if(Opt->UseStochasticBeta == TRUE)
-	{
-		Prior = CreateLogNormalPrior("StochasticBeta", 1.0, 1.5);
-		AddPriorToOpt(Opt, Prior);
-	}
-}
-
 void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	if(Opt->SaveInitialTrees != NULL)
@@ -4930,9 +4907,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == C_LOAD_RJ_RATES)
 		LoadRJRates(Opt, Tokes, Passed);
-
-	if(Command == C_STOCHASTIC_BETA)
-		SetStochasticBeta (Opt, Tokes, Passed);
 
 	return FALSE;
 }

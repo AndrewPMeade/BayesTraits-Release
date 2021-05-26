@@ -42,7 +42,7 @@
 #include "TransformTree.h"
 #include "Part.h"
 #include "StableDist.h"
-#include "StochasticBeta.h"
+
 
 #include <gsl/gsl_cdf.h>
 
@@ -62,9 +62,6 @@ int		UseRJLocalScalar(OPTIONS* Opt)
 int		UseNonParametricMethods(OPTIONS *Opt)
 {
 	if(UseRJLocalScalar(Opt) == TRUE)
-		return TRUE;
-
-	if(Opt->UseStochasticBeta == TRUE)
 		return TRUE;
 
 	return FALSE;
@@ -1078,10 +1075,9 @@ void	LogVarRatesResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 	NODE		N;
 	double		Sigma;
 
-	if(Opt->UseStochasticBeta == TRUE && UseRJLocalScalar(Opt) == FALSE)
+	if(UseRJLocalScalar(Opt) == FALSE)
 	{
-		fprintf(Opt->VarRatesLog, "%lld\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, GetNoStochasticBetaType(Rates, SB_RJ));
-		LogStochasticBetaResults(Opt, Trees, Rates, It);
+		fprintf(Opt->VarRatesLog, "%lld\t%f\t%f\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior);
 		fprintf(Opt->VarRatesLog,"\n");
 		return;
 	}
@@ -1130,9 +1126,6 @@ void	LogVarRatesResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 		OutputVarRatesType(Out, PNode->Type);
 //		fprintf(Out, "\n");
 	}
-
-	if(Opt->UseStochasticBeta == TRUE)
-		LogStochasticBetaResults(Opt,Trees,Rates,It);
 
 	fprintf(Out, "\n");
 //	exit(0);

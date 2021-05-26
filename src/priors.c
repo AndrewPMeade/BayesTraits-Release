@@ -42,7 +42,7 @@
 #include "Prob.h"
 #include "LocalTransform.h"
 #include "GlobalTrend.h"
-#include "StochasticBeta.h"
+
 
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
@@ -578,25 +578,9 @@ double	LogGammaP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
-void	TestP(PRIOR *Prior)
-{
-	double X, Lh;
-
-	for(X=00.0000001;X<2.5;X+=0.001)
-	{
-	//	Lh = gsl_ran_weibull_pdf(X,Prior->DistVals[0],Prior->DistVals[1]);
-		Lh = gsl_ran_gamma_pdf(X, 2.0, 0.3);
-		printf("%f\t%f\n", X, Lh);
-	}
-
-	exit(0);
-}
-
 double	LogWeibullP(double X, PRIOR* Prior)
 {
 	double Ret;
-
-	TestP(Prior);
 
 	if(X < 0.0)
 		return ERRLH;
@@ -1149,16 +1133,6 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	if(Opt->UseGlobalTrend == TRUE)
 	{
 		PLh = CalcGlobalTrendPrior(Rates);
-		
-		if(PLh == ERRLH)
-			return;
-
-		Ret += PLh;
-	}
-
-	if(Opt->UseStochasticBeta == TRUE)
-	{
-		PLh = CaclStochasticBetaPrior(Opt->Trees, Rates);
 		
 		if(PLh == ERRLH)
 			return;

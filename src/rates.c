@@ -61,7 +61,6 @@
 #include "Landscape.h"
 #include "Part.h"
 #include "GlobalTrend.h"
-#include "StochasticBeta.h"
 
 void	SetRegBetaZero(int NoSites, RATES *Rates)
 {
@@ -827,13 +826,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->LandscapeRateGroups	= NULL;
 	Ret->UseMLLandscape	=	FALSE;
 
-	Ret->NoSB			=	-1;
-	Ret->SB_Type_Map	=	NULL;
-	Ret->SB_Vect		=	NULL;
-
 	if(Opt->UseMLLandscape == TRUE)
 		Ret->Landscape = CreateLandScape(Opt->Trees);
-
 
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
@@ -883,9 +877,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	if(Opt->TimeSlices->NoTimeSlices > 0)
 		Ret->TimeSlices = CreateRatesTimeSlices(Ret, Opt->TimeSlices);
-
-	if(Opt->UseStochasticBeta == TRUE)
-		InitStochasticBeta(Opt, Opt->Trees, Ret);
 
 	if(Opt->DataType == CONTINUOUS)
 	{
@@ -1237,10 +1228,6 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 //	if(Opt->UseRJLandscapeRateGroup == TRUE)
 //		fprintf(Str, "RJLandRateSig\t");
-
-
-	if(Opt->UseStochasticBeta == TRUE)
-		fprintf(Str, "SB None\tSB Prior\t");
 
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
@@ -1820,8 +1807,6 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	if(Opt->UseGlobalTrend == TRUE)
 		fprintf(Str, "%0.12f\t", Rates->GlobalTrend);
 
-	if(Opt->UseStochasticBeta == TRUE)
-			fprintf(Str, "%d\t%d\t", GetNoStochasticBetaType(Rates, SB_NONE), GetNoStochasticBetaType(Rates, SB_RJ));
 }
 
 double	GetPartailPi(RATES *Rates, NODE N, int StateNo, int SiteNo)
@@ -2221,9 +2206,6 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 
 	if(A->TimeSlices != NULL)
 		CopyTimeSlices(A->TimeSlices, B->TimeSlices);
-
-	if(Opt->UseStochasticBeta == TRUE)
-		CopyStochasticBeta(A, B);
 
 	A->NormConst = B->NormConst;
 	A->GlobablRate = B->GlobablRate;
@@ -2911,14 +2893,6 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		case S_GLOBAL_TREND:
 			ChangeGlobalTrend(Rates, Shed);
 		break;
-
-		case S_SB_RATE:
-			ChangeStochasticBeta(Opt->Trees, Rates, Shed);
-		break;
-
-		case S_SB_RJ:
-			CaclStochasticBetaRJ(Rates);
-		break;
 	}
 }
 
@@ -3008,10 +2982,6 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 
 	if(Rates->Landscape != NULL)
 		FreeLandScape(Rates->Landscape);
-
-
-	if(Rates->SB_Type_Map != NULL)
-		FreeStochasticBeta(Rates);
 
 	free(Rates);
 }

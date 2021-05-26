@@ -259,12 +259,6 @@ void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 
 	if(Opt->UseGlobalTrend == TRUE)
 		Shed->OptFreq[S_GLOBAL_TREND] = 0.1;
-
-	if(Opt->UseStochasticBeta == TRUE)
-	{
-		Shed->OptFreq[S_SB_RJ] = 0.4;
-		Shed->OptFreq[S_SB_RATE] = 0.4;
-	}
 	   
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 
@@ -718,19 +712,6 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 		SetMaxDev(Ret->GlobalRateAT, 10000.0);
 		AddToFullATList(Ret, Ret->GlobalRateAT);
 	}
-
-	if(Opt->UseStochasticBeta == TRUE)
-	{
-		Ret->StochasticBeta = CreatAutoTune("Stochastic Beta", RandDouble(RS) * 0.01, MIN_VALID_ACC, MAX_VALID_ACC);
-		SetMaxDev(Ret->StochasticBeta, 10000.0);
-
-		Ret->StochasticBetaPrior = CreatAutoTune("Stochastic Beta Prior", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
-		SetMaxDev(Ret->StochasticBetaPrior, 10000.0);
-
-		AddToFullATList(Ret, Ret->StochasticBeta);
-		AddToFullATList(Ret, Ret->StochasticBetaPrior);
-	}
-
 
 	return Ret;
 }

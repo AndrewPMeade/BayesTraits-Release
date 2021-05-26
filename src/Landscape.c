@@ -11,16 +11,12 @@
 #include "Likelihood.h"
 #include "ML.h"
 #include "NLOptBT.h"
-#include "StochasticBeta.h"
 
 int			UseLandscapeBeta(OPTIONS* Opt)
 {
 	int Index;
 
 	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
-		return TRUE;
-
-	if(Opt->UseStochasticBeta == TRUE)
 		return TRUE;
 
 	for(Index=0;Index<Opt->NoLocalTransforms;Index++)
@@ -191,9 +187,6 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	if(Rates->Landscape != NULL)
 		MapLandscapeNodes(Opt, Trees, Rates);
-
-	if(Opt->UseStochasticBeta == TRUE)
-		MapStochasticBeta(Trees, Rates);
 
 	PropLandscapeBeta(Trees, Tree->Root, 0.0);
 }
