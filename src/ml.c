@@ -409,7 +409,7 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	BuildMLMap(BMap, Opt, Trees, Rates);
 	BLh = LikelihoodML(BMap, Opt, Trees, Rates);
 
-	if(ValidLh(BLh, Opt->Model) == FALSE)
+	if(ValidLh(BLh, Opt->ModelType) == FALSE)
 	{
 		FindValidMLStartSet(BMap, Opt, Trees, Rates);	
 		BLh = LikelihoodML(BMap, Opt, Trees, Rates);
