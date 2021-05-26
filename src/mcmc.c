@@ -510,15 +510,50 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 	return FALSE;
 }
 
+int GetNodeDepth(NODE N)
+{
+	int Ret;
+
+	Ret = 0;
+	while(N->Ans != NULL)
+	{
+		N = N->Ans;
+		Ret++;
+	}
+
+	return Ret;
+}
 
 void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
 {
-	double		StartT, EndT;
-
+	double		StartT, EndT, Lh;
 	TREE *Tree;
 	int Index;
 
 	Tree = Trees->Tree[0];
+
+	Lh = Likelihood(Rates, Trees, Opt);
+
+	printf("%f\n", Lh);
+
+	StartT = GetSeconds();
+
+	for(Index=0;Index<2500;Index++)
+	{
+		GeoUpDateAllAnsStates(Opt, Trees, Rates);
+		Lh = Likelihood(Rates, Trees, Opt);
+	}
+
+	EndT = GetSeconds();
+
+	Lh = Likelihood(Rates, Trees, Opt);
+	
+	printf("%d\t%f\n", Opt->Cores, Lh);
+
+	printf("Total Time:\t%f\n", EndT - StartT);
+
+	exit(0);
+
 
 	for(Index=0;Index<Tree->NoFGroups;Index++)
 	{
@@ -526,8 +561,7 @@ void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
 	}
 	exit(0);
 
-	StartT = GetSeconds();
-	
+
 
 	for(Index=0;Index<1000;Index++)
 	{
@@ -536,7 +570,6 @@ void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
 	}
 
 
-	EndT = GetSeconds();
 
 
 	printf("Total Time:\t%f\n", EndT - StartT);
@@ -638,7 +671,7 @@ void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
 	fflush(stdout);
 	fflush(Opt->LogFile);
 
-//	MCMCTest(Opt, Trees, CRates, Shed);
+	MCMCTest(Opt, Trees, CRates, Shed);
 
 
 	StartT = GetSeconds();

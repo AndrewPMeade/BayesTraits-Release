@@ -115,6 +115,8 @@ NODE	AllocNode(void)
 	Ret->PatternNo		=	-1;
 
 	Ret->LandscapeBeta	=	0.0;
+
+	Ret->RNG			=	NULL;
 	
 	return Ret;
 }
@@ -182,6 +184,9 @@ void	FreeNode(NODE N)
 
 	if(N->FossilMask != NULL)
 		free(N->FossilMask);
+
+	if(N->RNG != NULL)
+		gsl_rng_free(N->RNG);
 
 	free(N);
 }
@@ -2297,4 +2302,32 @@ double	GetNodeHeight(NODE Node)
 	free(NodeList);
 
 	return Ret;
+}
+
+void	SetTreeNodeRNG(TREE *Tree, gsl_rng *RNG)
+{
+	int Index;
+	NODE Node;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		Node = Tree->NodeList[Index];
+
+		Node->RNG = gsl_rng_alloc(gsl_rng_mt19937);
+		gsl_rng_set(Node->RNG, gsl_rng_get(RNG));
+	}
+}
+
+void	SetTreesRNG(TREES *Trees, long Seed)
+{
+	gsl_rng	*RNG;
+	int Index;
+
+	RNG	= gsl_rng_alloc(gsl_rng_mt19937);
+	gsl_rng_set(RNG, Seed);
+
+	for(Index=0;Index<Trees->NoTrees;Index++)
+		SetTreeNodeRNG(Trees->Tree[Index], RNG);
+
+	gsl_rng_free(RNG);
 }

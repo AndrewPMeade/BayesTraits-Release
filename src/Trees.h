@@ -74,16 +74,12 @@ void	PrintTreeBL(TREE *Tree);
 void	PrintTreeNode(TREES *Trees, TREE *Tree);
 void	RecPrintNode(NODE N);
 
-
-
 void	CheckSingleDescendent(TREES *Trees);
 
 int		GetNoInternalNodes(TREE *Tree);
 
 void	SetTreesInternalNodes(TREES *Trees);
 
-
-
-
+void	SetTreesRNG(TREES *Trees, long Seed);
 
 #endif

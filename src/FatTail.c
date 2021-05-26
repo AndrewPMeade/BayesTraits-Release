@@ -251,6 +251,58 @@ FATTAILNODE*	InitFatTailNode(int NoSites, NODE N, double *AnsVect)
 	return Ret;
 }
 
+void	AllocFatTailTreeGroups(TREE *Tree)
+{
+	FATTAILTREE *FTT;
+	size_t	Index, MaxNoNodes, MaxGroups;
+	size_t i,j;
+
+	MaxNoNodes = Tree->NoInternalNodes;
+	MaxGroups = Tree->NoFGroups;
+
+	FTT = Tree->FatTailTree;
+
+	FTT->NoParallelGroups = 0;
+	
+	FTT->ParallelNodeListLength = (int*)SMalloc(sizeof(int) * MaxGroups);
+	for(Index=0;Index<MaxGroups;Index++)
+		FTT->ParallelNodeListLength[Index] = 0;
+
+	FTT->ParallelNodeList = (NODE**)SMalloc(sizeof(NODE*) * MaxGroups);
+	FTT->ParallelNodeList[0] = (NODE*)SMalloc(sizeof(NODE) * MaxGroups * MaxNoNodes);
+
+	for(Index=1;Index<MaxGroups;Index++)
+		FTT->ParallelNodeList[Index] = FTT->ParallelNodeList[0] + Index * MaxNoNodes;
+
+
+	for(i=0;i<MaxGroups;i++)
+		for(j=0;j<MaxNoNodes;j++)
+			FTT->ParallelNodeList[i][j] = NULL;
+}
+
+void	InitFatTailTreeGroups(TREE *Tree)
+{
+	FATTAILTREE *FTT;
+
+	FTT = Tree->FatTailTree;
+
+	AllocFatTailTreeGroups(Tree);
+
+	memcpy(FTT->ParallelNodeList[0], Tree->PNodes[0], sizeof(NODE) * Tree->NoFNodes[0]);
+}
+
+
+
+void	SetFatTailTreeGroups(TREE *Tree)
+{
+	FATTAILTREE *FTT;
+
+	FTT = Tree->FatTailTree;
+
+	InitFatTailTreeGroups(Tree);
+
+}
+
 void	InitFatTailTree(OPTIONS *Opt, TREE *Tree)
 {
 	int Index;
@@ -261,6 +313,8 @@ void	InitFatTailTree(OPTIONS *Opt, TREE *Tree)
 		N = Tree->NodeList[Index];
 		N->FatTailNode = InitFatTailNode(Opt->Trees->NoSites, N, Tree->FatTailTree->AnsVect);
 	}
+
+	SetFatTailTreeGroups(Tree);
 }
 
 FATTAILTREE*	AllocFatTailTree(TREE *Tree, int NoSites)
@@ -271,12 +325,21 @@ FATTAILTREE*	AllocFatTailTree(TREE *Tree, int NoSites)
 
 	Ret->AnsVect = (double*)SMalloc(sizeof(double) * Tree->NoNodes * NoSites);
 
+	Ret->ParallelNodeList = NULL;
+	Ret->ParallelNodeListLength = NULL;
+	Ret->NoParallelGroups = -1;
+
 	return Ret;
 }
 
 void			FreeFatTailTree(FATTAILTREE *FatTailTree)
 {
 	free(FatTailTree->AnsVect);
+		
+	free(FatTailTree->ParallelNodeList[0]);
+	free(FatTailTree->ParallelNodeList);
+	free(FatTailTree->ParallelNodeListLength);
+
 	free(FatTailTree);
 }
 
@@ -376,6 +439,7 @@ void	SetInitAnsStates(OPTIONS *Opt, TREES *Trees, TREE *Tree)
 		CorrectIntGeoNodes(Tree);
 }
 
+
 void	InitFatTailTrees(OPTIONS *Opt, TREES *Trees)
 {
 	int Index;
@@ -386,9 +450,11 @@ void	InitFatTailTrees(OPTIONS *Opt, TREES *Trees)
 		Tree = Trees->Tree[Index];
 		Tree->FatTailTree = AllocFatTailTree(Tree, Trees->NoSites);
 		InitFatTailTree(Opt, Tree);
-	}
-}
 
+	}
+
+	SetTreesRNG(Trees, Opt->Seed);
+}
 
 double	CalcNodeStableLh(NODE N, int NoSites, STABLEDIST **SDList, int UseGeoModel)
 {
@@ -451,9 +517,9 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	for(Index=0;Index<FTR->NoSD;Index++)
 		SetStableDist(FTR->SDList[Index], FTR->Alpha[Index], FTR->Scale[Index]);
-	
-/*
+
 	Ret = 0;
+/*
 #ifdef OPENMP_THR
 	#pragma omp parallel for num_threads(Opt->Cores) reduction(+:Ret)
 #endif

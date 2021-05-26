@@ -15,8 +15,6 @@ void	NodeToLongLat(NODE N, double *Long, double *Lat);
 
 void	CorrectIntGeoNodes(TREE *Tree);
 
-void	GeoTest(OPTIONS *Opt, TREES *Trees, RATES *Rates);
-
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 void	GeoUpDateAnsStates (OPTIONS *Opt, TREES *Trees, RATES *Rates);
 

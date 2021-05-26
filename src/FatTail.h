@@ -10,7 +10,6 @@
 #endif
 
 void			InitFatTailTrees(OPTIONS *Opt, TREES *Trees);
-void			FreeFatTailTrees(OPTIONS *Opt, TREES *Trees);
 
 void			CheckFatTailBL(TREES *Trees);
 
@@ -36,8 +35,6 @@ void			SSAllAnsStatesFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
 void			InitFattailFile(OPTIONS *Opt, TREES *Trees);
 void			OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates);
-
-void			InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
 void			FatTailTest(int argc, char **argv);
 

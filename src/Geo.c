@@ -151,16 +151,16 @@ void	XYZToLongLat(double X, double Y, double Z, double *Long, double *Lat)
 	*Long = *Long * (180.0 / M_PI);
 }
 
-void	GetRandLongLat(RANDSTATES *RS, double Long, double Lat, double *RLong, double *RLat, double Radius)
+void	GetRandLongLat(gsl_rng *RNG, double Long, double Lat, double *RLong, double *RLat, double Radius)
 {
 	double Dist, Bearing;
 
 	Long = Long * M_PI / 180.0;
 	Lat = Lat * M_PI / 180.0;
 
-	Dist = RandDouble(RS) * Radius;
+	Dist = gsl_rng_uniform(RNG) * Radius;
 
-	Bearing	= RandDouble(RS) * 360;
+	Bearing	= gsl_rng_uniform(RNG) * 360;
 	Bearing = Bearing * M_PI / 180.0;
 	
 	Bearing = fmod(Bearing + (2.0 * M_PI), (2.0 * M_PI));
@@ -178,13 +178,13 @@ void	GetRandLongLat(RANDSTATES *RS, double Long, double Lat, double *RLong, doub
 		*RLong = *RLong * (180.0 / M_PI);
 }
 
-void	GetRandXYZPoint(RANDSTATES *RS, double SX, double SY, double SZ, double *RX, double *RY, double *RZ, double Radius)
+void	GetRandXYZPoint(gsl_rng *RNG, double SX, double SY, double SZ, double *RX, double *RY, double *RZ, double Radius)
 {
 	double Long, Lat, RLong, RLat;
 
 	XYZToLongLat(SX, SY, SZ, &Long, &Lat);
 	
-	GetRandLongLat(RS, Long, Lat, &RLong, &RLat, Radius);
+	GetRandLongLat(RNG, Long, Lat, &RLong, &RLat, Radius);
 	
 	LongLatToXYZ(RLong, RLat, RX, RY, RZ);
 }
@@ -285,7 +285,7 @@ void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 }
 */
 
-void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
+void	GeoUpDateNode(NODE N, RATES *Rates)
 {
 	FATTAILRATES *FTR;
 	double NLh, CLh, X, Y, Z, RX, RY, RZ;
@@ -299,7 +299,7 @@ void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 	
 	CLh = GeoCalcAnsStateLh(X, Y, Z, N, SD);
 
-	GetRandXYZPoint(RS, X, Y, Z, &RX, &RY, &RZ, 2000);
+	GetRandXYZPoint(N->RNG, X, Y, Z, &RX, &RY, &RZ, 2000);
 		
 	NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
 	
@@ -309,7 +309,7 @@ void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 }
 
 
-void	GeoForceUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
+void	GeoForceUpDateNode(NODE N, RATES *Rates)
 {
 	FATTAILRATES *FTR;
 	double NLh, CLh, X, Y, Z, RX, RY, RZ;
@@ -327,11 +327,11 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 	Tried = 0;
 	do
 	{
-		GetRandXYZPoint(RS, X, Y, Z, &RX, &RY, &RZ, 2000);
+		GetRandXYZPoint(N->RNG, X, Y, Z, &RX, &RY, &RZ, 2000);
 
 		NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
 
-		if(log(RandDouble(Rates->RS)) < (NLh - CLh))
+		if(log(gsl_rng_uniform(N->RNG)) < (NLh - CLh))
 			Changed = TRUE;
 		else
 			Tried++;
@@ -339,44 +339,18 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 
 	XYZToNode(N, RX, RY, RZ);
 
-	Rates->Lh = Rates->Lh + (NLh - CLh);
+//	Rates->Lh = Rates->Lh + (NLh - CLh);
 }
-
-/* // Serial
-void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	int NIndex;
-	TREE *Tree;
-	FATTAILRATES *FTR;
-	NODE N;
-	
-	Tree = Trees->Tree[Rates->TreeNo];
-
-	FTR = Rates->FatTailRates;
-
-	FatTailSetAnsSates(Tree, Trees->NoOfSites, FTR);
-	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
-	
-	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
-	{
-		N = Tree->NodeList[NIndex];
-		if(N->Tip == FALSE)
-			GeoUpDateNode(N, Rates);
-		
-	}
-
-	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
-}
-*/
 
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	int NIndex;
-	
+	int NIndex, Group;
+
+	size_t	GroupSize;
+	NODE	*NodeList;
 	TREE *Tree;
 	FATTAILRATES *FTR;
-	NODE N;
-	
+			
 	LhTransformTree(Rates, Trees, Opt);
 
 	Tree = Trees->Tree[Rates->TreeNo];
@@ -388,16 +362,29 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FatTailSetAnsSates(Tree, Trees->NoSites, FTR);
 
 	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
-	
-	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
-	{
-		N = Tree->NodeList[NIndex];
-		if(N->Tip == FALSE)
-			GeoForceUpDateNode(N, Rates, Rates->RS);
-	}
-			
+
+	Group = gsl_rng_uniform_int(Rates->RNG, Tree->NoFGroups);
+	GroupSize = Tree->NoFNodes[Group];
+	NodeList = Tree->FNodes[Group];
+
+#ifdef OPENMP_THR
+// Dynamic slows things down oddly and can leve long long running process. 
+//	#pragma omp parallel for num_threads(Opt->Cores) schedule(dynamic)
+	#pragma omp parallel for num_threads(Opt->Cores) schedule(static)
+#endif
+	for(NIndex=0;NIndex<GroupSize;NIndex++)
+		GeoForceUpDateNode(NodeList[NIndex], Rates);
+
+//	for(NIndex=0;NIndex<Tree->NoInternalNodes;NIndex++)
+//		GeoForceUpDateNode(Tree->InternalNodesList[NIndex], Rates);
+
+//	for(NIndex=0;NIndex<GroupSize;NIndex++)
+//		GeoForceUpDateNode(NodeList[NIndex], Rates);
+
+
+
 	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
-	
+
 	Rates->Lh = Likelihood(Rates, Trees, Opt);
 
 	Rates->AutoAccept = TRUE;
@@ -459,7 +446,7 @@ void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		N = Tree->NodeList[NIndex];
 	} while(N->Tip == TRUE);
 
-	GeoUpDateNode(N, Rates, Rates->RS);
+	GeoUpDateNode(N, Rates);
 
 	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
 	Rates->CalcLh = FALSE;
@@ -517,72 +504,6 @@ void	CorrectIntGeoNodes(TREE *Tree)
 		}
 
 	}
-}
-
-
-void	NewGeoTest(RANDSTATES *RS)
-{
-	double Lat, Long, RLong, RLat;
-	double x, y, z;
-	int i;
-
-//	GetRandLongLat(RS, -18, 65, &RLong, &RLat, 1000);
-//	exit(0);
-	Lat = 0;
-	Long = 0;
-	for(i=0;i<10000;i++)
-	{
-		GetRandLongLat(RS, 0.0, 0.0, &RLong, &RLat, 1000);
-//		GetRandLongLat(RS, Long, Lat, &RLong, &RLat, EARTH_KM*10);
-//		GetRandLongLat(RS, Long, Lat, &RLong, &RLat, 100);
-		LongLatToXYZ(RLong, RLat, &x, &y, &z);
-		printf("%d\t%f\t%f\t%f\t%f\t%f\n", i, RLong, RLat, x, y, z);
-
-		Long = RLong;
-		Lat = RLat;
-	}
-
-
-	exit(0);
-}
-
-void GeoTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	double Long, Lat, x, y, z;
-	double S;
-	int i;
-
-	NewGeoTest(Rates->RS);
-
-		Lat = RandIntBetween(Rates->RS, -89, 89);
-
-		Long = RandIntBetween(Rates->RS, -180, 180);
-
-//		XYZToLatLong(2252.488651, 3901.424788, 4504.977303, &Lat, &Long);
-
-	
-	S = GetSeconds();
-	for(i=0;i<100000;i++)
-	{
-
-		Lat = (double)RandIntBetween(Rates->RS, -90, 90);
-		Long = (double)RandIntBetween(Rates->RS, -180, 180);
-
-		LongLatToXYZ(Long, Lat, &x, &y, &z);
-
-		printf("%d\t%f\t%f\t%f\t%f\t%f\t", i, Lat, Long, x, y, z);
-
-		XYZToLongLat(x, y, z, &Long, &Lat);
-		printf("%f\t%f\n", Lat, Long);
-
-	}
-	S = GetSeconds() - S;
-
-	printf("Sec:\t%f\t%d\n", S, i);
-
-	printf("%f\t%f\t%f\n", x, y, z);
-
-	exit(0);
 }
 
 void	SetLoadGeoData(char **AnsState, TREES *Trees, TREE *Tree)

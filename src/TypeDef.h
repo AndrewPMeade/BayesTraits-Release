@@ -788,6 +788,8 @@ struct INODE
 	FATTAILNODE	*FatTailNode;
 
 	double		LandscapeBeta;
+
+	gsl_rng			*RNG;
 };
 
 typedef struct INODE*	NODE;
@@ -825,6 +827,10 @@ typedef struct
 typedef struct
 {
 	double	*AnsVect;
+
+	NODE	**ParallelNodeList;
+	int		*ParallelNodeListLength;
+	int		NoParallelGroups;
 
 } FATTAILTREE;
 
@@ -880,8 +886,8 @@ typedef	struct
 	int				*NoFNodes;
 	int				NoFGroups;
 
-	int				NoPNodes;
-	NODE			*PNodes;
+//	int				NoPNodes;
+//	NODE			*PNodes;
 
 	int				NoInternalNodes;
 	NODE			*InternalNodesList;
@@ -1483,6 +1489,8 @@ typedef struct
 	RANDSTATES		*RS;
 	RANDSTATES		**RSList;
 	gsl_rng			*RNG;
+	
+
 
 	VARRATES		*VarRates;
 	CONTRASTR		*Contrast;

@@ -1057,7 +1057,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	if(Opt->NoLh == TRUE)
 		return -1.0;
 
-	if(Rates->AutoAccept == TRUE || Rates->CalcLh == FALSE)
+	if(Rates->CalcLh == FALSE)
 		return Rates->Lh;
  	
 	LhTransformTree(Rates, Trees, Opt);

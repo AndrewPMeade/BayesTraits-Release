@@ -132,6 +132,8 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 	SetPTrees(Opt, Trees);
 
+	SetTreesInternalNodes(Trees);
+
 
 	if(Opt->ModelType == MT_CONTINUOUS)
 		InitContinus(Opt, Trees);
@@ -194,7 +196,6 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	
 	SaveUserBrachLengths(Trees);
 
-	SetTreesInternalNodes(Trees);
 }
 
 
