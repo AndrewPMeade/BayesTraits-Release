@@ -1970,30 +1970,6 @@ int		TaxaNoToIndex(TREES *Trees, int No)
 	return -1;
 }
 
-void	RecNoTaxa(NODE Node, int *NoTaxa)
-{
-	int Index;
-
-	if(Node->Tip == TRUE)
-	{
-		(*NoTaxa)++;
-		return;
-	}
-
-	for(Index=0;Index<Node->NoNodes;Index++)
-		RecNoTaxa(Node->NodeList[Index], NoTaxa);
-}
-
-int		NoTaxa(NODE N)
-{
-	int Ret;
-	
-	Ret = 0;
-	RecNoTaxa(N, &Ret);
-	
-	return Ret;
-}
-
 void	SaveUserBrachLengthsTree(TREE *Tree)
 {
 	int Index;

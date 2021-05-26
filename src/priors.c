@@ -1407,7 +1407,7 @@ PRIOR*		GetPriorFromName(char *Name, PRIOR** PList, int NoPrior)
 	int Index;
 
 	for(Index=0;Index<NoPrior;Index++)
-		if(StrICmp(Name, PList[Index]->Name) == 0)
+		if(strcmp(Name, PList[Index]->Name) == 0)
 			return PList[Index];
 
 	return NULL;
@@ -1512,17 +1512,4 @@ double	CalcNormalHasting(double x, double SD)
 	return log(Ret);
 }
 
-void TestPrior(PRIOR *Prior, size_t NoSamples)
-{
-	gsl_rng *rng;
-	size_t Index;
-	
-	rng = gsl_rng_alloc(gsl_rng_mt19937);
-	printf("Sample form prior: %s\n", Prior->Name);
-	
-	for(Index=0;Index<NoSamples;Index++)
-		printf("%zu\t%f\n", Index, RandFromPrior(rng, Prior));	
-
-	gsl_rng_free(rng);
-}
 

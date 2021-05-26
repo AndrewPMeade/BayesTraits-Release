@@ -4221,37 +4221,6 @@ void	LoadRJRates(OPTIONS* Opt, int Tokes, char** Passed)
 	Opt->VarRatesCheckPoint = Str;
 }
 
-
-void	OptTestPrior(OPTIONS *Opt, int Tokes, char **Passed)
-{
-	size_t NoSample;
-	PRIOR *Prior;
-	double Draw;
-	gsl_rng *RNG;
-
-	if(Tokes != 3)
-	{
-		printf("TestPrior takes a prior name and number of samples.\n");
-		exit(1);
-	}
-
-	Prior = GetPriorFromName(Passed[1], Opt->AllPriors, Opt->NoAllPriors);
-	if(Prior == NULL)
-	{
-		printf("Invalid prior name %s\n", Passed[1]);
-		exit(1);
-	}
-
-	if(IsValidInt(Passed[2]) == FALSE)
-	{
-		printf("Could not convert %s to a valid number of samples.", Passed[2]);
-		exit(1);
-	}
-
-	sscanf(Passed[2], "%zu", &NoSample);
-	TestPrior(Prior, NoSample);
-}
-
 void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	if(Opt->SaveInitialTrees != NULL)
@@ -4952,9 +4921,6 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == C_LOAD_RJ_RATES)
 		LoadRJRates(Opt, Tokes, Passed);
-
-	if(Command == C_TEST_PRIOR)
-		OptTestPrior(Opt, Tokes, Passed);
 
 	return FALSE;
 }

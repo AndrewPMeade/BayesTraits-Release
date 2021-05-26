@@ -337,7 +337,6 @@ typedef enum
 	C_GLOBAL_TREND,
 	C_RJ_THRESHOLD,
 	C_LOAD_RJ_RATES,
-	C_TEST_PRIOR,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -430,7 +429,6 @@ static char    *COMMANDSTRINGS[] =
 	"GlobalTrend",		"gt",
 	"RJThreshold",		"rjt",
 	"LoadVarRates",		"lvr",
-	"TestPrior",		"TestPrior",
 	""
 };
 
