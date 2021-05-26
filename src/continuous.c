@@ -739,6 +739,35 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 	return Ret;
 }
 
+int		FindInvV(TREES *Trees, TREE* Tree)
+{
+	int		Err;
+	TEMPCONVAR*	TempCon;
+
+	TempCon = Trees->TempConVars;
+
+//	PrintMathematicaMatrix(Tree->ConVars->V, "\n\n\n\n\n\n\nV=", stdout);
+
+	CopyMatrix(TempCon->TMat, Tree->ConVars->V);
+
+//	PrintMatrix(Tree->ConVars->V, "V=", stdout);exit(0);
+
+	Err = InvertMatrixAndDet(TempCon->TMat->me, Trees->NoTaxa, TempCon->T1, TempCon->T2, Tree->ConVars->InvV->me, &Tree->ConVars->LogDetOfV);
+
+	if(Err == 0)
+		return TRUE;
+
+//	printf("LogDetOfV=%f;\n", Tree->ConVars->LogDetOfV);
+/*
+	if(Err != FALSE)
+	{
+		printf("V Matrix inverstion error in %s %d\n", __FILE__, __LINE__);
+		PrintMathematicaMatrix(Tree->ConVars->V, "V=", stdout);
+		exit(0);
+	}
+*/
+	return FALSE;
+}
 
 void	FindTVT(TREES* Trees, TREE *Tree, int AlphaZero)
 {
@@ -1800,7 +1829,8 @@ int	CalcInvV(TREES *Trees, TREE *Tree)
 #ifdef BTLAPACK
 	return btlapack_FindInvV(Trees, Tree);
 #endif
-	return FALSE;
+
+	return FindInvV(Trees, Tree);
 }
 
 double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)

@@ -39,6 +39,7 @@
 #include "Rates.h"
 #include "VarRates.h"
 #include "LocalTransform.h"
+#include "TimeSlices.h"
 
 void	AddToFullATList(SCHEDULE* Shed, AUTOTUNE *AT)
 {
@@ -247,6 +248,12 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 
 	if(Opt->UseDistData == TRUE)
 		Shed->OptFreq[S_DATA_DIST] = 0.2;
+
+	if(TimeSliceEstTime(Opt->TimeSlices) == TRUE)
+		Shed->OptFreq[S_TIME_SLICE_TIME] = 0.1;
+	
+	if(TimeSliceEstScale(Opt->TimeSlices) == TRUE)
+		Shed->OptFreq[S_TIME_SLICE_SCALE] = 0.1;
 
 	if(Opt->NormQMat == TRUE)
 		Shed->OptFreq[S_GLOBAL_RATE] = 0.1;
@@ -644,6 +651,20 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 		Ret->LocalRatesAT = CreatAutoTune("LocalTransform", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->LocalRatesAT, 10.0);
 		AddToFullATList(Ret, Ret->LocalRatesAT);
+	}
+
+	if(TimeSliceEstTime(Opt->TimeSlices) == TRUE)
+	{
+		Ret->TimeSliceTimeAT = CreatAutoTune("Time Slice Time", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->TimeSliceTimeAT, 1.0);
+		AddToFullATList(Ret, Ret->TimeSliceTimeAT);
+	}
+
+	if(TimeSliceEstScale(Opt->TimeSlices) == TRUE)
+	{
+		Ret->TimeSliceScaleAT = CreatAutoTune("Time Slice Scale", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->TimeSliceScaleAT, 10.0);
+		AddToFullATList(Ret, Ret->TimeSliceScaleAT);
 	}
 
 	if(Opt->NormQMat == TRUE)

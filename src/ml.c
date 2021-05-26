@@ -44,6 +44,7 @@
 #include "Threaded.h"
 #include "Options.h"
 #include "Data.h"
+#include "TimeSlices.h"
 #include "NLOptBT.h"
 
 #define MAX_ML_FREE_P 1048576
@@ -111,6 +112,7 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Index;
 	double MidPoint;
+	TIME_SLICE *TS;
 	LOCAL_TRANSFORM *LT;
 
 	for(Index=0;Index<Rates->NoOfRates;Index++)
@@ -157,6 +159,19 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			}
 		}
 	}
+
+	if(Rates->TimeSlices != NULL)
+	{
+		for(Index=0;Index<Opt->TimeSlices->NoTimeSlices;Index++)
+		{
+			TS = Opt->TimeSlices->TimeSlices[Index];
+			if(TS->FixedTime == FALSE)
+				AddPToMLMap(MLMap, RandDouble(Rates->RS), 0.0, 1.0);
+
+			if(TS->FixedScale == FALSE)
+				AddTypePToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE, ML_P_TYPE_RATE_S);
+		}
+	}
 }
 
 void	CheckMLMapVals(ML_MAP* MLMap)
@@ -173,6 +188,22 @@ void	CheckMLMapVals(ML_MAP* MLMap)
 	}
 }
 
+void	MLMapToRatesTimeSlices(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates, int *Pos)
+{
+	int Index;
+	TIME_SLICE *TS;
+
+	for(Index=0;Index<Opt->TimeSlices->NoTimeSlices;Index++)
+	{
+		TS = GetTimeSlice(Rates->TimeSlices, Opt->TimeSlices->TimeSlices[Index]->Name);
+		if(TS->FixedTime == FALSE)
+			TS->Time = MLMap->PVal[(*Pos)++];
+
+		if(TS->FixedScale == FALSE)
+			TS->Scale = MLMap->PVal[(*Pos)++];
+	}
+	
+}
 
 void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
 {
@@ -204,7 +235,7 @@ void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
 		if(Rates->LocalTransforms[Index]->Est == TRUE)
 			Rates->LocalTransforms[Index]->Scale = MLMap->PVal[Pos++];
 
-
+	MLMapToRatesTimeSlices(MLMap, Opt, Rates, &Pos);
 }
 
 double	LikelihoodML(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)

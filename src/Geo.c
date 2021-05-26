@@ -376,6 +376,8 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	TREE *Tree;
 	FATTAILRATES *FTR;
 	NODE N;
+	
+	LhTransformTree(Rates, Trees, Opt);
 
 	Tree = Trees->Tree[Rates->TreeNo];
 

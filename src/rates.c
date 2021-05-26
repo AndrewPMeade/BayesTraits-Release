@@ -57,6 +57,7 @@
 #include "Threaded.h"
 #include "LocalTransform.h"
 #include "DistData.h"
+#include "TimeSlices.h"
 
 void	SetRegBetaZero(int NoSites, RATES *Rates)
 {
@@ -308,28 +309,6 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 		Rates->OnToOff = Rates->Rates[Pos++];
 	//	Rates->OffToOn = Rates->Rates[Pos++];
 		Rates->OffToOn = Rates->OnToOff;
-	}
-
-	if((Opt->EstKappa == TRUE) && (Opt->Analsis == ANALML))
-	{
-		Rates->Kappa = Rates->Rates[Pos++];
-
-		if(Rates->Kappa < 0)
-			Rates->Kappa = 0.0000001;
-
-		if(Rates->Kappa > 5)
-			Rates->Kappa = 5;
-	}
-
-	if((Opt->EstGamma == TRUE) && (Opt->Analsis == ANALML))
-	{
-		Rates->Gamma = Rates->Rates[Pos++];
-
-		if(Rates->Gamma < MIN_GAMMA)
-			Rates->Gamma = MIN_GAMMA;
-
-		if(Rates->Gamma > MAX_GAMMA)
-			Rates->Gamma = MAX_GAMMA;
 	}
 }
 
@@ -783,6 +762,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->OU				=	-1;
 
 	Ret->VarRates		=	NULL;
+	Ret->TimeSlices		=	NULL;
 	Ret->Hetero			=	NULL;
 	Ret->ModelFile		=	NULL;
 
@@ -846,6 +826,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 	if(UseNonParametricMethods(Opt) == TRUE)
 		Ret->VarRates = CreatVarRates(Ret, Opt->Trees, Opt);
 
+	if(Opt->TimeSlices->NoTimeSlices > 0)
+		Ret->TimeSlices = CreateRatesTimeSlices(Ret, Opt->TimeSlices);
 
 	if(Opt->DataType == CONTINUOUS)
 	{
@@ -1166,6 +1148,7 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		fprintf(Str, "OU\t");
 
 	PrintLocalRateHeader(Str, Opt);
+	PrintTimeSliceHeader(Str, Opt->TimeSlices);
 
 	if(Opt->NodeBLData == TRUE)
 	{
@@ -1304,6 +1287,7 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 	PrintEstDataHeader(Str, Opt);
 
 	PrintLocalTransformHeadder(Str, Opt);
+	PrintTimeSliceHeader(Str, Opt->TimeSlices);
 
 	for(SiteIndex=0;SiteIndex<Opt->Trees->NoSites;SiteIndex++)
 	{
@@ -1719,6 +1703,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		fprintf(Str, "%0.12f\t", Opt->FixOU);
 
 	PrintRateLocalTransform(Str, Rates);
+	PrintTimeSliceRates(Str, Opt->TimeSlices, Rates->TimeSlices);
 
 	if(Opt->NodeBLData == TRUE)
 	{
@@ -2032,6 +2017,7 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 		fprintf(Str, "%c\t", Opt->Trees->SymbolList[Rates->EstDescData[Index]]);
 
 	PrintLocalTransformNo(Str, Rates, Opt);
+	PrintTimeSliceRates(Str, Opt->TimeSlices, Rates->TimeSlices);
 
 	PrintNodeRec(Str, Opt->Trees->Tree[Rates->TreeNo]->Root, Opt->Trees->NoStates, Opt->Trees->NoSites, Rates, Opt);
 
@@ -2141,6 +2127,8 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	for(Index=0;Index<B->NoLocalTransforms;Index++)
 		CopyLocalTransforms(A->LocalTransforms[Index], B->LocalTransforms[Index]);
 
+	if(A->TimeSlices != NULL)
+		CopyTimeSlices(A->TimeSlices, B->TimeSlices);
 
 	A->NormConst = B->NormConst;
 	A->GlobablRate = B->GlobablRate;
@@ -2787,6 +2775,14 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 			ChangeTreeDistData(Opt, Rates);
 		break;
 
+		case S_TIME_SLICE_TIME:
+			ChangeTimeSliceTime(Rates, Shed);
+		break;
+
+		case S_TIME_SLICE_SCALE:
+			ChangeTimeSliceScale(Rates, Shed);
+		break;
+
 		case S_GLOBAL_RATE:
 			ChangeGlobalRate(Rates, Shed);
 		break;
@@ -2874,6 +2870,8 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 	if(Rates->LocalTransforms != NULL)
 		free(Rates->LocalTransforms);
 
+	if(Rates->TimeSlices != NULL)
+		FreeTimeSlices(Rates->TimeSlices);
 
 	free(Rates);
 }

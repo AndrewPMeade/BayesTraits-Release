@@ -55,6 +55,7 @@
 #include "VarRates.h"
 #include "LocalTransform.h"
 #include "DistData.h"
+#include "TimeSlices.h"
 
 #ifdef BTOCL
 	#include "btocl_discrete.h"
@@ -963,6 +964,9 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	if(NeedToReSetBL(Opt, Rates) == TRUE)
 	{
 		SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
+
+		if(Rates->TimeSlices != NULL)
+			ApplyTimeSlices(Rates, Trees);
 
 //		PrintTreeBL(Trees->Tree[Rates->TreeNo]); exit(0);			
 

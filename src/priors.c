@@ -832,6 +832,45 @@ double	CalcRegVarPrior(RATES* Rates)
 	return Ret;
 }
 
+double	CalcTimeSlicePriors(RATES *Rates)
+{
+	int Index;
+	PRIOR *PTime, *PScale;
+	TIME_SLICES *TSlices;
+	TIME_SLICE	*TS;
+	double PVal, Ret;
+
+
+	Ret = 0;
+
+	TSlices = Rates->TimeSlices;
+
+	PTime = GetPriorFromName("TimeSlice-Time", Rates->Priors, Rates->NoPriors);
+	PScale = GetPriorFromName("TimeSlice-Scale", Rates->Priors, Rates->NoPriors);
+
+	for(Index=0;Index<TSlices->NoTimeSlices;Index++)
+	{
+		TS = TSlices->TimeSlices[Index];
+		PVal = 0;
+
+		if(TS->FixedTime == FALSE)
+		{
+			PVal = CalcLhPriorP(TS->Time, PTime);
+			if(PVal == ERRLH)
+				return PVal;
+		}
+
+		if(TS->FixedScale == FALSE)
+		{
+			PVal += CalcLhPriorP(TS->Scale, PScale);
+			if(PVal == ERRLH)
+				return PVal;
+		}
+				
+		Ret += PVal;
+	}
+	return Ret;
+}
 
 double	CaclAnsStatePriors(RATES *Rates, OPTIONS *Opt)
 {
@@ -928,6 +967,17 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	if(Rates->NoLocalTransforms > 0)
 	{
 		PLh = CaclLocalTransformsPrior(Rates);
+		
+		if(PLh == ERRLH)
+			return;
+
+		Ret += PLh;
+	}
+
+
+	if(Rates->TimeSlices != NULL)
+	{
+		PLh = CalcTimeSlicePriors(Rates);
 		
 		if(PLh == ERRLH)
 			return;

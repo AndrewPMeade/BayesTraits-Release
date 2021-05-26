@@ -48,6 +48,7 @@
 #include "LocalTransform.h"
 #include "DistData.h"
 #include "Schedule.h"
+#include "TimeSlices.h"
 #include "NLOptBT.h"
 #include "Pattern.h"
 
@@ -596,6 +597,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		PrintCustomSchedule(Str, Opt->NoCShed, Opt->CShedList);
 	}
 
+	PrintTimeSlices(Str, Opt->TimeSlices);
 	PrintPatterns(Str, Opt->NoPatterns, Opt->PatternList);
 
 	PrintTreesInfo(Str, Opt->Trees, Opt->DataType);
@@ -681,6 +683,7 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 		free(Opt->CShedList);
 	}
 
+	FreeTimeSlices(Opt->TimeSlices);
 
 	for(Index=0;Index<Opt->NoPatterns;Index++)
 		FreePattern(Opt->PatternList[Index]);
@@ -1334,6 +1337,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->NoCShed = 0;
 	Ret->CShedList = NULL;
+	
+	Ret->TimeSlices = CreateTimeSlices();
 
 
 	Ret->NoPatterns = 0;
@@ -3676,7 +3681,88 @@ int		CompCShed(const void *CS1, const void *CS2)
 	return 1;
 }
 
+void	AddTimeSlicePriors(TIME_SLICE *TS, OPTIONS *Opt)
+{
+	PRIOR *Prior;
 
+	if(TS->FixedTime == FALSE)
+	{
+		RemovePriorFormOpt("TimeSlice-Time", Opt);
+		Prior = CreateUniformPrior("TimeSlice-Time", 0.0, 1.0);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+	if(TS->FixedScale == FALSE)
+	{
+		RemovePriorFormOpt("TimeSlice-Scale", Opt);
+		Prior = CreateSGammaPrior("TimeSlice-Scale", VARRATES_ALPHA, VARRATES_BETA);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+}
+
+
+void	OptAddTimeSlice(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	TIME_SLICE *TS;
+
+	double Time, Scale;
+	char *Name;
+
+	Time = Scale = -1;
+
+	if(Tokes != 2 && Tokes != 3 && Tokes != 4)
+	{ 
+		printf("AddTimeSlice requires a name and an optional time point and scale value.");
+		exit(1);
+	}
+
+	Name = Passed[1];
+
+	if(GetTimeSlice(Opt->TimeSlices, Name)  != NULL)
+	{
+		printf("Time slices %s is allready defined.\n", Name);
+		exit(1);
+	}
+
+	if(Tokes >= 3)
+	{
+		if(IsValidDouble(Passed[2]) == FALSE)
+		{
+			printf("Cannot convert %s to a valid time point, must be between 0-1.\n", Passed[2]);
+			exit(1);
+		}
+		Time = atof(Passed[2]);
+
+		if(Time < 0 || Time > 1.0)
+		{
+			printf("Cannot convert %s to a valid time point, must be between 0-1.\n", Passed[2]);
+			exit(1);
+		}
+	}
+
+	if(Tokes == 4)
+	{
+		if(IsValidDouble(Passed[3]) == FALSE)
+		{
+			printf("Cannot convert %s to a valid scalar, must be a number >0.\n", Passed[2]);
+			exit(1);
+		}
+
+		Scale = atof(Passed[3]);
+		if(Scale < 0)
+		{
+			printf("Cannot convert %s to a valid scalar, must be a number >0.\n", Passed[2]);
+			exit(1);
+		}
+	}
+	
+	TS = AddTimeSlice(Opt->TimeSlices, Name, Time, Scale);
+	Opt->SaveTrees = TRUE;
+
+	if(Opt->Analsis == ANALMCMC)
+		AddTimeSlicePriors(TS, Opt);
+}
 
 void	RemoveRateNamePriors(OPTIONS *Opt)
 {
@@ -3860,12 +3946,6 @@ void	SetVarRatesOpt(OPTIONS *Opt)
 	if(Opt->Trees->NoTrees > 1)
 	{
 		printf("VarRates can only be used on a single tree.\n");
-		exit(1);
-	}
-
-	if(Opt->ModelType == MT_FATTAIL)
-	{
-		printf("VarRates can not be used with the Geo Model.\n");
 		exit(1);
 	}
 
@@ -4294,8 +4374,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SaveInitialTrees(Opt, Tokes, Passed);
 
 	if(Command == CTESTCORREL)
+	{
 		SetTestCorrel(Opt);
-	
+	}
 
 	if(Command == CCOVARION)
 	{
@@ -4494,6 +4575,8 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CCSCHED)
 		SetOptCustomSchedule(Opt, Tokes, Passed);
 
+	if(Command == CADDTIMESLICE)
+		OptAddTimeSlice(Opt, Tokes, Passed);
 
 	if(Command == CADDPATTERN)
 		OptAddPattern(Opt, Tokes, Passed);
