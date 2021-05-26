@@ -912,11 +912,8 @@ char**	GeoRateNames(OPTIONS *Opt)
 	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
 
-	sprintf(Buffer, "Alpha");
-	Ret[0] = StrMake(Buffer);
-
 	sprintf(Buffer, "Scale");
-	Ret[1] = StrMake(Buffer);
+	Ret[0] = StrMake(Buffer);
 
 	free(Buffer);
 	return Ret;
@@ -1074,10 +1071,7 @@ void	GetGeoPriors(OPTIONS *Opt)
 {
 	PRIOR *Prior;
 
-	Prior = CreateUniformPrior(Opt->RateName[0], 0.2, 2.0);
-	AddPriorToOpt(Opt, Prior);
-
-	Prior = CreateUniformPrior(Opt->RateName[1], 0.0, 1000000.0);
+	Prior = CreateUniformPrior(Opt->RateName[0], 0.0, 1000000.0);
 	AddPriorToOpt(Opt, Prior);
 }
 

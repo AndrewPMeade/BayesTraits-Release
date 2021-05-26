@@ -80,4 +80,10 @@ void	CheckSingleDescendent(TREES *Trees);
 
 int		GetNoInternalNodes(TREE *Tree);
 
+void	SetTreesInternalNodes(TREES *Trees);
+
+
+
+
+
 #endif

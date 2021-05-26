@@ -510,6 +510,40 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 	return FALSE;
 }
 
+
+void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
+{
+	double		StartT, EndT;
+
+	TREE *Tree;
+	int Index;
+
+	Tree = Trees->Tree[0];
+
+	for(Index=0;Index<Tree->NoFGroups;Index++)
+	{
+		printf("%d\t%d\n", Index, Tree->NoFNodes[Index]);
+	}
+	exit(0);
+
+	StartT = GetSeconds();
+	
+
+	for(Index=0;Index<1000;Index++)
+	{
+	//	Likelihood(Rates, Trees, Opt);
+		GeoUpDateAllAnsStates(Opt, Trees, Rates);
+	}
+
+
+	EndT = GetSeconds();
+
+
+	printf("Total Time:\t%f\n", EndT - StartT);
+
+	exit(0);
+}
+
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
 #else

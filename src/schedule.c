@@ -446,11 +446,8 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		NoS = Opt->Trees->NoSites;
 		if(Opt->Model == M_GEO)
 		{
-			sprintf(Buffer,"Alpha");
-			Ret[0] = StrMake(Buffer);
-
 			sprintf(Buffer,"Scale");
-			Ret[1] = StrMake(Buffer);
+			Ret[0] = StrMake(Buffer);
 			free(Buffer);
 			return Ret;
 		}
@@ -562,7 +559,11 @@ void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, RANDSTATES *RS)
 	
 	for(Index=0;Index<Shed->NoParm;Index++)
 	{
-		Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		if(Opt->Model != M_GEO)
+			Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		else
+			Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], RandDouble(RS) * 10000, MIN_VALID_ACC, MAX_VALID_ACC);
+
 		AddToFullATList(Shed, Shed->RateDevATList[Index]);
 
 		if(Opt->ModelType == MT_DISCRETE)

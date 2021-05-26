@@ -103,7 +103,7 @@ int		FindNoConRates(OPTIONS *Opt)
 		break;
 
 		case M_GEO:
-			return 2;
+			return 1;
 		break;
 
 		default:
@@ -530,7 +530,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 			MallocErr();
 
 		for(Index=0;Index<Rates->NoOfRates;Index++)
-			Rates->Rates[Index] = 0;
+			Rates->Rates[Index] = 0.0;
 
 		if(Opt->ModelType == MT_CONTRAST)
 		{

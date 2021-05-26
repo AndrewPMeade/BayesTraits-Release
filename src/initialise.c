@@ -193,6 +193,8 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		InitialiseOutputTrees(Opt, Trees);
 	
 	SaveUserBrachLengths(Trees);
+
+	SetTreesInternalNodes(Trees);
 }
 
 

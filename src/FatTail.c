@@ -177,9 +177,9 @@ FATTAILRATES*	CreateFatTailRates(OPTIONS *Opt, TREES *Trees)
 
 	for(Index=0;Index<Ret->NoSD;Index++)
 	{
-		if(Opt->FatTailNormal == FALSE)
+/*		if(Opt->FatTailNormal == FALSE)
 			Ret->Alpha[Index] = 0.5;
-		else
+		else*/
 			Ret->Alpha[Index] = FAT_TAIL_NORMAL_VAL;
 
 		Ret->Scale[Index] = 0.5;
@@ -188,9 +188,7 @@ FATTAILRATES*	CreateFatTailRates(OPTIONS *Opt, TREES *Trees)
 			Ret->Scale[Index] = FAT_TAIL_ML_SIG2;
 		#endif
 	}
-
 	
-
 	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 		GetSiteInfo(Index, Trees, Ret);
 
@@ -336,6 +334,9 @@ void	SetContrastAnsStates(NODE N)
 		exit(0);
 	}
 */
+	// Values is only set from the first two nodes, 
+	// its only an inishal aproximuation. 
+
 	N0 = N->NodeList[0];
 	N1 = N->NodeList[1];
 
@@ -370,8 +371,6 @@ void	SetInitAnsStates(OPTIONS *Opt, TREES *Trees, TREE *Tree)
 		SetContrastAnsStates(Tree->Root);
 		GetInitAnsStateNodes(SIndex, Tree);
 	}
-
-
 
 	if(Opt->Model == M_GEO)
 		CorrectIntGeoNodes(Tree);
@@ -443,11 +442,8 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	UseGeoModel = FALSE;
 	
 	if(Opt->Model == M_GEO)
-	{
 		UseGeoModel = TRUE;
-		Rates->Rates[0] = 2.0;
-	}
-
+	
 	FatTailSetAnsSates(Tree, NoSites, FTR);
 
 	if(Opt->UseDistData == TRUE)
@@ -456,7 +452,7 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	for(Index=0;Index<FTR->NoSD;Index++)
 		SetStableDist(FTR->SDList[Index], FTR->Alpha[Index], FTR->Scale[Index]);
 	
-
+/*
 	Ret = 0;
 #ifdef OPENMP_THR
 	#pragma omp parallel for num_threads(Opt->Cores) reduction(+:Ret)
@@ -466,6 +462,13 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		if(Tree->NodeList[Index]->Tip == FALSE)
 			Ret += CalcNodeStableLh(Tree->NodeList[Index], NoSites, FTR->SDList, UseGeoModel);
 	}
+*/
+	Ret = 0;
+	#ifdef OPENMP_THR
+		#pragma omp parallel for num_threads(Opt->Cores) reduction(+:Ret)
+	#endif
+	for(Index=0;Index<Tree->NoInternalNodes;Index++)
+		Ret += CalcNodeStableLh(Tree->InternalNodesList[Index], NoSites, FTR->SDList, UseGeoModel);
 
 	if(ValidLh(Ret, Opt->ModelType) == FALSE)
 		return ERRLH;
@@ -781,7 +784,7 @@ int	GetMutateFatTailRatesPos(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*
 	int Pos;
 
 	if(Opt->Model == M_GEO)
-		return 1;
+		return 0;
 	
 	if(Opt->FatTailNormal == FALSE)
 		return RandUSInt(Rates->RS) % Shed->NoParm;
@@ -1018,7 +1021,7 @@ void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 
 
 
-
+/*
 void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Index;
@@ -1034,7 +1037,7 @@ void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	return;
 }
-
+*/
 
 void	FatTailTest(int argc, char **argv)
 {

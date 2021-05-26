@@ -217,6 +217,9 @@ void	FreeTree(TREE* Tree, int NoSites, int NoTaxa)
 	if(Tree->PNodes != NULL)
 		free(Tree->PNodes);
 
+	if(Tree->InternalNodesList != NULL)
+		free(Tree->InternalNodesList);
+
 	free(Tree);
 }
 
@@ -619,6 +622,9 @@ int		FindMaxPoly(TREES *Trees)
 	Ret->PNodes		= NULL;
 
 	Ret->FatTailTree= NULL;
+
+	Ret->NoInternalNodes = -1;
+	Ret->InternalNodesList = NULL;
 
 	Ret->NoContrast	= -1;
 	
@@ -2210,6 +2216,34 @@ int		GetNoInternalNodes(TREE *Tree)
 
 	return Ret;
 }
+
+void	SetNoInternalNodes(TREE *Tree)
+{
+	int Pos, Index;
+
+	Pos = 0;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+		if(Tree->NodeList[Index]->Tip == FALSE)
+			Tree->InternalNodesList[Pos++] = Tree->NodeList[Index];
+}
+
+
+void	SetTreesInternalNodes(TREES *Trees)
+{
+	int TIndex;
+	TREE *Tree;
+
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
+	{
+		Tree = Trees->Tree[TIndex];
+
+		Tree->NoInternalNodes = GetNoInternalNodes(Tree);
+		Tree->InternalNodesList = (NODE*)SMalloc(sizeof(NODE) * Tree->NoInternalNodes);
+		SetNoInternalNodes(Tree);
+	}
+}
+
 
 void	RecFillNodeList(NODE Node, NODE *NodeList, int *Pos)
 {

@@ -69,7 +69,7 @@
 	#include <quadmath.h>
 	#define QDOUBLE	__float128
 #endif
-
+        
 #ifdef	OPENMP_THR
 	#include <omp.h>
 #endif
@@ -882,6 +882,9 @@ typedef	struct
 
 	int				NoPNodes;
 	NODE			*PNodes;
+
+	int				NoInternalNodes;
+	NODE			*InternalNodesList;
 
 	int				NoContrast;
 
