@@ -1,92 +1,218 @@
-/*
-*  BayesTriats 3.0
-*
-*  copyright 2017
-*
-*  Andrew Meade
-*  School of Biological Sciences
-*  University of Reading
-*  Reading
-*  Berkshire
-*  RG6 6BX
-*
-* BayesTriats is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-* 
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>
-*
-*/
-
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <string.h>
 
-#include "Threaded.h"
-#include "TypeDef.h"
-#include "GenLib.h"
-#include "Continuous.h"
-#include "CKappa.h"
-#include "Part.h"
+#include "typedef.h"
+#include "genlib.h"
+#include "continuous.h"
+#include "ckappa.h"
 
-void	RecCalcKappaV(TREES* Trees, TREE *Tree, NODE N, PART *DiffPart, double Kappa, double SumLogPath)
+void	InitCKappaTree(TREES* Trees, TREE* Tree);
+void	KappaVarCoVar(TREES* Trees, TREE* Tree);
+
+void	InitCKappaTree(TREES* Trees, TREE* Tree)
 {
-	int x,y, XPos, YPos;
-	double **Mat;
-	double Dist;
+	CONVAR		*ConVar;
+	TAXADIST	*TaxaDist;
+	int			Index;
+	int			TIndex;
 
-	Mat = Tree->ConVars->V->me;
-	Dist = SumLogPath;
-		
-	GetPartDiff(N->Ans->Part, N->Part, DiffPart);
+	ConVar = Tree->ConVars;
 
-	for(x=0;x<N->Part->NoTaxa;x++)
+	ConVar->TaxaDist = (TAXADIST*)malloc(sizeof(TAXADIST) * Trees->NoOfTaxa);
+	if(ConVar->TaxaDist == NULL)
+		MallocErr();
+
+	TaxaDist = ConVar->TaxaDist;
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		XPos = N->Part->Taxa[x];
-		for(y=0;y<DiffPart->NoTaxa;y++)
+		TaxaDist[TIndex].NoOfBLVect = (int*)malloc(sizeof(int) * Trees->NoOfTaxa);
+		if(TaxaDist == NULL)
+			MallocErr();
+	} 
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		TaxaDist[TIndex].TToTPath = (double**)malloc(sizeof(double*) * Trees->NoOfTaxa);
+		if(TaxaDist->TToTPath == NULL)
+			MallocErr();
+	}
+
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		for(Index=0;Index<Trees->NoOfTaxa;Index++)
 		{
-			YPos = DiffPart->Taxa[y];
-			Mat[YPos][XPos] = Dist;
-			Mat[XPos][YPos] = Dist;
+			TaxaDist[TIndex].NoOfBLVect[Index] = 0;
+			TaxaDist[TIndex].TToTPath[Index] = NULL;
 		}
 	}
+}
 
-	if(N->Tip == TRUE)
+/*
+typedef struct
+{
+	int		*NoOfBLVect;
+	double	**TToTPath;
+}  TAXADIST;
+*/
+
+void	FreeCKappaTree(CONVAR *ConVar, int NoOfTaxa)
+{
+	TAXADIST	*TaxaDist;
+	int			TIndex;
+	int			Index;
+
+	TaxaDist = ConVar->TaxaDist;
+
+	for(TIndex=0;TIndex<NoOfTaxa;TIndex++)
 	{
-		XPos = GetMapID(Trees, N->Taxa->No);
-		Mat[XPos][XPos] = SumLogPath + pow(N->Length, Kappa);
-		return;
+		for(Index=0;Index<NoOfTaxa;Index++)
+		{
+			if(TaxaDist[TIndex].TToTPath[Index] != NULL)
+				free(TaxaDist[TIndex].TToTPath[Index]);
+		}
+		free(TaxaDist[TIndex].TToTPath);
+		free(TaxaDist[TIndex].NoOfBLVect);	
 	}
 
-	Dist = Dist + pow(N->Length, Kappa);
-
-	for(x=0;x<N->NoNodes;x++)
-		RecCalcKappaV(Trees, Tree, N->NodeList[x], DiffPart, Kappa, Dist);
+	free(ConVar->TaxaDist);	
 }
 
-void	MakeKappaV(TREES* Trees, TREE *Tree, double Kappa)
+void	NodesBelowNode(TREE *Tree, NODE N, int *Count)
 {
-	int		Index;
-	NODE	N;
-	PART	*CPart;
+	if(Tree->Root == N)
+		return;
 
-	CPart = CreatPart(Trees->NoTaxa);
+	(*Count)++;
 
-
-	N = Tree->Root;
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecCalcKappaV(Trees, Tree, N->NodeList[Index], CPart, Kappa, 0);
-
-	FreePart(CPart);
+	NodesBelowNode(Tree, N->Ans, Count);
 }
 
+void	BlankVisited(TREES* Trees, TREE* Tree)
+{
+	int	NIndex;
+	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
+		Tree->NodeList[NIndex].Visited = FALSE;
+}
+
+void	SetUpTrace(NODE N, TREE *Tree)
+{
+	N->Visited = TRUE;
+	if(N == Tree->Root)
+		return;
+
+	SetUpTrace(N->Ans, Tree);
+}
+
+void	KappaTaxaVarCoVar(TREES* Trees, TREE* Tree, TAXA* Taxa, int TNo)
+{
+	int			NodesBlow;
+	int			TIndex;
+	NODE		MyNode;
+	NODE		TNode;
+	NODE		CNode;
+	TAXA		*CTaxa;
+	TAXADIST	*TaxaDist;
+	int			BLIndex;
+
+	MyNode = TaxaToNode(Trees, Tree, Taxa);
+	TaxaDist = &Tree->ConVars->TaxaDist[TNo];
+	
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		CTaxa = &Trees->Taxa[TIndex];
+		
+		BlankVisited(Trees, Tree);
+		SetUpTrace(MyNode, Tree);
+
+		TNode = TaxaToNode(Trees, Tree, CTaxa);
+		while(TNode->Visited == FALSE)
+			TNode = TNode->Ans;
+	
+		CNode = TNode;
+		NodesBlow = 0;
+		NodesBelowNode(Tree, TNode, &NodesBlow);
+
+		TaxaDist->NoOfBLVect[TIndex] = NodesBlow;
+
+		if(NodesBlow != 0)
+		{
+			TaxaDist->TToTPath[TIndex] = (double*)malloc(sizeof(double) * NodesBlow);
+			if(TaxaDist->TToTPath[TIndex] == NULL)
+				MallocErr();
+
+			BLIndex = 0;
+			while(CNode != Tree->Root)
+			{
+				TaxaDist->TToTPath[TIndex][BLIndex] = CNode->Length;
+				BLIndex++;
+				CNode = CNode->Ans;
+			}
+		}
+		else
+			TaxaDist->TToTPath[TIndex] = NULL;
+
+	}
+}
+
+
+
+void	KappaVarCoVar(TREES* Trees, TREE* Tree)
+{
+	int	TIndex;
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		KappaTaxaVarCoVar(Trees, Tree, &Trees->Taxa[TIndex], TIndex);
+	}
+}
+
+void	InitCKappa(OPTIONS* Opt, TREES* Trees)
+{
+	int		TIndex;
+
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	{
+		InitCKappaTree(Trees, &Trees->Tree[TIndex]);
+		KappaVarCoVar(Trees, &Trees->Tree[TIndex]);
+	}
+}
+
+double	 CaclKappaVarCoVar(TREE *Tree, int T1, int T2, double Kappa)
+{
+	int			Index;
+	int			Len;
+	TAXADIST	*TaxaDist;
+	double		Ret=0;
+
+	TaxaDist = &Tree->ConVars->TaxaDist[T1];
+	Len = TaxaDist->NoOfBLVect[T2];
+
+	for(Index=0;Index<Len;Index++)
+		Ret += pow(TaxaDist->TToTPath[T2][Index], Kappa);
+
+	return Ret;
+}
+
+void	MakeKappaV(TREES* Trees, TREE* Tree, double Kappa)
+{
+	int		x,y;
+	CONVAR	*ConVar;
+	double	Temp;
+
+	ConVar = Tree->ConVars;
+
+	for(x=0;x<Trees->NoOfTaxa;x++)
+	{
+		for(y=x;y<Trees->NoOfTaxa;y++)
+		{
+			Temp = CaclKappaVarCoVar(Tree, x, y, Kappa);
+
+			ConVar->V->me[x][y] = Temp;
+			ConVar->V->me[y][x] = Temp;
+
+		}
+	}
+}

@@ -1,9 +1,6 @@
 #if !defined GENLIB
 #define GENLIB
 
-#pragma warning(disable : 4996)
-
-
 #ifndef TRUE
 	#define TRUE 1
 #endif
@@ -12,14 +9,10 @@
 	#define	FALSE 0
 #endif
 
-#define	BUFFERSIZE	1048576
+#define	BUFFERSIZE	65536
 
 
 #define	MallocErr() MallocErrFull(__FILE__, __LINE__)
-
-void*	smalloc(size_t n, char* FName, unsigned long LineNo);
-
-#define SMalloc(N) smalloc(N, __FILE__, __LINE__)
 
 typedef struct
 {
@@ -29,6 +22,9 @@ typedef struct
 	int		Size;
 	char	**Data;
 } TEXTFILE;
+
+TEXTFILE*	LoadTextFile(char* Name, char DelComments);
+void		FreeTextFile(TEXTFILE* TextFile);
 
 typedef struct
 {
@@ -44,12 +40,6 @@ typedef struct
 	int		*NoPerLine;
 } NUMFILE;
 
-void*		CloneMem(size_t Size, void *Mem);
-
-TEXTFILE*	LoadTextFile(char* Name, char DelComments);
-void		FreeTextFile(TEXTFILE* TextFile);
-
-
 FASTA*		LoadFasta(char *FileName);
 void		SaveFasta(char *FileName, FASTA* Fasta);
 void		WriteFasta(FILE* Str, char* Tag, char *Seq, int CharPerLine);
@@ -61,12 +51,12 @@ void		FreeNumFile(NUMFILE *NumFile);
 FILE*		OpenWrite(char *FileName);
 FILE*		OpenRead(char *FileName);
 void		MallocErrFull(char* FileName, int LineNo);
-char*		StrMake(const char* Str);
+char*		StrMake(char* Str);
 void		MakeUpper(char* Str);
 void		MakeLower(char* Str);
 void		RemoveChar(char c, char* String);
 int			MakeArgv(char*	string, char *argv[], int argvsize);
-int			MakeArgvChar(char*	string, char *argv[], int argvsize, char Break);
+
 
 int			IsValidInt(char* Str);
 int			IsValidDouble(char* Str);
@@ -82,29 +72,4 @@ void		MakeComplement(char* DNA);
 
 void 		Swap(void** a, void** b);
 void		PrintFixSize(char *String, int Size, FILE* Str);
-
-void		GotoFileEnd(FILE *File, char *Buffer, int Size);
-
-void		PrintTime(FILE* Str);
-
-void**		AddToList(int *No, void** OldList, void* Item);
-
-void		PrintDoubleHex(FILE *Str, double D);
-
-int			CountChar(char *Str, char C);
-
-void		CalcRSqr(double *x, double *y, int Size, double *R2, double *Slope, double *Intercept);
-
-
-int			StrICmp(char const *a, char const *b);
-
-void	NormaliseVector(double *Vect, int Size);
-
-FILE*		OpenWriteWithExt(char *Base, char *Ext);
-
-void		PrintDoubleHexStr(double Double);
-double		HexStrToDouble(char *Str);
-char*		DoubleToHexStr(double Double);
-
-
 #endif

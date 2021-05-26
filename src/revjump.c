@@ -1,43 +1,15 @@
-/*
-*  BayesTriats 3.0
-*
-*  copyright 2017
-*
-*  Andrew Meade
-*  School of Biological Sciences
-*  University of Reading
-*  Reading
-*  Berkshire
-*  RG6 6BX
-*
-* BayesTriats is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-* 
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>
-*
-*/
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#include "TypeDef.h"
-#include "Rates.h"
-#include "GenLib.h"
-#include "RandLib.h"
-#include "Trees.h"
-#include "Continuous.h"
-#include "RevJump.h"
+#include "typedef.h"
+#include "rates.h"
+#include "genlib.h"
+#include "rand.h"
+#include "trees.h"
+#include "continuous.h"
+#include "revjump.h"
 
 void	RJSplitPropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0Size, int G1Size, double Rate, int OGroup);
 
@@ -55,7 +27,7 @@ int		FindGroupsGrater(int No, MAPINFO *MapInfo)
 	return Ret;
 }
 
-/*
+
 void	MapRJRates(double* Rates, int *MappingVect, int MVLen, double *Prams)
 {
 	int	Index;
@@ -63,6 +35,7 @@ void	MapRJRates(double* Rates, int *MappingVect, int MVLen, double *Prams)
 
 	for(Index=0;Index<MVLen;Index++)
 	{
+
 		if(MappingVect[Index] == ZERORATENO)
 		{
 			Prams[Index] = 0.000000000000000000001;
@@ -72,40 +45,20 @@ void	MapRJRates(double* Rates, int *MappingVect, int MVLen, double *Prams)
 		else
 			Prams[Index] = Rates[MappingVect[Index]];
 	}
-}
+/*
+	if(Hit == TRUE)
+	{
+
+		for(Index=0;Index<MVLen;Index++)
+			printf("%d\t", MappingVect[Index]);
+
+		printf("\n");
+		for(Index=0;Index<MVLen;Index++)
+			printf("%f\t", Prams[Index]);
+
+		exit(0);
+	}
 */
-
-//void	MapRJRates(double* Rates, int *MappingVect, int MVLen, double *Prams)
-//MapRJRates(Rates->Rates, Rates->MappingVect, Rates->NoOfFullRates, Rates->FullRates);
-void	MapRJRates(OPTIONS *Opt, RATES *Rates)
-{
-	int	Index, MIndex, Pos;
-	
-	MIndex = 0;
-	for(Index=0;Index<Rates->NoOfFullRates;Index++)
-	{
-		if(Opt->ResTypes[Index] == RESNONE)
-		{
-			if(Rates->MappingVect[MIndex] == ZERO_RATE_NO)
-				Rates->FullRates[Index] = 0.0000001;
-			else
-				Rates->FullRates[Index] = Rates->Rates[Rates->MappingVect[MIndex]];
-			
-			MIndex++;
-		}
-
-		if(Opt->ResTypes[Index] == RESCONST)
-			Rates->FullRates[Index] = Opt->ResConst[Index];
-	}
-
-	for(Index=0;Index<Rates->NoOfFullRates;Index++)
-	{
-		if(Opt->ResTypes[Index] == RESRATE)
-		{
-			Pos = FindRatePos(Index, Opt);
-			Rates->FullRates[Index] = Rates->FullRates[Pos];
-		}
-	}
 }
 
 int		NoOfMappings(RATES* Rates, int	RateNo)
@@ -113,7 +66,7 @@ int		NoOfMappings(RATES* Rates, int	RateNo)
 	int	Ret=0;
 	int	Index;
 
-	for(Index=0;Index<Rates->NoOfRates;Index++)
+	for(Index=0;Index<Rates->NoOfFullRates;Index++)
 		if(Rates->MappingVect[Index] == RateNo)
 			Ret++;
 
@@ -122,11 +75,12 @@ int		NoOfMappings(RATES* Rates, int	RateNo)
 
 int		NoOfPramGroups(RATES* Rates, int *GroupID, int *GroupSize)
 {
-	int	Index, Ret, InPast, PIndex;
-	
-	Ret = 0;
+	int	Index=0;
+	int	Ret=0;
+	int	InPast;
+	int	PIndex;
 
-	for(Index=0;Index<Rates->NoOfRates;Index++)
+	for(Index=0;Index<Rates->NoOfFullRates;Index++)
 	{
 		InPast=FALSE;
 		for(PIndex=0;PIndex<(Index);PIndex++)
@@ -136,7 +90,7 @@ int		NoOfPramGroups(RATES* Rates, int *GroupID, int *GroupSize)
 		}
 
 		/* If we are in the zero bin don't count us */
-		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
+		if(Rates->MappingVect[Index] == ZERORATENO)
 			InPast = TRUE;
 
 		if((NoOfMappings(Rates,Rates->MappingVect[Index]) >= 1) && (InPast == FALSE))
@@ -191,7 +145,7 @@ void		FreeMapInfo(MAPINFO *MapInfo)
 
 	if(MapInfo->NoInZero > 0)
 		free(MapInfo->ZeroPos);
-	
+
 	free(MapInfo);
 }
 
@@ -202,19 +156,23 @@ void	FindZeroBin(RATES* Rates, MAPINFO* MapInfo)
 
 	MapInfo->NoInZero = 0;
 
-	for(Index=0;Index<Rates->NoOfRates;Index++)
-		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
+	for(Index=0;Index<Rates->NoOfFullRates;Index++)
+		if(Rates->MappingVect[Index] == ZERORATENO)
 			MapInfo->NoInZero++;
 
 	if(MapInfo->NoInZero > 0)
-		MapInfo->ZeroPos = (int*)SMalloc(sizeof(int) * MapInfo->NoInZero);
+	{
+		MapInfo->ZeroPos = (int*)malloc(sizeof(int) * MapInfo->NoInZero);
+		if(MapInfo->ZeroPos == NULL)
+			MallocErr();
+	}
 	else
 		MapInfo->ZeroPos = NULL;
 
 	ZVectIndex = 0;
-	for(Index=0;Index<Rates->NoOfRates;Index++)
+	for(Index=0;Index<Rates->NoOfFullRates;Index++)
 	{
-		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
+		if(Rates->MappingVect[Index] == ZERORATENO)
 		{
 			MapInfo->ZeroPos[ZVectIndex] = Index;
 			ZVectIndex++;
@@ -253,7 +211,7 @@ MAPINFO*	CreatMapping(RATES* Rates)
 			MallocErr();
 
 		Pos = 0;
-		for(PIndex=0;PIndex<Rates->NoOfRates;PIndex++)
+		for(PIndex=0;PIndex<Rates->NoOfFullRates;PIndex++)
 		{
 			if(Rates->MappingVect[PIndex] == Ret->GroupID[Index])
 			{
@@ -269,19 +227,19 @@ MAPINFO*	CreatMapping(RATES* Rates)
 	return Ret;
 }
 
-int		PickSplitGroup(RATES *Rates, MAPINFO *MapInfo)
+int		PickSplitGroup(MAPINFO *MapInfo)
 {
 	int	Ret;
 
 	do
 	{
-		Ret = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+		Ret = rand() % MapInfo->NoOfGroups;
 	}while(MapInfo->GroupSize[Ret] <= 1);
 
 	return Ret;
 }
 
-int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
+int*	MakeSplitMask(MAPINFO *MapInfo, int GroupNo)
 {
 	int	*Ret=NULL;
 	int	Index;
@@ -297,7 +255,7 @@ int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
 	G0 = G1 = 0;
 	for(Index=0;Index<GSize-1;Index++)
 	{
-		if(RandDouble(Rates->RS) < 0.5)
+		if(GenRand() < 0.5)
 		{
 			Ret[Index] = 0;
 			G0++;
@@ -311,7 +269,7 @@ int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
 
 	if((G0 > 0) && (G1 > 0))
 	{
-		if(RandDouble(Rates->RS) < 0.5)
+		if(GenRand() < 0.5)
 			Ret[Index] = 0;
 		else
 			Ret[Index] = 1;
@@ -328,31 +286,18 @@ int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
 	return Ret;
 }
 
-double	GenDoubleIn(RANDSTATES*	RS, double Min, double Max)
+double	GenDoubleIn(double Min, double Max)
 {
 	double	Diff;
 	
 	Diff = Max - Min;
-	return (RandDouble(RS) * Diff) + Min;
+	return (GenRand() * Diff) + Min;
 }
 
-int		CanSplit(RATES *Rates, OPTIONS *Opt, MAPINFO *MapInfo)
+
+void	RJSplit(RATES* Rates, OPTIONS* Opt)
 {
-	if(FindGroupsGrater(1, MapInfo)  == 0)
-		return FALSE;
-
-	if(Opt->CapRJRatesNo != -1)
-	{
-		if(MapInfo->NoOfGroups >= Opt->CapRJRatesNo)
-			return FALSE;
-	}
-
-	return TRUE;
-}
-
-int		RJSplit(RATES* Rates, OPTIONS* Opt)
-{
-	MAPINFO *MapInfo;
+	MAPINFO *MapInfo=NULL;
 	int		GroupNo;
 	int		SplitID;
 	int		*SplitMask;
@@ -365,20 +310,21 @@ int		RJSplit(RATES* Rates, OPTIONS* Opt)
 	double	NewR;
 	double	OldR;
 	double	Mue;
-	
+
+
 	MapInfo = CreatMapping(Rates);
 
-	if(CanSplit(Rates, Opt, MapInfo) == FALSE)
+	if(FindGroupsGrater(1, MapInfo)  == 0)
 	{
 		FreeMapInfo(MapInfo);
-		return FALSE;
+		return;
 	}
 
-	GroupNo = PickSplitGroup(Rates, MapInfo);
+	GroupNo = PickSplitGroup(MapInfo);
 	SplitID	= MapInfo->GroupID[GroupNo];
 
 	GSize = MapInfo->GroupSize[GroupNo];
-	SplitMask = MakeSplitMask(Rates, MapInfo, GroupNo);
+	SplitMask = MakeSplitMask(MapInfo, GroupNo);
 
 	G0=G1=0;
 	for(Index=0;Index<GSize;Index++)
@@ -399,18 +345,18 @@ int		RJSplit(RATES* Rates, OPTIONS* Opt)
 	OldR = Mue / (double)G0;
 	*/
 
-	Mue = GenDoubleIn(Rates->RS, -(G0*OldR), (G1*OldR));
+	Mue = GenDoubleIn(-(G0*OldR), (G1*OldR));
 	NewR = OldR + (Mue / (double)G0);
 	OldR = OldR - (Mue / (double)G1);
 
-	NewRates = (double*)malloc(sizeof(double) * Rates->NoOfRates);
+	NewRates = (double*)malloc(sizeof(double) * (Rates->NoOfRates + 1));
 	if(NewRates == NULL)
 		MallocErr();
 
 	memcpy(NewRates, Rates->Rates, sizeof(double)*Rates->NoOfRates);
 	
 	NewRates[Rates->MappingVect[MapInfo->GroupPos[GroupNo][0]]] = OldR;
-	NewRates[Rates->NoOfRJRates] = NewR;
+	NewRates[Rates->NoOfRates] = NewR;
 
 	NewID = MapInfo->NoOfGroups;
 	for(Index=0;Index<GSize;Index++)
@@ -425,12 +371,10 @@ int		RJSplit(RATES* Rates, OPTIONS* Opt)
 	free(Rates->Rates);
 	Rates->Rates = NewRates;
 
-	Rates->NoOfRJRates = MapInfo->NoOfGroups + 1;
+	Rates->NoOfRates = MapInfo->NoOfGroups + 1;
 
 	free(SplitMask);
 	FreeMapInfo(MapInfo);
-
-	return TRUE;
 }
 
 /* Calcl the probablity of picking any particular split		*/
@@ -464,9 +408,7 @@ double	RJSplitRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int SizeG0, in
 	T2 = (1.0 / NoSplitable);
 
 
-//	Pre V 2 , mapping between exact model space is not needed. 
-//	T3 = (1.0 / ( pow((double)2.0, NiNj - 1) - 1.0));
-	T3 = 1;
+	T3 = (1.0 / ( pow(2, NiNj - 1) - 1.0));
  
 	
 	T4 = (1.0 / (Rate * (NiNj)));
@@ -487,7 +429,8 @@ double	RJMergeRatio(int NoOfGroups)
 	KC2 = NoOfGroups * (NoOfGroups - 1);
 	KC2 = KC2 / 2;
 	Ret = Ret * (1.0 / (double)KC2);
-	
+
+
 	return Ret;
 }
 
@@ -512,8 +455,8 @@ void	RJMergePropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0ID, in
 		printf("%d\t", Rates->MappingVect[Index]);
 	printf("\n\n");
 */
-	Rates->LnJacobion = (double)((double)(SizeG0 * SizeG1) / (double)(SizeG0 + SizeG1));
-	Rates->LnJacobion = log(Rates->LnJacobion);
+	Rates->LogJacobion = (double)((double)(SizeG0 * SizeG1) / (double)(SizeG0 + SizeG1));
+	Rates->LogJacobion = log(Rates->LogJacobion);
 
 	Top		= RJSplitRatio(Rates, Opt, MapInfo, SizeG0, SizeG1, Rate, 1);
 	Bottom	= RJMergeRatio(MapInfo->NoOfGroups);
@@ -521,7 +464,7 @@ void	RJMergePropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0ID, in
 
 	Ret = Top / Bottom;
 
-	Rates->LnHastings = log(Ret) + Rates->LnJacobion;
+	Rates->LogHRatio = log(Ret) + Rates->LogJacobion;
 }
 
 void	RJSplitPropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0Size, int G1Size, double Rate, int OGroup)
@@ -541,8 +484,8 @@ void	RJSplitPropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0Size, 
 	printf("\n\n");
 
 */
-	Rates->LnJacobion = (double)((double)(G0Size + G1Size) / (double)(G0Size * G1Size));
-	Rates->LnJacobion = log(Rates->LnJacobion);
+	Rates->LogJacobion = (double)((double)(G0Size + G1Size) / (double)(G0Size * G1Size));
+	Rates->LogJacobion = log(Rates->LogJacobion);
 
 
 	Top		= RJMergeRatio(MapInfo->NoOfGroups+1);
@@ -550,11 +493,11 @@ void	RJSplitPropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0Size, 
 
 	Ret = Top / Bottom;
 
-	Rates->LnHastings = log(Ret) + Rates->LnJacobion;
+	Rates->LogHRatio = log(Ret) + Rates->LogJacobion;
 
 }
 
-int		RJMerge(RATES* Rates, OPTIONS* Opt)
+void	RJMerge(RATES* Rates, OPTIONS* Opt)
 {
 	MAPINFO *MapInfo=NULL;
 	int		G0, G1;
@@ -571,12 +514,12 @@ int		RJMerge(RATES* Rates, OPTIONS* Opt)
 	if(MapInfo->NoOfGroups == 1)
 	{
 		FreeMapInfo(MapInfo);
-		return FALSE;
+		return;
 	}
 
-	G0 = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+	G0 = rand() % MapInfo->NoOfGroups;
 	do
-		G1 = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+		G1 = rand() % MapInfo->NoOfGroups;
 	while(G1 == G0);
 
 	if(G1 < G0)
@@ -586,11 +529,13 @@ int		RJMerge(RATES* Rates, OPTIONS* Opt)
 		G0 = Index;
 	}
 
+
 	G0ID = MapInfo->GroupID[G0];
 	G1ID = MapInfo->GroupID[G1];
 
 	DelPosInRates = Rates->MappingVect[MapInfo->GroupPos[G1][0]];
-	
+
+
 	NewRate = Rates->Rates[Rates->MappingVect[MapInfo->GroupPos[G0][0]]] * MapInfo->GroupSize[G0]; 
 	NewRate += Rates->Rates[Rates->MappingVect[MapInfo->GroupPos[G1][0]]] * MapInfo->GroupSize[G1]; 
 	NewRate = NewRate / (double)(MapInfo->GroupSize[G0] + MapInfo->GroupSize[G1]);
@@ -599,7 +544,7 @@ int		RJMerge(RATES* Rates, OPTIONS* Opt)
 	RJMergePropRatio(Rates, Opt, MapInfo, G0, G1, NewRate);
 
 
-	for(Index=0;Index<Rates->NoOfRates;Index++)
+	for(Index=0;Index<Rates->NoOfFullRates;Index++)
 	{
 		if(Rates->MappingVect[Index] == G1ID)
 			Rates->MappingVect[Index] = G0ID;
@@ -608,12 +553,12 @@ int		RJMerge(RATES* Rates, OPTIONS* Opt)
 			Rates->MappingVect[Index]--;
 	}
 
-	NewRates = (double*)malloc(sizeof(double) * Rates->NoOfRates);
+	NewRates = (double*)malloc(sizeof(double) * (Rates->NoOfRates - 1));
 	if(NewRates == NULL)
 		MallocErr();
 
 	NRPos = 0;
-	for(ORPos=0;ORPos<Rates->NoOfRJRates;ORPos++)
+	for(ORPos=0;ORPos<Rates->NoOfRates;ORPos++)
 	{
 		if(ORPos != G1ID)
 		{
@@ -621,20 +566,16 @@ int		RJMerge(RATES* Rates, OPTIONS* Opt)
 			NRPos++;
 		}
 	}
-	NewRates[NRPos] = 0;
 
 	free(Rates->Rates);
-
-	Rates->NoOfRJRates = MapInfo->NoOfGroups-1;
+	Rates->NoOfRates = MapInfo->NoOfGroups-1;
 	Rates->Rates = NewRates;
 
 	FreeMapInfo(MapInfo);
-
-	return TRUE;
 }
 
 
-int		FindGropToReduce(RATES* Rates, MAPINFO* MapInfo)
+int		FindGropToReduce(MAPINFO* MapInfo)
 {
 	int		NoCandidates;
 	int		No;
@@ -646,7 +587,7 @@ int		FindGropToReduce(RATES* Rates, MAPINFO* MapInfo)
 
 	do
 	{
-		No = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+		No = rand() % MapInfo->NoOfGroups;
 		if(MapInfo->GroupSize[No] > 1)
 			return No;
 	}while(1);
@@ -655,7 +596,7 @@ int		FindGropToReduce(RATES* Rates, MAPINFO* MapInfo)
 }
 
 
-int		RJReduce(RATES* Rates, OPTIONS* Opt)
+void	RJReduce(RATES* Rates, OPTIONS* Opt)
 {
 	MAPINFO *MapInfo=NULL;
 	int		Group;
@@ -665,19 +606,19 @@ int		RJReduce(RATES* Rates, OPTIONS* Opt)
 
 	MapInfo = CreatMapping(Rates);
 
-	Group = FindGropToReduce(Rates, MapInfo);
+	Group = FindGropToReduce(MapInfo);
 
 	if(Group == -1)
 	{
 		FreeMapInfo(MapInfo);
-		return FALSE;
+		return;
 	}
 
-	TheOne = RandUSLong(Rates->RS) % MapInfo->GroupSize[Group];
+	TheOne = rand() % MapInfo->GroupSize[Group];
 
 	Pos = MapInfo->GroupPos[Group][TheOne];
 
-	Rates->MappingVect[Pos] = ZERO_RATE_NO;
+	Rates->MappingVect[Pos] = ZERORATENO;
 
 	Top = 0.5;
 	Top = Top * (1.0 / ((double)MapInfo->NoInZero + 1.0));
@@ -687,14 +628,12 @@ int		RJReduce(RATES* Rates, OPTIONS* Opt)
 	Bottom = Bottom * (1.0 / (double)FindGroupsGrater(1, MapInfo));
 	Bottom = Bottom * (1.0 / (double)MapInfo->GroupSize[Group]);
 
-	Rates->LnHastings = log(Top / Bottom);
+	Rates->LogHRatio = log(Top / Bottom);
 
 	FreeMapInfo(MapInfo);
-
-	return TRUE;
 }
 
-int		RJAugment(RATES* Rates, OPTIONS* Opt)
+void	RJAugment(RATES* Rates, OPTIONS* Opt)
 {
 	double	Top, Bottom;
 	MAPINFO *MapInfo=NULL;
@@ -707,12 +646,12 @@ int		RJAugment(RATES* Rates, OPTIONS* Opt)
 	if(MapInfo->NoInZero == 0)
 	{
 		FreeMapInfo(MapInfo);
-		return FALSE;
+		return;
 	}
 
-	ZeroPos = RandUSLong(Rates->RS) % MapInfo->NoInZero;
+	ZeroPos = rand() % MapInfo->NoInZero;
 	ZeroPos = MapInfo->ZeroPos[ZeroPos];
-	Group = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+	Group = rand() % MapInfo->NoOfGroups;
 
 	Rates->MappingVect[ZeroPos] = Group;
 	
@@ -729,9 +668,8 @@ int		RJAugment(RATES* Rates, OPTIONS* Opt)
 	Bottom = Bottom * (1.0 / (double)MapInfo->NoInZero);
 	Bottom = Bottom * (1.0 / (double)MapInfo->NoOfGroups);
 
-	Rates->LnHastings = log(Top / Bottom);
-	
-	FreeMapInfo(MapInfo);
+	Rates->LogHRatio = log(Top / Bottom);
 
-	return TRUE;
+
+	FreeMapInfo(MapInfo);
 }

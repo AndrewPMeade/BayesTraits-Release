@@ -1,69 +1,28 @@
-/*
-*  BayesTriats 3.0
-*
-*  copyright 2017
-*
-*  Andrew Meade
-*  School of Biological Sciences
-*  University of Reading
-*  Reading
-*  Berkshire
-*  RG6 6BX
-*
-* BayesTriats is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-* 
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>
-*
-*/
-
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
-#include <time.h>
-#include <stdint.h>
 
-#include "GenLib.h"
+#include "genlib.h"
 
 
 void		MallocErrFull(char* FileName, int LineNo)
 {
+	fprintf(stderr, "Memory allocation error in file %s line %d\n", FileName, LineNo);
 	fprintf(stdout, "Memory allocation error in file %s line %d\n", FileName, LineNo);
-	fprintf(stdout, "Two main causes of memory allocation error, 1) running out of usable memory, 2) a programming error.\n");
 
 	exit(1);
 }
 
-void*	smalloc(size_t n, char* FName, unsigned long LineNo)
-{
-	void *Ret;
-
-	Ret = malloc(n);
-
-	if(Ret == NULL)
-		MallocErrFull(FName, LineNo);
-	
-	return Ret;
-}
-
-char*		StrMake(const char* Str)
+char*		StrMake(char* Str)
 {
 	char*	Ret;
 
-	Ret = (char*)SMalloc(sizeof(char) * (strlen(Str) + 1));
-	
+	Ret = (char*)malloc(sizeof(char) * (strlen(Str) + 1));
+	if(Ret == NULL)
+		MallocErr();
+
 	strcpy(Ret, Str);
 
 	return Ret;
@@ -93,22 +52,6 @@ FILE*		OpenWrite(char *FileName)
 		fprintf(stderr, "Could not open file %s for writting\n", FileName);
 		exit(1);
 	}
-
-	return Ret;
-}
-
-FILE*		OpenWriteWithExt(char *Base, char *Ext)
-{
-	char *Buffer;
-	FILE *Ret;
-
-	Buffer = (char*)SMalloc(strlen(Base) + strlen(Ext) + 2);
-
-	sprintf(Buffer, "%s%s", Base, Ext);
-
-	Ret = OpenWrite(Buffer);
-
-	free(Buffer);
 
 	return Ret;
 }
@@ -287,10 +230,10 @@ void		FindTextFileMaxLine(TEXTFILE* TextFile)
 		return;
 	}
 
-	TextFile->MaxLine = (int)strlen(TextFile->Data[0]);
+	TextFile->MaxLine = strlen(TextFile->Data[0]);
 	for(Index=1;Index<TextFile->NoOfLines;Index++)
 	{
-		Len = (int)strlen(TextFile->Data[Index]);
+		Len = strlen(TextFile->Data[Index]);
 		if(Len > TextFile->MaxLine)
 			TextFile->MaxLine = Len;
 	}
@@ -328,7 +271,7 @@ TEXTFILE*	LoadTextFile(char* Name, char DelComments)
 
 	do
 	{
-		NoRead = (int)fread(&Buffer[0], sizeof(char), BUFFERSIZE, InFile);
+		NoRead = fread(&Buffer[0], sizeof(char), BUFFERSIZE, InFile);
 		Ret->Size += NoRead;
 	} while(NoRead == BUFFERSIZE);
 
@@ -498,7 +441,7 @@ void		MakeUpper(char* Str)
 	int Size;
 	int	Index;
 
-	Size = (int)strlen(Str);
+	Size = strlen(Str);
 	for(Index=0;Index<Size;Index++)
 		Str[Index] = toupper(Str[Index]);
 }
@@ -508,17 +451,9 @@ void		MakeLower(char* Str)
 	int Size;
 	int	Index;
 
-	Size = (int)strlen(Str);
+	Size = strlen(Str);
 	for(Index=0;Index<Size;Index++)
 		Str[Index] = tolower(Str[Index]);
-}
-
-int	IsSapce(char C)
-{
-	if(C == ' ' || C == '\t')
-		return 1;
-
-	return 0;
 }
 
 int	MakeArgv(char*	string, char *argv[], int argvsize)
@@ -530,7 +465,7 @@ int	MakeArgv(char*	string, char *argv[], int argvsize)
 	for(i=0; i<argvsize; i++)
 	{
 		/* Skip Leading whitespace */
-		while(IsSapce(*p)) p++;
+		while(isspace(*p)) p++;
 
 		if(*p != '\0')
 			argv[argc++] = p;
@@ -541,46 +476,7 @@ int	MakeArgv(char*	string, char *argv[], int argvsize)
 		}
 
 		/* Scan over arg */
-		while(*p != '\0' && !IsSapce(*p))
-			p++;
-
-		/* Terminate argv */
-		if(*p != '\0' && i < argvsize - 1)
-			*p++ = '\0';
-	}
-
-	return argc;
-}
-
-int			IsChar(char Break, char C)
-{
-	if(C == Break)
-		return FALSE;
-
-	return TRUE;
-}
-
-int			MakeArgvChar(char*	string, char *argv[], int argvsize, char Break)
-{
-	char*	p = string;
-	int		i;
-	int		argc = 0;
-
-	for(i=0; i<argvsize; i++)
-	{
-		/* Skip Leading whitespace */
-		while(*p == Break) p++;
-
-		if(*p != '\0')
-			argv[argc++] = p;
-		else
-		{
-			argv[argc] = 0;
-			break;
-		}
-
-		/* Scan over arg */
-		while(*p != '\0' && !(*p == Break))
+		while(*p != '\0' && !isspace(*p))
 			p++;
 
 		/* Terminate argv */
@@ -594,15 +490,10 @@ int			MakeArgvChar(char*	string, char *argv[], int argvsize, char Break)
 
 int		IsValidDouble(char* Str)
 {
-	int	Point;
-
-	if(atof(Str) != 0.0)
-		return TRUE;
+	int	Point=FALSE;
 
 	/* Skip Leading whitespace */
 	while(isspace(*Str)) Str++;
-
-	Point = FALSE;
 
 	if(*Str == '-')
 		Str++;
@@ -630,13 +521,7 @@ int		IsValidDouble(char* Str)
 
 int		IsValidInt(char* Str)
 {
-	if(atoi(Str) != 0)
-		return TRUE;
-
 	if(*Str == '-')
-		Str++;
-
-	if(*Str == '+')
 		Str++;
 
 	while(*Str)
@@ -699,7 +584,7 @@ void	ReplaceChar(char Rep, char With, char* String)
 	int	Index;
 	int	Size;
 
-	Size = (int)strlen(String);
+	Size = strlen(String);
 
 	for(Index=0;Index<Size;Index++)
 	{
@@ -715,7 +600,7 @@ void	RemoveChar(char c, char* String)
 	int	Index;
 	int	SIndex;
 
-	Size = (int)strlen(String);
+	Size = strlen(String);
 
 	for(Index=0;Index<Size;Index++)
 	{
@@ -754,7 +639,7 @@ char*	FormatInt(int No, int Size)
 	if(Ret == NULL)
 		MallocErr();
 
-	Len = (int)strlen(Buffer);
+	Len = strlen(Buffer);
 	for(Index=0;Index<Size - Len;Index++)
 		Ret[Index] = '0';
 	Ret[Index] = '\0';
@@ -817,7 +702,7 @@ void    revstr(char * String)
     char    *End;
     int     Size;
 
-    Size = (int)strlen(String);
+    Size = strlen(String);
 
     Start = String;
     End   = String + (Size - 1);
@@ -953,7 +838,7 @@ void	PrintFixSize(char *String, int Size, FILE* Str)
 	int		Index;
 	int		StrSize;
 
-	StrSize = (int)strlen(String);
+	StrSize = strlen(String);
 
 	fprintf(Str, "%s", String);
 
@@ -968,274 +853,4 @@ void Swap(void** a, void** b)
 	t = *a;
 	*a = *b;
 	*b = t;
-}
-
-
-void	GotoFileEnd(FILE *File, char *Buffer, int Size)
-{
-	while(fgets(Buffer, Size, File) != NULL);
-}
-
-void	PrintTime(FILE* Str)
-{
-	time_t	*Now;
-	struct tm *Time;
-
-	Now = (time_t*)malloc(sizeof(time_t));
-
-	time(Now);
-	Time = localtime(Now);
-
-	fprintf(Str, "%02d/%02d/%d ", Time->tm_mday, Time->tm_mon+1, Time->tm_year+1900);
-	fprintf(Str, "%d:%02d:%02d", Time->tm_hour, Time->tm_min, Time->tm_sec);
-
-	free(Now);
-}
-
-void**	AddToList(int *No, void** OldList, void* Item)
-{
-	void	**Ret;
-
-	if(*No == 0)
-	{
-		Ret = (void**)malloc(sizeof(void*));
-		if(Ret == NULL)
-			MallocErr();
-		Ret[0] = Item;
-		(*No)++;
-		return Ret;
-	}
-
-	Ret = (void**)malloc(sizeof(void*) * (*No + 1));
-	if(Ret == NULL)
-		MallocErr();
-
-	memcpy(Ret, OldList, *No * sizeof(void*));
-	free(OldList);
-
-
-	Ret[*No] = Item;
-
-	(*No)++;
-
-	return Ret;
-}
-
-
-void double2HexString(double a) 
-{ 
-//   char *buf; // double is 8-byte long, so we have 2*8 + terminating \0 
-   char *d2c; 
-//	char *n; 
-   int i; 
-
-  // buf = (char*)malloc(sizeof(double)+sizeof(double));
-
- //  n = buf;
-
-   d2c = (char *) &a; 
-
-   for(i = 0; i < 8; i++) 
-   { 
-   //   sprintf(n, "%02X", *d2c++); 
-	  printf("%x", *d2c++); 
- //     n += 2; 
-   }  
-  // *(n) = '\0'; 
-
-//   return buf;
-} 
-
-char		IntToHex(int i)
-{
-	if(i<10)
-		return '0'+i;
-	return 'A'+(i-10);
-}
-
-void		PrintDoubleHex(FILE *Str, double D)
-{
-	unsigned char *h, in;
-	int Index;
-	unsigned char t,b;
-
-	h = (unsigned char*)&D;
-	
-	for(Index=0;Index<sizeof(double);Index++)
-	{
-
-		in = h[Index];
-
-		b = in & 0x0f;
-		t = (in >> 4) & 0x0f;
-
-		printf("%c%c", IntToHex(b), IntToHex(t));
-	}
-}
-
-void		CalcRSqr(double *x, double *y, int Size, double *R2, double *Slope, double *Intercept)
-{
-	double	sumOfX, sumOfY, sumOfXSq, sumOfYSq, ssX, ssY, sumCoVar;
-	double	MeanX, MeanY, RDenom, RNum, sCo;
-	int Index;
-	
-	sumOfX = sumOfY = sumOfXSq = sumOfYSq = ssX = ssY = sumCoVar = 0;
-	MeanX =  MeanY = 0;
-
-	for(Index=0;Index<Size;Index++)
-	{
-		sumCoVar += (x[Index] * y[Index]);
-		
-		sumOfX += x[Index];
-		sumOfY += y[Index];
-
-		sumOfXSq += (x[Index] * x[Index]);
-		sumOfYSq += (y[Index] * y[Index]);
-	}
-
-	ssX = sumOfXSq - ((sumOfX * sumOfX) / Size);
-	ssY = sumOfYSq - ((sumOfY * sumOfY) / Size);
-
-	RNum = (Size * sumCoVar) - (sumOfX * sumOfY);
-	
-	RDenom = (Size * sumOfXSq - (pow(sumOfX, 2))) * (Size * sumOfYSq - (pow(sumOfY, 2)));
-
-	sCo = sumCoVar - ((sumOfX * sumOfY) / Size);
-	
-	MeanX = sumOfX / Size;
-	MeanY = sumOfY / Size;
-
-	*Slope = sCo / ssX;
-	*Intercept = MeanY - (*Slope * MeanX);
-	*R2 = RNum / sqrt(RDenom);
-	*R2 = *R2 * *R2;
-}
-
-int			CountChar(char *Str, char C)
-{
-	int Ret;
-
-	Ret = 0;
-	while(*Str != '\0')
-	{
-		if(*Str == C)
-			Ret++;
-		Str++;
-	}
-
-	return Ret;
-}
-
-void*		CloneMem(size_t Size, void *Mem)
-{
-	void* Ret;
-
-	Ret = SMalloc(Size);
-	memcpy(Ret, Mem, Size);
-
-	return Ret;
-}
-
-int StrICmp(char const *a, char const *b)
-{
-	int d;
-
-	for (;; a++, b++) {
-		d = tolower(*a) - tolower(*b);
-		if (d != 0 || !*a)
-			return d;
-	}
-}
-
-
-void	NormaliseVector(double *Vect, int Size)
-{
-	double	SF;
-	int		Index;
-
-	SF = 0;
-	for(Index=0;Index<Size;Index++)
-		SF += Vect[Index];
-
-	SF = 1 / SF;
-
-	for(Index=0;Index<Size;Index++)
-		Vect[Index] *= SF;
-}
-
-
-union DoubleStr 
-{
-    double Double;
-    uint8_t i8[sizeof(double) + 1];
-};
-
-
-void	PrintDoubleHexStr(double Double)
-{
-	union DoubleStr DS;
-	int i;
-
-	DS.Double = Double;
-
-	for(i = 0; i < (int) sizeof(DS.i8) - 1; ++i) 
-	{
-		printf("%02X", DS.i8[i]);
-
-	}
-}
-
-char*	DoubleToHexStr(double Double)
-{
-	char *Ret, *P;
-	union DoubleStr DS;
-	size_t Size;
-	int i;
-
-	DS.Double = Double;
-
-	Size = sizeof(DS.i8) * 2;
-
-	Ret = (char*)SMalloc(Size);
-	memset(Ret, 0, Size);
-	P = Ret;
-
-	for(i = 0; i < (int) sizeof(DS.i8) - 1; ++i) 
-	{
-		sprintf(P, "%02X", DS.i8[i]);
-		P+=2;		
-	}
-
-	return Ret;
-}
-
-double	HexStrToDouble(char *Str)
-{	
-	union DoubleStr DS;
-	int j, i, k;
-	
-	j = 0;
-
-
-	for(i = 0; i < (int) strlen(Str); i += 2) 
-	{
-		uint8_t val = 0;
-		for(k = 0; k < 2; ++k) 
-		{
-			char ch = Str[i + k];
-
-			val *= 16;
-			if (ch >= '0' && ch <= '9') 
-			{
-				val += ch - '0';
-			}
-			else if (ch >= 'A' && ch <= 'F') 
-			{
-				val += ch - 'A' + 10;
-			}
-		}
-		DS.i8[j++] = val;
-	}
-
-	return DS.Double;
 }

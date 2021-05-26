@@ -1,59 +1,43 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include "praxis.h"
+#include "minfit.h"
 
-#include "Praxis.h"
-#include "MinFit.h"
-#include "GenLib.h"
-#include "RandLib.h"
+/* control parameters */
+double tol = SQREPSILON,
+       scbd = 1.0,
+	   step = 1.0;
+int    ktm = 1;
+int    prin = 2;
+int    maxfun = 0;
+int    illc = 0;
 
-void	BlankPraxisState(PRAXSTATE*	S)
-{
-	S->i = S->j = S->k = S->k2 = S->nl = S->nf = S->kl = S->kt = 0;
+/* some global variables */
+static int i, j, k, k2, nl, nf, kl, kt;
+static double s, sl, dn, dmin,
+       fx, f1, lds, ldt, sf, df,
+       qf1, qd0, qd1, qa, qb, qc,
+       m2, m4, small, vsmall, large,
+       vlarge, ldfac, t2;
+static double d[N], y[N], z[N],
+       q0[N], q1[N], v[N][N];
 
-	S->s= S->sl= S->dn= S->dmin= S->fx= S->f1= S->lds= S->ldt= S->sf= S->df=
-	S->qf1= S->qd0= S->qd1= S->qa= S->qb= S->qc= S->m2= S->m4= S->small= S->vsmall= 
-	S->large= S->vlarge= S->ldfac= S->t2= 0.0;
+/* these will be set by praxis to point to its arguments */
+static int n;
+double *x;
+double (*fun)(double*);
 
-
-	for(S->i=0;S->i<PNSIZE;S->i++)
-		S->d[S->i] = S->y[S->i] = S->z[S->i] = S->q0[S->i] = S->q1[S->i] = 0.0;
-	
-	for(S->i=0;S->i<PNSIZE;S->i++)
-		for(S->j=0;S->j<PNSIZE;S->j++)
-			S->v[S->i][S->j]  = 0.0;
-
-
-	S->tol	= SQREPSILON,
-	S->scbd	= 1.0;
-	S->step	= 1.0;
-	S->ktm	= 1;
-	S->prin	= 2;
-
-	S->NoLhCalls = 0;
-}
-
-PRAXSTATE*	AllocPraxState(void)
-{
-	PRAXSTATE*	Ret;
-	
-	Ret = (PRAXSTATE*)malloc(sizeof(PRAXSTATE));
-	if(Ret == NULL)
-		MallocErr();
-
-	BlankPraxisState(Ret);
-
-	return Ret;
-}
-
-void	FreePracxStates(PRAXSTATE* PS)
-{
-	free(PS);
-}
+/* these will be set by praxis to the global control parameters */
+static double h, macheps, t;
 
 /* --------------------------------------------------------------------------- */
+double rndom(void)
+/* return random no between 0 and 1 */
+{
+ return (double)(rand()%(8192*2))/(double)(8192*2);
+}
 
-/*
 void	BlankPraxisGlobal(void)
 {
 	i= j= k= k2= nl= nf= kl= kt= 0;
@@ -67,48 +51,48 @@ void	BlankPraxisGlobal(void)
 		for(j=0;j<N;j++)
 			v[i][j]  = 0.0;
 }
-*/
+
 
 /* --------------------------------------------------------------------------- */
-void sort(PRAXSTATE* S)
+void sort(void)
 /* d and v in descending order */
 {
  int k, i, j;
  double s;
 
- for (i=0; i<S->n-1; i++) {
-     k = i; s = S->d[i];
-     for (j=i+1; j<S->n; j++) {
-         if (S->d[j] > s) {
+ for (i=0; i<n-1; i++) {
+     k = i; s = d[i];
+     for (j=i+1; j<n; j++) {
+         if (d[j] > s) {
             k = j;
-            s = S->d[j];
+            s = d[j];
          }
      }
      if (k > i) {
-        S->d[k] = S->d[i];
-        S->d[i] = s;
-        for (j=0; j<S->n; j++) {
-            s = S->v[j][i];
-            S->v[j][i] = S->v[j][k];
-            S->v[j][k] = s;
+        d[k] = d[i];
+        d[i] = s;
+        for (j=0; j<n; j++) {
+            s = v[j][i];
+            v[j][i] = v[j][k];
+            v[j][k] = s;
         }
      }
  }
 }
 
 /* --------------------------------------------------------------------------- */
-void print(PRAXSTATE* S)
+void print(void)
 /* print a line of traces */
 {
  printf("\n");
- printf("... chi square reduced to ... %20.10e\n", S->fx);
- printf("... after %u function calls ...\n", S->nf);
- printf("... including %u linear searches ...\n", S->nl);
- vecprint("... current values of x ...", S->x, S->n);
+ printf("... chi square reduced to ... %20.10e\n", fx);
+ printf("... after %u function calls ...\n", nf);
+ printf("... including %u linear searches ...\n", nl);
+ vecprint("... current values of x ...", x, n);
 }
 
 /* --------------------------------------------------------------------------- */
-void matprint(char *s,double v[PNSIZE][PNSIZE], int n)
+void matprint(char *s,double v[N][N], int n)
 {
  int k, i;
 
@@ -122,7 +106,7 @@ void matprint(char *s,double v[PNSIZE][PNSIZE], int n)
 }
 
 /* --------------------------------------------------------------------------- */
-void vecprint(char *s, double x[PNSIZE], int n)
+void vecprint(char *s, double x[N], int n)
 {
  int i;
 
@@ -132,61 +116,62 @@ void vecprint(char *s, double x[PNSIZE], int n)
  printf("\n");
 }
 
-double flin(PRAXSTATE* S, double l, int j)
+/* --------------------------------------------------------------------------- */
+#ifdef MSDOS
+static double tflin[N];
+#endif
+/* --------------------------------------------------------------------------- */
+double flin(double l, int j)
 {
  int i;
 
 #ifndef MSDOS
- double tflin[PNSIZE];
+ double tflin[N];
 #endif
 
  if (j != -1) {		/* linear search */
-    for (i=0; i<S->n; i++)
-        tflin[i] = S->x[i] + l *S->v[i][j];
+    for (i=0; i<n; i++)
+        tflin[i] = x[i] + l *v[i][j];
  }
  else {			/* search along parabolic space curve */
-      S->qa = l*(l-S->qd1)/(S->qd0*(S->qd0+S->qd1));
-      S->qb = (l+S->qd0)*(S->qd1-l)/(S->qd0*S->qd1);
-      S->qc = l*(l+S->qd0)/(S->qd1*(S->qd0+S->qd1));
-      for (i=0; i<S->n; i++)
-          tflin[i] = S->qa*S->q0[i]+S->qb*S->x[i]+S->qc*S->q1[i];
+      qa = l*(l-qd1)/(qd0*(qd0+qd1));
+      qb = (l+qd0)*(qd1-l)/(qd0*qd1);
+      qc = l*(l+qd0)/(qd1*(qd0+qd1));
+      for (i=0; i<n; i++)
+          tflin[i] = qa*q0[i]+qb*x[i]+qc*q1[i];
  }
- S->nf++;
-
-	/* Possable Err woth a check */
-
-//	return (*fun)(tflin);
-	return S->fun(S, tflin);
+ nf++;
+ return (*fun)(tflin);
 }
 
 /* --------------------------------------------------------------------------- */
-void min1(PRAXSTATE* S, int j, int nits, double *d2, double *x1, double f1, int fk)
+void min1(int j, int nits, double *d2, double *x1, double f1, int fk)
 {
  int k, i, dz;
  double x2, xm, f0, f2, fm, d1, t2, s, sf1, sx1;
 
  sf1 = f1; sx1 = *x1;
- k = 0; xm = 0.0; fm = f0 = S->fx; dz = *d2 < S->macheps;
+ k = 0; xm = 0.0; fm = f0 = fx; dz = *d2 < macheps;
  /* find step size*/
  s = 0;
- for (i=0; i<S->n; i++)
-     s += S->x[i]*S->x[i];
+ for (i=0; i<n; i++)
+     s += x[i]*x[i];
  s = sqrt(s);
  if (dz)
-    t2 = S->m4*sqrt(fabs(S->fx)/S->dmin + s*S->ldt) + S->m2*S->ldt;
+    t2 = m4*sqrt(fabs(fx)/dmin + s*ldt) + m2*ldt;
  else
-    t2 = S->m4*sqrt(fabs(S->fx)/(*d2) + s*S->ldt) + S->m2*S->ldt;
- s = s*S->m4 + S->t;
+    t2 = m4*sqrt(fabs(fx)/(*d2) + s*ldt) + m2*ldt;
+ s = s*m4 + t;
  if (dz && t2 > s) t2 = s;
- if (t2 < S->small) t2 = S->small;
- if (t2 > 0.01*S->h) t2 = 0.01 * S->h;
+ if (t2 < small) t2 = small;
+ if (t2 > 0.01*h) t2 = 0.01 * h;
  if (fk && f1 <= fm) {
     xm = *x1;
     fm = f1;
  }
  if (!fk || fabs(*x1) < t2) {
     *x1 = (*x1 > 0 ? t2 : -t2);
-     f1 = flin(S, *x1, j);
+     f1 = flin(*x1, j);
  }
  if (f1 <= fm) {
     xm = *x1;
@@ -195,7 +180,7 @@ void min1(PRAXSTATE* S, int j, int nits, double *d2, double *x1, double f1, int 
 next:
  if (dz) {
     x2 = (f0 < f1 ? -(*x1) : 2*(*x1));
-    f2 = flin(S, x2, j);
+    f2 = flin(x2, j);
     if (f2 <= fm) {
        xm = x2;
        fm = f2;
@@ -203,16 +188,16 @@ next:
     *d2 = (x2*(f1-f0) - (*x1)*(f2-f0))/((*x1)*x2*((*x1)-x2));
  }
  d1 = (f1-f0)/(*x1) - *x1**d2; dz = 1;
- if (*d2 <= S->small) {
-    x2 = (d1 < 0 ? S->h : -S->h);
+ if (*d2 <= small) {
+    x2 = (d1 < 0 ? h : -h);
  }
  else {
     x2 = - 0.5*d1/(*d2);
  }
- if (fabs(x2) > S->h)
-    x2 = (x2 > 0 ? S->h : -S->h);
+ if (fabs(x2) > h)
+    x2 = (x2 > 0 ? h : -h);
 test:
- f2 = flin(S, x2, j);
+ f2 = flin(x2, j);
  if ((k < nits) && (f2 > f0)) {
     k++;
     if ((f0 < f1) && (*x1*x2 > 0.0))
@@ -220,337 +205,286 @@ test:
     x2 *= 0.5;
     goto test;
  }
- S->nl++;
+ nl++;
  if (f2 > fm) x2 = xm; else fm = f2;
- if (fabs(x2*(x2-*x1)) > S->small) {
+ if (fabs(x2*(x2-*x1)) > small) {
     *d2 = (x2*(f1-f0) - *x1*(fm-f0))/(*x1*x2*(*x1-x2));
  }
  else {
     if (k > 0) *d2 = 0;
  }
- if (*d2 <= S->small) *d2 = S->small;
- *x1 = x2; S->fx = fm;
- if (sf1 < S->fx) {
-    S->fx = sf1;
+ if (*d2 <= small) *d2 = small;
+ *x1 = x2; fx = fm;
+ if (sf1 < fx) {
+    fx = sf1;
     *x1 = sx1;
  }
  if (j != -1)
-    for (i=0; i<S->n; i++)
-        S->x[i] += (*x1)*S->v[i][j];
+    for (i=0; i<n; i++)
+        x[i] += (*x1)*v[i][j];
 }
 
 /* --------------------------------------------------------------------------- */
-void quadprax(PRAXSTATE* S)
+void quadprax(void)
 /* look for a minimum along the curve q0, q1, q2 */
 {
  int i;
  double l, s;
 
- s = S->fx; S->fx = S->qf1; S->qf1 = s; S->qd1 = 0.0;
- for (i=0; i<S->n; i++) {
-     s = S->x[i]; l = S->q1[i]; S->x[i] = l; S->q1[i] = s;
-     S->qd1 = S->qd1 + (s-l)*(s-l);
+ s = fx; fx = qf1; qf1 = s; qd1 = 0.0;
+ for (i=0; i<n; i++) {
+     s = x[i]; l = q1[i]; x[i] = l; q1[i] = s;
+     qd1 = qd1 + (s-l)*(s-l);
  }
- s = 0.0; S->qd1 = sqrt(S->qd1); l = S->qd1;
- if (S->qd0>0.0 && S->qd1>0.0 &&S->nl>=3*S->n*S->n) {
-    min1(S, -1, 2, &s, &l, S->qf1, 1);
-    S->qa = l*(l-S->qd1)/(S->qd0*(S->qd0+S->qd1));
-    S->qb = (l+S->qd0)*(S->qd1-l)/(S->qd0*S->qd1);
-    S->qc = l*(l+S->qd0)/(S->qd1*(S->qd0+S->qd1));
+ s = 0.0; qd1 = sqrt(qd1); l = qd1;
+ if (qd0>0.0 && qd1>0.0 &&nl>=3*n*n) {
+    min1(-1, 2, &s, &l, qf1, 1);
+    qa = l*(l-qd1)/(qd0*(qd0+qd1));
+    qb = (l+qd0)*(qd1-l)/(qd0*qd1);
+    qc = l*(l+qd0)/(qd1*(qd0+qd1));
  }
  else {
-    S->fx = S->qf1; S->qa = S->qb = 0.0; S->qc = 1.0;
+    fx = qf1; qa = qb = 0.0; qc = 1.0;
  }
- S->qd0 = S->qd1;
- for (i=0; i<S->n; i++) {
-     s = S->q0[i]; S->q0[i] = S->x[i];
-     S->x[i] = S->qa*s + S->qb*S->x[i] + S->qc*S->q1[i];
+ qd0 = qd1;
+ for (i=0; i<n; i++) {
+     s = q0[i]; q0[i] = x[i];
+     x[i] = qa*s + qb*x[i] + qc*q1[i];
  }
-}
-
-PRAXSTATE*	IntiPraxis(double(*_fun)(void*, double*), double *_x, int _n, int pr, int il, int ktm2, int LMaxFun)
-{
-	PRAXSTATE*	PState;
-
-	PState = AllocPraxState();
-
-	 /* init global extern variables and parameters */
-//	PState->macheps = EPSILON; 
-	PState->macheps = EPSILON * EPSILON * EPSILON * EPSILON; 
-	PState->h		= PState->step;
-	PState->t		= PState->tol;
-
-	PState->n		= _n;
-	PState->x		= _x; 
-	PState->fun		= _fun;
-
-	PState->prin	= pr;
-	PState->illc	= il;
-	PState->ktm		= ktm2;
-	PState->maxfun	= LMaxFun;
-
-	PState->small	= PState->macheps*PState->macheps;
-	PState->vsmall	= PState->small*PState->small;
-	PState->large	= 1.0/PState->small; 
-	PState->vlarge	= 1.0/PState->vsmall;
-
-	PState->m2		= sqrt(PState->macheps);
-	PState->m4		= sqrt(PState->m2);
-	PState->ldfac	= (PState->illc ? 0.1 : 0.01);
-
-	PState->nl		= PState->kt = 0;
-	PState->nf		= 1;
-
-	PState->t2		= PState->small + fabs(PState->t);
-	PState->t		= PState->t2; 
-	PState->dmin	= PState->small;
-
-	if (PState->h < 100.0*PState->t)
-		PState->h = 100.0*PState->t;
- 
-	PState->ldt = PState->h;
-
-	return PState;
 }
 
 /* --------------------------------------------------------------------------- */
-double		praxis(PRAXSTATE* PState)
+double praxis(double(*_fun)(double*), double *_x, int _n, int pr, int il, int ktm2, int LMaxFun)
 {
-	PState->fx		= (*PState->fun)(PState, PState->x);
-	PState->qf1		= PState->fx;
+ /* init global extern variables and parameters */
+ macheps = EPSILON; h = step; t = tol;
+ n = _n; x = _x; fun = _fun;
+ small = macheps*macheps; vsmall = small*small;
+ large = 1.0/small; vlarge = 1.0/vsmall;
+ m2 = sqrt(macheps); m4 = sqrt(m2);
+ ldfac = (illc ? 0.1 : 0.01);
+ nl = kt = 0; nf = 1; fx = (*fun)(x); qf1 = fx;
+ t2 = small + fabs(t); t = t2; dmin = small;
+ prin = pr;
+ illc = il;
+ ktm = ktm2;
 
+ maxfun = LMaxFun;
 
-	for (PState->i=0; PState->i<PState->n; PState->i++)
-		for (PState->j=0; PState->j<PState->n; PState->j++)
-			PState->v[PState->i][PState->j] = (PState->i == PState->j ? 1.0 : 0.0);
+ if (h < 100.0*t) h = 100.0*t;
+ ldt = h;
+ for (i=0; i<n; i++) for (j=0; j<n; j++)
+     v[i][j] = (i == j ? 1.0 : 0.0);
+ d[0] = 0.0; qd0 = 0.0;
+ for (i=0; i<n; i++) q1[i] = x[i];
+ if (prin > 1) {
+    printf("\n------------- enter function praxis -----------\n");
+    printf("... current parameter settings ...\n");
+    printf("... scaling ... %20.10e\n", scbd);
+    printf("...   tol   ... %20.10e\n", t);
+    printf("... maxstep ... %20.10e\n", h);
+    printf("...   illc  ... %20u\n", illc);
+    printf("...   ktm   ... %20u\n", ktm);
+    printf("... maxfun  ... %20u\n", maxfun);
+ }
+ if (prin) print();
 
-	PState->d[0] = 0.0;
-	PState->qd0 = 0.0;
- 
-	for (PState->i=0; PState->i<PState->n; PState->i++) 
-		PState->q1[PState->i] = PState->x[PState->i];
- 
-	if(PState->prin > 1)
-	{
-		printf("\n------------- enter function praxis -----------\n");
-		printf("... current parameter settings ...\n");
-		printf("... scaling ... %20.10e\n", PState->scbd);
-		printf("...   tol   ... %20.10e\n", PState->t);
-		printf("... maxstep ... %20.10e\n", PState->h);
-		printf("...   illc  ... %20u\n", PState->illc);
-		printf("...   ktm   ... %20u\n", PState->ktm);
-		printf("... maxfun  ... %20u\n", PState->maxfun);
-	}
+mloop:
+ sf = d[0];
+ s = d[0] = 0.0;
 
-	if (PState->prin) 
-		print(PState);
-
-	mloop:
-		PState->sf = PState->d[0];
-		PState->s = PState->d[0] = 0.0;
-
-	/* minimize along first direction */
-	min1(PState, 0, 2, &PState->d[0], &PState->s, PState->fx, 0);
- if (PState->s <= 0.0)
-    for (PState->i=0; PState->i < PState->n; PState->i++)
-        PState->v[PState->i][0] = -PState->v[PState->i][0];
- if ((PState->sf <= (0.9 * PState->d[0])) || ((0.9 * PState->sf) >= PState->d[0]))
-    for (PState->i=1; PState->i<PState->n; PState->i++)
-        PState->d[PState->i] = 0.0;
- for (PState->k=1; PState->k<PState->n; PState->k++) {
-     for (PState->i=0; PState->i<PState->n; PState->i++)
-         PState->y[PState->i] = PState->x[PState->i];
-     PState->sf = PState->fx;
-     PState->illc = PState->illc || (PState->kt > 0);
+ /* minimize along first direction */
+ min1(0, 2, &d[0], &s, fx, 0);
+ if (s <= 0.0)
+    for (i=0; i < n; i++)
+        v[i][0] = -v[i][0];
+ if ((sf <= (0.9 * d[0])) || ((0.9 * sf) >= d[0]))
+    for (i=1; i<n; i++)
+        d[i] = 0.0;
+ for (k=1; k<n; k++) {
+     for (i=0; i<n; i++)
+         y[i] = x[i];
+     sf = fx;
+     illc = illc || (kt > 0);
 next:
-     PState->kl = PState->k;
-     PState->df = 0.0;
-     if (PState->illc) {        /* random step to get off resolution valley */
-        for (PState->i=0; PState->i<PState->n; PState->i++)
-		{
-            PState->z[PState->i] = (0.1 * PState->ldt + PState->t2 * pow(10.0,(double)PState->kt)) * (RandDouble(PState->Rates->RS) - 0.5);
-            PState->s = PState->z[PState->i];
-            for (PState->j=0; PState->j < PState->n; PState->j++)
-                PState->x[PState->j] += PState->s * PState->v[PState->j][PState->i];
+     kl = k;
+     df = 0.0;
+     if (illc) {        /* random step to get off resolution valley */
+        for (i=0; i<n; i++) {
+            z[i] = (0.1 * ldt + t2 * pow(10.0,(double)kt)) * (rndom() - 0.5);
+            s = z[i];
+            for (j=0; j < n; j++)
+                x[j] += s * v[j][i];
         }
- 
-		/* Old  
-		fx = (*fun)(x);
-        */
-		PState->fx = PState->fun(PState, PState->x);
-		
-		PState->nf++;
+        fx = (*fun)(x);
+        nf++;
      }
      /* minimize along non-conjugate directions */
-     for (PState->k2=PState->k; PState->k2<PState->n; PState->k2++) {
-         PState->sl = PState->fx;
-         PState->s = 0.0;
-         min1(PState, PState->k2, 2, &PState->d[PState->k2], &PState->s, PState->fx, 0);
-         if (PState->illc) {
-            double szk = PState->s + PState->z[PState->k2];
-            PState->s = PState->d[PState->k2] * szk*szk;
+     for (k2=k; k2<n; k2++) {
+         sl = fx;
+         s = 0.0;
+         min1(k2, 2, &d[k2], &s, fx, 0);
+         if (illc) {
+            double szk = s + z[k2];
+            s = d[k2] * szk*szk;
          }
          else
-            PState->s = PState->sl - PState->fx;
-         if (PState->df < PState->s) {
-            PState->df = PState->s;
-            PState->kl = PState->k2;
+            s = sl - fx;
+         if (df < s) {
+            df = s;
+            kl = k2;
          }
      }
-     if (!PState->illc && (PState->df < fabs(100.0 * PState->macheps * PState->fx))) {
-        PState->illc = 1;
+     if (!illc && (df < fabs(100.0 * macheps * fx))) {
+        illc = 1;
         goto next;
      }
-     if ((PState->k == 1) && (PState->prin > 1))
-        vecprint("\n... New Direction ...",PState->d,PState->n);
+     if ((k == 1) && (prin > 1))
+        vecprint("\n... New Direction ...",d,n);
      /* minimize along conjugate directions */
-     for (PState->k2=0; PState->k2<=PState->k-1; PState->k2++) {
-         PState->s = 0.0;
-         min1(PState, PState->k2, 2, &PState->d[PState->k2], &PState->s, PState->fx, 0);
+     for (k2=0; k2<=k-1; k2++) {
+         s = 0.0;
+         min1(k2, 2, &d[k2], &s, fx, 0);
      }
-     PState->f1 = PState->fx;
-     PState->fx = PState->sf;
-     PState->lds = 0.0;
-     for (PState->i=0; PState->i<PState->n; PState->i++)
-	 {
-         PState->sl = PState->x[PState->i];
-         PState->x[PState->i] = PState->y[PState->i];
-         PState->y[PState->i] = PState->sl - PState->y[PState->i];
-         PState->sl = PState->y[PState->i];
-         PState->lds = PState->lds + PState->sl*PState->sl;
+     f1 = fx;
+     fx = sf;
+     lds = 0.0;
+     for (i=0; i<n; i++) {
+         sl = x[i];
+         x[i] = y[i];
+         y[i] = sl - y[i];
+         sl = y[i];
+         lds = lds + sl*sl;
      }
-     PState->lds = sqrt(PState->lds);
-     if (PState->lds > PState->small) {
-        for (PState->i=PState->kl-1; PState->i>=PState->k; PState->i--)
-		{
-            for (PState->j=0; PState->j < PState->n; PState->j++)
-                PState->v[PState->j][PState->i+1] = PState->v[PState->j][PState->i];
-                PState->d[PState->i+1] = PState->d[PState->i];
+     lds = sqrt(lds);
+     if (lds > small) {
+        for (i=kl-1; i>=k; i--) {
+            for (j=0; j < n; j++)
+                v[j][i+1] = v[j][i];
+                d[i+1] = d[i];
             }
-            PState->d[PState->k] = 0.0;
-            for (PState->i=0; PState->i < PState->n; PState->i++)
-                PState->v[PState->i][PState->k] = PState->y[PState->i] / PState->lds;
-            min1(PState, PState->k, 4, &PState->d[PState->k], &PState->lds, PState->f1, 1);
-            if (PState->lds <= 0.0) {
-               PState->lds = -PState->lds;
-               for (PState->i=0; PState->i<PState->n; PState->i++)
-                   PState->v[PState->i][PState->k] = -PState->v[PState->i][PState->k];
+            d[k] = 0.0;
+            for (i=0; i < n; i++)
+                v[i][k] = y[i] / lds;
+            min1(k, 4, &d[k], &lds, f1, 1);
+            if (lds <= 0.0) {
+               lds = -lds;
+               for (i=0; i<n; i++)
+                   v[i][k] = -v[i][k];
             }
      }
-     PState->ldt = PState->ldfac * PState->ldt;
-     if (PState->ldt < PState->lds)
-        PState->ldt = PState->lds;
-     if (PState->prin > 1)
-        print(PState);
-     PState->t2 = 0.0;
-     for (PState->i=0; PState->i<PState->n; PState->i++)
-         PState->t2 += PState->x[PState->i]*PState->x[PState->i];
-     PState->t2 = PState->m2 * sqrt(PState->t2) + PState->t;
-     if (PState->ldt > (0.5 * PState->t2))
-        PState->kt = 0;
+     ldt = ldfac * ldt;
+     if (ldt < lds)
+        ldt = lds;
+     if (prin > 1)
+        print();
+     t2 = 0.0;
+     for (i=0; i<n; i++)
+         t2 += x[i]*x[i];
+     t2 = m2 * sqrt(t2) + t;
+     if (ldt > (0.5 * t2))
+        kt = 0;
      else
-        PState->kt++;
-     if (PState->kt > PState->ktm)
+         kt++;
+     if (kt > ktm)
         goto fret;
  }
  /*  try quadratic extrapolation in case */
  /*  we are stuck in a curved valley */
- quadprax(PState);
- PState->dn = 0.0;
- for (PState->i=0; PState->i<PState->n; PState->i++)
- {
-     PState->d[PState->i] = 1.0 / sqrt(PState->d[PState->i]);
-     if (PState->dn < PState->d[PState->i])
-        PState->dn = PState->d[PState->i];
+ quadprax();
+ dn = 0.0;
+ for (i=0; i<n; i++) {
+     d[i] = 1.0 / sqrt(d[i]);
+     if (dn < d[i])
+        dn = d[i];
  }
- if (PState->prin > 2)
-    matprint("\n... New Matrix of Directions ...",PState->v,PState->n);
- for (PState->j=0; PState->j<PState->n; PState->j++) {
-     PState->s = PState->d[PState->j] / PState->dn;
-     for (PState->i=0; PState->i < PState->n; PState->i++)
-         PState->v[PState->i][PState->j] *= PState->s;
+ if (prin > 2)
+    matprint("\n... New Matrix of Directions ...",v,n);
+ for (j=0; j<n; j++) {
+     s = d[j] / dn;
+     for (i=0; i < n; i++)
+         v[i][j] *= s;
  }
- if (PState->scbd > 1.0) {       /* scale axis to reduce condition number */
-    PState->s = PState->vlarge;
-    for (PState->i=0; PState->i<PState->n; PState->i++) {
-        PState->sl = 0.0;
-        for (PState->j=0; PState->j < PState->n; PState->j++)
-            PState->sl += PState->v[PState->i][PState->j]*PState->v[PState->i][PState->j];
-        PState->z[PState->i] = sqrt(PState->sl);
-        if (PState->z[PState->i] < PState->m4)
-           PState->z[PState->i] = PState->m4;
-        if (PState->s > PState->z[PState->i])
-           PState->s = PState->z[PState->i];
+ if (scbd > 1.0) {       /* scale axis to reduce condition number */
+    s = vlarge;
+    for (i=0; i<n; i++) {
+        sl = 0.0;
+        for (j=0; j < n; j++)
+            sl += v[i][j]*v[i][j];
+        z[i] = sqrt(sl);
+        if (z[i] < m4)
+           z[i] = m4;
+        if (s > z[i])
+           s = z[i];
     }
-    for (PState->i=0; PState->i<PState->n; PState->i++) {
-        PState->sl = PState->s / PState->z[PState->i];
-        PState->z[PState->i] = 1.0 / PState->sl;
-        if (PState->z[PState->i] > PState->scbd) {
-           PState->sl = 1.0 / PState->scbd;
-           PState->z[PState->i] = PState->scbd;
+    for (i=0; i<n; i++) {
+        sl = s / z[i];
+        z[i] = 1.0 / sl;
+        if (z[i] > scbd) {
+           sl = 1.0 / scbd;
+           z[i] = scbd;
         }
     }
  }
- for (PState->i=1; PState->i<PState->n; PState->i++)
-     for (PState->j=0; PState->j<=PState->i-1; PState->j++) {
-         PState->s = PState->v[PState->i][PState->j];
-         PState->v[PState->i][PState->j] = PState->v[PState->j][PState->i];
-         PState->v[PState->j][PState->i] = PState->s;
+ for (i=1; i<n; i++)
+     for (j=0; j<=i-1; j++) {
+         s = v[i][j];
+         v[i][j] = v[j][i];
+         v[j][i] = s;
      }
- minfit(PState->n, PState->macheps, PState->vsmall, PState->v, PState->d);
- if (PState->scbd > 1.0) {
-    for (PState->i=0; PState->i<PState->n; PState->i++) {
-        PState->s = PState->z[PState->i];
-        for (PState->j=0; PState->j<PState->n; PState->j++)
-            PState->v[PState->i][PState->j] *= PState->s;
+ minfit(n, macheps, vsmall, v, d);
+ if (scbd > 1.0) {
+    for (i=0; i<n; i++) {
+        s = z[i];
+        for (j=0; j<n; j++)
+            v[i][j] *= s;
     }
-    for (PState->i=0; PState->i<PState->n; PState->i++) {
-        PState->s = 0.0;
-        for (PState->j=0; PState->j<PState->n; PState->j++)
-            PState->s += PState->v[PState->j][PState->i]*PState->v[PState->j][PState->i];
-        PState->s = sqrt(PState->s);
-        PState->d[PState->i] *= PState->s;
-        PState->s = 1.0 / PState->s;
-        for (PState->j=0; PState->j<PState->n; PState->j++)
-            PState->v[PState->j][PState->i] *= PState->s;
+    for (i=0; i<n; i++) {
+        s = 0.0;
+        for (j=0; j<n; j++)
+            s += v[j][i]*v[j][i];
+        s = sqrt(s);
+        d[i] *= s;
+        s = 1.0 / s;
+        for (j=0; j<n; j++)
+            v[j][i] *= s;
     }
  }
- for (PState->i=0; PState->i<PState->n; PState->i++) {
-     if ((PState->dn * PState->d[PState->i]) > PState->large)
-        PState->d[PState->i] = PState->vsmall;
-     else if ((PState->dn * PState->d[PState->i]) < PState->small)
-        PState->d[PState->i] = PState->vlarge;
+ for (i=0; i<n; i++) {
+     if ((dn * d[i]) > large)
+        d[i] = vsmall;
+     else if ((dn * d[i]) < small)
+        d[i] = vlarge;
      else
-        PState->d[PState->i] = pow(PState->dn * PState->d[PState->i],-2.0);
+        d[i] = pow(dn * d[i],-2.0);
  }
- sort(PState);               /* the new eigenvalues and eigenvectors */
- PState->dmin = PState->d[PState->n-1];
- if (PState->dmin < PState->small)
-    PState->dmin = PState->small;
- PState->illc = (PState->m2 * PState->d[0]) > PState->dmin;
- if ((PState->prin > 2) && (PState->scbd > 1.0))
-    vecprint("\n... Scale Factors ...",PState->z,PState->n);
- if (PState->prin > 2)
-    vecprint("\n... Eigenvalues of A ...",PState->d,PState->n);
- if (PState->prin > 2)
-    matprint("\n... Eigenvectors of A ...",PState->v,PState->n);
- if ((PState->maxfun > 0) && (PState->nl > PState->maxfun)) {
-    if (PState->prin)
+ sort();               /* the new eigenvalues and eigenvectors */
+ dmin = d[n-1];
+ if (dmin < small)
+    dmin = small;
+ illc = (m2 * d[0]) > dmin;
+ if ((prin > 2) && (scbd > 1.0))
+    vecprint("\n... Scale Factors ...",z,n);
+ if (prin > 2)
+    vecprint("\n... Eigenvalues of A ...",d,n);
+ if (prin > 2)
+    matprint("\n... Eigenvectors of A ...",v,n);
+ if ((maxfun > 0) && (nl > maxfun)) {
+    if (prin)
        printf("\n... maximum number of function calls reached ...\n");
     goto fret;
  }
  goto mloop; 	 /* back to main loop */
 
 fret:
- if (PState->prin > 0) {
-    vecprint("\n... Final solution is ...", PState->x, PState->n);
-    printf("\n... ChiSq reduced to %20.10e ...\n", PState->fx);
-    printf("... after %20u function calls.\n", PState->nf);
+ if (prin > 0) {
+    vecprint("\n... Final solution is ...", x, n);
+    printf("\n... ChiSq reduced to %20.10e ...\n", fx);
+    printf("... after %20u function calls.\n", nf);
  }
 
-	return(PState->fx);
+ return(fx);
 }
 
 /* --------------------------------------------------------------------------- */
-
 

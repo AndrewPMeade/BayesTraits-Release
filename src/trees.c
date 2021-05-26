@@ -1,296 +1,137 @@
-/*
-*  BayesTriats 3.0
-*
-*  copyright 2017
-*
-*  Andrew Meade
-*  School of Biological Sciences
-*  University of Reading
-*  Reading
-*  Berkshire
-*  RG6 6BX
-*
-* BayesTriats is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-* 
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>
-*
-*/
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#include "TypeDef.h"
-#include "Trees.h"
-#include "GenLib.h"
-#include "Data.h"
-#include "Likelihood.h"
-#include "Matrix.h"
-#include "LinAlg.h"
-#include "Continuous.h"
-#include "TreePasser.h"
-#include "BigLh.h"
-#include "Part.h"
-#include "RandLib.h"
-#include "QuadDouble.h"
-#include "Contrasts.h"
-#include "FatTail.h"
+#include "typedef.h"
+#include "trees.h"
+#include "genlib.h"
+#include "data.h"
+#include "likelihood.h"
+#include "matrix.h"
+#include "linalg.h"
+#include "continuous.h"
+#include "treenode.h"
+#include "treepasser.h"
 
-#ifdef BTOCL
-#include "btocl_discrete.h"
-#endif
-
+void	SetNodeIDs(NODE N, int *No);
 void	WriteTreeToFile(NODE n, NODE Root, FILE *F);
 
-void	GetNoNodes(NODE N, int *No)
+void	BlankNode(NODE N)
 {
-	int Index;
-
-	(*No)++;
-	for(Index=0;Index<N->NoNodes;Index++)
-		GetNoNodes(N->NodeList[Index], No);
+		N->ID		=	-1;
+		N->Ans		=	NULL;
+		N->Left		=	NULL;
+		N->Right	=	NULL;
+		N->Tip		=	FALSE;
+		N->TipID	=	-1;
+		N->Length	=	-1;
+		N->Taxa		=	NULL;
+		N->Partial	=	NULL;
+		N->FossilState=	-1;
+		N->Part		=	NULL;
+		N->PSize	=	-1;
+		N->GammaPartial = NULL;
 }
 
-void	SetNodes(NODE *List, NODE N, int *Pos)
-{
-	int Index;
 
-	List[*Pos] = N;
-	(*Pos)++;
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		SetNodes(List, N->NodeList[Index], Pos);
-}
-
-void	SetNodeList(TREE *Tree)
-{
-	if(Tree->NodeList != NULL)
-		free(Tree->NodeList);
-
-	Tree->NoNodes = 0;
-	GetNoNodes(Tree->Root, &Tree->NoNodes);
-	
-	Tree->NodeList = (NODE*)SMalloc(sizeof(NODE) * Tree->NoNodes);
-
-	Tree->NoNodes = 0;
-	SetNodes(Tree->NodeList, Tree->Root, &Tree->NoNodes);
-}
-
-NODE	AllocNode(void)
-{
-	NODE	Ret;
-
-	Ret = (NODE)SMalloc(sizeof(struct INODE));
-
-	Ret->ID				=	-1;
-	Ret->Ans			=	NULL;
-	Ret->Tip			=	FALSE;
-	Ret->TipID			=	-1;
-	Ret->Length			=	-1;
-	Ret->DistToRoot		=	-1;
-	Ret->ScaleFactor	=	1.0;
-	Ret->Taxa			=	NULL;
-	Ret->Partial		=	NULL;
-	Ret->FossilMask		=	NULL;
-	Ret->Part			=	NULL;
-	Ret->FatTailNode	=	NULL;
-	Ret->GammaPartial	=	NULL;
-
-	Ret->NodeList		=	NULL;
-	Ret->NoNodes		=	-1;
-
-	Ret->VPosX			=	-1;
-	Ret->VPosY			=	-1;
-
-	Ret->PatternNo		=	-1;
-
-	Ret->LandscapeBeta	=	0.0;
-
-	Ret->RNG			=	NULL;
-	
-	return Ret;
-}
-
-TAXA*	GetTaxaFromID(int ID, TAXA **Taxa, int NoTaxa)
+TAXA*	GetTaxaFromID(int ID, TAXA *Taxa, int NoOfTaxa)
 {
 	int	Index;
 
-	for(Index=0;Index<NoTaxa;Index++)
+	for(Index=0;Index<NoOfTaxa;Index++)
 	{
-		if(Taxa[Index]->No == ID)
-			return Taxa[Index];
+		if(Taxa[Index].No == ID)
+			return &Taxa[Index];
 	}
 	return NULL;
 }
 
-TAXA*	GetTaxaFromName(char *Name, TAXA **Taxa, int NoTaxa)
+TAXA*	GetTaxaFromName(char *Name, TAXA *Taxa, int NoOfTaxa)
 {
 	int	Index;
 
-	for(Index=0;Index<NoTaxa;Index++)
+	for(Index=0;Index<NoOfTaxa;Index++)
 	{
-		if(strcmp(Taxa[Index]->Name, Name) == 0)
-			return Taxa[Index];
+		if(strcmp(Taxa[Index].Name, Name) == 0)
+			return &Taxa[Index];
 	}
 	return NULL;
 }
 
 
-void	LinkTipsToTaxa(NODE N, TAXA **Taxa, int NoTaxa)
+void	LinkTipsToTaxa(NODE N, TAXA *Taxa, int NoOfTaxa)
 {
-	int NIndex;
-
 	if(N->Tip == TRUE)
 	{
-		N->Taxa = GetTaxaFromID(N->TipID, Taxa, NoTaxa);
-
-		if(N->Taxa == NULL)
-		{
-			printf("Taxa ID %d found in tree definition cannot be linked to a taxa.\n", N->TipID);
-			exit(1);
-		}
+		N->Taxa = GetTaxaFromID(N->TipID, Taxa, NoOfTaxa);
 	}
 	else
 	{
-		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-			LinkTipsToTaxa(N->NodeList[NIndex], Taxa, NoTaxa);
+		LinkTipsToTaxa(N->Left, Taxa, NoOfTaxa);
+		LinkTipsToTaxa(N->Right, Taxa, NoOfTaxa);
 	}
 
 }
 
-void	FreeNode(NODE N)
-{
-	if(N->Partial != NULL)
-		free(N->Partial);
-
-	if(N->FatTailNode != NULL)
-		free(N->FatTailNode);
-
-	if(N->GammaPartial != NULL)
-		free(N->GammaPartial);
-
-	if(N->NodeList != NULL)
-		free(N->NodeList);
-
-	if(N->FossilMask != NULL)
-		free(N->FossilMask);
-
-	if(N->RNG != NULL)
-		gsl_rng_free(N->RNG);
-
-	free(N);
-}
-
-void	FreeTree(TREE* Tree, int NoSites, int NoTaxa)
+void	FreeTree(TREE* Tree, int NoOfNodes, int NoOfSites, int NoOfTaxa)
 {
 	int		NIndex;
-	NODE	N;
+	int		DIndex;
+	NODE	N=NULL;
+	int		TIndex=0;
 
-	N = Tree->Root;
-	if(N->Partial != NULL)
-		free(N->Partial[0]);
+	for(NIndex=0;NIndex<NoOfNodes;NIndex++)
+	{
+		N = &Tree->NodeList[NIndex];
 
-	if(N->GammaPartial != NULL)
-		free(N->GammaPartial[0]);
-	
-	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
-		FreeNode(Tree->NodeList[NIndex]);
+		if(N->Partial != NULL)
+		{
+			for(DIndex=0;DIndex<NoOfSites;DIndex++)
+			{
+				free(N->Partial[DIndex]);
+				if(N->GammaPartial != NULL)
+					free(N->GammaPartial[DIndex]);
+			}
+		}
+
+		free(N->Partial);
+
+		if(N->GammaPartial != NULL)
+			free(N->GammaPartial);
+		TIndex++;
+	}
 
 	free(Tree->NodeList);
 
-	if(Tree->FatTailTree != NULL)
-		FreeFatTailTree(Tree->FatTailTree);
-
 	if(Tree->ConVars!= NULL)
-		FreeConVar(Tree->ConVars, NoTaxa);
-
-	for(NIndex=0;NIndex<Tree->NoParallelGroups;NIndex++)
-		free(Tree->ParallelNodes[NIndex]);
-	free(Tree->ParallelNodes);
-	free(Tree->ParallelGroupSize);
-
-	if(Tree->PNodes != NULL)
-		free(Tree->PNodes);
-
-	if(Tree->InternalNodesList != NULL)
-		free(Tree->InternalNodesList);
-
-	free(Tree);
+		FreeConVar(Tree->ConVars, NoOfTaxa);
 }
 
 void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 {
 	int	Index;
 
-	FreeTreeParts(Trees);
-
-	if(Opt->ModelType == MT_CONTRAST)
-		FreeAllContrast(Opt, Trees);
-
-	FreeTreeBigLh(Opt, Trees);
-
-#ifdef QUAD_DOUBLE
-	if(Opt->ModelType == MT_DISCRETE)
-		FreeQuadLh(Opt, Trees);
-#endif
-
-#ifdef BTOCL
-	// Do this before individual trees are deallocated
-	if(Opt->ModelType == MT_DISCRETE) {
-		// not used, but keeping code
-		//btocl_FreeLhInfo(Trees);
-	}
-#endif
-
-	FreeData(Opt);
+	FreeData(Trees, Opt->Model);
 	free(Trees->Taxa);
 
-	for(Index=0;Index<Trees->NoTrees;Index++)
-		FreeTree(Trees->Tree[Index], Trees->NoSites, Trees->NoTaxa);
-	free(Trees->Tree);
+	FreePartitions(Trees);
 
-	if(Trees->PList != NULL)
-	{
-		FreeMultiMatrixLinMem(Trees->PList, Trees->MaxNodes);
-		free(Trees->PList);
-	}
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
+		FreeTree(&Trees->Tree[Index], Trees->NoOfNodes, Trees->NoOfSites, Trees->NoOfTaxa);
 
+	if(Trees->PLeft != NULL)
+		FreeMatrix(Trees->PLeft);
+
+	if(Trees->PRight != NULL)
+		FreeMatrix(Trees->PRight);
+	
 	if(Trees->InvInfo != NULL)
-	{
-		for(Index=0;Index<Opt->NoPatterns + 1; Index++)
-			FreeInvInfo(Trees->InvInfo[Index]);
-		free(Trees->InvInfo);
-	}
+		FreeInvInfo(Trees->InvInfo);
 
-	if(Trees->RemovedTaxa != NULL)
-	{
-		for(Index=0;Index<Trees->NoOfRemovedTaxa;Index++)
-			free(Trees->RemovedTaxa[Index]);
-		free(Trees->RemovedTaxa);
-	}
-
+	free(Trees->Tree);
 	if(Trees->SymbolList != NULL)
 		free(Trees->SymbolList);
-
-	if(Trees->TempConVars != NULL)
-		FreeTempConVars(Trees->TempConVars);
-
-	if(Trees->PMean != NULL)
-		free(Trees->PMean);
-
-	if(Trees->PSD != NULL)
-		free(Trees->PSD);
-
 	free(Trees);
 }
 
@@ -298,7 +139,7 @@ void	SetTipHit(NTREES *Trees, NNODE N, char *THits)
 {
 	int	Index;
 
-	for(Index=0;Index<Trees->NoTaxa;Index++)
+	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 		if(&Trees->Taxa[Index] == N->Taxa)
 		{
 			THits[Index] = TRUE;
@@ -316,15 +157,15 @@ void	CheckTaxaPresent(NTREES *Trees)
 	NTREE	*Tree;
 	int		Err;
 
-	THits = (char*)malloc(sizeof(char) * Trees->NoTaxa);
+	THits = (char*)malloc(sizeof(char) * Trees->NoOfTaxa);
 	if(THits== NULL)
 		MallocErr();
 
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
 		Tree = &Trees->Trees[TIndex];
 
-		for(Index=0;Index<Trees->NoTaxa;Index++)
+		for(Index=0;Index<Trees->NoOfTaxa;Index++)
 			THits[Index] = FALSE;
 
 		for(Index=0;Index<Tree->NoOfNodes;Index++)
@@ -335,13 +176,13 @@ void	CheckTaxaPresent(NTREES *Trees)
 
 		Err = FALSE;
 
-		for(Index=0;Index<Trees->NoTaxa;Index++)
+		for(Index=0;Index<Trees->NoOfTaxa;Index++)
 			if(THits[Index] == FALSE)
 				Err = TRUE;
 
 		if(Err == TRUE)
 		{
-			for(Index=0;Index<Trees->NoTaxa;Index++)
+			for(Index=0;Index<Trees->NoOfTaxa;Index++)
 				if(THits[Index] == FALSE)
 					printf("Error: Taxa %s is not present in tree %d\n",  Trees->Taxa[Index].Name, TIndex+1);
 		
@@ -357,13 +198,13 @@ void	CheckBaseTirs(NTREES *Trees)
 	int		TIndex;
 	NTREE	*Tree;
 
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
 		Tree = &Trees->Trees[TIndex];
 
 		if(Tree->Root->NoOfNodes != 2)
 		{
-			printf("Error: Tree %d has a %d-way basal polytomy, only rooted binary trees are allowed.\n", TIndex+1, Tree->Root->NoOfNodes);                                
+			printf("Error: Tree %d has a %d-way bases polytomey, only rooted binary trees are allowed.\n", TIndex+1, Tree->Root->NoOfNodes);
 			exit(0);
 		}
 	}
@@ -377,7 +218,7 @@ void	CheckPoly(NTREES *Trees)
 	NTREE	*Tree;
 	NNODE	Node;
 
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
 		Tree = &Trees->Trees[TIndex];
 		for(NIndex=0;NIndex<Tree->NoOfNodes;NIndex++)
@@ -398,48 +239,6 @@ void	CheckPoly(NTREES *Trees)
 	}
 }
 
-void	PrintTaxaFromNo(int No, TREES *Trees, char Sep)
-{
-	int Index;
-
-	for(Index=0;Index<Trees->NoTaxa;Index++)
-	{
-		if(Trees->Taxa[Index]->No == No)
-			printf("%s%c", Trees->Taxa[Index]->Name, Sep);
-	}
-}
-
-void	PrintTaxaNNode(NNODE Node, char Sep)
-{
-	int Index;
-
-	if(Node->Tip == TRUE)
-	{
-		printf("%s%c", Node->Taxa->Name, Sep);
-		return;
-	}
-
-	for(Index=0;Index<Node->NoOfNodes;Index++)
-		PrintTaxaNNode(Node->NodeList[Index], Sep);
-}
-
-void	DumpTreeFile(NTREES *Trees, NTREE *Tree)
-{
-	int Index;
-	NNODE N;
-
-	for(Index=0;Index<Tree->NoOfNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-
-		printf("%d\t%d\t%f\t", Index, N->NoOfNodes, N->Length);
-		PrintTaxaNNode(N, ' ');
-		printf("\n");
-	}
-
-	exit(0);
-}
-
 void	CheckPresentBL(NTREES *Trees)
 {
 	int		TIndex;
@@ -447,7 +246,7 @@ void	CheckPresentBL(NTREES *Trees)
 	NNODE	N;
 	NTREE	*Tree;
 
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
 		Tree = &Trees->Trees[TIndex];
 
@@ -457,12 +256,9 @@ void	CheckPresentBL(NTREES *Trees)
 
 			if((N->Length == -1) && (N != Tree->Root))
 			{
-				DumpTreeFile(Trees, Tree);
 				printf("Error: Node in tree %d does not have a valid branch length.\n", TIndex++);
 				printf("Tree:\t");
 				PrintNTree(stdout, N);
-				printf("\nTaxa:\t");
-				PrintTaxaNNode(N, ' ');
 				printf("\n");
 				exit(0);
 			}
@@ -476,20 +272,20 @@ void	ValidateTrees(NTREES *Trees)
 	CheckTaxaPresent(Trees);
 
 	/* No basis trification */
-/*	CheckBaseTirs(Trees); */
+	CheckBaseTirs(Trees);
 	
 	/* Only binary trees */
-/*	CheckPoly(Trees); */
+	CheckPoly(Trees);
 
 	/* More than one tree */
-	if(Trees->NoTrees < 1)
+	if(Trees->NoOfTrees < 1)
 	{
 		printf("Error: BayesTraits requires one or more valid trees\n");
 		exit(0);
 	}
 
 	/* More than one Taxa */
-	if(Trees->NoTaxa < 1)
+	if(Trees->NoOfTaxa < 1)
 	{
 		printf("Error: BayesTraits requires one or more valid taxa\n");
 		exit(0);
@@ -516,32 +312,26 @@ int		GetArrPos(NNODE *Start, NNODE Pos)
 
 void	MakeNewTree(TREE *Tree, NTREE *PTree)
 {
-	int		Index, NIndex;
+	int		Index;
 	NODE	Node;
 	NNODE	NNode;
 	int		Pos;
 
-	Tree->NoNodes = PTree->NoOfNodes;
-
-	Tree->NodeList = (NODE*)SMalloc(sizeof(NODE) * Tree->NoNodes);
+	Tree->NodeList = (NODE)malloc(sizeof(struct INODE) * PTree->NoOfNodes);
 
 	for(Index=0;Index<PTree->NoOfNodes;Index++)
-		Tree->NodeList[Index] = AllocNode();
+		BlankNode(&Tree->NodeList[Index]);
 
 	for(Index=0;Index<PTree->NoOfNodes;Index++)
 	{
-		Node = Tree->NodeList[Index];
+		Node = &Tree->NodeList[Index];
 		NNode= PTree->NodeList[Index];
 
-		Node->Length		= NNode->Length;
-		Node->UserLength	= NNode->Length;
-		Node->Tip			= NNode->Tip;
-		Node->ConData		= NULL;
-		Node->FatTailNode	= NULL;
-	
+		Node->Length	= NNode->Length;
+		Node->Tip		= NNode->Tip;
 
 		Node->Part = NULL;
-	//	Node->PSize= 0;
+		Node->PSize= 0;
 
 		if(Node->Tip == TRUE)
 		{
@@ -549,16 +339,11 @@ void	MakeNewTree(TREE *Tree, NTREE *PTree)
 		}
 		else
 		{
-			Node->NodeList = (NODE*)malloc(sizeof(NODE) * NNode->NoOfNodes);
-			if(Node->NodeList == NULL)
-				MallocErr();
-			Node->NoNodes = NNode->NoOfNodes;
+			Pos = GetArrPos(&PTree->NodeList[0], NNode->Left);
+			Node->Left = &Tree->NodeList[Pos];
 
-			for(NIndex=0;NIndex<Node->NoNodes;NIndex++)
-			{
-				Pos = GetArrPos(&PTree->NodeList[0], NNode->NodeList[NIndex]);
-				Node->NodeList[NIndex] = Tree->NodeList[Pos];
-			} 
+			Pos = GetArrPos(&PTree->NodeList[0], NNode->Right);
+			Node->Right = &Tree->NodeList[Pos];
 		}
 
 		if(NNode->Ans == NULL)
@@ -566,205 +351,63 @@ void	MakeNewTree(TREE *Tree, NTREE *PTree)
 		else
 		{
 			Pos = GetArrPos(&PTree->NodeList[0], NNode->Ans);
-			Node->Ans = Tree->NodeList[Pos];
+			Node->Ans = &Tree->NodeList[Pos];
 		}
 	}
 
 	Pos = GetArrPos(&PTree->NodeList[0], PTree->Root);
-	Tree->Root = Tree->NodeList[Pos];
+	Tree->Root = &Tree->NodeList[Pos];
 }
-
-int		FindMaxPoly(TREES *Trees)
-{
-	int TIndex,NIndex;
-	int	Ret;
-	TREE *Tree;
-	NODE Node;
-
-	Ret = 0;
-
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-	{
-		Tree = Trees->Tree[TIndex];
-		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
-		{
-			Node = Tree->NodeList[NIndex];
-			if(Node->NoNodes > Ret)
-				Ret = Node->NoNodes;
-		}
-	}
-
-	return Ret;
-}
-
- int	FindMaxNodes(TREES *Trees)
- {
-	int TIndex;
-	int	Ret;
-	TREE *Tree;
-	
-	Ret = 0;
-
-
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-	{
-		Tree = Trees->Tree[TIndex];
-		if(Tree->NoNodes > Ret)
-			Ret = Tree->NoNodes;
-	}
-
-	return Ret;
- }
-
-
- TAXA*	InitTaxa(int No, char *Name)
- {
-	TAXA *Ret;
-
-	Ret = (TAXA*)malloc(sizeof(TAXA));
-	if(Ret == NULL)
-		MallocErr();
-
-	Ret->No				=	No;
-	Ret->Name			=	StrMake(Name);
-
-	Ret->DesDataChar	=	NULL;
-	Ret->ConData		=	NULL;
-	Ret->Exclude		=	FALSE;
-
-	Ret->EstData		=	FALSE;
-	Ret->EstDepData		=	FALSE;
-	Ret->EstDataP		=	NULL;
-	Ret->RealData		=	NULL;
-	
-	 return Ret;
- }
-
-
- double	CaclAveBL(TREE *Tree)
- {
-	 double Ret;
-	 int Index;
-
-	 Ret = 0.0;
-	 for(Index=1;Index<Tree->NoNodes;Index++)
-		 Ret += Tree->NodeList[Index]->Length;
-	 
-	 Ret = Ret / (Tree->NoNodes - 1);
-	 return Ret;
- }
-
- TREE*	InitTree(TREES *Trees, NTREES *PTrees, int TNo)
- {
-	TREE	*Ret;
-	
-	Ret = (TREE*)SMalloc(sizeof(TREE));
-
-	Ret->ConVars	= NULL;
-	Ret->NodeList	= NULL;
-	Ret->Root		= NULL;
-
-	Ret->ParallelNodes = NULL;
-	Ret->ParallelGroupSize = NULL;
-	Ret->NoParallelGroups = -1;
-
-	Ret->NoPNodes	= -1;
-	Ret->PNodes		= NULL;
-
-	Ret->FatTailTree= NULL;
-
-	Ret->NoInternalNodes = -1;
-	Ret->InternalNodesList = NULL;
-
-	Ret->NoContrast	= -1;
-	
-	MakeNewTree(Ret, &PTrees->Trees[TNo]);
-
-	LinkTipsToTaxa(Ret->Root, Trees->Taxa, Trees->NoTaxa);
-		
-	SetNodeIDs(Ret);
-
-	Ret->AveBL = CaclAveBL(Ret);
-
-//	printf("AveBL\t%f\n", Ret->AveBL);
-
-	return Ret;
- }
-
-
- void	ReSetTreeTaxaID(TREE *Tree)
- {
-	int Index;
-	NODE N;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-		if(N->Tip == TRUE)
-			N->TipID = N->Taxa->No;
-	}
- }
-
- void	ReSetTaxaID(TREES *Trees)
- {
-	int Index;
-	
-	for(Index=0;Index<Trees->NoTaxa;Index++)
-		Trees->Taxa[Index]->No = Index;
-	
-	for(Index=0;Index<Trees->NoTrees;Index++)
-		ReSetTreeTaxaID(Trees->Tree[Index]);
- }
 
 void	InitialTrees(TREES *Trees, NTREES *PTrees)
 {
 	int		Index;
+	TAXA	*Taxa;
+	TREE	*Tree;
+	int		NodeID;
 
-	Trees->NoTaxa		= PTrees->NoTaxa;
-	Trees->NoTrees	= PTrees->NoTrees;
-	Trees->NOSPerSite	= FALSE;
-	
-	Trees->Taxa = (TAXA**)SMalloc(sizeof(TAXA*) * Trees->NoTaxa);
-	
-	for(Index=0;Index<Trees->NoTaxa;Index++)
-		Trees->Taxa[Index] = InitTaxa(PTrees->Taxa[Index].No, PTrees->Taxa[Index].Name);
+	Trees->NoOfTaxa = PTrees->NoOfTaxa;
+	Trees->NoOfTrees = PTrees->NoOfTrees;
+	Trees->NoOfNodes= PTrees->Trees[0].NoOfNodes;
 
-	Trees->Tree = (TREE**)SMalloc(sizeof(TREE*) * PTrees->NoTrees);
+	Trees->Taxa = (TAXA*) malloc(sizeof(TAXA) * Trees->NoOfTaxa);
+	if(Trees->Taxa == NULL)
+		MallocErr();
 
-	for(Index=0;Index<Trees->NoTrees;Index++)
-		Trees->Tree[Index] = InitTree(Trees, PTrees, Index);
-	
-	Trees->MaxNodes = FindMaxNodes(Trees);
-
-	ReSetTaxaID(Trees);
-
-	SetParts(Trees);
-}
-
-void	TestTreeLoad(TREES *Trees)
-{
-	int Index;
-	TAXA *Taxa;
-	TREE *T;
-	NODE N;
-
-	for(Index=0;Index<Trees->NoTaxa;Index++)
+	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 	{
-		Taxa = Trees->Taxa[Index];
-		printf("%d\t%s\n", Taxa->No, Taxa->Name);
+		Taxa = &Trees->Taxa[Index];
+
+		Taxa->Name			= StrMake(PTrees->Taxa[Index].Name);
+		Taxa->No			= PTrees->Taxa[Index].No;
+		Taxa->DesDataChar	= NULL;
+		Taxa->ConData		= NULL;
+		Taxa->EstData		= FALSE;
+		Taxa->EstDataP		= NULL;
+		Taxa->Exclude		= FALSE;
 	}
 
-	T = Trees->Tree[0];
-	for(Index=0;Index<T->NoNodes;Index++)
+	Trees->Tree = (TREE*)malloc(sizeof(TREE) * PTrees->NoOfTrees);
+	if(Trees->Tree == NULL)
+		MallocErr();
+
+	for(Index=0;Index<Trees->NoOfTrees;Index++)
 	{
-		N = T->NodeList[Index];
-		if(N->Tip == TRUE)
-		{
-			printf("%d\t%d\t%s\n", N->TipID, N->Taxa->No, N->Taxa->Name);
-		}
+		Tree = &Trees->Tree[Index];
+
+		Tree->ConVars	= NULL;
+		Tree->NodeList	= NULL;
+		Tree->Root		= NULL;
+
+		MakeNewTree(Tree, &PTrees->Trees[Index]);
+
+		LinkTipsToTaxa(Trees->Tree[Index].Root, Trees->Taxa, Trees->NoOfTaxa);
+
+		NodeID = 0;
+		SetNodeIDs(Trees->Tree[Index].Root, &NodeID);
 	}
 
-	exit(0);
+	SetPartitions(Trees);
 }
 
 TREES*	LoadTrees(char* FileName)
@@ -773,13 +416,12 @@ TREES*	LoadTrees(char* FileName)
 	NTREES*		PTrees;
 	char		*Err;
 
-	Ret = (TREES*)SMalloc(sizeof(TREES));
+	Ret = (TREES*)malloc(sizeof(TREES));
+	if(Ret==NULL)
+		MallocErr();
 
-
-	Ret->MaxNodes			= -1;
-	Ret->PMem				= NULL;
-	Ret->PList				= NULL;
-
+	Ret->PLeft				= NULL;
+	Ret->PRight				= NULL;
 	Ret->Taxa				= NULL;
 	Ret->Tree				= NULL;
 	Ret->InvInfo			= NULL;
@@ -788,13 +430,6 @@ TREES*	LoadTrees(char* FileName)
 	Ret->NoOfRemovedTaxa	= 0;
 	Ret->ValidCData			= TRUE;
 	Ret->ValidDData			= TRUE;
-
-	Ret->PMean				= NULL;
-	Ret->PSD				= NULL;
-	Ret->TempConVars		= NULL;
-	
-	Ret->PartList			= NULL;
-	Ret->NoParts			= 0;
 
 	PTrees = LoadNTrees(FileName, &Err);
 
@@ -810,25 +445,19 @@ TREES*	LoadTrees(char* FileName)
 	InitialTrees(Ret, PTrees);
 
 	FreeNTrees(PTrees);
-	
-
-	Ret->JStop	=	FALSE;
-
-//	TestTreeLoad(Ret);
-
 
 	return Ret;
 }
 
-void	PrintTreesInfo(FILE*	Str, TREES *Trees, DATATYPE DataType)
+void	PrintTrees(FILE*	Str, TREES *Trees, DATATYPE DataType)
 {
 	fprintf(Str, "Tree Information\n");
-	fprintf(Str, "     Trees:                      %d\n", Trees->NoTrees);
-	fprintf(Str, "     Taxa:                       %d\n", Trees->NoTaxa);
-	fprintf(Str, "     Sites:                      %d\n", Trees->NoSites);
+	fprintf(Str, "     Trees:                      %d\n", Trees->NoOfTrees);
+	fprintf(Str, "     Taxa:                       %d\n", Trees->NoOfTaxa);
+	fprintf(Str, "     Sites:                      %d\n", Trees->NoOfSites);
 
 	if(DataType == DISCRETE)
-		fprintf(Str, "     States:                     %d\n", Trees->NoStates);
+		fprintf(Str, "     States:                     %d\n", Trees->NoOfStates);
 }
 
 int		SymbolToPos(char Symbol, char *List)
@@ -846,9 +475,9 @@ int		SymbolToPos(char Symbol, char *List)
 
 int		SiteHadUnKnownState(char *StatList)
 {
-	size_t	Index;
+	int	Index;
 
-	for(Index=0;Index<strlen(StatList);Index++)
+	for(Index=0;Index<(int)strlen(StatList);Index++)
 	{
 		if(StatList[Index] == UNKNOWNSTATE)
 			return TRUE;
@@ -857,127 +486,57 @@ int		SiteHadUnKnownState(char *StatList)
 	return FALSE;
 }
 
-void	SetDescCVTipData(int SiteNo, NODE N)
+void	SetTipData(TREE *Tree, TREES *Trees)
 {
-	N->Partial[SiteNo][4] = N->Partial[SiteNo][0];
-	N->Partial[SiteNo][5] = N->Partial[SiteNo][1];
-	N->Partial[SiteNo][6] = N->Partial[SiteNo][2];
-	N->Partial[SiteNo][7] = N->Partial[SiteNo][3];
-}
-
-void	SetNodeTipData(OPTIONS *Opt, NODE N, TREE* Tree, TREES *Trees)
-{
+	int		NIndex;
 	int		SiteIndex;
 	int		StateIndex;
 	int		Pos;
+	NODE	N;
 	int		StrLen;
 	int		NOS;
 
-	NOS = Trees->NoStates;
+	NOS = Trees->NoOfStates;
 	if(Trees->UseCovarion == TRUE)
 		NOS = NOS / 2;
 
-	for(SiteIndex=0;SiteIndex<Trees->NoSites;SiteIndex++)
+	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
 	{
-		if(SiteHadUnKnownState(N->Taxa->DesDataChar[SiteIndex]) == FALSE)
-		{
-			/* Set all boxes to 0  */
-			for(StateIndex=0;StateIndex<NOS;StateIndex++)
-				N->Partial[SiteIndex][StateIndex] = 0;
-
-			/* Set the corrispoding boxes to 1  */
-			StrLen = (int)strlen(N->Taxa->DesDataChar[SiteIndex]);
-			for(StateIndex=0;StateIndex<StrLen;StateIndex++)
-			{
-				Pos = SymbolToPos(N->Taxa->DesDataChar[SiteIndex][StateIndex], Trees->SymbolList);
-				N->Partial[SiteIndex][Pos] = 1;
-			}
-		}
-		else
-		{
-			for(StateIndex=0;StateIndex<NOS;StateIndex++)
-				N->Partial[SiteIndex][StateIndex] = 1;
-		}
-
-		/* Copy for the Dep CV model */
-		if(Opt->Model == M_DISC_CV)
-			SetDescCVTipData(SiteIndex, N);
-
-		/* Copy the sites for the covarion mode */
-		if(Trees->UseCovarion == TRUE)
-		{
-			for(StateIndex=0;StateIndex<NOS;StateIndex++)
-				N->Partial[SiteIndex][StateIndex+NOS] = N->Partial[SiteIndex][StateIndex];
-		}
-	}
-}
-void	SetTipData(OPTIONS *Opt, TREE *Tree, TREES *Trees)
-{
-	int		NIndex;
-	NODE	N;
-	
-	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
-	{
-		N = Tree->NodeList[NIndex];
-		if(N->Tip == TRUE)
-			SetNodeTipData(Opt, N, Tree, Trees);
-	}
-}
-
-
-void	SetNOSPerSiteTipData(TREE *Tree, TREES *Trees)
-{
-	int		NIndex;
-	int		SiteIndex;
-	int		StateIndex;
-	int		Pos;
-	NODE	N;
-	int		StrLen;
-	int		NOS;
-	double	**Part;
-
-	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
-	{
-		N = Tree->NodeList[NIndex];
+		N = &Tree->NodeList[NIndex];
 		if(N->Tip == TRUE)
 		{
-			Part = N->Partial;
-			for(SiteIndex=0;SiteIndex<Trees->NoSites;SiteIndex++)
+			for(SiteIndex=0;SiteIndex<Trees->NoOfSites;SiteIndex++)
 			{
-				NOS = Trees->NOSList[SiteIndex];
-				if(Trees->UseCovarion == TRUE)
-					NOS = NOS / 2;
-
 				if(SiteHadUnKnownState(N->Taxa->DesDataChar[SiteIndex]) == FALSE)
 				{
 					/* Set all boxes to 0 */
 					for(StateIndex=0;StateIndex<NOS;StateIndex++)
-						Part[SiteIndex][StateIndex] = 0;
+						N->Partial[SiteIndex][StateIndex] = 0;
 					/* Set the corrispoding boxes to 1 */
 					StrLen = (int)strlen(N->Taxa->DesDataChar[SiteIndex]);
 					for(StateIndex=0;StateIndex<StrLen;StateIndex++)
 					{
-						Pos = SymbolToPos(N->Taxa->DesDataChar[SiteIndex][StateIndex], Trees->SiteSymbols[SiteIndex]);
-						Part[SiteIndex][Pos] = 1;
+						Pos = SymbolToPos(N->Taxa->DesDataChar[SiteIndex][StateIndex], Trees->SymbolList);
+						N->Partial[SiteIndex][Pos] = 1;
 					}
 				}
 				else
 				{
 					for(StateIndex=0;StateIndex<NOS;StateIndex++)
-						Part[SiteIndex][StateIndex] = 1;
+						N->Partial[SiteIndex][StateIndex] = 1;
 				}
 
 				/* Copy the sites for the covarion mode */
 				if(Trees->UseCovarion == TRUE)
 				{
 					for(StateIndex=0;StateIndex<NOS;StateIndex++)
-						Part[SiteIndex][StateIndex+NOS] = Part[SiteIndex][StateIndex];
+						N->Partial[SiteIndex][StateIndex+NOS] = N->Partial[SiteIndex][StateIndex];
 				}
 			}
 		}
 	}
-}
 
+}
 
 void	AllocNodePartial(NODE N, TREES *Trees, int Gamma)
 {
@@ -985,13 +544,13 @@ void	AllocNodePartial(NODE N, TREES *Trees, int Gamma)
 
 	N->GammaPartial = NULL;
 
-	N->Partial = (double**)malloc(sizeof(double*)*Trees->NoSites);
+	N->Partial = (double**)malloc(sizeof(double*)*Trees->NoOfSites);
 	if(N->Partial == NULL)
 		MallocErr();
 
-	for(Outter=0;Outter<Trees->NoSites;Outter++)
+	for(Outter=0;Outter<Trees->NoOfSites;Outter++)
 	{
-		N->Partial[Outter] = (double*)malloc(sizeof(double) * Trees->NoStates);
+		N->Partial[Outter] = (double*)malloc(sizeof(double) * Trees->NoOfStates);
 		if(N->Partial[Outter] == NULL)
 			MallocErr();
 	}
@@ -1002,108 +561,82 @@ void	AllocNodePartial(NODE N, TREES *Trees, int Gamma)
 	if(N->Tip == TRUE)
 		return;
 	
-	N->GammaPartial = (double**)malloc(sizeof(double*)*Trees->NoSites);
+
+	N->GammaPartial = (double**)malloc(sizeof(double*)*Trees->NoOfSites);
 	if(N->GammaPartial == NULL)
 		MallocErr();
 
-	for(Outter=0;Outter<Trees->NoSites;Outter++)
+	for(Outter=0;Outter<Trees->NoOfSites;Outter++)
 	{
-		N->GammaPartial[Outter] = (double*)malloc(sizeof(double) * Trees->NoStates);
+		N->GammaPartial[Outter] = (double*)malloc(sizeof(double) * Trees->NoOfStates);
 		if(N->GammaPartial[Outter] == NULL)
 			MallocErr();
 	}
+
 }
 
-void	AllocTreePartail(TREES* Trees, TREE *Tree)
-{
-	double *Mem;
-	NODE	N;
-	int		Index, SIndex;
-		
-	Mem = (double*)malloc(sizeof(double) * Trees->NoStates * Trees->NoSites * Tree->NoNodes);
-	if(Mem == NULL)
-		MallocErr();
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-
-		N->Partial = (double**)malloc(sizeof(double*) * Trees->NoSites);
-		if(N->Partial == NULL)
-			MallocErr();
-
-		N->Partial[0] = &Mem[Index * Trees->NoSites * Trees->NoStates];
-		for(SIndex=1;SIndex<Trees->NoSites;SIndex++)
-			N->Partial[SIndex] = N->Partial[0] + (SIndex * Trees->NoStates);
-	}
-}
-
-void	SetGammaPartials(TREES* Trees, TREE *Tree)
-{
-	int Index;
-	NODE N;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-		N->GammaPartial = N->Partial;
-	}
-}
-
-void	AllocPartial(OPTIONS *Opt, TREES* Trees, int Gamma)
+void	AllocPartial(TREES* Trees, int Gamma)
 {
 	int		TIndex;
-	
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-	{
-		AllocTreePartail(Trees, Trees->Tree[TIndex]);
+	int		NIndex;
+	NODE	N;
 
-		if(Gamma == TRUE)
+	
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	{
+		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
 		{
-			SetGammaPartials(Trees, Trees->Tree[TIndex]);
-			AllocTreePartail(Trees, Trees->Tree[TIndex]);
+			N = &Trees->Tree[TIndex].NodeList[NIndex];
+			AllocNodePartial(N, Trees, Gamma);
 		}
 
-		SetTipData(Opt, Trees->Tree[TIndex], Trees);
+		SetTipData(&Trees->Tree[TIndex], Trees);
 	}
 }
 
-
-double	GetStateProbPct(int State, int NoStates, double *Part)
+double	GetStateProbPct(int State, int NoOfStates, double *Part)
 {
 	double	Tot=0;
 	int		Index;
 
-	for(Index=0;Index<NoStates;Index++)
+	for(Index=0;Index<NoOfStates;Index++)
 		Tot +=	Part[Index];
-	 
+
 	return Part[State] / Tot;
+}
+
+void	CopyNode(NODE A, NODE B)
+{
+	A->Tip		=	B->Tip;
+	A->TipID	=	B->TipID;
+
+	A->Length	=	B->Length;
+
+	A->Left		=	B->Left;
+	A->Right	=	B->Right;
+	A->Ans		=	B->Ans;
+
+	A->Visited	=	B->Visited;
+
+	A->Partial	=	B->Partial;
+
+	A->Taxa		=	B->Taxa;
 }
 
 void	PrintTaxaNames(NODE N)
 {
-	int	Index;
-
 	if(N->Tip == TRUE)
 		printf("%s\t%f\n", N->Taxa->Name, N->Length);
 	else
 	{
-		for(Index=0;Index<N->NoNodes;Index++)
-			PrintTaxaNames(N->NodeList[Index]);
+		PrintTaxaNames(N->Left);
+		PrintTaxaNames(N->Right);
 	}
 }
 
 void	ReBuildTree(NODE N, NODE NewNodeList)
 {
 	NODE	NewNode;
-	int		NIndex;
-
-	if(N->ID == -1)
-	{
-		if(N->Taxa == FALSE)
-			ReBuildTree(N->NodeList[0], NewNodeList);
-		return;
-	}
 
 	NewNode = &NewNodeList[N->ID];
 
@@ -1114,6 +647,7 @@ void	ReBuildTree(NODE N, NODE NewNodeList)
 	NewNode->Taxa		=	NULL;
 	NewNode->Partial	=	N->Partial;
 
+	
 	if(N->Ans != NULL)
 		NewNode->Ans		=	&NewNodeList[N->Ans->ID];
 	else
@@ -1121,200 +655,171 @@ void	ReBuildTree(NODE N, NODE NewNodeList)
 
 	if(N->Tip == FALSE)
 	{
-		NewNode->NodeList = (NODE*)malloc(sizeof(NODE) * N->NoNodes);
-		if(NewNode->NodeList == NULL)
-			MallocErr();
-		NewNode->NoNodes = N->NoNodes;
+		NewNode->Left		=	&NewNodeList[N->Left->ID];
+		NewNode->Right		=	&NewNodeList[N->Right->ID];
 
-		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-			NewNode->NodeList[NIndex] = &NewNodeList[N->NodeList[NIndex]->ID];
-
-		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-			ReBuildTree(N->NodeList[NIndex], NewNodeList);
+		ReBuildTree(N->Left, NewNodeList);
+		ReBuildTree(N->Right, NewNodeList);
 	}
-}
-
-
-void	SetDelNodeIDs(NODE N, int *ID)
-{
-	int Index;
-
-	if(N->ID == -1)
-	{
-		N->ID = *ID;
-		*ID = (*ID) + 1;
-	}
-
-	if(N->Tip == FALSE)
-	{
-		for(Index=0;Index<N->NoNodes;Index++)
-			SetDelNodeIDs(N->NodeList[Index], ID);
-	}
-}
-
-void	SwapNode(NODE Node, NODE With)
-{
-	int NIndex;
-	NODE Ans;
-
-	Ans = Node->Ans;
-	for(NIndex=0;NIndex<Ans->NoNodes;NIndex++)
-		if(Ans->NodeList[NIndex] == Node)
-			Ans->NodeList[NIndex] = With;
-}
-
-
-
-
-int	GetTaxaPos(TREES *Trees, char *TName)
-{
-	int TIndex;
-
-	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
-	{
-		if(strcmp(TName, Trees->Taxa[TIndex]->Name)==0)
-			return TIndex;
-	}
-
-	return -1;
-}
-
-NODE	GetTaxaNode(TREE *Tree, char *TName)
-{
-	int Index;
-	NODE N;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-		if(N->Tip == TRUE)
-		{
-			if(strcmp(N->Taxa->Name, TName) == 0)
-				return N;
-		}
-	}
-
-	return NULL;
-}
-
-
-void	RemoveTipNode(NODE TipNode)
-{
-	int		NIndex, Pos;
-	NODE	*NList, Ans;
-
-
-	Ans = TipNode->Ans;
-	NList = (NODE*)SMalloc(sizeof(NODE) * (Ans->NoNodes - 1));
-	
-	Pos = 0;
-	for(NIndex=0;NIndex<Ans->NoNodes;NIndex++)
-		if(Ans->NodeList[NIndex] != TipNode)
-			NList[Pos++] = Ans->NodeList[NIndex];
-
-	free(Ans->NodeList);
-	Ans->NodeList = NList;
-
-	Ans->NoNodes--;
-}
-
-void	AddOrphanNode(NODE Node)
-{
-	NODE Des, Ans;
-	int	Index;
-		
-	Ans = Node->Ans;
-
-	assert(Ans != NULL);
-
-	Des = Node->NodeList[0];
-	Des->Length += Node->Length;
-
-	for(Index=0;Index<Ans->NoNodes;Index++)
-		if(Ans->NodeList[Index] == Node)
-			Ans->NodeList[Index] = Des;
-
-	Des->Ans = Ans;
-}
-
-void	ReSetOrphanNodes(TREE *Tree, NODE Node)
-{
-	int Index;
-	
-	if(Node->Tip == TRUE)
-		return;
-
-	for(Index=0;Index<Node->NoNodes;Index++)
-		ReSetOrphanNodes(Tree, Node->NodeList[Index]);
-
-	if(Node->NoNodes > 1)
-		return;
-
-	assert(Node->NoNodes == 1);
-		
-	if(Node->Ans != NULL)
-		AddOrphanNode(Node);
 	else
 	{
-		Tree->Root = Node->NodeList[0];
-		Tree->Root->Ans = NULL;
+		NewNode->Left = NULL;
+		NewNode->Right= NULL;
 	}
-
-	FreeNode(Node);
 }
 
 void	RemoveTaxaFromTree(TREES *Trees, TREE *Tree, char *TName)
 {
-	NODE	DNode, DNodeAns;
+	NODE	DelNode=NULL;
+	NODE	KeepNode=NULL;
+	NODE	DelTaxaNode=NULL;
+	NODE	NewNodeList=NULL;
+	NODE	N;
+	int		NIndex;
+	int		OnLeft;
 
-	DNode = GetTaxaNode(Tree, TName);
-	if(DNode == NULL)
+	for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
 	{
-		printf("%s::%d Cound not find taxa %s\n", __FILE__, __LINE__, TName);
+		N = &Tree->NodeList[NIndex];
+		if(N->Tip == TRUE)
+		{
+			if(strcmp(N->Taxa->Name, TName) == 0)
+			{
+				DelTaxaNode		= N;
+				DelNode			= N->Ans;
+				if(DelNode->Left == N)
+					OnLeft = TRUE;
+				else
+					OnLeft = FALSE;
+			}
+		}
+	}
+
+	if(DelNode == NULL)
+	{
+		printf("Could not find node to del in %s::RemoveTaxaFromTree %d\n", __FILE__, __LINE__);
 		exit(1);
 	}
+
+	if(DelNode != Tree->Root)
+	{
+		if(OnLeft == TRUE)
+		KeepNode = DelNode->Right;
+		else
+			KeepNode = DelNode->Left;
+
+		KeepNode->Length += DelNode->Length;
+		KeepNode->Ans = DelNode->Ans;
 	
-	DNodeAns = DNode->Ans;
+		if(DelNode == DelNode->Ans->Left)
+			DelNode->Ans->Left = KeepNode;
+		else
+			DelNode->Ans->Right= KeepNode;
+	}
+	else
+	{
+		if(DelNode->Left == DelTaxaNode)
+			Tree->Root = DelNode->Right;
+		else
+			Tree->Root = DelNode->Left;
 
-	RemoveTipNode(DNode);
-	FreeNode(DNode);
+		Tree->Root->Ans = NULL;
+	}
 
-	ReSetOrphanNodes(Tree, Tree->Root);
+	BlankNode(DelNode);
+	BlankNode(DelTaxaNode);
 
-	SetNodeList(Tree);
+	NewNodeList = (NODE)malloc(sizeof(struct INODE) * (Trees->NoOfNodes - 2));
+	if(NewNodeList == NULL)
+		MallocErr();
+	
+	for(NIndex=0;NIndex<Trees->NoOfNodes-2;NIndex++)
+	{
+		N = &NewNodeList[NIndex];
+		BlankNode(N);
+	}
+
+	NIndex=0;
+	SetNodeIDs(Tree->Root, &NIndex);
+
+	ReBuildTree(Tree->Root, NewNodeList);
+
+	free(Tree->NodeList);
+	Tree->NodeList = NewNodeList;
+	Tree->Root = &Tree->NodeList[0];
+	
 }
 
-void	RemoveTaxaRec(TREES *Trees, int TaxaPos)
+int	RemoveTaxa(OPTIONS *Opt, TREES *Trees, char *TName)
 {
-	TAXA	**NewTaxaList;
-	char	**NewUsedTaxa;
-	char	*TaxaName;
-	int		NewTIndex, OldTIndex, TIndex;
+	int		TIndex;
+	int		OldTIndex;
+	int		NewTIndex;
+	char	**NewUsedTaxa=NULL;
+	TAXA	*NewTaxaList=NULL;
+	int		FoundTaxa=FALSE;
 
-	TaxaName = StrMake(Trees->Taxa[TaxaPos]->Name);
+	if(Trees->NoOfTaxa <= 2)
+	{
+		printf("There must be two or more taxa in a tree\n");
+		return FALSE;
+	}
 
-	NewTaxaList = (TAXA**)malloc(sizeof(TAXA*) * (Trees->NoTaxa - 1));
+	if(Opt != NULL)
+	{
+		if(Opt->NoOfRecNodes != 0)
+		{
+			printf("There must be no node to reconsutct befor a taxa can be removed for a tree\n");
+			return FALSE;
+		}
+	}
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	{
+		if(strcmp(TName, Trees->Taxa[TIndex].Name)==0)
+			FoundTaxa = TRUE;
+	}
+
+	if(FoundTaxa == FALSE)
+	{
+		printf("Could not find taxa %s\n", TName);
+		return FALSE;
+	}
+	
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+		RemoveTaxaFromTree(Trees, &Trees->Tree[TIndex], TName);
+
+	Trees->NoOfNodes = Trees->NoOfNodes - 2;
+
+	/*
+		Must delete the taxa form the List 
+	*/
+
+	NewTaxaList = (TAXA*)malloc(sizeof(TAXA) * (Trees->NoOfTaxa - 1));
 	if(NewTaxaList == NULL)
 		MallocErr();
 
 	NewTIndex = 0;
-	for(OldTIndex=0;OldTIndex<Trees->NoTaxa;OldTIndex++)
+	for(OldTIndex=0;OldTIndex<Trees->NoOfTaxa;OldTIndex++)
 	{
-		if(OldTIndex != TaxaPos)
+		if(strcmp(Trees->Taxa[OldTIndex].Name, TName) != 0)
 		{
-			NewTaxaList[NewTIndex] = Trees->Taxa[OldTIndex];
+			NewTaxaList[NewTIndex].Name			= Trees->Taxa[OldTIndex].Name;
+			NewTaxaList[NewTIndex].ConData		= Trees->Taxa[OldTIndex].ConData;
+			NewTaxaList[NewTIndex].DesDataChar	= Trees->Taxa[OldTIndex].DesDataChar;
+			NewTaxaList[NewTIndex].No			= Trees->Taxa[OldTIndex].No;
+			NewTaxaList[NewTIndex].Exclude		= Trees->Taxa[OldTIndex].Exclude;
+
 			NewTIndex++;
 		}
 	}
 
-	FreeTaxa(Trees->Taxa[TaxaPos], Trees->NoSites);
-	
 	free(Trees->Taxa);
 	Trees->Taxa	= NewTaxaList;
-	Trees->NoTaxa--;
+	Trees->NoOfTaxa--;
 
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-		LinkTipsToTaxa(Trees->Tree[TIndex]->Root, Trees->Taxa, Trees->NoTaxa);
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+		LinkTipsToTaxa(Trees->Tree[TIndex].Root, Trees->Taxa, Trees->NoOfTaxa);
 	
 	NewUsedTaxa = (char**)malloc(sizeof(char*) * (Trees->NoOfRemovedTaxa + 1));
 	if(NewUsedTaxa == NULL)
@@ -1323,152 +828,141 @@ void	RemoveTaxaRec(TREES *Trees, int TaxaPos)
 	for(TIndex=0;TIndex<Trees->NoOfRemovedTaxa;TIndex++)
 		NewUsedTaxa[TIndex] = Trees->RemovedTaxa[TIndex];
 
-	NewUsedTaxa[TIndex] = TaxaName;
+	NewUsedTaxa[TIndex] = (char*)malloc(sizeof(char) * strlen(TName) + 1);
+	if(NewUsedTaxa[TIndex] == NULL)
+		MallocErr();
+
+	strcpy(NewUsedTaxa[TIndex], TName);
 
 	free(Trees->RemovedTaxa);
 	Trees->RemovedTaxa = NewUsedTaxa;
 	Trees->NoOfRemovedTaxa++;
-}
 
-void	CheckDelTaxa(OPTIONS *Opt, TREES *Trees, char *TName)
-{
-	int TaxaPos;
-
-	if(Trees->NoTaxa <= 2)
-	{
-		printf("There must be two or more taxa in a tree\n");
-		exit(0);
-	}
-
-	TaxaPos = GetTaxaPos(Trees, TName);
-
-	if(TaxaPos == -1)
-	{
-		printf("Could not find taxa %s for deleting\n", TName);
-		exit(0);
-	}
-	
-	if(Opt == NULL)
-		return;
-
-	if(Opt->NoOfRecNodes != 0)
-	{
-		printf("There must be no node to reconstruct before a taxa can be removed for a tree \n");
-		exit(0);
-	}
-
-
-	if(Opt->NoLocalTransforms != 0)
-	{
-		printf("There must be no local transforms before a taxa can be removed.");
-		exit(0);
-	}
-}
-
-void	RemoveTaxa(TREES *Trees, char *TName)
-{
-	int TaxaPos, TIndex;
-
-	TaxaPos = GetTaxaPos(Trees, TName);
-
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-		RemoveTaxaFromTree(Trees, Trees->Tree[TIndex], TName);
-
-	RemoveTaxaRec(Trees, TaxaPos);
-		
-	ReSetTaxaID(Trees);
+	return TRUE;
 }
 
 void WriteTreeToFile(NODE n, NODE Root, FILE *F)
 {
 	double	BL;
-	int		Index;
 
 	BL = n->Length;
 
 	if(n->Tip == TRUE)
-		fprintf(F, "%d:%10.10f", n->Taxa->No+1, BL);
+		fprintf(F, "%d:%10.10f", n->TipID, BL);
 	else
 	{
 		fprintf(F, "(");
 
-		for(Index=0;Index<n->NoNodes-1;Index++)
-		{
-			WriteTreeToFile(n->NodeList[Index], Root, F);
-			fprintf(F, ",");
-		}
-		WriteTreeToFile(n->NodeList[Index], Root, F);
+		WriteTreeToFile(n->Left, Root, F);
+
+		fprintf(F, ",");
  
+		WriteTreeToFile(n->Right, Root, F);
 		
 		if(n != Root)
 			fprintf(F, "):%10.10f", BL);	
 		else
 			fprintf(F, ")");	
+
 	}
 }
 
-void	SaveTreesHeader(FILE *Out, TREES* Trees)
-{
-	int TIndex;
-
-	fprintf(Out, "#NEXUS\n");
-	fprintf(Out, "begin trees;\n");
-	fprintf(Out, "\ttranslate\n");
-
-	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
-	{
-		fprintf(Out, "\t\t%d %s", Trees->Taxa[TIndex]->No+1, Trees->Taxa[TIndex]->Name);
-
-		if(TIndex<Trees->NoTaxa-1)
-			fprintf(Out, ",\n");
-		else
-			fprintf(Out, ";\n");
-	}
-}
-
-void	SaveTreeFotter(FILE *Out)
-{
-	fprintf(Out, "end;");
-	fclose(Out);
-}
-
-void	SaveTrees(char	*FileName, TREES* Trees)
+void	PrintTree(char	*FileName, TREES* Trees, OPTIONS *Opt)
 {
 
 	FILE	*TreeFile=NULL;
 	int		TIndex;
 	char	*Name;
 	char	Buffer[128];
-	size_t	NoOfChar;
+	int		NoOfChar;
 
 
-	TreeFile = OpenWrite(FileName);
-	
-	SaveTreesHeader(TreeFile, Trees);
+	TreeFile = fopen(FileName, "w");
+	if(TreeFile == NULL)
+	{
+		printf("Could not open file %s for writting\n", FileName);
+		return;
+	}
 
-	sprintf(&Buffer[0], "%d", Trees->NoTrees);
+	sprintf(&Buffer[0], "%d", Trees->NoOfTrees);
 	NoOfChar = strlen(&Buffer[0]);
 
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
+	fprintf(TreeFile, "#NEXUS\n");
+
+	fprintf(TreeFile, "begin trees;\n");
+	fprintf(TreeFile, "\ttranslate\n");
+
+	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
 	{
-		Name = FormatInt(TIndex+1, (int)NoOfChar);
+
+		fprintf(TreeFile, "\t\t%d %s", Trees->Taxa[TIndex].No, Trees->Taxa[TIndex].Name);
+
+		if(TIndex<Trees->NoOfTaxa-1)
+			fprintf(TreeFile, ",\n");
+		else
+			fprintf(TreeFile, ";\n");
+	}
+
+
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	{
+		Name = FormatInt(TIndex+1, NoOfChar);
 
 		fprintf(TreeFile, "\t\ttree No_%s = ", Name);
-		WriteTreeToFile(Trees->Tree[TIndex]->Root, Trees->Tree[TIndex]->Root, TreeFile);
+		WriteTreeToFile(Trees->Tree[TIndex].Root, Trees->Tree[TIndex].Root, TreeFile);
 		fprintf(TreeFile, ";\n");
 		
 		free(Name);
 	}
 
-	SaveTreeFotter(TreeFile);
+	fprintf(TreeFile, "end;\n");
+	fclose(TreeFile);
+
 }	
 
-void	SetNodeIDs(TREE *Tree)
+void	SetNodeIDs(NODE N, int *No)
 {
-	int Index;
+	N->ID = *No;
 
-	for(Index=0;Index<Tree->NoNodes;Index++)
-		Tree->NodeList[Index]->ID = Index;
+	*No = (*No) + 1;
+
+	if(N->Tip == FALSE)
+	{
+		SetNodeIDs(N->Left, No);
+		SetNodeIDs(N->Right, No);
+	}
+}
+
+void	NormaliseTrees(TREE *Tree, int NoOfNodes)
+{
+	double	Total=0;
+	int		Index=0;
+	
+	for(Index=1;Index<NoOfNodes;Index++)
+		Total += Tree->NodeList[Index].Length;
+		
+	for(Index=1;Index<NoOfNodes;Index++)
+		Tree->NodeList[Index].Length = Tree->NodeList[Index].Length / Total;
+
+}
+
+void	SetFossiles(TREES *Trees, OPTIONS *Opt)
+{
+	RECNODE	RNode;
+	int		TIndex;
+
+	RNode = Opt->RecNode;
+
+	while(RNode != NULL)
+	{
+		if(RNode->NodeType == FOSSIL)
+		{
+			for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+				RNode->TreeNodes[TIndex]->FossilState = RNode->FossilState;
+		}
+
+		RNode = RNode->Next;
+	}
 }
 
 void SetMinBL(TREES *Trees)
@@ -1480,15 +974,15 @@ void SetMinBL(TREES *Trees)
 	int		NoErr;
 
 	NoErr=0;
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
 	{
-		Tree = Trees->Tree[TIndex];
-		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
+		Tree = &Trees->Tree[TIndex];
+		for(NIndex=0;NIndex<Trees->NoOfNodes;NIndex++)
 		{
-			Node = Tree->NodeList[NIndex];
+			Node = &Tree->NodeList[NIndex];
 			if(Node != Tree->Root)
 			{
-				if(Node->Length == -1 || Node->Length < MIN_BL)
+				if((Node->Length == -1) || (Node->Length < MINBL))
 				{
 					if(Node->Length == -1)
 					{
@@ -1497,7 +991,7 @@ void SetMinBL(TREES *Trees)
 					}
 
 					if(NoErr < 5)
-						printf("Tree %d has a Branch length less then %f.\nSetting branch length to %f\n", TIndex, MIN_BL, MIN_BL);
+						printf("Tree %d has a Branch length less then %f.\nSetting branch length to %f\n", TIndex, MINBL, MINBL);
 					
 					
 					if(NoErr == 5)
@@ -1505,885 +999,9 @@ void SetMinBL(TREES *Trees)
 
 					NoErr++;
 
-					Node->Length = MIN_BL;
+					Node->Length = MINBL;
 				}
 			}
 		}
 	}
-}
-
-void	AllocNOSPerSite(OPTIONS *Opt)
-{
-	TREES	*Trees;
-	int		Index;
-
-	Trees = Opt->Trees;
-	
-	Trees->NOSPerSite	= TRUE;
-	Trees->MaxNOS		= Trees->NoStates;
-	Trees->NOSList		= (int*)malloc(sizeof(int) * Trees->NoSites);
-	Trees->SiteSymbols	= (char**)malloc(sizeof(char*) * Trees->NoSites);
-
-	if((Trees->NOSList == NULL) || (Trees->SiteSymbols == NULL))
-		MallocErr();
-
-	for(Index=0;Index<Trees->NoSites;Index++)
-		FindSiteSymbols(Trees, Index);
-}
-
-void	SetNOSPerSite(OPTIONS *Opt)
-{
-	TREES	*Trees;
-	int		Index;
-
-	if(Opt->NOSPerSite == FALSE)
-		return;
-	
-	Trees = Opt->Trees;
-	AllocNOSPerSite(Opt);
-
-	for(Index=0;Index<Trees->NoTrees;Index++)
-		SetNOSPerSiteTipData(Trees->Tree[Index], Trees);
-}
-
-void	ReLinkNodes(NODE NewList, NODE OldList, int Size)
-{
-	int		Index, NIndex;
-	NODE	N;
-	NODE	C;
-
-	for(Index=0;Index<Size;Index++)
-		OldList[Index].ID = Index;
-
-	for(Index=0;Index<Size;Index++)
-	{
-		C = &OldList[Index];
-		N = &NewList[Index];
-
-		if(C->Tip == FALSE)
-		{
-			for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-				N->NodeList[NIndex] = &NewList[C->NodeList[NIndex]->ID];
-
-		}
-		N->Ans = NULL;
-	}
-}
-
-void	ReLinkAns(NODE N)
-{
-	int NIndex;
-
-	if(N->Tip == TRUE)
-		return;
-
-	for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-		N->NodeList[NIndex]->Ans = N;
-
-	for(NIndex=0;NIndex<N->NoNodes;NIndex++)
-		ReLinkAns(N->NodeList[NIndex]);
-
-}
-
-void	AddNewRecNodeTree(TREES *Trees, int TreeNo, RECNODE *RecNode)
-{
-	NODE	NewTaxa, Node;
-	NODE	*NList;
-	int		Index;
-	TREE	*Tree;
-
-	Tree = Trees->Tree[TreeNo];
-
-	Node = RecNode->Tag->NodeList[TreeNo];
-	
-	NewTaxa = AllocNode();
-
-	NList = (NODE*)SMalloc(sizeof(NODE) * (Node->NoNodes + 1));
-
-	memcpy(NList, Node->NodeList, sizeof(NODE) * Node->NoNodes);
-	NList[Node->NoNodes] = NewTaxa;
-	free(Node->NodeList);
-	Node->NodeList = NList;
-	Node->NoNodes++;
-
-	NewTaxa->Ans	= Node;
-	NewTaxa->Length = MIN_BL;
-	NewTaxa->Tip	= TRUE;
-	NewTaxa->Taxa	= GetTaxaFromName(RecNode->Name, Trees->Taxa, Trees->NoTaxa);
-	NewTaxa->TipID	= NewTaxa->Taxa->No;
-	NewTaxa->ID		= Tree->NoNodes;
-	
-	SetNodeList(Tree);
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		Node = Tree->NodeList[Index];
-		if(Node->Tip == TRUE)
-			Node->Taxa = GetTaxaFromID(Node->TipID, Trees->Taxa, Trees->NoTaxa);
-	}
-
-}
-
-void	AddNewRecNode(TREES* Trees, RECNODE *RecNode)
-{
-	int	TIndex;
-	TREE	*Tree;
-
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-	{
-		Tree = Trees->Tree[TIndex];
-		AddNewRecNodeTree(Trees, TIndex, RecNode);
-	}
-} 
-
-double	GetRootToTip(NODE N)
-{
-	double Ret;
-	
-	Ret = 0;
-	do
-	{
-		N = N->NodeList[0];
-		Ret += N->Length;
-	}while(N->Tip == FALSE);
-
-	return Ret;
-}
-
-double	GetTipPathLength(NODE Node)
-{
-	double	Ret;
-
-	Ret = 0;
-
-	do
-	{
-		Ret += Node->Length;
-		Node = Node->Ans;
-	} while(Node->Ans != NULL);
-	
-	return Ret;
-}
-
-void	MakeTreeUM(TREES *Trees, int TNo, double RootTip)
-{
-	int		Index;
-	double	Dist;
-	NODE	N;
-	TREE	*Tree;
-
-	Tree = Trees->Tree[TNo];
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-		if(N->Tip == TRUE)
-		{
-			Dist = RootTip - GetTipPathLength(N);
-			N->Length += Dist;
-			if(N->Length < 0)
-			{
-				printf("Tree\t%d\tTip\t%s\tcannot be made into an ultrametric tree.\n", TNo, N->Taxa->Name);
-				exit(0);
-			}
-		}
-	}
-}
-
-void	MakeUM(TREES* Trees)
-{
-	int	Index;
-	double RootTip;
-
-	for(Index=0;Index<Trees->NoTrees;Index++)
-	{
-		RootTip = GetRootToTip(Trees->Tree[Index]->Root);
-
-//		printf("Tree\t%d\t%f\n", Index, RootTip); 
-
-		MakeTreeUM(Trees, Index, RootTip);
-	}
-
-//	exit(0);
-}
-
-
-NODE	GetNodeFromTID(TREE *Tree, int ID)
-{
-	int Index;
-	NODE	N;
-
-	
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		if(Tree->NodeList[Index]->Tip == TRUE)
-		{
-			N = Tree->NodeList[Index];
-			if(N->Taxa->No == ID)
-				return N;
-		}
-	}
-
-	return NULL;
-}
-
-void	ListOddPPTaxa(TREES *Trees)
-{
-	TREE	*Tree;
-	int		TIndex, Index;
-	TAXA	*CT, *T;
-	NODE	CN, N;
-	int		No;
-	int		GID;
-
-	Tree = Trees->Tree[0];
-
-
-	for(TIndex=0;TIndex<Tree->NoNodes;TIndex++)
-	{
-		printf("%d\t%f\t%f\t", TIndex, Tree->NodeList[TIndex]->Length, log(Trees->Tree[0]->NodeList[TIndex]->Length));
-
-		if(Tree->NodeList[TIndex]->Length == 0)
-			printf("Zeor\n");
-		else
-			printf("NonZero\n");
-
-	}
-
-	exit(0);
-
-	printf("\n\n");
-	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
-	{
-		CT = Trees->Taxa[TIndex];
-		CN = GetNodeFromTID(Tree, CT->No);
-
-		printf("%d\t%s\t%f\t%f\n", TIndex, CT->Name, CT->ConData[0], N->Length);
-				
-	}
-	exit(0);
-
-	GID = 0;
-	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
-	{
-		CT = Trees->Taxa[TIndex];
-		CN = GetNodeFromTID(Tree, CT->No);
-		if(CT->ConData[0] != -1)
-		{
-			No = 0;
-			for(Index=TIndex+1;Index<Trees->NoTaxa;Index++)
-			{
-				T = Trees->Taxa[Index];
-				if(T->ConData[0] == CT->ConData[0])
-				{
-					N = GetNodeFromTID(Tree, T->No);
-					if(N->Length == CN->Length)
-					{
-
-						printf("%d\t%d\t%s\t%f\t%f\t0\n", GID, No+1, T->Name, T->ConData[0], N->Length);
-						T->ConData[0] = -1;
-						No++;
-					}
-				}					
-			}
-
-			if(No > 0)
-			{
-				printf("%d\t%d\t%s\t%f\t%f\t1\n\n\n", GID, No+1, CT->Name, CT->ConData[0], CN->Length);
-				GID++;
-			}
-		}
-	}
-
-	exit(0);
-}
-
-void	CTaxaBelow(NODE N, int *No)
-{
-	int	Index;
-
-	if(N->Tip == TRUE)
-	{
-		(*No)++;
-		return;
-	}
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		CTaxaBelow(N->NodeList[Index], No);
-}
-
-char*	GetTName(FILE *Str, TREES *Trees, int TNo)
-{
-	int Index;
-
-	for(Index=0;Index<Trees->NoTaxa;Index++)
-	{
-		if(Trees->Taxa[Index]->No == TNo)
-			return Trees->Taxa[Index]->Name;
-	}
-
-	return NULL;
-}
-
-void	NormaliseTrees(double NormC, TREES *Trees)
-{
-	int Index, TIndex;
-	NODE N;
-	TREE *T;
-
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-	{
-		T = Trees->Tree[TIndex];
-		for(Index=0;Index<T->NoNodes;Index++)
-		{
-			N = T->NodeList[Index];
-			if(N != T->Root)
-				N->Length = NormC * N->Length;
-		}
-	}
-}
-
-double	FindTreeNormalise(TREES *Trees)
-{
-	int NoBL, Index, TIndex;
-	double SumBL, Ret;
-	NODE N;
-	TREE *T;
-	
-	Ret = 0;
-	NoBL = 0;
-	SumBL = 0;
-
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-	{
-		T = Trees->Tree[TIndex];
-		for(Index=0;Index<T->NoNodes;Index++)
-		{
-			N = T->NodeList[Index];
-			if(N != T->Root)
-			{
-				NoBL++;
-				SumBL += N->Length;
-			}
-		}
-
-//		SumBL = SumBL / NoBL;
-//		Ret += SumBL * (1.0 / Trees->NoTrees); 
-	}
-
-	Ret = SumBL / NoBL;
-	
-	Ret = NORM_MEAN_BL / Ret;
-
-	return Ret;
-}
-
-void	RecSetDistToRoot(NODE N)
-{
-	int Index;
-
-	if(N->Ans == NULL)
-		N->DistToRoot = 0;
-	else
-		N->DistToRoot = N->Ans->DistToRoot + N->Length;
-
-	if(N->Tip == TRUE)
-		return;
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecSetDistToRoot(N->NodeList[Index]);	
-}
-
-void	SetTreeDistToRoot(TREE *Tree)
-{
-	RecSetDistToRoot(Tree->Root);
-}
-
-void	SetTreesDistToRoot(TREES *Trees)
-{
-	int Index;
-
-	for(Index=0;Index<Trees->NoTrees;Index++)
-		SetTreeDistToRoot(Trees->Tree[Index]);
-}
-
-void	SetVisitedNode(NODE N, int Val)
-{
-	int Index;
-
-	N->Visited = Val;
-	if(N->Tip == TRUE)
-		return;
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		SetVisitedNode(N->NodeList[Index], Val);
-}
-
-void	SetVisitedTree(TREE *Tree, int Val)
-{
-	int Index;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-		Tree->NodeList[Index]->Visited = Val;
-}
-
-void	SimRandChange(NODE N, double RateDev, RANDSTATES *RS)
-{
-
-}
-
-void	AddTaxaErr(TREES *Trees, int TaxaID, double Err)
-{
-	int TIndex;
-	TREE *Tree;
-	NODE N;
-
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-	{
-		Tree = Trees->Tree[TIndex];
-		N = GetNodeFromTID(Tree, TaxaID);
-
-		if(N == NULL)
-		{
-			printf("%s::%d cound not find taxa.\n", __FILE__, __LINE__);
-			exit(0);
-		}
-		N->Length += Err;
-	}
-}
-
-int		TaxaIndexToNo(TREES *Trees, int Index)
-{
-	return Trees->Taxa[Index]->No;
-}
-
-int		TaxaNoToIndex(TREES *Trees, int No)
-{
-	int Index;
-
-	for(Index=0;Index<Trees->NoTaxa;Index++)
-		if(Trees->Taxa[Index]->No == No)
-			return Index;
-
-	printf("%s::%d Taxa No %d not valid.\n", __FILE__, __LINE__, No);
-	exit(0);
-	return -1;
-}
-
-void	SaveUserBrachLengthsTree(TREE *Tree)
-{
-	int Index;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-		Tree->NodeList[Index]->UserLength = Tree->NodeList[Index]->Length;
-}
-
-void	SaveUserBrachLengths(TREES *Trees)
-{
-	int Index;
-
-	for(Index=0;Index<Trees->NoTrees;Index++)
-		SaveUserBrachLengthsTree(Trees->Tree[Index]);
-}
-
-void	SetUserBranchLengthTree(TREE *Tree)
-{
-	int Index;
-	NODE N;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-		N->Length = N->UserLength;
-	}
-}
-
-void	SetUserBranchLength(TREE *Tree)
-{
-	SetUserBranchLengthTree(Tree);
-	SetTreeDistToRoot(Tree);
-}
-
-
-void	RecGetSumBL(NODE N, double *SumBL)
-{
-	int Index;
-
-	if(N->Length >= 0)
-		*SumBL += N->Length;
-
-	if(N->Tip == TRUE)
-		return;
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecGetSumBL(N->NodeList[Index], SumBL);
-}
-
-double	SumNodeBL(NODE N)
-{
-	double Ret;
-
-	Ret = 0;
-	RecGetSumBL(N, &Ret);
-
-//	Ret = Ret - N->Length;
-
-	return Ret;
-}
-
-void	RecScaleSubTree(NODE N, double Scale)
-{
-	int Index;
-
-	N->Length = N->Length * Scale;
-	
-	if(N->Tip == TRUE)
-		return;
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecScaleSubTree(N->NodeList[Index], Scale);
-}
-
-void	ScaleSubTree(NODE N, double Scale)
-{
-	if(N->Tip == TRUE)
-	{
-		printf("Sub Tree can only scale internal nodes.\n");
-		exit(0);
-	}
-
-
-	RecScaleSubTree(N, Scale);
-
-//	for(Index=0;Index<N->NoNodes;Index++)
-//		RecScaleSubTree(N->NodeList[Index], Scale);
-}
-
-void	ScaleTrees(TREES *Trees, double Scale)
-{
-	int Index;
-
-	for(Index=0;Index<Trees->NoTrees;Index++)
-		RecScaleSubTree(Trees->Tree[Index]->Root, Scale);
-
-}
-
-void	RecScaleUserSubTree(NODE N, double Scale)
-{
-	int Index;
-
-	N->Length = N->Length * Scale;
-	N->UserLength = N->UserLength * Scale;
-
-	if(N->Tip == TRUE)
-		return;
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecScaleUserSubTree(N->NodeList[Index], Scale);
-}
-
-
-void	ScaleUserTrees(TREES *Trees, double Scale)
-{
-	int Index;
-
-	for(Index=0;Index<Trees->NoTrees;Index++)
-		RecScaleUserSubTree(Trees->Tree[Index]->Root, Scale);
-}	
-
-NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo)
-{
-	int Index;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-		if(Tree->NodeList[Index]->Tip == TRUE)
-			if(Tree->NodeList[Index]->Taxa->No == TaxaNo)
-				return Tree->NodeList[Index];
-
-	return NULL;
-}
-
-void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees)
-{
-	Opt->OutTrees = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_TREES);
-
-	SaveTreesHeader(Opt->OutTrees, Trees);
-
-	fflush(Opt->OutTrees);
-}
-
-void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Out)
-{
-	TREE *Tree;
-	NODE Root;
-	 
-	fprintf(Out, "\t\ttree No_%lld = ", No);
-	Tree = Trees->Tree[Rates->TreeNo];
-
-	Root = Tree->Root;
-
-	WriteTreeToFile(Root, Root, Out);
-	fprintf(Out, ";\n");
-
-	fflush(Out);
-}
-
-void	RecPrintNode(NODE N)
-{
-	int Index;
-
-	if(N->Tip == TRUE)
-	{
-		printf("%d\t", N->Taxa->No);
-		return;
-	}
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecPrintNode(N->NodeList[Index]);
-}
-
-void RecPRintNodeTaxa(NODE N, char Sep)
-{
-	int Index;
-	if(N->Tip == TRUE)
-	{
-		printf("%s%c", N->Taxa->Name, Sep);
-		return;
-	}
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecPRintNodeTaxa(N->NodeList[Index], Sep);
-}
-
-void	PrintTreeNode(TREES *Trees, TREE *Tree)
-{
-	int Index;
-	NODE N;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-
-		printf("%d\t%f\t", Index, N->Length);
-		PrintPart(stdout, Trees, N->Part);
-		printf("\n");
-	}
-}
-
-void	PrintTreeBL(TREE *Tree)
-{
-	int Index;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-		printf("BL:\t%d\t%f\t", Index, Tree->NodeList[Index]->Length);
-
-	printf("\n");
-}
-
-void	CheckTreeSingleDescendent(TREES *Trees, int TreeNo)
-{
-	int Index;
-	TREE *Tree;
-	NODE N;
-
-	Tree = Trees->Tree[TreeNo];
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-		
-
-		if(N->Tip == FALSE && N->NoNodes == 1)
-		{
-			printf("Tree number %d has an internal node with a single decedent.\n", TreeNo+1);
-			printf("Taxa defining node are.\n");
-			PrintPartTaxaOnly(stdout, Trees, N->Part);
-			exit(0);
-		}
-	}
-}
-
-void	CheckSingleDescendent(TREES *Trees)
-{
-	int Index;
-
-	for(Index=0;Index<Trees->NoTrees;Index++)
-		CheckTreeSingleDescendent(Trees, Index);
-}
-/*
-#define	NO_NODE_TO_TEST 100000
-#include <omp.h>
-
-void	TimeTestMRCA(OPTIONS *Opt, TREES *Trees)
-{
-	RANDSTATES *RS;
-	TREE *Tree;
-	int Index;
-	NODE SNode, DNode, DNodeS;
-	double Start, Stop;
-
-	RS = CreateSeededRandStates(1977);
-	Tree = Trees->Tree[0];
-
-	Start = omp_get_wtime();	
-	
-
-	for(Index=0;Index<NO_NODE_TO_TEST;Index++)
-//	for(Index=0;;Index++)
-//	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		SNode = Tree->NodeList[RandUSInt(RS) % Tree->NoNodes];
-//		SNode = Tree->NodeList[Index];
-
-		DNodeS = PartGetMRCA(Tree, SNode->Part);
-		DNode = FastGetMRCA(Tree, SNode->Part);
-
-		if(DNode != DNodeS )
-		{
-			printf("Err\n");
-			exit(0);
-		}
-
-		if(DNode != SNode)
-		{
-			printf("Err\n");
-			exit(0);
-		}
-		if(Index % 10000 == 0)
-		{
-			printf("%d\n", Index);
-			fflush(stdout);
-		}
-		
-	}
-
-	Stop = omp_get_wtime();	
-	
-	printf("Time in S:\t%f\n", Stop-Start);
-
-	exit(0);
-}
-*/
-
-int		GetNoInternalNodes(TREE *Tree)
-{
-	int Ret, Index;
-
-	Ret = 0;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-		if(Tree->NodeList[Index]->Tip == FALSE)
-			Ret++;
-
-	return Ret;
-}
-
-void	SetNoInternalNodes(TREE *Tree)
-{
-	int Pos, Index;
-
-	Pos = 0;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-		if(Tree->NodeList[Index]->Tip == FALSE)
-			Tree->InternalNodesList[Pos++] = Tree->NodeList[Index];
-}
-
-
-void	SetTreesInternalNodes(TREES *Trees)
-{
-	int TIndex;
-	TREE *Tree;
-
-	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
-	{
-		Tree = Trees->Tree[TIndex];
-
-		Tree->NoInternalNodes = GetNoInternalNodes(Tree);
-		Tree->InternalNodesList = (NODE*)SMalloc(sizeof(NODE) * Tree->NoInternalNodes);
-		SetNoInternalNodes(Tree);
-	}
-}
-
-
-void	RecFillNodeList(NODE Node, NODE *NodeList, int *Pos)
-{
-	int Index;
-
-	if(Node->Tip == TRUE)
-	{
-		NodeList[*Pos]  = Node;
-		(*Pos)++;
-		return;
-	}
-
-	for(Index=0;Index<Node->NoNodes;Index++)
-		RecFillNodeList(Node->NodeList[Index], NodeList, Pos);
-}
-
-double	GetNodeDist(NODE Node, NODE Anc)
-{
-	double Ret;
-
-	Ret = 0;
-	while(Node != Anc)
-	{
-		Ret += Anc->Length;
-		Anc = Anc->Ans;
-	}
-
-	return Ret;
-}
-
-double	GetNodeHeight(NODE Node)
-{
-	NODE *NodeList;
-	int Index;
-	double Ret, Height;
-
-	NodeList = (NODE*)SMalloc(sizeof(NODE) * Node->Part->NoTaxa);
-
-	Index = 0;
-	RecFillNodeList(Node, NodeList, &Index);
-
-	Ret = 0;
-	for(Index=0;Index<Node->Part->NoTaxa;Index++)
-	{
-		Height = GetNodeDist(Node, NodeList[Index]);
-
-		if(Height > Ret)
-			Ret = Height;
-	}
-	
-	free(NodeList);
-
-	return Ret;
-}
-
-void	SetTreeNodeRNG(TREE *Tree, gsl_rng *RNG)
-{
-	int Index;
-	NODE Node;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		Node = Tree->NodeList[Index];
-
-		Node->RNG = gsl_rng_alloc(gsl_rng_mt19937);
-		gsl_rng_set(Node->RNG, gsl_rng_get(RNG));
-	}
-}
-
-void	SetTreesRNG(TREES *Trees, long Seed)
-{
-	gsl_rng	*RNG;
-	int Index;
-
-	RNG	= gsl_rng_alloc(gsl_rng_mt19937);
-	gsl_rng_set(RNG, Seed);
-
-	for(Index=0;Index<Trees->NoTrees;Index++)
-		SetTreeNodeRNG(Trees->Tree[Index], RNG);
-
-	gsl_rng_free(RNG);
 }

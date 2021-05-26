@@ -1,29 +1,15 @@
-#ifndef LIKELIHOOD_HEADDER
-#define LIKELIHOOD_HEADDER
-
-#include "Praxis.h"
-
-void	FossilLh(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo);
-
-double		Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt);
-void		AllocLHInfo(TREES *Trees, OPTIONS *Opt);
-void		FreeInvInfo(INVINFO* InvInfo);
-INVINFO*	AllocInvInfo(int NOS);
-
-int			ValidLh(double LH, MODEL_TYPE MT);
-int			ValidDouble(double LH);
+#if !defined (LIKLIHEADDER)
+#define LIKLIHEADDER
 
 
-double		LhPraxis(void* PState, double *List);
-
-int			IsNum(double n);
-
-void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *InvInfo, double *RateP, double *Pi);
-
-int			SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma);
-int			SetUpAllAMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt);
+double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt);
+void	AllocLHInfo(TREES *Trees, OPTIONS *Opt);
+void	FreeInvInfo(INVINFO* InvInfo);
 
 
-void		LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt);
+void	SetUpPrarix(RATES *Rates, TREES *Trees, OPTIONS *Opt);
+
+double	LhPraxisCon(double *List);
+int		IsNum(double n);
 
 #endif

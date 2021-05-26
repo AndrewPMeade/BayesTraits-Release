@@ -1,12 +1,10 @@
-/* copyright David Swofford */
-
-
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
+#include "linalg.h"
+#include "genlib.h"
 
-#include "LinAlg.h"
-#include "GenLib.h"
+/*#include "jph.h" */
 
 
 static void     LUBackSubst (double **a, int n, int *indx, double *b);
@@ -16,7 +14,7 @@ static void     Exchange (int j, int k, int l, int m, int n, double **a, double 
 static void     ElmHes (int n, int low, int high, double **a, int *intchg);
 static void     ElTran (int n, int low, int high, double **a, int *intchg, double **z);
 static int      Hqr2 (int n, int low, int high, double **h, double *wr, double *wi, double **z);
-static int		BalBak (int n, int low, int high, double *scale, int m, double **z);
+static void     BalBak (int n, int low, int high, double *scale, int m, double **z);
 static void     CDiv (double ar, double ai, double br, double bi, double *cr, double *ci);
 static double   D_sign (double a, double b);
 
@@ -122,84 +120,6 @@ int LUDecompose (double **a, int n, double *vv, int *indx, double *pd)
 
 	d = 1.0;
 	for (i = 0; i < n; i++)
-	{
-		big = 0.0;
-		for (j = 0; j < n; j++)
-		{
-			if ((temp = fabs(a[i][j])) > big)
-				big = temp;
-		}
-	
-		if (big == 0.0)
-		{
-		//	printf("singular matrix in routine LUDecompose\n");
-			return ERROR;
-		}
-		vv[i] = 1.0 / big;
-	}
-
-	for (j = 0; j < n; j++)
-	{
-		// lower tri
-		for (i = 0; i < j; i++)
-		{
-			sum = a[i][j];
-			for (k = 0; k < i; k++)
-				sum -= a[i][k] * a[k][j];
-			a[i][j] = sum;
-		}
-
-		big = 0.0;
-		for (i = j; i < n; i++)
-		{
-			sum = a[i][j];
-			for (k = 0; k < j; k++)
-				sum -= a[i][k] * a[k][j];
-			a[i][j] = sum;
-			dum = vv[i] * fabs(sum);
-			if (dum >= big)
-			{
-				big = dum;
-				imax = i;
-			}
-		}
-		
-		if (j != imax)
-		{
-			for (k = 0; k < n; k++)
-			{
-				dum = a[imax][k];
-				a[imax][k] = a[j][k];
-				a[j][k] = dum;
-			}	
-			d = -d;
-			vv[imax] = vv[j];
-		}
-		
-		indx[j] = imax;
-		if (a[j][j] == 0.0)
-			a[j][j] = TINY;
-		
-		if (j != n - 1)
-		{
-			dum = 1.0 / (a[j][j]);
-			for (i = j + 1; i < n; i++)
-				a[i][j] *= dum;
-		}
-	}
-
-	if (pd != NULL)
-		*pd = d;
-	return NO_ERROR;
-}
-
-/*
-{
-	int			i, imax, j, k;
-	double		big, dum, sum, temp, d;
-
-	d = 1.0;
-	for (i = 0; i < n; i++)
 		{
 		big = 0.0;
 		for (j = 0; j < n; j++)
@@ -209,7 +129,7 @@ int LUDecompose (double **a, int n, double *vv, int *indx, double *pd)
 			}
 		if (big == 0.0)
 			{
-			printf("singular matrix in routine LUDecompose\n");
+			printf("singular matrix in routine LUDecompose");
 			return ERROR;
 			}
 		vv[i] = 1.0 / big;
@@ -263,7 +183,6 @@ int LUDecompose (double **a, int n, double *vv, int *indx, double *pd)
 		*pd = d;
 	return NO_ERROR;
 }
-*/
 
 /*--------------------------------------------------------------------------------------------------
 |
@@ -373,18 +292,17 @@ int EigenRealGeneral (int n, double **a, double *v, double *vi, double **u, int 
 int EigenRG (int n, double **a, double *wr, double *wi, double **z, int *iv1, double *fv1)
 
 {
-//	static int	is1, is2;
-	int	is1, is2;
+	static int	is1, is2;
 	int			ierr;
 
 	Balanc (n, a, &is1, &is2, fv1);
 	ElmHes (n, is1, is2, a, iv1);
 	ElTran (n, is1, is2, a, iv1, z);
 	ierr = Hqr2 (n, is1, is2, a, wr, wi, z);
-	if (ierr != 0)
-		return ERROR;
+	if (ierr == 0)
+		BalBak (n, is1, is2, fv1, n, z);
 
-	return BalBak (n, is1, is2, fv1, n, z);
+	return ierr;
 }
 
 /*--------------------------------------------------------------------------------------------------
@@ -1297,7 +1215,7 @@ int Hqr2 (int n, int low, int high, double **h, double *wr, double *wi, double *
 |		columns.
 */
 
-int BalBak (int n, int low, int high, double *scale, int m, double **z)
+void BalBak (int n, int low, int high, double *scale, int m, double **z)
 
 {
 	int			i, j, k, ii;
@@ -1328,8 +1246,6 @@ int BalBak (int n, int low, int high, double *scale, int m, double **z)
 					for (j = 0; j < m; j++)
 						{
 						s = z[i][j];
-						if(j >= n || k >= n)
-							return ERROR;
 						z[i][j] = z[k][j];
 						z[k][j] = s;
 						}
@@ -1337,8 +1253,6 @@ int BalBak (int n, int low, int high, double *scale, int m, double **z)
 				}
 			}
 		}
-
-	return NO_ERROR;
 }
 
 /*--------------------------------------------------------------------------------------------------
@@ -1379,6 +1293,52 @@ double D_sign (double a, double b)
 	return (b >= 0 ? x : -x);
 }
 
+
+/* Stuff taken form MrBays 2. */
+
+void CalcCijk (double *c_ijk, int n, double **u, double **v)
+{
+
+	register int 	i, j, k;
+	double 			*pc;
+
+		/* precalculate values for faster matrix mult in GTRChangeMatrix and GTRDerivatives */
+		pc = c_ijk;
+		for (i=0; i<n; i++)
+			for (j=0; j<n; j++)
+				for (k=0; k<n; k++)
+				 	*pc++ = u[i][k] * v[k][j];	/* (note: pc = &c[i][j][k]) */
+
+}
+
+/* Stuff taken form MrBays 2. */
+/*
+void CalcPij (double *c_ijk, int n, double *eigenValues, double v, double r, double **p)
+
+{
+
+	register int		i, j, k;
+	double				vr, *ptr, *g, sum;
+
+	vr = v * r;
+	g = EigValexp;
+	for (k=0; k<n; k++)
+		*g++ = exp(*eigenValues++ * vr);
+
+	ptr = c_ijk;
+	for(i=0; i<n; i++)
+		{
+		for(j=0; j<n; j++)
+			{
+			g = EigValexp;
+			sum = 0.0;
+			for(k=0; k<n; k++)
+				sum += (*ptr++) * (*g++);
+			p[i][j] = (sum < 0.0) ? 0.0 : sum;
+			}
+		}
+}
+*/
 
 int MatrixDeterminant(double **a, int n, double *vv, int *indx, double *Det)
 {

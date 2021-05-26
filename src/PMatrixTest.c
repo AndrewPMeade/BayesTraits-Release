@@ -1,41 +1,12 @@
-/*
-*  BayesTriats 3.0
-*
-*  copyright 2017
-*
-*  Andrew Meade
-*  School of Biological Sciences
-*  University of Reading
-*  Reading
-*  Berkshire
-*  RG6 6BX
-*
-* BayesTriats is free software: you can redistribute it and/or modify
-* it under the terms of the GNU General Public License as published by
-* the Free Software Foundation, either version 3 of the License, or
-* (at your option) any later version.
-* 
-* This program is distributed in the hope that it will be useful,
-* but WITHOUT ANY WARRANTY; without even the implied warranty of
-* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-* GNU General Public License for more details.
-* 
-* You should have received a copy of the GNU General Public License
-* along with this program.  If not, see <http://www.gnu.org/licenses/>
-*
-*/
-
-
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 
-#include "TypeDef.h"
-#include "GenLib.h"
-#include "Matrix.h"
-#include "LinAlg.h"
-#include "Rates.h"
+#include "typedef.h"
+#include "genlib.h"
+#include "matrix.h"
+#include "linalg.h"
+#include "rates.h"
 
 extern INVINFO*	AllocInvInfo(int NOS);
 extern void FreeInvInfo(INVINFO* InvInfo);
@@ -45,7 +16,9 @@ double*	GetRates(void)
 	double*	Ret;
 	int		Index;
 	
-	Ret = (double*)SMalloc(sizeof(double) * 8);
+	Ret = (double*)malloc(sizeof(double) * 8);
+	if(Ret == NULL)
+		MallocErr();
 
 	for(Index=0;Index<8;Index++)
 	{
@@ -65,27 +38,27 @@ double*	GetRates(void)
 void	LocPreCalc(INVINFO	*InvInfo)
 {
 	int		Ret;
-	int		NoStates;
+	int		NoOfStates;
 	
 	static int		*iwork=NULL;
 	static double	*work=NULL;
 	static double	*vi=NULL;
 
-	NoStates = 4;
+	NoOfStates = 4;
 
 	if(iwork == NULL)
 	{
-		iwork = (int*)malloc(sizeof(int) * NoStates);
-		work = (double*)malloc(sizeof(double) * NoStates);
-		vi = (double*)malloc(sizeof(double) * NoStates);
+		iwork = (int*)malloc(sizeof(int) * NoOfStates);
+		work = (double*)malloc(sizeof(double) * NoOfStates);
+		vi = (double*)malloc(sizeof(double) * NoOfStates);
 	}
 
 	CopyMatrix(InvInfo->Q, InvInfo->A);
 
-	Ret = EigenRealGeneral(NoStates, InvInfo->A->me, InvInfo->val, vi, InvInfo->vec->me, iwork, work);
+	Ret = EigenRealGeneral(NoOfStates, InvInfo->A->me, InvInfo->val, vi, InvInfo->vec->me, iwork, work);
 
 	CopyMatrix(InvInfo->Q, InvInfo->vec);
-	Ret = InvertMatrix(InvInfo->Q->me, NoStates, work, iwork, InvInfo->inv_vec->me);
+	Ret = InvertMatrix(InvInfo->Q->me, NoOfStates, work, iwork, InvInfo->inv_vec->me);
 
 	if(Ret == ERROR)
 	{

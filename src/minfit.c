@@ -1,18 +1,18 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "MinFit.h"
+#include "minfit.h"
 
 #ifdef MSDOS
 static double e[N];	
 #endif
 
-void minfit(int n,double  eps, double tol, double ab[PNSIZE][PNSIZE], double q[PNSIZE])
+void minfit(int n,double  eps, double tol, double ab[N][N], double q[N])
 {
    int l, kt, l2, i, j, k;
    double c, f, g, h, s, x, y, z;
 #ifndef MSDOS
-   double e[PNSIZE];		
+   double e[N];		
 #endif
 
    x = g = 0.0;
@@ -95,7 +95,7 @@ TestFsplitting:
 	   if (fabs(q[l-1]) <= eps)
    	      break;	/* goto Cancellation; */
        }
-//Cancellation:
+Cancellation:
        c = 0.0; s = 1.0;
        for (i=l; i<=k; i++) {
            f = s * e[i]; e[i] *= c;
@@ -171,3 +171,5 @@ Convergence:
        }
    }
 }
+
+

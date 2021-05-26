@@ -1,87 +1,27 @@
-#if !defined LOADTREES
+#if !defined (LOADTREES)
 #define LOADTREES
 
-#include "TypeDef.h"
+#include "typedef.h"
 
 TREES*	LoadTrees(char* FileName);
 
-void	ReSetTaxaID(TREES *Trees);
-
 void	FreeTrees(TREES* Trees, OPTIONS *Opt);
-void	AllocPartial(OPTIONS *Opt, TREES* Trees, int Gamma);
-TAXA*	GetTaxaFromID(int ID, TAXA **Taxa, int NoTaxa);
-TAXA*	GetTaxaFromName(char *Name, TAXA **Taxa, int NoTaxa);
+void	AllocPartial(TREES* Trees, int Gamma);
+TAXA*	GetTaxaFromID(int ID, TAXA *Taxa, int NoOfTaxa);
+TAXA*	GetTaxaFromName(char *Name, TAXA *Taxa, int NoOfTaxa);
 
-void	CTaxaBelow(NODE N, int *No);
-void	PrintTreesInfo(FILE*	Str, TREES *Trees, DATATYPE DataType);
+void	PrintTrees(FILE*	Str, TREES *Trees, DATATYPE DataType);
 
 /* void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoOfSites, RATES* Rates); */
-double	GetStateProbPct(int State, int NoStates, double *Part);
+double	GetStateProbPct(int State, int NoOfStates, double *Part);
 
 int		SymbolToPos(char Symbol, char *List);
 int		SiteHadUnKnownState(char *StatList);
-void	RemoveTaxa(TREES *Trees, char *TName);
-void	CheckDelTaxa(OPTIONS *Opt, TREES *Trees, char *TName);
+void	AllocConVarCoVar(TREES* Trees);
+int		RemoveTaxa(OPTIONS *Opt, TREES *Trees, char *TName);
+void	PrintTree(char	*FileName, TREES* Trees, OPTIONS *Opt);
+void	SetFossiles(TREES *Trees, OPTIONS *Opt);
 
-void	SaveTrees(char	*FileName, TREES* Trees);
-
-void	SetFossils(TREES *Trees, OPTIONS *Opt);
-
+char*	TipIDToTaxaName(int TID, TAXA* Taxa);
 void	SetMinBL(TREES *Trees);
-void	SetNOSPerSite(OPTIONS *Opt);
-
-void	AddNewRecNode(TREES* Trees, RECNODE *RecNode);
-void	SetNodeTipData(OPTIONS *Opt, NODE N, TREE* Tree, TREES *Trees);
-
-void	MakeUM(TREES* Trees);
-
-void	SetNodeIDs(TREE* Tree);
-
-void	ListOddPPTaxa(TREES *Trees);
-
-double	FindTreeNormalise(TREES *Trees);
-void	NormaliseTrees(double NormC, TREES *Trees);
-
-void	SetVisitedNode(NODE N, int Val);
-void	SetVisitedTree(TREE *Tree, int Val);
-
-void	AddTaxaErr(TREES *Trees, int TaxaID, double Err);
-
-int		TaxaIndexToNo(TREES *Trees, int Index);
-int		TaxaNoToIndex(TREES *Trees, int ID);
-
-void	SaveUserBrachLengths(TREES *Trees);
-void	SetUserBranchLength(TREE *Tree);
-void	SetTreesDistToRoot(TREES *Trees);
-void	SetTreeDistToRoot(TREE *Tree);
-void	RecSetDistToRoot(NODE N);
-
-void	RecScaleSubTree(NODE N, double Scale);
-double	SumNodeBL(NODE N);
-
-double	GetNodeHeight(NODE Node);
-
-void	ScaleSubTree(NODE N, double Scale);
-void	ScaleTrees(TREES *Trees, double Scale);
-void	ScaleUserTrees(TREES *Trees, double Scale);
-
-NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo);
-
-void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees);
-void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Out);
-
-void	PrintTreeBL(TREE *Tree);
-void	PrintTreeNode(TREES *Trees, TREE *Tree);
-void	RecPrintNode(NODE N);
-void	RecPRintNodeTaxa(NODE N, char Sep);
-void	PrintTaxaFromNo(int No, TREES *Trees, char Sep);
-
-void	CheckSingleDescendent(TREES *Trees);
-
-int		GetNoInternalNodes(TREE *Tree);
-
-void	SetTreesInternalNodes(TREES *Trees);
-
-void	SetTreesRNG(TREES *Trees, long Seed);
-
 #endif
