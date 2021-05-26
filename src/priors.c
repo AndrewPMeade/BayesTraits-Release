@@ -249,6 +249,28 @@ PRIOR*		CreateNormalPrior(char *Name, double Mean, double SD)
 	return Ret;
 }
 
+PRIOR* CreateWeibullPrior(char* Name, double Scale, double Exponent)
+{
+	int		NoP;
+	PRIOR* Ret;
+
+	if(Scale <= 0 || Exponent <= 0)
+	{
+		printf("prior %s, Weibull distribution Scale and Exponent must be >0", Name);
+		exit(0);
+	}
+
+	NoP = DISTPRAMS[PDIST_WEIBULL];
+	Ret = AllocBlankPrior(NoP);
+
+	Ret->Dist = PDIST_WEIBULL;
+	Ret->DistVals[0] = Scale;
+	Ret->DistVals[1] = Exponent;
+
+	Ret->Name = StrMake(Name);
+
+	return Ret;
+}
 
 
 void		SetHPDistParam(int Pos, PRIOR* Prior)
@@ -550,6 +572,25 @@ double	LogGammaP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
+double	LogWeibullP(double X, PRIOR* Prior)
+{
+	double Ret;
+
+	if(X < 0.0)
+		return ERRLH;
+ 
+	Ret = 1.0;
+	if(Prior->Discretised == FALSE)
+		Ret = gsl_ran_weibull_pdf(X, Prior->DistVals[0], Prior->DistVals[1]);
+	else
+	{
+		printf("Disceretised weiball is not supported.\n");
+		exit(1);
+	}
+
+	return log(Ret);
+}
+
 double LogUniP(double X, PRIOR *Prior)
 {
 	double Ret;
@@ -650,6 +691,8 @@ double LogExpP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
+
+
 void	ChiSTest(void)
 {
 	PRIOR *Prior;
@@ -720,6 +763,9 @@ double	CalcLhPriorP(double X, PRIOR *Prior)
 			Ret = LogNormalP(X, Prior);
 		break;
 
+		case PDIST_WEIBULL:
+			Ret = LogWeibullP(X, Prior);
+
 	}
 
 	return Ret;
@@ -749,6 +795,9 @@ double		RandFromPrior(gsl_rng *RNG, PRIOR *Prior)
 
 		case PDIST_NORMAL:
 			return gsl_ran_gaussian_ziggurat(RNG, Prior->DistVals[1]) + Prior->DistVals[0];
+
+		case PDIST_WEIBULL:
+			return gsl_ran_weibull(RNG, Prior->DistVals[0], Prior->DistVals[1]);
 	}
 
 	printf("Prior dist not found for %s.\n", Prior->Name);
@@ -1265,6 +1314,9 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 
 	if(PD == PDIST_SGAMMA)
 		Ret = CreateSGammaPrior(Name, PVal[0], PVal[1]);
+
+	if(PD == PDIST_WEIBULL)
+		Ret = CreateWeibullPrior(Name, PVal[0], PVal[1]);
 
 	free(PVal);
 

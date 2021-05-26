@@ -508,7 +508,7 @@ static char    *DEPHETROPRAMS[] =
 	""
 };
 
-#define NO_PRIOR_DIST 7
+#define NO_PRIOR_DIST 8
 
 static char    *DISTNAMES[] =
 {
@@ -518,7 +518,8 @@ static char    *DISTNAMES[] =
 	"exp",
 	"sgamma",
 	"lognormal",
-	"normal"
+	"normal",
+	"weibull"
 };
 
 static int	DISTPRAMS[] =
@@ -527,6 +528,7 @@ static int	DISTPRAMS[] =
 	2,
 	1,
 	1,
+	2,
 	2,
 	2,
 	2
@@ -540,7 +542,8 @@ typedef enum
 	PDIST_EXP,
 	PDIST_SGAMMA,
 	PDIST_LOGNORMAL,
-	PDIST_NORMAL
+	PDIST_NORMAL,
+	PDIST_WEIBULL
 } PRIORDIST;
 
 typedef enum
