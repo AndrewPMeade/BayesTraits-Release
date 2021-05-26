@@ -15,7 +15,6 @@ void		CopyRates(RATES *A, RATES *B, OPTIONS *Opt);
 void		PrintRatesHeadder(FILE* Str, OPTIONS *Opt);
 void		PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed);
 
-
 double		ChangeRateExp(double Value, double Dev, RANDSTATES *RS, double *LnHastings);
 
 int			FindNoOfRates(OPTIONS *Opt);

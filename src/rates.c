@@ -2761,6 +2761,7 @@ void	ChangeGlobalRate(RATES* Rates, SCHEDULE* Shed)
 	Rates->GlobablRate = NRate;
 }
 
+
 void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 {
 	Shed->Op = PickACat(Rates, Shed->OptFreq, Shed->NoOfOpts);
@@ -2801,6 +2802,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 
 		case S_PPROR:
 			MutatePriorsNormal(Rates, Rates->Priors, Rates->NoPriors, Opt->HPDev);
+		//	MutatePriorsNormal(Rates, Rates->Priors, Rates->NoPriors, 0.1);
 		break;
 
 		case S_EST_DATA:

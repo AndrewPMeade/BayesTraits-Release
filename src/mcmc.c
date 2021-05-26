@@ -86,8 +86,12 @@ void	PrintPriorHeadder(FILE* Str, OPTIONS *Opt, RATES* Rates)
 					fprintf(Str, "%s - Shape\t%s - Scale\t", Prior->Name, Prior->Name);
 				break;
 	
+				case PDIST_LOGNORMAL:
+					fprintf(Str, "%s - Mue\t%s - Sig\t", Prior->Name, Prior->Name);
+				break;
+							   
 				default:
-					printf("%s::%d Hyper Prior not supported.", __FILE__, __LINE__);
+					printf("%s - %s::%d Hyper Prior not supported.", Prior->Name, __FILE__, __LINE__);
 					exit(0);
 			}
 		}

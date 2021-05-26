@@ -1192,7 +1192,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->NodeData	= FALSE;
 	Ret->NodeBLData = FALSE;
 	Ret->AlphaZero	= FALSE;
-	Ret->HPDev		= 1;
+	Ret->HPDev		= 1.0;
 
 	Ret->OutTrees	= NULL;
 	Ret->VarRatesLog= NULL;
@@ -2531,7 +2531,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			(Command == CGAMMA)		||
 			(Command == CRMODEL)	||
 			(Command == CREVJUMP)	||
-			(Command == CHYPERPRIOR)||
+//			(Command == CHYPERPRIOR)||
 			(Command == CHPRJ)		||
 			(Command == CHPALL)		||
 			(Command == CPIS)		||

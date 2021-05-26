@@ -1108,7 +1108,10 @@ void	MutatePriorsNormal(RATES *Rates, PRIOR **PriosList, int NoOfPriors, double 
 			{
 				Min = Prior->HP[RIndex*2];
 				Max = Prior->HP[(RIndex*2)+1];
+
+
 				Prior->DistVals[RIndex] = ChangePriorNorm(Rates, Prior->DistVals[RIndex], Dev, Min, Max);
+			//	Prior->DistVals[RIndex] = RandUniDouble(Rates->RS, Min, Max);
 			}
 		}
 	}
