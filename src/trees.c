@@ -214,10 +214,10 @@ void	FreeTree(TREE* Tree, int NoSites, int NoTaxa)
 	if(Tree->ConVars!= NULL)
 		FreeConVar(Tree->ConVars, NoTaxa);
 
-	for(NIndex=0;NIndex<Tree->NoFGroups;NIndex++)
-		free(Tree->FNodes[NIndex]);
-	free(Tree->FNodes);
-	free(Tree->NoFNodes);
+	for(NIndex=0;NIndex<Tree->NoParallelGroups;NIndex++)
+		free(Tree->ParallelNodes[NIndex]);
+	free(Tree->ParallelNodes);
+	free(Tree->ParallelGroupSize);
 
 	if(Tree->PNodes != NULL)
 		free(Tree->PNodes);
@@ -619,9 +619,9 @@ int		FindMaxPoly(TREES *Trees)
 	Ret->NodeList	= NULL;
 	Ret->Root		= NULL;
 
-	Ret->FNodes		= NULL;
-	Ret->NoFNodes	= NULL;
-	Ret->NoFGroups	= -1;
+	Ret->ParallelNodes = NULL;
+	Ret->ParallelGroupSize = NULL;
+	Ret->NoParallelGroups = -1;
 
 	Ret->NoPNodes	= -1;
 	Ret->PNodes		= NULL;
@@ -2097,7 +2097,18 @@ void	RecPrintNode(NODE N)
 		RecPrintNode(N->NodeList[Index]);
 }
 
+void RecPRintNodeTaxa(NODE N, char Sep)
+{
+	int Index;
+	if(N->Tip == TRUE)
+	{
+		printf("%s%c", N->Taxa->Name, Sep);
+		return;
+	}
 
+	for(Index=0;Index<N->NoNodes;Index++)
+		RecPRintNodeTaxa(N->NodeList[Index], Sep);
+}
 
 void	PrintTreeNode(TREES *Trees, TREE *Tree)
 {

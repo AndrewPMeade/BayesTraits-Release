@@ -882,13 +882,17 @@ typedef	struct
 	NODE			*NodeList;
 	NODE			Root;
 
-	NODE			**FNodes;
-	int				*NoFNodes;
-	int				NoFGroups;
 
-//	int				NoPNodes;
-//	NODE			*PNodes;
+	// Group of nodes that can be calulated in parallel.
+	NODE			**ParallelNodes;
+	int				*ParallelGroupSize;
+	int				NoParallelGroups;
 
+	//	Devide the tree up into sub trees that are indpedent. 
+	int				NoPNodes;
+	NODE			*PNodes;
+
+	// Number and list of internal nodes only, good for OpenMP
 	int				NoInternalNodes;
 	NODE			*InternalNodesList;
 
@@ -1408,6 +1412,8 @@ typedef struct
 
 	int				NoSD;
 	STABLEDIST**	SDList;
+
+	double		*PartialLh;
 
 } FATTAILRATES;
 

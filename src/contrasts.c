@@ -521,18 +521,18 @@ void	CalcContrastP(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	return;
 */
-	for(PIndex=0;PIndex<Tree->NoFGroups;PIndex++)
+	for(PIndex=0;PIndex<Tree->NoParallelGroups;PIndex++)
 	{
-		if(Tree->NoFNodes[PIndex] < 10)
+		if(Tree->ParallelGroupSize[PIndex] < 10)
 		{
-			for(NIndex=0;NIndex<Tree->NoFNodes[PIndex];NIndex++)
-				CalcNodeContrast(Tree->FNodes[PIndex][NIndex], Trees->NoSites);
+			for(NIndex=0;NIndex<Tree->ParallelGroupSize[PIndex];NIndex++)
+				CalcNodeContrast(Tree->ParallelNodes[PIndex][NIndex], Trees->NoSites);
 		}
 		else
 		{
 			#pragma omp parallel for num_threads(Opt->Cores)
-			for(NIndex=0;NIndex<Tree->NoFNodes[PIndex];NIndex++)
-				CalcNodeContrast(Tree->FNodes[PIndex][NIndex], Trees->NoSites);
+			for(NIndex=0;NIndex<Tree->ParallelGroupSize[PIndex];NIndex++)
+				CalcNodeContrast(Tree->ParallelNodes[PIndex][NIndex], Trees->NoSites);
 		}
 	}
 }

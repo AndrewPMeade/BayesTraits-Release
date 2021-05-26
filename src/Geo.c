@@ -344,8 +344,8 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates)
 
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	int NIndex, Group;
-
+	int NIndex, GIndex, Group;
+	FATTAILTREE *FTT;
 	size_t	GroupSize;
 	NODE	*NodeList;
 	TREE *Tree;
@@ -354,6 +354,7 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	LhTransformTree(Rates, Trees, Opt);
 
 	Tree = Trees->Tree[Rates->TreeNo];
+	FTT = Tree->FatTailTree;
 
 	FTR = Rates->FatTailRates;
 
@@ -363,25 +364,25 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
 
-	Group = gsl_rng_uniform_int(Rates->RNG, Tree->NoFGroups);
-	GroupSize = Tree->NoFNodes[Group];
-	NodeList = Tree->FNodes[Group];
+
+	for(GIndex=0;GIndex<FTT->NoParallelGroups;GIndex++)
+	{
+		GroupSize = FTT->ParallelNodeListLength[GIndex];
+		NodeList = FTT->ParallelNodeList[GIndex];
 
 #ifdef OPENMP_THR
 // Dynamic slows things down oddly and can leve long long running process. 
-//	#pragma omp parallel for num_threads(Opt->Cores) schedule(dynamic)
-	#pragma omp parallel for num_threads(Opt->Cores) schedule(static)
+	#pragma omp parallel for num_threads(Opt->Cores) schedule(dynamic)
+//	#pragma omp parallel for num_threads(Opt->Cores) schedule(static)
 #endif
-	for(NIndex=0;NIndex<GroupSize;NIndex++)
-		GeoForceUpDateNode(NodeList[NIndex], Rates);
-
+		for(NIndex=0;NIndex<GroupSize;NIndex++)
+			GeoForceUpDateNode(NodeList[NIndex], Rates);
+	}
 //	for(NIndex=0;NIndex<Tree->NoInternalNodes;NIndex++)
 //		GeoForceUpDateNode(Tree->InternalNodesList[NIndex], Rates);
 
 //	for(NIndex=0;NIndex<GroupSize;NIndex++)
 //		GeoForceUpDateNode(NodeList[NIndex], Rates);
-
-
 
 	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
 

@@ -94,6 +94,12 @@ void MapFatTailRateToRates(RATES *Rates, FATTAILRATES *FatTailRates)
 	}
 }
 
+double*	SetPartialLikelihoodMem(TREES *Trees)
+{
+	assert(Trees->NoTrees == 1);
+	return SMalloc(sizeof(double) * Trees->Tree[0]->NoInternalNodes);
+}
+
 FATTAILRATES*	AllocFatTailRates(OPTIONS *Opt, TREES *Trees)
 {
 	FATTAILRATES* Ret;
@@ -126,6 +132,8 @@ FATTAILRATES*	AllocFatTailRates(OPTIONS *Opt, TREES *Trees)
 	Ret->SDList = (STABLEDIST**)SMalloc(sizeof(STABLEDIST*) * Ret->NoSD);
 	for(Index=0;Index<Ret->NoSD;Index++)
 		Ret->SDList[Index] = CreatStableDist();
+
+	Ret->PartialLh = SetPartialLikelihoodMem(Trees);
 	
 	return Ret;
 }
@@ -219,6 +227,8 @@ void	FreeFatTailRates(FATTAILRATES* FTR, int NoSites, int NoCores)
 	free(FTR->SDList);
 		
 	free(FTR->AnsVect);
+
+	free(FTR->PartialLh);
 	
 	free(FTR);
 }
@@ -258,7 +268,7 @@ void	AllocFatTailTreeGroups(TREE *Tree)
 	size_t i,j;
 
 	MaxNoNodes = Tree->NoInternalNodes;
-	MaxGroups = Tree->NoFGroups;
+	MaxGroups = Tree->NoParallelGroups;
 
 	FTT = Tree->FatTailTree;
 
@@ -280,27 +290,135 @@ void	AllocFatTailTreeGroups(TREE *Tree)
 			FTT->ParallelNodeList[i][j] = NULL;
 }
 
-void	InitFatTailTreeGroups(TREE *Tree)
+int		ValidInGroup(NODE Node, NODE *NodeList, int GroupSize)
+{
+	int NIndex, DecIndex;
+	NODE Dec;
+
+	for(NIndex=0;NIndex<GroupSize;NIndex++)
+	{
+		Dec = NodeList[NIndex];
+
+		for(DecIndex=0;DecIndex<Node->NoNodes;DecIndex++)
+			if(Dec == Node->NodeList[DecIndex])
+				return FALSE;
+	}
+
+	return TRUE;
+}
+
+int		FindNodeGroup(NODE N, FATTAILTREE *FTT)
+{
+	int GIndex;
+
+	for(GIndex=0;GIndex<FTT->NoParallelGroups;GIndex++)
+	{
+		if(ValidInGroup(N, FTT->ParallelNodeList[GIndex], FTT->ParallelNodeListLength[GIndex]) == TRUE)
+			return GIndex;
+	}
+
+	return -1;
+}
+
+void	AddNodeToGroup(NODE N, FATTAILTREE *FTT, int Group)
+{
+	int Pos;
+
+	if(Group == -1)
+	{
+		Group = FTT->NoParallelGroups;
+		FTT->NoParallelGroups++;
+	}
+
+	Pos = FTT->ParallelNodeListLength[Group];
+
+	FTT->ParallelNodeList[Group][Pos] = N;
+	FTT->ParallelNodeListLength[Group]++;
+}
+
+void	SetFatTailTreeGroups(TREE *Tree)
 {
 	FATTAILTREE *FTT;
+	int GIndex, NIndex, Group;
+	NODE Node;
 
 	FTT = Tree->FatTailTree;
 
 	AllocFatTailTreeGroups(Tree);
 
-	memcpy(FTT->ParallelNodeList[0], Tree->PNodes[0], sizeof(NODE) * Tree->NoFNodes[0]);
+	memcpy(FTT->ParallelNodeList[0], Tree->ParallelNodes[0], sizeof(NODE) * Tree->ParallelGroupSize[0]);
+	memcpy(FTT->ParallelNodeList[1], Tree->ParallelNodes[1], sizeof(NODE) * Tree->ParallelGroupSize[1]);
+
+	FTT->NoParallelGroups = 2;
+	FTT->ParallelNodeListLength[0] = Tree->ParallelGroupSize[0];
+	FTT->ParallelNodeListLength[1] = Tree->ParallelGroupSize[1];
+
+	for(GIndex=2;GIndex<Tree->NoParallelGroups;GIndex++)
+	{
+		for(NIndex=0;NIndex<Tree->ParallelGroupSize[GIndex];NIndex++)
+		{
+			Node = Tree->ParallelNodes[GIndex][NIndex];
+			Group = FindNodeGroup(Node, FTT);
+			AddNodeToGroup(Node, FTT, Group);
+		}
+
+	}
 }
 
-
-
-void	SetFatTailTreeGroups(TREE *Tree)
+void	PrintFatTailGroups(TREE *Tree)
 {
 	FATTAILTREE *FTT;
+	int Index, NIndex;
+	NODE Node;
 
 	FTT = Tree->FatTailTree;
 
-	InitFatTailTreeGroups(Tree);
+	printf("FTT Group\n");
+	for(Index=0;Index<FTT->NoParallelGroups;Index++)
+		printf("%d\t%d\n", Index, FTT->ParallelNodeListLength[Index]);
+	
+	printf("Parallel Group\n");
+	for(Index=0;Index<Tree->NoParallelGroups;Index++)
+		printf("%d\t%d\n", Index, Tree->ParallelGroupSize[Index]);
 
+	printf("IDs and Taxa\n");
+	for(Index=0;Index<Tree->NoInternalNodes;Index++)
+	{
+		Node = Tree->NodeList[Index];
+		printf("Node\t%d\t", Node->ID);
+		RecPRintNodeTaxa(Node, ' ');
+		printf("\n");
+	}
+
+
+	printf("FTT groups\n");
+	for(Index=0;Index<FTT->NoParallelGroups;Index++)
+	{
+		printf("%d\t", Index);
+		for(NIndex=0;NIndex<FTT->ParallelNodeListLength[Index];NIndex++)
+		{
+			Node = FTT->ParallelNodeList[Index][NIndex];
+
+			printf("%d\t", Node->ID);
+		}
+
+		printf("\n");
+	}
+
+	printf("Parallel Groups\n");
+	for(Index=0;Index<Tree->NoParallelGroups;Index++)
+	{
+		printf("%d\t", Index);
+		for(NIndex=0;NIndex<Tree->ParallelGroupSize[Index];NIndex++)
+		{
+			Node = Tree->ParallelNodes[Index][NIndex];
+
+			printf("%d\t", Node->ID);
+		}
+
+		printf("\n");
+	}
+	exit(0);
 }
 
 void	InitFatTailTree(OPTIONS *Opt, TREE *Tree)
@@ -315,6 +433,7 @@ void	InitFatTailTree(OPTIONS *Opt, TREE *Tree)
 	}
 
 	SetFatTailTreeGroups(Tree);
+//	PrintFatTailGroups(Tree);
 }
 
 FATTAILTREE*	AllocFatTailTree(TREE *Tree, int NoSites)
@@ -462,9 +581,6 @@ double	CalcNodeStableLh(NODE N, int NoSites, STABLEDIST **SDList, int UseGeoMode
 	double Ret;
 	double L, x;
 	STABLEDIST *SD;
-	
-	if(N->Tip == TRUE)
-		return 0;
 
 	Ret = 0;
 	SD = SDList[0];
@@ -518,23 +634,16 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	for(Index=0;Index<FTR->NoSD;Index++)
 		SetStableDist(FTR->SDList[Index], FTR->Alpha[Index], FTR->Scale[Index]);
 
-	Ret = 0;
-/*
-#ifdef OPENMP_THR
-	#pragma omp parallel for num_threads(Opt->Cores) reduction(+:Ret)
-#endif
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		if(Tree->NodeList[Index]->Tip == FALSE)
-			Ret += CalcNodeStableLh(Tree->NodeList[Index], NoSites, FTR->SDList, UseGeoModel);
-	}
-*/
-	Ret = 0;
+	
 	#ifdef OPENMP_THR
-		#pragma omp parallel for num_threads(Opt->Cores) reduction(+:Ret)
+		#pragma omp parallel for num_threads(Opt->Cores)
 	#endif
 	for(Index=0;Index<Tree->NoInternalNodes;Index++)
-		Ret += CalcNodeStableLh(Tree->InternalNodesList[Index], NoSites, FTR->SDList, UseGeoModel);
+		FTR->PartialLh[Index] = CalcNodeStableLh(Tree->InternalNodesList[Index], NoSites, FTR->SDList, UseGeoModel);
+
+	Ret = 0;
+	for(Index=0;Index<Tree->NoInternalNodes;Index++)
+		Ret += FTR->PartialLh[Index];
 
 	if(ValidLh(Ret, Opt->ModelType) == FALSE)
 		return ERRLH;
@@ -774,19 +883,18 @@ void	SSAllAnsStatesFatTailSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, FATTAIL
 
 	SetStableDist(FTR->SDList[SiteNo], FTR->Alpha[SiteNo], FTR->Scale[SiteNo]);
 	
-	for(FIndex=0;FIndex<Tree->NoFGroups;FIndex++)
+	for(FIndex=0;FIndex<Tree->NoParallelGroups;FIndex++)
 	{
 #ifdef OPENMP_THR
 	#pragma omp parallel for num_threads(Opt->Cores) private(TNo, N) schedule(dynamic, 1)
 #endif
-		for(NIndex=0;NIndex<Tree->NoFNodes[FIndex];NIndex++)
+		for(NIndex=0;NIndex<Tree->ParallelGroupSize[FIndex];NIndex++)
 		{			
-			N = Tree->FNodes[FIndex][NIndex];
+			N = Tree->ParallelNodes[FIndex][NIndex];
 			TNo = GetThreadNo();
 			SSNodeFatTail(N, SiteNo, Opt, Trees, Rates, FTR->SliceSamplers[TNo], Rates->RSList[TNo]);
 		}
 	}
-
 }
 
 void	SSAllAnsStatesFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -950,7 +1058,7 @@ void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
 	fprintf(Opt->LogFatTail, "Itter\tLh\t");
 
 	if(Opt->Model == M_GEO)
-		fprintf(Opt->LogFatTail, "Alpha\tScale\t");
+		fprintf(Opt->LogFatTail, "Scale\t");
 	else
 	{
 		for(Index=0;Index<Trees->NoSites;Index++)
@@ -996,6 +1104,7 @@ void	OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		N = Tree->NodeList[Index];
 
 		fprintf(Opt->LogFatTail, "%f\t", N->Length);
+
 		if(Opt->Model == M_GEO)
 		{
 			NodeToLongLat(N, &Long, &Lat);

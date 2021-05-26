@@ -555,9 +555,9 @@ void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
 	exit(0);
 
 
-	for(Index=0;Index<Tree->NoFGroups;Index++)
+	for(Index=0;Index<Tree->NoParallelGroups;Index++)
 	{
-		printf("%d\t%d\n", Index, Tree->NoFNodes[Index]);
+		printf("%d\t%d\n", Index, Tree->ParallelGroupSize[Index]);
 	}
 	exit(0);
 
@@ -569,9 +569,6 @@ void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
 		GeoUpDateAllAnsStates(Opt, Trees, Rates);
 	}
 
-
-
-
 	printf("Total Time:\t%f\n", EndT - StartT);
 
 	exit(0);
@@ -580,7 +577,7 @@ void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj)
 #else
-	void	MCMC(OPTIONS *Opt, TREES *Trees)
+	void	MCMC(OPTIONS *Opt, TREES *Trees)	
 #endif
 {
 	RATES*		CRates;
@@ -671,7 +668,7 @@ void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
 	fflush(stdout);
 	fflush(Opt->LogFile);
 
-	MCMCTest(Opt, Trees, CRates, Shed);
+//	MCMCTest(Opt, Trees, CRates, Shed);
 
 
 	StartT = GetSeconds();
@@ -710,6 +707,7 @@ void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
 
 				// Needed to make sure the tree has correct values set
 				// Also a sandity check.
+
 				if(CRates->Lh != Likelihood(CRates, Trees, Opt))
 				{
 					printf("Likelihood Error: %d::%s\n", __LINE__, __FILE__);

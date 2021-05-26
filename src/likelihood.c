@@ -883,7 +883,7 @@ void	RunNodeGroup(int GroupNo, RATES* Rates, TREE *Tree, TREES *Trees, OPTIONS *
 #ifdef OPENMP_THR
 	#pragma omp parallel for
 #endif
-	for(NIndex=0;NIndex<Tree->NoFNodes[GroupNo];NIndex++)
+	for(NIndex=0;NIndex<Tree->ParallelGroupSize[GroupNo];NIndex++)
 	{
 		#ifdef BIG_LH
 			LhBigLh(Tree->FNodes[GroupNo][NIndex], Opt, Trees, Opt->Precision, SiteNo);
@@ -891,7 +891,7 @@ void	RunNodeGroup(int GroupNo, RATES* Rates, TREE *Tree, TREES *Trees, OPTIONS *
 			#ifdef QUAD_DOUBLE
 				NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
 			#else
-				SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
+				SumLikeMultiState(Tree->ParallelNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
 			#endif
 		#endif
 	}
@@ -912,7 +912,7 @@ void	SumLhLiner(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
 #endif
 
 	
-	for(GIndex=0;GIndex<Tree->NoFGroups;GIndex++)
+	for(GIndex=0;GIndex<Tree->NoParallelGroups;GIndex++)
 		RunNodeGroup(GIndex, Rates, Tree, Trees, Opt, SiteNo);
 }
 
