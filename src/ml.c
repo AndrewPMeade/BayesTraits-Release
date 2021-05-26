@@ -350,7 +350,7 @@ double*	MLMapClonePVect(ML_MAP*	MLMap)
 	return (double*)CloneMem(sizeof(double) * MLMap->NoP, (void*)MLMap->PVal);
 }
 
-ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates, ML_MAP *Init)
 {
 	ML_MAP		*Ret;
 	PRAXSTATE	*PState;
@@ -361,6 +361,10 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	BuildMLMap(Ret, Opt, Trees, Rates);
 	
 	FindValidMLStartSet(Ret, Opt, Trees, Rates);	
+
+	if(Init != NULL)
+		CopyMLMap(Ret, Init);
+
 
 	Lh = LikelihoodML(Ret, Opt, Trees, Rates);
 
@@ -421,7 +425,13 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		{
 			for(Index=0;Index<Opt->MLTries;Index++)
 			{
-				CMap = MLMapTreeTry(Opt, Trees, Rates);
+				if(Index!=0)
+					CMap = MLMapTreeTry(Opt, Trees, Rates, NULL);
+				else
+					CMap = MLMapTreeTry(Opt, Trees, Rates, BMap);
+
+				
+				
 				CLh = LikelihoodML(CMap, Opt, Trees, Rates);
 			
 				if(CLh > BLh)
@@ -680,7 +690,8 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 	TStart = GetSeconds();
 
 	if(Opt->UseMLLandscape == TRUE)
-		LocalTransformMLAllNodes(Opt, Trees, Rates);
+		LocalTransformMLAllNodes(Opt, Trees, Rates, TRUE, FALSE, TRUE);
+		
 
 //	CalcAllNodeTransfroms(Opt, Trees, Rates); return;
 //	MLTest(Opt, Trees, Rates);

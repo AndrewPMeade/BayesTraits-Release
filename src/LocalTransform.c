@@ -56,6 +56,8 @@ LOCAL_TRANSFORM*	CreateLocalTransforms(char *Name, TAG **TagList, int NoTags, TR
 
 void		FreeLocalTransforms(LOCAL_TRANSFORM* LTrans)
 {
+	if(LTrans == NULL)
+		return;
 	free(LTrans->Name);
 	free(LTrans->TagList);
 	free(LTrans);

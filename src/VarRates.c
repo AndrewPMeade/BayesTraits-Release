@@ -42,6 +42,7 @@
 #include "TransformTree.h"
 #include "Part.h"
 #include "StableDist.h"
+#include "VarRates.h"
 
 
 #include <gsl/gsl_cdf.h>

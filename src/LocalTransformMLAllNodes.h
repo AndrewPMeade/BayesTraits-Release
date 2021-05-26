@@ -9,11 +9,17 @@
 typedef struct
 {
 	TAG **TagList;
-	int	*ValidNodes;
+	
 	int NoNodes;
+
+	int	*ValidBetaNodes;
+	int	*ValidNodeNodes;
+	int	*ValidBLNodes;
+
+	int EstNodes, EstBeta, EstBL;
 
 } LT_ALL_NODES;
 
-void	LocalTransformMLAllNodes(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void	LocalTransformMLAllNodes(OPTIONS *Opt, TREES *Trees, RATES *Rates, int EstNodes, int EstBL, int EstBeta);
 
 #endif

@@ -4,6 +4,7 @@
 
 #include "LocalTransformMLAllNodes.h"
 #include "LocalTransform.h"
+#include "VarRates.h"
 #include "ML.h"
 #include "GenLib.h"
 #include "Tag.h"
@@ -21,15 +22,41 @@ LT_ALL_NODES*	AllocLTMLAllNodes(int NoNodes)
 
 	Ret->NoNodes = NoNodes;
 	Ret->TagList = (TAG**)SMalloc(sizeof(TAG*) * NoNodes);
-	Ret->ValidNodes = (int*)SMalloc(sizeof(int) * NoNodes);
+
+	Ret->ValidBetaNodes = (int*)SMalloc(sizeof(int) * NoNodes);
+	Ret->ValidBLNodes = (int*)SMalloc(sizeof(int) * NoNodes);
+	Ret->ValidNodeNodes = (int*)SMalloc(sizeof(int) * NoNodes);
 
 	for(Index=0;Index<NoNodes;Index++)
 	{
 		Ret->TagList[Index] = NULL;
-		Ret->ValidNodes[Index] = FALSE;
+
+		Ret->ValidBetaNodes[Index] = FALSE;
+		Ret->ValidBLNodes[Index] = FALSE;
+		Ret->ValidNodeNodes[Index] = FALSE;
 	}
 
+
+	Ret->EstBeta = FALSE;
+	Ret->EstBL = FALSE;
+	Ret->EstNodes = FALSE;
+
 	return Ret;
+}
+
+void	FreeLTMLAllNodes(LT_ALL_NODES *Data)
+{
+	int Index;
+
+	for(Index=0;Index<Data->NoNodes;Index++)
+		FreeTag(Data->TagList[Index]);
+	free(Data->TagList);
+
+	free(Data->ValidBetaNodes);
+	free(Data->ValidBLNodes);
+	free(Data->ValidNodeNodes);
+
+	free(Data);
 }
 
 int		ValidNode(NODE Node, TRANSFORM_TYPE TType)
@@ -43,12 +70,16 @@ int		ValidNode(NODE Node, TRANSFORM_TYPE TType)
 	return FALSE;
 }
 
-void	SetValidNodes(LT_ALL_NODES *Data, TREE *Tree, TRANSFORM_TYPE TType)
+void	SetValidNodes(LT_ALL_NODES *Data, TREE *Tree)
 {
 	int Index;
 
 	for(Index=0;Index<Data->NoNodes;Index++)
-		Data->ValidNodes[Index] = ValidNode(Tree->NodeList[Index], TType);
+	{
+		Data->ValidNodeNodes[Index] = ValidNode(Tree->NodeList[Index], VR_NODE);
+		Data->ValidBLNodes[Index] = ValidNode(Tree->NodeList[Index], VR_BL);
+		Data->ValidBetaNodes[Index] = ValidNode(Tree->NodeList[Index], VR_LS_BL);
+	}
 }
 
 void	GetTagTaxaNames(NODE Node, int *NoTaxa, char **TagNames)
@@ -100,7 +131,7 @@ void	SetAllTags(LT_ALL_NODES *Data, TREES *Trees)
 	free(TaxaNames);
 }
 
-LT_ALL_NODES*	CreatLTMLAllNodes(TREES *Trees, TRANSFORM_TYPE TType)
+LT_ALL_NODES*	CreatLTMLAllNodes(TREES *Trees, int EstNodes, int EstBL, int EstBeta)
 {
 	LT_ALL_NODES *Ret;
 	TREE *Tree;
@@ -109,9 +140,17 @@ LT_ALL_NODES*	CreatLTMLAllNodes(TREES *Trees, TRANSFORM_TYPE TType)
 
 	Ret = AllocLTMLAllNodes(Tree->NoNodes);
 
-	SetValidNodes(Ret, Tree, TType);
-	SetAllTags(Ret, Trees);
+	if(EstNodes == TRUE)
+		Ret->EstNodes = TRUE;
 
+	if(EstBL == TRUE)
+		Ret->EstBL = TRUE;
+
+	if(EstBeta == TRUE)
+		Ret->EstBeta = TRUE;
+
+	SetValidNodes(Ret, Tree);
+	SetAllTags(Ret, Trees);
 
 	return Ret;
 }
@@ -168,7 +207,7 @@ double	MLLTScalar(NODE N, LOCAL_TRANSFORM *LT, OPTIONS *Opt, TREES *Trees, RATES
 	return OptLh - InitLh;
 }
 
-int		GetMaxLhGainPos(LT_ALL_NODES* Data, double *LhList)
+int		GetMaxLhGainPos(LT_ALL_NODES* Data, double *LhList, int *ValidNodes)
 {
 	int Index, Ret;
 
@@ -176,7 +215,7 @@ int		GetMaxLhGainPos(LT_ALL_NODES* Data, double *LhList)
 
 	for(Index=0;Index<Data->NoNodes;Index++)
 	{
-		if(Data->ValidNodes[Index] == TRUE)
+		if(ValidNodes[Index] == TRUE)
 		{
 			if(Ret == -1)
 				Ret = Index;
@@ -191,23 +230,15 @@ int		GetMaxLhGainPos(LT_ALL_NODES* Data, double *LhList)
 	return Ret;
 }
 
-int		PostProcNewScalar(LT_ALL_NODES* Data, LOCAL_TRANSFORM *LT, RATES *Rates, double *LhList, double *ScaleList)
+void	PostProcNewScalar(LT_ALL_NODES* Data, int *ValidNodes, LOCAL_TRANSFORM *LT, RATES *Rates, double *LhList, double *ScaleList)
 {
 	int MaxPos;
 
-	MaxPos = GetMaxLhGainPos(Data, LhList);
+	MaxPos = GetMaxLhGainPos(Data, LhList, ValidNodes);
 
-	if(LhList[MaxPos] > ML_CUT_POINT)
-	{
-		LT->TagList[0] = Data->TagList[MaxPos];
-		LT->Scale = ScaleList[MaxPos];
-		LT->Est = FALSE;
-		Data->ValidNodes[MaxPos] = FALSE;
-
-		return TRUE;
-	}
-
-	return FALSE;
+	LT->TagList[0] = Data->TagList[MaxPos];
+	LT->Scale = ScaleList[MaxPos];
+	LT->Est = FALSE;
 }
 
 void	LhTestSurce(OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -230,10 +261,10 @@ void	LhTestSurce(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 }
 
-int		IncludeNewScalar(LT_ALL_NODES* Data, TRANSFORM_TYPE TType, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	IncludeNewScalarType(LT_ALL_NODES* Data, TRANSFORM_TYPE TType, int *ValidNodes, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE *Tree;
-	int NIndex, Ret;
+	int NIndex;
 	NODE Node;
 	TAG	*Tag;
 	LOCAL_TRANSFORM *LT;
@@ -248,7 +279,7 @@ int		IncludeNewScalar(LT_ALL_NODES* Data, TRANSFORM_TYPE TType, OPTIONS *Opt, TR
 
 	for(NIndex=0;NIndex<Data->NoNodes;NIndex++)
 	{
-		if(Data->ValidNodes[NIndex] == TRUE)
+		if(ValidNodes[NIndex] == TRUE)
 		{
 			Node = Tree->NodeList[NIndex];
 			Tag = Data->TagList[NIndex];
@@ -258,22 +289,98 @@ int		IncludeNewScalar(LT_ALL_NODES* Data, TRANSFORM_TYPE TType, OPTIONS *Opt, TR
 			if(LT->Type == VR_LS_BL)
 				LT->Scale = 0.0;			
 
-//			LhTestSurce(Opt, Trees, Rates);
 			LhGain[NIndex] = MLLTScalar(Node, LT, Opt, Trees, Rates);
 			Scale[NIndex] = LT->Scale;
-
 		}
 	}
 
-	Ret = PostProcNewScalar(Data, LT, Rates, LhGain, Scale);
-	
-	if(Ret == FALSE)
-		RemoveScalar(Rates);
+	PostProcNewScalar(Data, ValidNodes, LT, Rates, LhGain, Scale);
 	
 	free(LhGain);
 	free(Scale);
+}
 
-	return Ret;
+void	AddLTNode(RATES *Rates, LOCAL_TRANSFORM *LTNode)
+{
+	Rates->LocalTransforms[Rates->NoLocalTransforms++] = LTNode;
+}
+
+void	SetNodeAsInValid(LT_ALL_NODES* Data, LOCAL_TRANSFORM *LTNode, int *NodeList)
+{
+	int Index;
+
+	for(Index=0;Index<Data->NoNodes;Index++)
+	{
+		if(LTNode->TagList[0] == Data->TagList[Index])
+		{
+			NodeList[Index] = FALSE;
+			return;
+		}
+	}
+	
+}
+
+void	IncludeNewScalar(LT_ALL_NODES* Data, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double InitLh, LhGainNode, LhGainBeta, LhGainBL;
+	LOCAL_TRANSFORM *LTNode, *LTBeta, *LTBL;
+
+	InitLh = Likelihood(Rates, Trees, Opt);
+
+	LhGainNode = LhGainBeta = LhGainBL = -1;
+	LTNode = LTBeta = LTBL = NULL;
+
+	if(Data->EstNodes == TRUE)
+	{
+		IncludeNewScalarType(Data, VR_NODE, Data->ValidNodeNodes, Opt, Trees, Rates);
+		LTNode = Rates->LocalTransforms[Rates->NoLocalTransforms-1];
+		LhGainNode = Likelihood(Rates, Trees, Opt) - InitLh;
+		Rates->NoLocalTransforms--;
+	}
+
+	if(Data->EstBeta == TRUE)
+	{
+		IncludeNewScalarType(Data, VR_LS_BL, Data->ValidBetaNodes, Opt, Trees, Rates);
+		LTBeta = Rates->LocalTransforms[Rates->NoLocalTransforms-1];
+		LhGainBeta = Likelihood(Rates, Trees, Opt) - InitLh;
+		Rates->NoLocalTransforms--;
+	}
+
+	if(Data->EstBL == TRUE)
+	{
+		IncludeNewScalarType(Data, VR_BL, Data->ValidBLNodes, Opt, Trees, Rates);
+		LTBL = Rates->LocalTransforms[Rates->NoLocalTransforms-1];
+		LhGainBL = Likelihood(Rates, Trees, Opt) - InitLh;
+		Rates->NoLocalTransforms--;
+	}
+
+
+	if(LhGainNode > LhGainBeta && LhGainNode > LhGainBL)
+	{		
+		AddLTNode(Rates, LTNode);
+		SetNodeAsInValid(Data, LTNode, Data->ValidNodeNodes);
+		FreeLocalTransforms(LTBeta);
+		FreeLocalTransforms(LTBL);
+		return;
+	}
+
+	if(LhGainBeta > LhGainBL)
+	{		
+		AddLTNode(Rates, LTBeta);
+		SetNodeAsInValid(Data, LTBeta, Data->ValidBetaNodes);
+		FreeLocalTransforms(LTNode);
+		FreeLocalTransforms(LTBL);
+		return;
+	}
+
+	if(LhGainBL != -1)
+	{
+		AddLTNode(Rates, LTBL);
+		SetNodeAsInValid(Data, LTBL, Data->ValidBetaNodes);
+		FreeLocalTransforms(LTNode);
+		FreeLocalTransforms(LTBeta);
+		return;
+	}
 }
 
 void	IntiLocalTransforms(TREES *Trees, RATES *Rates)
@@ -283,7 +390,7 @@ void	IntiLocalTransforms(TREES *Trees, RATES *Rates)
 	Tree = Trees->Tree[0];
 	Rates->NoLocalTransforms = 0;
 
-	Rates->LocalTransforms = (LOCAL_TRANSFORM**)SMalloc(sizeof(LOCAL_TRANSFORM*) * Tree->NoNodes);
+	Rates->LocalTransforms = (LOCAL_TRANSFORM**)SMalloc(sizeof(LOCAL_TRANSFORM*) * Tree->NoNodes * 10);
 }
 
 void	OutputNewScalar(double BaseLh, double OptLh, double GOptLh, RATES *Rates)
@@ -292,9 +399,26 @@ void	OutputNewScalar(double BaseLh, double OptLh, double GOptLh, RATES *Rates)
 
 	LT = Rates->LocalTransforms[Rates->NoLocalTransforms-1];
 
-	printf("%d\t%f\t%f\t%f\t%f\t", Rates->NoLocalTransforms, BaseLh, OptLh, GOptLh, LT->Scale);
+	printf("Adding\t%d\t%f\t%f\t%f\t%f\t", Rates->NoLocalTransforms, BaseLh, OptLh, GOptLh, LT->Scale);
+	OutputVarRatesType(stdout, LT->Type);
+
 	PrintTag(stdout, LT->TagList[0]);
 
+	fflush(stdout);
+}
+
+void	OutputAllScalar(RATES *Rates)
+{
+	int Index;
+	LOCAL_TRANSFORM *LT;
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+	{
+		LT = Rates->LocalTransforms[Index];
+		printf("Final\t%d\t%f\t", Index, LT->Scale);
+		OutputVarRatesType(stdout, LT->Type);
+		PrintTag(stdout, LT->TagList[0]);
+	}
 	fflush(stdout);
 }
 
@@ -318,38 +442,94 @@ void	SetAllEstLT(RATES *Rates, int Est)
 		Rates->LocalTransforms[Index]->Est = Est;
 }
 
+void	LTMLTreeGlobal(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	ML_MAP*	CMap, *BMap;
+	double CLh, BLh;
+	int Index;
+	
+
+	BMap = AllocMLMap();
+
+	BuildMLMap(BMap, Opt, Trees, Rates);
+
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+		BMap->PVal[Index] = Rates->LocalTransforms[Index]->Scale;
+
+	BLh = LikelihoodML(BMap, Opt, Trees, Rates);
+
+	for(Index=0;Index<Opt->MLTries;Index++)
+	{
+		CMap = MLMapTreeTry(Opt, Trees, Rates, BMap);
+		CLh = LikelihoodML(CMap, Opt, Trees, Rates);
+			
+		if(CLh > BLh)
+		{
+			CopyMLMap(BMap, CMap);
+			BLh = CLh;
+		}
+
+		FreeMLMap(CMap);
+	}
+	
+	Rates->Lh = LikelihoodML(BMap, Opt, Trees, Rates);
+	FreeMLMap(BMap);
+}
+
+
+
 double	GlobalOpt(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
+	double Pre, Post;
+
+	Pre = Likelihood(Rates, Trees, Opt);
+	
 	SetAllEstLT(Rates, TRUE);
 
-	MLTree(Opt, Trees, Rates);
+	LTMLTreeGlobal(Opt, Trees, Rates);
 
 	SetAllEstLT(Rates, FALSE);
+
+	Post = Likelihood(Rates, Trees, Opt);
+
+	if(Pre > Post)
+	{
+		printf("eee\n");
+		exit(0);
+	}
 
 	return Likelihood(Rates, Trees, Opt);
 }
 
-void	LocalTransformMLAllNodes(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	LocalTransformMLAllNodes(OPTIONS *Opt, TREES *Trees, RATES *Rates, int EstNodes, int EstBL, int EstBeta)
 {
 	LT_ALL_NODES* Data;
-	TRANSFORM_TYPE TType;
 	int Valid;
 	double InitLh, OptLh, GOptLh;
 
-//	TType = VR_NODE;
-
-	// you need to make sure a node is allready being scaled.. 
-	TType = VR_LS_BL;
-
 	IntiLocalTransforms(Trees, Rates);
 
-	Data = CreatLTMLAllNodes(Trees, TType);
+	Data = CreatLTMLAllNodes(Trees, EstNodes, EstBL, EstBeta);
 	
+	InitLh = Likelihood(Rates, Trees, Opt);
+	printf("IntLH:\t%f\n", InitLh);
+
 	do
 	{
 		InitLh = Likelihood(Rates, Trees, Opt);
-		Valid = IncludeNewScalar(Data, TType, Opt, Trees, Rates);
+		IncludeNewScalar(Data, Opt, Trees, Rates);
 		OptLh = Likelihood(Rates, Trees, Opt);
+		Rates->Lh = OptLh;
+
+		
+		if(OptLh - InitLh > ML_CUT_POINT)
+			Valid = TRUE;
+		else
+		{
+			RemoveScalar(Rates);
+			Valid= FALSE;
+		}
+
 		if(Valid == TRUE)
 		{
 			GOptLh = GlobalOpt(Opt, Trees, Rates);
@@ -357,8 +537,15 @@ void	LocalTransformMLAllNodes(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		}
 	}while(Valid == TRUE);
 
-	Likelihood(Rates, Trees, Opt);
+	OptLh = Likelihood(Rates, Trees, Opt);
+	
+	printf("OptLh:\t%f\n", OptLh);
+
 	OutputTrees(Opt, Trees, Rates);
+
+	OutputAllScalar(Rates);	
+	
+	FreeLTMLAllNodes(Data);
 
 	exit(0);
 }
