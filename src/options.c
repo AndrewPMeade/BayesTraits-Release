@@ -1200,6 +1200,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->VarRatesLog= NULL;
 
 	Ret->LogFatTail	= NULL;
+	Ret->LogLandscapeGroups	 = NULL;
 	
 	Ret->UseRModel	= FALSE;
 	Ret->RModelP	= -1;

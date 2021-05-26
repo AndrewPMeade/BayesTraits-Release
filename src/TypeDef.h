@@ -161,6 +161,7 @@
 #define OUTPUT_EXT_ANC			".AncStates.txt"
 #define OUTPUT_EXT_DUMMY_CODE	".DummyCode.txt"
 #define OUTPUT_EXT_SIM			".Sim.txt"
+#define OUTPUT_EXT_LAND_GROUP	".LandscapeGroups.txt"
 #define OUTPUT_EXT_VAR_RATES	".VarRates.txt"
 #define OUTPUT_EXT_STONES		".Stones.txt"
 #define OUTPUT_EXT_TREES		".Output.trees"
@@ -1193,6 +1194,7 @@ typedef struct
 	FILE		*OutTrees;
 	FILE		*VarRatesLog;
 	FILE		*LogFatTail;
+	FILE		*LogLandscapeGroups;
 	char		*LogFileBuffer;
 	char		**PassedOut;
 
