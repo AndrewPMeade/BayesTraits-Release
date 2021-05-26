@@ -8,7 +8,6 @@
 #include "GenLib.h"
 #include "Part.h"
 #include "VarRates.h"
-#include "LandscapeRJGroups.h"
 #include "Likelihood.h"
 #include "ML.h"
 #include "NLOptBT.h"
@@ -74,7 +73,6 @@ void		SetBetaNode(NODE N, double Beta)
 int			NodeSubSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int i,j;
-	PART Pi, Pj;
 	VARRATES* VarRates;
 	VAR_RATES_NODE *VRN_i, *VRN_j;
 
@@ -109,7 +107,7 @@ void		MapRJLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	VARRATES* VarRates;
 	VAR_RATES_NODE *VR_Node;
-	int TreeNo, Index, NIndex;
+	int TreeNo, Index;
 	
 	TreeNo = Rates->TreeNo;
 
@@ -204,9 +202,6 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	MapRJLandscape(Opt, Trees, Rates);
 	
-	if(Rates->LandscapeRateGroups != NULL)
-		MapLandRateGroups(Opt, Trees, Rates);
-
 	if(Rates->Landscape != NULL)
 		MapLandscapeNodes(Opt, Trees, Rates);
 
@@ -214,7 +209,6 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	MakeBetaBL(Tree);
 
 	PropLandscapeBeta(Trees, Tree->Root, 0.0);
-
 }
 
 LANDSCAPE*	AllocLandscape(int MaxNodes)
@@ -504,8 +498,7 @@ void	OutputLandscapeInfo(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 void	MLLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	LANDSCAPE *Landscape;
-	int Valid, Index;
+	int Valid;
 	double InitLh, OptLh;
 
 	OutputLandscapeInfo(Opt, Trees, Rates);
@@ -535,11 +528,8 @@ void	MLLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	}while(Valid == TRUE);
 	
 	PrintMLLandscape(Trees, Rates);
-
 	
 	OutputLandscapeInfo(Opt, Trees, Rates);
-
-
 
 	exit(0);
 }

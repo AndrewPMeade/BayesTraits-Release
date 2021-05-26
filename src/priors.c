@@ -41,7 +41,7 @@
 #include "RandLib.h"
 #include "Prob.h"
 #include "LocalTransform.h"
-#include "LandscapeRJGroups.h"
+#include "GlobalTrend.h"
 
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
@@ -1054,11 +1054,13 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 		Ret += PLh;
 	}
 
-	if(Opt->UseRJLandscapeRateGroup == TRUE)
+	if(Opt->UseGlobalTrend == TRUE)
 	{
-		PLh = CalcPriorLandRateGoup(Rates);
+		PLh = CalcGlobalTrendPrior(Rates);
+		
 		if(PLh == ERRLH)
 			return;
+
 		Ret += PLh;
 	}
 
@@ -1083,7 +1085,7 @@ double	ChangePriorNorm(RATES *Rates, double Val, double Dev, double Min, double 
 	do
 	{
 		Ret = RandNormal(Rates->RS, Val, Dev);
-	} while((Ret > Max) || (Ret < Min));
+	} while(Ret > Max || Ret < Min);
 
 	return Ret;
 }

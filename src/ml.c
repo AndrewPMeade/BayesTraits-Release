@@ -148,6 +148,9 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->EstGamma == TRUE)
 		AddPToMLMap(MLMap, 1.0, MIN_GAMMA, MAX_GAMMA);
 
+	if(Opt->UseGlobalTrend == TRUE)
+		AddPToMLMap(MLMap, 0.0, MIN_GLOBAL_TREND, MAX_GLOBAL_TREND);
+
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
 	{
 		LT = Rates->LocalTransforms[Index];
@@ -262,6 +265,9 @@ void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
 
 	if(Opt->EstGamma == TRUE)
 		Rates->Gamma = MLMap->PVal[Pos++];
+
+	if(Opt->UseGlobalTrend == TRUE)
+		Rates->GlobalTrend = MLMap->PVal[Pos++];
 
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
 		if(Rates->LocalTransforms[Index]->Est == TRUE)
@@ -546,7 +552,7 @@ void	CalcAllNodeTransfroms(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	TREE *Tree;
 	int Index;
 	NODE Node;
-	double ILh, OLh, BL, Height;
+	double ILh, OLh, Height;
 	
 	Tree = Trees->Tree[0];
 	
@@ -646,6 +652,8 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 //	MLTestF(Opt, Trees, Rates);
 
 //	TestErrModel(Opt, Rates, Trees);
+
+//	TestContrastGlobalTrend(Opt, Trees, Rates);
 	
 	for(Index=0;Index<Trees->NoTrees;Index++)
 	{

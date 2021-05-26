@@ -94,7 +94,7 @@ void btlin_printR(double* m, int nr, int nc) {
 }
 
 void btlin_makeSymmetric(char uplo, double* a, int n) {
-  int i,l,u,col,dim,colxnr;
+  int i,l,u,dim,colxnr;
 
   dim = n*n;
   uplo = tolower(uplo);
@@ -117,7 +117,7 @@ void btlin_makeSymmetric(char uplo, double* a, int n) {
 // r = transpose(s)
 void btlin_transpose(double* r, double* s, int n) {
 	int i,j;
-	double *pr, *ps, *ps_start, temp;
+	double *pr, *ps, *ps_start;
 	pr = r;
 	ps_start = s;
 	for(i=0; i < n; i++) {

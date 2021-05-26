@@ -371,7 +371,7 @@ void	TransformTreeLambda(NODE N, double Lambda, int Norm)
 	ScaleSubTree(N, Scale);
 }
 
-int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates)
+int		NeedToTransformTree(OPTIONS *Opt, RATES *Rates)
 {
 	if(Rates->TimeSlices != NULL)
 		return TRUE;
@@ -394,10 +394,10 @@ int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates)
 	if(Opt->UseLambda == TRUE)
 		return TRUE;
 
-	if(Opt->UseRJLandscapeRateGroup == TRUE)
+	if(Opt->UseMLLandscape == TRUE)
 		return TRUE;
 
-	if(Opt->UseMLLandscape == TRUE)
+	if(Opt->UseGlobalTrend == TRUE)
 		return TRUE;
 
 	return FALSE;

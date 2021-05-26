@@ -69,7 +69,7 @@ stack_info* pushFrame(const char* f,double ms) {
   stack_info* newframe = NULL;
   if (depth < MAX_DEPTH) {  // add function info to stack
     if (strlen(f) < MAX_FNAME) {
-      l = strlen(f);
+      l = (int)strlen(f);
     } else {
       l = MAX_FNAME-1;
     }

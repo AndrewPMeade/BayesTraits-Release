@@ -199,6 +199,9 @@
 #define MIN_GAMMA	1E-07
 #define MAX_GAMMA	100
 
+#define MIN_GLOBAL_TREND -10
+#define MAX_GLOBAL_TREND 10
+
 #define MIN_LOCAL_RATE 1E-07
 #define MAX_LOCAL_RATE 100
 
@@ -333,8 +336,9 @@ typedef enum
 	CRJZERO,
 	CLANDSCAPE,
 	CRATESCALARS, 
-	CRJLANDSCAPERATEGROUP,
 	CMLLANDSCAPE,
+	CGLOBALTREND,
+	CRJTHRESHOLD,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -423,8 +427,9 @@ static char    *COMMANDSTRINGS[] =
 	"RJZero",			"rjz",
 	"Landscape",		"LS",
 	"RateScalars",		"rs", 
-	"RJLandscapeRateGroup", "rlrg",
 	"MLLandscape",			"lls",
+	"GlobalTrend",		"gt",
+	"RJThreshold",		"rjt", 
 	""
 };
 
@@ -1321,9 +1326,12 @@ typedef struct
 
 	double		*RateScalars;
 
-	int			UseRJLandscapeRateGroup;
 	int			NoLandscapeRateGroup;
 	int			UseMLLandscape;
+
+	int			UseGlobalTrend;
+
+	double		RJThreshold;
 
 } OPTIONS;
 
@@ -1504,6 +1512,7 @@ typedef struct
 
 	int			UseMLLandscape;
 
+	double		GlobalTrend;
 
 } RATES;
 
@@ -1521,7 +1530,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NO_SCHEDULE_OPT	31
+#define NO_SCHEDULE_OPT	29
 
 static char    *SHEDOP[] =
 {
@@ -1553,9 +1562,7 @@ static char    *SHEDOP[] =
 	"Time Slice - Time",
 	"Time Slice - Scale",
 	"Global Rate",
-	"LandRate-Move", 
-	"LandRate-Change",
-	"LandRate-SplitMerge"
+	"GlobalTrend-Change"
 };
 
 typedef enum
@@ -1588,9 +1595,7 @@ typedef enum
 	S_TIME_SLICE_TIME,
 	S_TIME_SLICE_SCALE,
 	S_GLOBAL_RATE, 
-	S_LAND_RATE_MOVE,
-	S_LAND_RATE_CHANGE,
-	S_LAND_SPLIT_MERGE 
+	S_GLOBAL_TREND
 } OPERATORS;
 
 typedef struct
@@ -1638,6 +1643,8 @@ typedef struct
 	AUTOTUNE	*CurrentAT;
 
 	AUTOTUNE	*GlobalRateAT;
+	AUTOTUNE	*GlobalTrendAT;
+
 
 	AUTOTUNE	*LandscapeRateChangeAT;
 

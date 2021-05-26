@@ -56,7 +56,6 @@
 #include "Geo.h"
 #include "TransformTree.h"
 #include "Prob.h"
-#include "LandscapeRJGroups.h"
 
 #include <gsl/gsl_rng.h>
 
@@ -255,6 +254,13 @@ void	SetDefMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates, 	gsl_rng *RN
 	if(Opt->EstOU == TRUE)
 		Rates->OU = GetRandValFromType(VR_OU, Rates, RNG);
 	
+	if(Opt->UseGlobalTrend == TRUE)
+	{
+		Prior = GetPriorFromName("GlobalTrend", Rates->Priors, Rates->NoPriors);
+		Rates->GlobalTrend = RandFromPrior(RNG, Prior);
+//		Rates->GlobalTrend = 0.0;
+	}
+
 	if(Opt->EstGamma == TRUE)
 	{
 		Prior = GetPriorFromName("Gamma", Rates->Priors, Rates->NoPriors);
@@ -490,6 +496,17 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 
 void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *Shed)
 {
+	double x, lh;
+
+	for(x=-1;x<1;x+=0.01)
+	{
+		Rates->GlobalTrend = x;
+		lh = Likelihood(Rates, Trees, Opt);
+
+		printf("%f\t%f\n", x, lh);
+	}
+
+	exit(0);
 }
 
 #ifdef	 JNIRUN
@@ -533,9 +550,6 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *Shed)
 	if(Opt->RJDummy == TRUE)
 		InitRJDummyFile(Opt);
 
-	if(Opt->UseRJLandscapeRateGroup == TRUE)
-		InishLandRateGroupsOutput(Opt, Trees, CRates);
-	
 	#ifndef JNIRUN
 		PrintOptions(stdout, Opt);
 		PrintRatesHeadder(stdout, Opt);
@@ -659,9 +673,6 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *Shed)
 
 				if(Opt->RJDummy == TRUE)
 					PrintRJDummy(Itters, Opt, Trees, CRates);
-
-				if(Opt->UseRJLandscapeRateGroup == TRUE)
-					OutputLandRateGroupsOutput(Itters, Opt, Trees, CRates);
 
 				#ifdef JNIRUN
 					fgets(Opt->LogFileBuffer, LOGFILEBUFFERSIZE, Opt->LogFileRead);

@@ -303,7 +303,8 @@ void	PrintRecNodes(FILE* Str, OPTIONS *Opt)
 void	PrintRJLocalTrans(FILE* Str, OPTIONS *Opt)
 {
 	fprintf(Str, "Min Trans Taxa No:               %d\n", Opt->MinTransTaxaNo);
-	
+	fprintf(Str, "RJ Threshold:                    %f\n", Opt->RJThreshold);
+
 	fprintf(Str, "RJ Local Branch:                 ");
 	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
 		fprintf(Str, "True\n");
@@ -520,15 +521,8 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "OU:                              ");
 		PrintConPar(Str, Opt->UseOU, Opt->EstOU, Opt->FixOU);
 		
-		if(Opt->Analsis == ANALMCMC)
+		if(Opt->Analsis == ANALMCMC  && UseNonParametricMethods(Opt) == TRUE)
 			PrintRJLocalTrans(Str, Opt);
-
-		fprintf(Str, "RJ Landscape Rate Group:         ");
-		if(Opt->UseRJLandscapeRateGroup == TRUE)
-			fprintf(Str, "True\n");
-		else
-			fprintf(Str, "False\n");
-		
 
 		if(Opt->AlphaZero == TRUE)
 			fprintf(Str, "Alpha through zero:              True\n");
@@ -1405,10 +1399,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->UsePisInAncStates = TRUE;
 	Ret->RJZero			   = TRUE;
 	
-	Ret->UseRJLandscapeRateGroup	 = FALSE;
-	Ret->NoLandscapeRateGroup = -1;
-
 	Ret->UseMLLandscape		= FALSE;
+
+	Ret->UseGlobalTrend		= FALSE;
 
 	free(Buffer);
 
@@ -2494,6 +2487,9 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 		if(Opt->Model != M_FATTAIL && Command == CNOSLICESAMPLESTEPS)
 			return FALSE;
 
+		if(Opt->ModelType != MT_CONTRAST && Command == CGLOBALTREND)
+			return FALSE;
+
 		if(Command == CVARRATES)
 		{
 			if(Opt->ModelType == MT_CONTINUOUS)
@@ -2517,7 +2513,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 				return FALSE;
 		}
 		
-		if((Opt->Model != M_CONTRAST_REG) && (Command == CRJDUMMY))
+		if(Opt->Model != M_CONTRAST_REG && Command == CRJDUMMY)
 			return FALSE;
 
 		if(Opt->Model == M_CONTRAST_CORREL)
@@ -2561,8 +2557,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			Command == CNODEDATA	||
 			Command == CRJDUMMY		||
 			Command == CRJLOCALTRANSFORM ||
-			Command == CDISTDATA	||
-			Command == CRJLANDSCAPERATEGROUP
+			Command == CDISTDATA
 			)
 		{
 			printf("Command %s (%s) is not valid with Discrete data\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2595,8 +2590,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			Command ==	CHYPERPRIOR	||
 			Command ==	CHPRJ		||
 			Command == CPRIOR		||
-			Command ==	CHPALL		||
-			Command ==	CREVJUMP	||
+			Command == CHPALL		||
+			Command == CREVJUMP	||
 			Command == CMCMCMLSTART	||
 			Command == CCAPRJRATES	||
 			Command == CSAVEMODELS	||
@@ -2607,8 +2602,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			Command == CDISTDATA	||
 			Command == CNOLH		||
 			Command == CSTONES		||
-			Command == CCSCHED		||
-			Command == CRJLANDSCAPERATEGROUP
+			Command == CCSCHED
 			)
 		{
 			printf("Command %s (%s) is not valid with the ML model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -4089,36 +4083,6 @@ void	SetRateScalars(OPTIONS *Opt, int Tokes, char **Passed)
 	}
 }
 
-void	SetRJLandscapeRateGroup(OPTIONS *Opt, int Tokes, char **Passed)
-{
-	PRIOR *Prior;
-
-	RemovePriorFormOpt("RJ_Landscape_Rate_Group", Opt);
-
-	Opt->NoLandscapeRateGroup = -1;
-
-	if(Opt->UseRJLandscapeRateGroup == FALSE)
-	{
-		Opt->UseRJLandscapeRateGroup = TRUE;
-		
-//		Prior = CreateNormalPrior("RJ_Landscape_Rate_Group", 0, 2.0);
-		Prior = CreateUniformPrior("RJ_Landscape_Rate_Group", -5, 5);
-		AddPriorToOpt(Opt, Prior);
-
-		if(Tokes == 2)
-		{
-			if(IsValidInt(Passed[1]) == FALSE)
-			{
-				printf("Cannot convert %s to a valild number of rates.\n", Passed[1]);
-				exit(1);
-			}
-
-			Opt->NoLandscapeRateGroup = atoi(Passed[1]);
-		}
-	}
-	else
-		Opt->UseRJLandscapeRateGroup = FALSE;
-}
 
 void	SetMLLandScape(OPTIONS *Opt, int Tokes, char **Passed)
 {
@@ -4132,6 +4096,46 @@ void	SetMLLandScape(OPTIONS *Opt, int Tokes, char **Passed)
 		Opt->UseMLLandscape = TRUE;
 	else
 		Opt->UseMLLandscape = FALSE;
+}
+
+void	SetGlobalTrendOpt(OPTIONS* Opt, int Tokes, char** Passed)
+{
+	PRIOR *Prior;
+
+	if(Tokes != 1)
+	{
+		printf("GlobalTrend does not take any paramters.\n");
+		exit(1);
+	}
+		
+	if(Opt->UseGlobalTrend == FALSE)
+		Opt->UseGlobalTrend = TRUE;
+	else
+		Opt->UseGlobalTrend = FALSE;
+
+	if(Opt->Analsis == ANALMCMC)
+	{
+		RemovePriorFormOpt("GlobalTrend", Opt);
+		Prior = CreateNormalPrior("GlobalTrend", 0.0, 1.0);
+		AddPriorToOpt(Opt, Prior);
+	}
+}
+
+void	SetRJThreshold(OPTIONS* Opt, int Tokes, char** Passed)
+{
+	if(Tokes != 2)
+	{
+		printf("RJThreshold takes a threshold value.\n"); 
+		exit(1);
+	}
+
+	if(IsValidDouble(Passed[1]) == FALSE)
+	{
+		printf("%s not a valid threshold value.\n", Passed[1]);
+		exit(1);
+	}
+
+	Opt->RJThreshold = atof(Passed[1]);
 }
 
 void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
@@ -4831,11 +4835,14 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CRATESCALARS)
 		SetRateScalars(Opt, Tokes, Passed);
 
-	if(Command == CRJLANDSCAPERATEGROUP)
-		SetRJLandscapeRateGroup(Opt, Tokes, Passed);
-
 	if(Command == CMLLANDSCAPE)
 		SetMLLandScape(Opt, Tokes, Passed);
+
+	if(Command == CGLOBALTREND)
+		SetGlobalTrendOpt(Opt, Tokes, Passed);
+
+	if(Command == CRJTHRESHOLD)
+		SetRJThreshold(Opt, Tokes, Passed);
 
 	return FALSE;
 }

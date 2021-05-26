@@ -57,6 +57,7 @@
 #include "DistData.h"
 #include "TimeSlices.h"
 #include "Landscape.h"
+#include "GlobalTrend.h"
 
 #ifdef BTOCL
 	#include "btocl_discrete.h"
@@ -983,14 +984,14 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
-	if(Opt->ModelType == MT_CONTINUOUS)
+	if(NeedToTransformTree(Opt, Rates) == FALSE)
 		return;
 	
-	if(NeedToReSetBL(Opt, Rates) == FALSE)
-		return;
-
 	SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
-
+	
+	if(UseLandScapeModel(Opt) == TRUE || Opt->UseGlobalTrend)
+		RetSetConTraitData(Trees->Tree[Rates->TreeNo], Trees->NoSites);
+	
 	if(UseLandScapeModel(Opt) == TRUE)
 		MapLandscape(Opt, Trees, Rates);
 
@@ -1003,6 +1004,9 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	if(Rates->VarRates != NULL)
 		VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
+
+	if(Opt->UseGlobalTrend == TRUE)
+		SetGlobalTrend(Opt, Trees, Rates);
 }
 
 int		ValidLh(double LH, MODEL_TYPE MT)
@@ -1035,20 +1039,19 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		Err;
 	int		GammaCat;
 	double	RateMult;
-		
-
- 	if(Rates->ModelFile == NULL)
+	
+	if(Rates->ModelFile == NULL)
 		MapRates(Rates, Opt);
 	else
 		MapModelFile(Opt, Rates);
-	
-	LhTransformTree(Rates, Trees, Opt);
-	
+
 	if(Opt->NoLh == TRUE)
 		return -1.0;
 
 	if(Rates->AutoAccept == TRUE || Rates->CalcLh == FALSE)
 		return Rates->Lh;
+ 	
+	LhTransformTree(Rates, Trees, Opt);
 	
 	if(Opt->UseDistData == TRUE && Opt->ModelType != MT_FATTAIL)
 		SetTreeDistData(Rates, Opt, Trees);

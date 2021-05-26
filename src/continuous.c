@@ -1128,7 +1128,6 @@ double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree)
 double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 {
 	double	Ret;
-	int		x,y;
 	CONVAR	*CV;
 
 	CV = Tree->ConVars;

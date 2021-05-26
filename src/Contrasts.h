@@ -29,4 +29,6 @@ double		DataToZScore(double X, double Mean, double SD);
 
 void		PrintContrast(RATES *Rates, TREES *Trees);
 
+void		RetSetConTraitData(TREE *Tree, int NoSites);
+
 #endif

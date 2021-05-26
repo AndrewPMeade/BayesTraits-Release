@@ -256,18 +256,10 @@ void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 
 	if(Opt->NormQMat == TRUE)
 		Shed->OptFreq[S_GLOBAL_RATE] = 0.1;
-	
-	if(Opt->UseRJLandscapeRateGroup == TRUE)
-	{
-		Shed->OptFreq[S_RATES] = 0.1;
-		Shed->OptFreq[S_LAND_RATE_MOVE] = 0.4;
-		Shed->OptFreq[S_LAND_RATE_CHANGE] = 0.1;
 
-		if(Opt->NoLandscapeRateGroup == -1)
-			Shed->OptFreq[S_LAND_SPLIT_MERGE] = 0.4;
-		
-	}
-
+	if(Opt->UseGlobalTrend == TRUE)
+		Shed->OptFreq[S_GLOBAL_TREND] = 0.1;
+	   
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 
 	memcpy(Shed->DefShed, Shed->OptFreq, sizeof(double) * Shed->NoOfOpts);
@@ -412,6 +404,7 @@ SCHEDULE*	AllocSchedule()
 	Ret->TimeSliceScaleAT= NULL;
 
 	Ret->GlobalRateAT	= NULL;
+	Ret->GlobalTrendAT	= NULL;
 
 	Ret->LandscapeRateChangeAT	 = NULL;
 	
@@ -703,6 +696,13 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 		AddToFullATList(Ret, Ret->TimeSliceScaleAT);
 	}
 
+	if(Opt->UseGlobalTrend == TRUE)
+	{
+		Ret->GlobalTrendAT = CreatAutoTune("Global Trend", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->GlobalTrendAT, 100.0);
+		AddToFullATList(Ret, Ret->GlobalTrendAT);
+	}
+
 	if(Opt->NormQMat == TRUE)
 	{
 		Ret->GlobalRateAT = CreatAutoTune("Global Rate", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
@@ -710,12 +710,6 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 		AddToFullATList(Ret, Ret->GlobalRateAT);
 	}
 
-	if(Opt->UseRJLandscapeRateGroup == TRUE)
-	{
-		Ret->LandscapeRateChangeAT = CreatAutoTune("Landscape Rate Change", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
-		SetMaxDev(Ret->LandscapeRateChangeAT, 1000.0);
-		AddToFullATList(Ret, Ret->LandscapeRateChangeAT);
-	}
 
 	return Ret;
 }
@@ -785,6 +779,9 @@ void		FreeeSchedule(SCHEDULE* Sched)
 
 	if(Sched->LandscapeRateChangeAT != NULL)
 		FreeAutoTune(Sched->LandscapeRateChangeAT);
+
+	if(Sched->GlobalTrendAT != NULL)
+		FreeAutoTune(Sched->GlobalTrendAT);
 
 	if(Sched->NoCShed > 0)
 	{

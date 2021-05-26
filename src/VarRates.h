@@ -3,7 +3,6 @@
 
 #include "TypeDef.h"
 
-#define VR_LN_THOLD_COST	-2.0
 
 int				UseNonParametricMethods(OPTIONS *Opt);
 

@@ -59,8 +59,8 @@
 #include "DistData.h"
 #include "TimeSlices.h"
 #include "Landscape.h"
-#include "LandscapeRJGroups.h"
 #include "Part.h"
+#include "GlobalTrend.h"
 
 void	SetRegBetaZero(int NoSites, RATES *Rates)
 {
@@ -781,7 +781,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->Gamma			= -1;
 	Ret->GammaCats		= 1;
 	Ret->GammaMults		= NULL;
-
+	
 	Ret->Lh				= 0;
 
 	InitHMean(Ret, Opt);
@@ -847,12 +847,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 		CrateRatePriors(Opt, Ret);
 		if(Opt->ModelType == MT_DISCRETE)
 			SetDiscretisedPriors(Ret, Opt);
-	}
-
-	if(Opt->UseRJLandscapeRateGroup == TRUE)
-	{
-		Ret->LandscapeRateGroups = CreateLandRateGroups(Ret, Opt->Trees, Opt->NoLandscapeRateGroup);
-//		SetNoFixedGroups(Ret, Ret->LandscapeRateGroups, Opt->NoLandscapeRateGroup);
 	}
 
 	if(Opt->UseGamma == TRUE)
@@ -962,7 +956,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	
 	SimData(Opt, Opt->Trees, Ret);
 
-
+	Ret->GlobalTrend = 0.0;
 
 	return Ret;
 }
@@ -1226,6 +1220,8 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 	if(Opt->UseDistData == TRUE)
 		OutputDataDistHeadder(Str, Opt);
 
+	if(Opt->UseGlobalTrend == TRUE)
+		fprintf(Str, "Global Trend\t");
 
 //	if(Opt->UseRJLandscapeRateGroup == TRUE)
 //		fprintf(Str, "RJLandRateSig\t");
@@ -1805,9 +1801,8 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 	if(Opt->UseDistData == TRUE)
 		OutputDataDist(Str, Rates, Opt);
 
-//	if(Opt->UseRJLandscapeRateGroup == TRUE)
-//		fprintf(Str, "%0.12f\t", Rates->LandscapeRateGroups->Sig);
-
+	if(Opt->UseGlobalTrend == TRUE)
+		fprintf(Str, "%0.12f\t", Rates->GlobalTrend);
 }
 
 double	GetPartailPi(RATES *Rates, NODE N, int StateNo, int SiteNo)
@@ -2208,11 +2203,11 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	if(A->TimeSlices != NULL)
 		CopyTimeSlices(A->TimeSlices, B->TimeSlices);
 
-	if(A->LandscapeRateGroups != NULL)
-		CopyLandRateGroups(A->LandscapeRateGroups, B->LandscapeRateGroups);
+
 
 	A->NormConst = B->NormConst;
 	A->GlobablRate = B->GlobablRate;
+	A->GlobalTrend = B->GlobalTrend;
 }
 
 
@@ -2889,18 +2884,8 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 			ChangeGlobalRate(Rates, Shed);
 		break;
 
-		case S_LAND_RATE_MOVE:
-			if(It > 1000000)
-				SwapRateGroupParam(Rates);
-		break;
-
-		case S_LAND_RATE_CHANGE:
-				ChangeLandRateGoup(Rates, Shed);
-//				ChangeLandRateGroupSigDist(Rates,  Shed);
-		break;
-
-		case S_LAND_SPLIT_MERGE:
-			LandSplitMerge(Rates);
+		case S_GLOBAL_TREND:
+			ChangeGlobalTrend(Rates, Shed);
 		break;
 	}
 }
@@ -2988,9 +2973,6 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 
 	if(Rates->TimeSlices != NULL)
 		FreeTimeSlices(Rates->TimeSlices);
-
-	if(Rates->LandscapeRateGroups != NULL)
-		FreeLandRateGroups(Rates->LandscapeRateGroups);
 
 	if(Rates->Landscape != NULL)
 		FreeLandScape(Rates->Landscape);

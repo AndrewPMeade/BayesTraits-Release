@@ -55,6 +55,26 @@
 	#include <cilk/cilk.h>
 #endif
 
+void RetSetConTraitData(TREE* Tree, int NoSites)
+{
+	int Index, SIndex;
+	NODE Node;
+	CONDATA* Con;
+	
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		Node = Tree->NodeList[Index];
+		if(Node->Tip == TRUE)
+		{
+			Con = Node->ConData;
+			for(SIndex=0;SIndex<NoSites;SIndex++)
+				Con->Contrast[0]->Data[SIndex] = Node->Taxa->ConData[SIndex];
+
+//			memcpy(Con->Contrast[0]->Data, Node->Taxa->ConData, sizeof(double) * NoSites);
+		}
+	}
+}
+
 //void	RatesToConVals(OPTIONS *Opt, RATES *Rates, CONTRASTR* ConR);
 
 int			GetNoContrastSites(OPTIONS *Opt, TREES *Trees)
@@ -431,11 +451,12 @@ void	CalcNodeContrast(NODE N, int NoSites)
 
 void	RecCalcContrast(NODE N, int NoSites)
 {
-	CONTRAST	*C, *C0, *C1;
+/*	CONTRAST	*C, *C0, *C1;
 	double		t;
 	double		l0, l1;
-	NODE		N0, N1;
-	int			Index, SIndex;
+	NODE		N0, N1; 
+	int			SIndex; */
+	int			Index;
 
 	if(N->Tip == TRUE)
 		return;
@@ -858,7 +879,7 @@ double	CalcAllSiteLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, double AlphaErr)
 
 	GlobalVar = GlobalVar / (NoCon + 1);
 
-	Ret = (NoCon+1) * log(6.28318530717958647692528676655900576839 * GlobalVar);
+	Ret = (NoCon+1) * log(6.283185307 * GlobalVar);
 	Ret += SumLV + (T1 / GlobalVar);
 
 	Ret *= -0.5;
@@ -1055,7 +1076,7 @@ double CalcContrastMCMCSiteLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, int Site
 	T1 = GlobalVar;
 	GlobalVar = GlobalVar / NoCon;
 
-	Ret = (NoCon+1) * log(6.28318530717958647692528676655900576839 * ConRates->SigmaMat->me[SiteNo][SiteNo]);
+	Ret = (NoCon+1) * log(6.283185307 * ConRates->SigmaMat->me[SiteNo][SiteNo]);
 
 //	Alpha Err no longer avalable, can be calculated.
 //	T2 = ((NoCon+1) * GlobalVar) + ConRates->AlphaErr[SiteNo];
@@ -1227,7 +1248,7 @@ double	CalcRegLh(OPTIONS *Opt, TREES* Trees, RATES* Rates, double Alpha, double 
 	GlobalVar = GlobalVar / (T->NoContrast+1);
 	ConRates->GlobalVar = GlobalVar;
 
-	Ret = (T->NoContrast+1) * log(6.28318530717958647692528676655900576839 * GlobalVar);
+	Ret = (T->NoContrast+1) * log(6.283185307 * GlobalVar);
 	Ret += SumLogVar + (T1 / GlobalVar);
 	
 	Ret *= -0.5;
@@ -1767,7 +1788,7 @@ void	MutateRegContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	
 void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
 {
 	int Pos;
-	double Dev, Scale;
+	double Dev;
 
 	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
 
