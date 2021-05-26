@@ -302,6 +302,7 @@ void	AddPramToGroup(RATE_GROUP *RGroup, int Pram)
 	RGroup->NoRates += 1;
 }
 
+/*
 void	SwapRateGroupParam(RATES *Rates)
 {
 	int Rate, Pos, NoOld, NoNew;
@@ -335,6 +336,105 @@ void	SwapRateGroupParam(RATES *Rates)
 		
 	Rates->LnHastings = log(Rates->LnHastings);
 }
+*/
+
+int		GetRateGroupPos(RATE_GROUP	*RateG, LAND_RATE_GROUPS *LandRateGroups)
+{
+	int Index;
+
+	for(Index=0;Index<LandRateGroups->NoGroups;Index++)
+		if(RateG == LandRateGroups->RateGroupList[Index])
+			return Index;
+
+	return -1;
+}
+
+
+
+void	RemoveRateGroup(RATE_GROUP	*RateG, LAND_RATE_GROUPS *LandRateGroups)
+{
+	int Pos;
+	RATE_GROUP	*Temp;
+
+	Pos = GetRateGroupPos(RateG, LandRateGroups);
+
+	Temp = LandRateGroups->RateGroupList[Pos];
+	LandRateGroups->RateGroupList[Pos] = LandRateGroups->RateGroupList[LandRateGroups->NoGroups-1];
+	LandRateGroups->RateGroupList[LandRateGroups->NoGroups-1] = Temp;
+
+	LandRateGroups->NoGroups--;	
+}
+
+void	AddRateGroup(RATES *Rates, int RateNo, LAND_RATE_GROUPS *LandRateGroups)
+{
+	RATE_GROUP	*Group; 
+	PRIOR *Prior;
+
+	Group = LandRateGroups->RateGroupList[LandRateGroups->NoGroups];
+	Group->NoRates = 1;
+	Group->PramList[0] = RateNo;
+
+	Prior = GetPriorFromName("RJ_Landscape_Rate_Group", Rates->Priors, Rates->NoPriors);
+	Group->Rate = RandFromPrior(Rates->RNG, Prior);
+
+	LandRateGroups->NoGroups++;
+}
+
+void	SwapRateGroupParam(RATES *Rates)
+{
+	int Rate, Pos, NoOld, NoNew;
+	LAND_RATE_GROUPS *LandRateGroups;
+	RATE_GROUP	*RGOld, *RGNew; 
+
+	LandRateGroups = Rates->LandscapeRateGroups;
+
+	Rate = RandUSInt(Rates->RS) % LandRateGroups->NoRates;
+	Rate = LandRateGroups->RateList[Rate];
+	RGOld = GetRateGroup(LandRateGroups, Rate, &Pos);
+	
+	
+
+	if(RGOld->NoRates == 1)
+	{
+		RGNew = LandRateGroups->RateGroupList[0];	
+		Rates->LnHastings = (double)RGNew->NoRates / 1.0;
+		Rates->LnHastings = log(Rates->LnHastings);
+		
+		AddPramToGroup(RGNew, Rate);
+
+		RemoveRateGroup(RGOld, LandRateGroups);
+		return;
+	}
+
+	Rates->LnHastings = 1.0/(double)RGOld->NoRates;
+	Rates->LnHastings = log(Rates->LnHastings);
+
+	RemovePramFromGroup(RGOld, Pos);
+
+	AddRateGroup(Rates, Rate, LandRateGroups);
+
+	return;
+	
+	NoOld = RGOld->NoRates;
+	RemovePramFromGroup(RGOld, Pos);
+
+
+
+	do
+	{
+		Pos = RandUSInt(Rates->RS) % LandRateGroups->NoGroups;
+		RGNew = LandRateGroups->RateGroupList[Pos];
+	}while(RGOld == RGNew);
+
+
+	AddPramToGroup(RGNew, Rate);
+
+	NoNew = RGNew->NoRates;
+
+	Rates->LnHastings = (double)NoNew / (double)NoOld;
+	Rates->LnHastings = log(Rates->LnHastings);
+}
+
 
 void	RecPrintNodeTaxa(FILE *Str, NODE N)
 {
