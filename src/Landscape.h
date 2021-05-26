@@ -3,9 +3,6 @@
 
 #include "TypeDef.h"
 
-LANDSCAPE*	CreateLandScape(TREES *Tree);
-void		FreeLandScape(LANDSCAPE *Landscape);
-
 int			UseLandscapeBeta(OPTIONS* Opt);
 
 void		ResetTreeLandscape(TREE *Tree);

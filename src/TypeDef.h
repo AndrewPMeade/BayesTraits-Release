@@ -1141,21 +1141,6 @@ typedef struct
 
 typedef struct
 {
-	double		Beta;
-	PART		*Part;
-	NODE		*NodeList;
-	long long	NodeID;
-	int			MLEst;
-} LANDSCAPE_NODE;
-
-typedef struct
-{
-	int				NoNodes;
-	LANDSCAPE_NODE	**NodeList;
-} LANDSCAPE;
-
-typedef struct
-{
 	MODEL		Model;
 	ANALSIS		Analsis;
 	MODEL_TYPE	ModelType;
@@ -1518,7 +1503,6 @@ typedef struct
 	double			GlobablRate;
 	double			NormConst;
 
-	LANDSCAPE		*Landscape;
 	LAND_RATE_GROUPS	*LandscapeRateGroups;
 
 	int			UseMLLandscape;

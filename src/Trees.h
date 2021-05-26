@@ -45,8 +45,6 @@ void	NormaliseTrees(double NormC, TREES *Trees);
 void	SetVisitedNode(NODE N, int Val);
 void	SetVisitedTree(TREE *Tree, int Val);
 
-double*	GetPhyChanges(TREES *Trees, TREE *Tree, double RateDev, RANDSTATES *RS);
-
 void	AddTaxaErr(TREES *Trees, int TaxaID, double Err);
 
 int		TaxaIndexToNo(TREES *Trees, int Index);

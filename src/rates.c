@@ -821,13 +821,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->AutoAccept		=	FALSE;
 	Ret->CalcLh			=	TRUE;
 
-
-	Ret->Landscape		=	NULL;
-	Ret->LandscapeRateGroups	= NULL;
 	Ret->UseMLLandscape	=	FALSE;
-
-	if(Opt->UseMLLandscape == TRUE)
-		Ret->Landscape = CreateLandScape(Opt->Trees);
 
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
@@ -2979,9 +2973,6 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 
 	if(Rates->TimeSlices != NULL)
 		FreeTimeSlices(Rates->TimeSlices);
-
-	if(Rates->Landscape != NULL)
-		FreeLandScape(Rates->Landscape);
 
 	free(Rates);
 }

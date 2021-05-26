@@ -152,24 +152,6 @@ void		MapLocalTranfromsBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		}
 	}	
 }
-
-void		MapLandscapeNodes(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	int Index;
-	LANDSCAPE *Landscape;
-	LANDSCAPE_NODE *LandNode;
-	
-
-	Landscape = Rates->Landscape;
-
-	for(Index=0;Index<Landscape->NoNodes;Index++)
-	{
-		LandNode = Landscape->NodeList[Index];
-
-		LandNode->NodeList[Rates->TreeNo]->LandscapeBeta = LandNode->Beta;
-	}
-}
-
 void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE *Tree;
@@ -184,57 +166,11 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	MapLocalTranfromsBeta(Opt, Trees, Rates);
 	
 	MapRJLandscape(Opt, Trees, Rates);
-	
-	if(Rates->Landscape != NULL)
-		MapLandscapeNodes(Opt, Trees, Rates);
 
 	PropLandscapeBeta(Trees, Tree->Root, 0.0);
 }
 
-LANDSCAPE*	AllocLandscape(int MaxNodes)
-{
-	LANDSCAPE* Ret;
-	int Index;
-
-	Ret = (LANDSCAPE*)SMalloc(sizeof(LANDSCAPE));
-
-	Ret->NodeList = (LANDSCAPE_NODE**)SMalloc(sizeof(LANDSCAPE_NODE*) * MaxNodes);
-
-	for(Index=0;Index<MaxNodes;Index++)
-		Ret->NodeList[Index] = NULL;
-
-	return Ret;
-}
-
-LANDSCAPE*	CreateLandScape(TREES *Trees)
-{
-	LANDSCAPE* Ret;
-
-	Ret = AllocLandscape(Trees->MaxNodes);
-
-	Ret->NoNodes = 0;
-
-	return Ret;
-}
-
-void	FreeLandScapeNode(LANDSCAPE_NODE *LandNode)
-{
-	free(LandNode->NodeList);
-	free(LandNode);
-}
-
-void	FreeLandScape(LANDSCAPE *Landscape)
-{
-	int Index;
-
-	for(Index=0;Index<Landscape->NoNodes;Index++)
-		FreeLandScapeNode(Landscape->NodeList[Index]);
-
-	free(Landscape->NodeList);
-	free(Landscape);
-}
-
-
+/*
 LANDSCAPE_NODE*	CreatMLLandscapeNode(NODE N)
 {
 	LANDSCAPE_NODE*	 Ret;
@@ -373,6 +309,9 @@ int	AddMLLandscapeNNode(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 		LandNode->NodeList[0] = Node;
 		LandNode->Beta = 0.0;
+		
+		LandNode->Beta = 1.0;
+		Lh = Likelihood(Rates,Trees,Opt);
 
 		// get the ML value
 		NLOptBT(Rates, Opt, Trees, ML_Map);
@@ -387,11 +326,7 @@ int	AddMLLandscapeNNode(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		LhList[Index] = Lh - InitLh;
 		Beta[Index] = LandNode->Beta;
 
-
-//		printf("%s\t%f\t%f\t%f\t", Opt->DataFN, Lh, InitLh, LandNode->Beta);
-	//	PrintPart(stdout, Trees, Node->Part);
-//		printf("\n");
-//		exit(0);
+		printf("%d\t%f\t%f\n", Index, LhList[Index], Beta[Index]);
 	}
 
 
@@ -512,4 +447,15 @@ void	MLLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	OutputLandscapeInfo(Opt, Trees, Rates);
 
 	exit(0);
+}
+*/
+
+
+
+void	MLLandscape(OPTIONS *Opt,TREES *Trees,RATES *Rates)
+{
+
+//	LOCAL_TRANSFORM*	CreateLocalTransforms(char *Name,TAG **TagList,int NoTags,TRANSFORM_TYPE Type,int Est,double Scale);
+//	void				FreeLocalTransforms(LOCAL_TRANSFORM* LTrans);
+
 }

@@ -49,6 +49,7 @@
 #include "Landscape.h"
 #include "Part.h"
 #include "StateSpeciationRate.h"
+#include "LocalTransformMLAllNodes.h"
 
 #include <gsl/gsl_matrix.h>
 
@@ -185,13 +186,6 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				AddTypePToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE, ML_P_TYPE_RATE_S);
 		}
 	}
-
-	if(Opt->UseMLLandscape == TRUE)
-	{
-		for(Index=0;Index<Rates->Landscape->NoNodes;Index++)
-			if(Rates->Landscape->NodeList[Index]->MLEst == TRUE)
-				AddPToMLMap(MLMap, 0, -ML_LAND_BETA_SIZE, ML_LAND_BETA_SIZE);
-	}
 }
 
 void	CheckMLMapVals(ML_MAP* MLMap)
@@ -222,22 +216,6 @@ void	MLMapToRatesTimeSlices(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates, int *Pos)
 		if(TS->FixedScale == FALSE)
 			TS->Scale = MLMap->PVal[(*Pos)++];
 	}
-}
-
-void	MLMapToLandscape(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates, int *Pos)
-{
-	LANDSCAPE *Landscape;
-	int Index;
-	LANDSCAPE_NODE *LandNode;
-
-	Landscape = Rates->Landscape;
-
-	for(Index=0;Index<Landscape->NoNodes;Index++)
-	{
-		LandNode = Landscape->NodeList[Index];
-		if(LandNode->MLEst == TRUE)
-			LandNode->Beta = MLMap->PVal[(*Pos)++];
-	}	
 }
 
 void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
@@ -275,8 +253,7 @@ void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
 
 	MLMapToRatesTimeSlices(MLMap, Opt, Rates, &Pos);
 
-	if(Opt->UseMLLandscape == TRUE)
-		MLMapToLandscape(MLMap, Opt, Rates, &Pos);
+
 }
 
 double	LikelihoodML(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -425,11 +402,14 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			
 	BMap = AllocMLMap();
 
-//	BLh = LikelihoodML(BMap, Opt, Trees, Rates);
-
 	BuildMLMap(BMap, Opt, Trees, Rates);
-	FindValidMLStartSet(BMap, Opt, Trees, Rates);	
 	BLh = LikelihoodML(BMap, Opt, Trees, Rates);
+
+	if(ValidLh(BLh, Opt->Model) == FALSE)
+	{
+		FindValidMLStartSet(BMap, Opt, Trees, Rates);	
+		BLh = LikelihoodML(BMap, Opt, Trees, Rates);
+	}
 
 	if(BMap->NoP != 0)
 	{
@@ -545,8 +525,6 @@ void	PrintPartData(FILE *Str, TREES *Trees, PART *Part)
 	}
 }
 
-
-
 void	CalcAllNodeTransfroms(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE *Tree;
@@ -556,8 +534,7 @@ void	CalcAllNodeTransfroms(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	Tree = Trees->Tree[0];
 	
-//	for(Index=1;Index<Tree->NoNodes;Index++)
-	Index = 3;
+	for(Index=1;Index<Tree->NoNodes;Index++)
 	{
 		Node = Tree->NodeList[Index];
 
@@ -680,11 +657,12 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 	TStart = GetSeconds();
 
+	if(Opt->UseMLLandscape == TRUE)
+		LocalTransformMLAllNodes(Opt, Trees, Rates);
+
 //	CalcAllNodeTransfroms(Opt, Trees, Rates); return;
-	MLTest(Opt, Trees, Rates);
-
+//	MLTest(Opt, Trees, Rates);
 //	TestErrModel(Opt, Rates, Trees);
-
 //	TestContrastGlobalTrend(Opt, Trees, Rates);
 	
 	for(Index=0;Index<Trees->NoTrees;Index++)
