@@ -400,6 +400,9 @@ int		NeedToTransformTree(OPTIONS *Opt, RATES *Rates)
 	if(Opt->UseGlobalTrend == TRUE)
 		return TRUE;
 
+	if(Opt->UseStochasticBeta == TRUE)
+		return TRUE;
+
 	return FALSE;
 }
 

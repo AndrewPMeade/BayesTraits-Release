@@ -14,12 +14,12 @@
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
-* 
+*
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
-* 
+*
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>
 *
@@ -61,6 +61,7 @@
 #include "Landscape.h"
 #include "Part.h"
 #include "GlobalTrend.h"
+#include "StochasticBeta.h"
 
 void	SetRegBetaZero(int NoSites, RATES *Rates)
 {
@@ -315,7 +316,7 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 	//	Rates->OffToOn = Rates->Rates[Pos++];
 		Rates->OffToOn = Rates->OnToOff;
 	}
-
+/*
 	if((Opt->EstKappa == TRUE) && (Opt->Analsis == ANALML))
 	{
 		Rates->Kappa = Rates->Rates[Pos++];
@@ -337,13 +338,15 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 		if(Rates->Gamma > MAX_GAMMA)
 			Rates->Gamma = MAX_GAMMA;
 	}
+
+	*/
 }
 
 int		MissingDepSite(OPTIONS *Opt, char *SiteData)
 {
 	if(ModelDep(Opt->Model) == FALSE)
 		return FALSE;
-	
+
 	if(strlen(SiteData) > 1)
 		return TRUE;
 
@@ -378,7 +381,7 @@ double* GetEmpPis(OPTIONS *Opt)
 				MissingDepSite(Opt, Taxa->DesDataChar[SIndex]) == FALSE)
 			{
  				Weight = 1.0 / strlen(Taxa->DesDataChar[SIndex]);
-				
+
 				for(SymbolIndex=0;SymbolIndex<(int)strlen(Taxa->DesDataChar[SIndex]);SymbolIndex++)
 				{
 					State = SymbolToPos(Taxa->DesDataChar[SIndex][SymbolIndex], Trees->SymbolList);
@@ -400,7 +403,7 @@ double* GetEmpPis(OPTIONS *Opt)
 
 	for(SIndex=0;SIndex<Trees->NoStates;SIndex++)
 		Ret[SIndex] = TempPis[SIndex] / Total;
-	
+
 	free(TempPis);
 
 	return Ret;
@@ -781,7 +784,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->Gamma			= -1;
 	Ret->GammaCats		= 1;
 	Ret->GammaMults		= NULL;
-	
+
 	Ret->Lh				= 0;
 
 	InitHMean(Ret, Opt);
@@ -823,11 +826,15 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->Landscape		=	NULL;
 	Ret->LandscapeRateGroups	= NULL;
 	Ret->UseMLLandscape	=	FALSE;
-	
+
+	Ret->NoSB			=	-1;
+	Ret->SB_Type_Map	=	NULL;
+	Ret->SB_Vect		=	NULL;
+
 	if(Opt->UseMLLandscape == TRUE)
 		Ret->Landscape = CreateLandScape(Opt->Trees);
 
-		
+
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
 	Ret->RNG			=	gsl_rng_alloc(gsl_rng_mt19937);
@@ -835,10 +842,10 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->NormConst		=	-1;
 	Ret->GlobablRate	=	1.0;
-	
+
 	SetRatesLocalRates(Ret, Opt);
 
-	
+
 	if(Opt->UseDistData == TRUE)
 		Ret->DistDataRates = CreateDistDataRates(Opt->DistData, Ret->RS);
 
@@ -876,6 +883,9 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	if(Opt->TimeSlices->NoTimeSlices > 0)
 		Ret->TimeSlices = CreateRatesTimeSlices(Ret, Opt->TimeSlices);
+
+	if(Opt->UseStochasticBeta == TRUE)
+		InitStochasticBeta(Opt, Opt->Trees, Ret);
 
 	if(Opt->DataType == CONTINUOUS)
 	{
@@ -953,7 +963,9 @@ RATES*	CreatRates(OPTIONS *Opt)
 		Ret->ModelFile = LoadModelFile(Opt->LoadModelsFN, Opt, Opt->Trees, Ret);
 		ChangeModelFile(Ret, Ret->RS);
 	}
-	
+
+
+
 	SimData(Opt, Opt->Trees, Ret);
 
 	Ret->GlobalTrend = 0.0;
@@ -1062,10 +1074,10 @@ void	PrintLocalTransformHeadder(FILE *Str, OPTIONS *Opt)
 {
 	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
 		fprintf(Str, "No RJ Local Branch\t");
-	
+
 	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
 		fprintf(Str, "No RJ Local Node\t");
-	
+
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
 		fprintf(Str, "No RJ Local Kappa\t");
 
@@ -1077,7 +1089,7 @@ void	PrintLocalTransformHeadder(FILE *Str, OPTIONS *Opt)
 
 	if(Opt->UseRJLocalScalar[VR_OU] == TRUE)
 		fprintf(Str, "No RJ Local OU\t");
-	
+
 	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
 		fprintf(Str, "No RJ LS Betas\t");
 }
@@ -1225,6 +1237,10 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 
 //	if(Opt->UseRJLandscapeRateGroup == TRUE)
 //		fprintf(Str, "RJLandRateSig\t");
+
+
+	if(Opt->UseStochasticBeta == TRUE)
+		fprintf(Str, "SB None\tSB Prior\t");
 
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
@@ -1795,7 +1811,7 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		fprintf(Str, "%0.12f\t", Rates->EstData[Index]);
 
 	PrintConRecNodes(Str, Rates, Opt);
-	
+
 	PrintLocalTransformNo(Str, Rates, Opt);
 
 	if(Opt->UseDistData == TRUE)
@@ -1803,6 +1819,9 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->UseGlobalTrend == TRUE)
 		fprintf(Str, "%0.12f\t", Rates->GlobalTrend);
+
+	if(Opt->UseStochasticBeta == TRUE)
+			fprintf(Str, "%d\t%d\t", GetNoStochasticBetaType(Rates, SB_NONE), GetNoStochasticBetaType(Rates, SB_RJ));
 }
 
 double	GetPartailPi(RATES *Rates, NODE N, int StateNo, int SiteNo)
@@ -1847,7 +1866,7 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoSites, RATES* Rates, OPTI
 	TREES	*Trees;
 
 	Trees = Opt->Trees;
-	
+
 	if(Node == NULL)
 	{
 		for(SiteIndex=0;SiteIndex<NoSites;SiteIndex++)
@@ -1881,7 +1900,7 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoSites, RATES* Rates, OPTI
 				Tot += Node->Partial[SiteIndex][Index] * Rates->Pis[Index];
 			else
 				Tot += Node->Partial[SiteIndex][Index];
-		
+
 	/*
 		if(Opt->Model == DESCINDEP)
 		{
@@ -2203,7 +2222,8 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 	if(A->TimeSlices != NULL)
 		CopyTimeSlices(A->TimeSlices, B->TimeSlices);
 
-
+	if(Opt->UseStochasticBeta == TRUE)
+		CopyStochasticBeta(A, B);
 
 	A->NormConst = B->NormConst;
 	A->GlobablRate = B->GlobablRate;
@@ -2752,6 +2772,8 @@ void	ChangeGlobalRate(RATES* Rates, SCHEDULE* Shed)
 {
 	double Dev, NRate;
 
+	Shed->CurrentAT = Shed->GlobalRateAT;
+
 	Dev = Shed->GlobalRateAT->CDev;
 
 	NRate = ChangeLocalScale(Rates->RS, Rates->GlobablRate, Dev);
@@ -2889,6 +2911,14 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		case S_GLOBAL_TREND:
 			ChangeGlobalTrend(Rates, Shed);
 		break;
+
+		case S_SB_RATE:
+			ChangeStochasticBeta(Opt->Trees, Rates, Shed);
+		break;
+
+		case S_SB_RJ:
+			CaclStochasticBetaRJ(Rates);
+		break;
 	}
 }
 
@@ -2978,6 +3008,10 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 
 	if(Rates->Landscape != NULL)
 		FreeLandScape(Rates->Landscape);
+
+
+	if(Rates->SB_Type_Map != NULL)
+		FreeStochasticBeta(Rates);
 
 	free(Rates);
 }
@@ -3110,7 +3144,7 @@ void	SetEstDataFromPrior(RATES *Rates)
 		SiteNo = Rates->EstDataSiteNo[Index];
 
 		Prior = GetAnsStatePrior(SiteNo, Rates->Priors, Rates->NoPriors);
-		
+
 		Rates->EstData[Index] = RandFromPrior(Rates->RNG, Prior);
 	}
 }

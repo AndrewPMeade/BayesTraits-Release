@@ -42,18 +42,30 @@
 #include "TransformTree.h"
 #include "Part.h"
 #include "StableDist.h"
+#include "StochasticBeta.h"
 
 #include <gsl/gsl_cdf.h>
 
 void	OutputVarRatesType(FILE *Out, TRANSFORM_TYPE Type);
 
-int		UseNonParametricMethods(OPTIONS *Opt)
+int		UseRJLocalScalar(OPTIONS* Opt)
 {
 	int Index;
 
-	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
-		if(Opt->UseRJLocalScalar[Index] == TRUE)
+	for (Index = 0; Index < NO_RJ_LOCAL_SCALAR; Index++)
+		if (Opt->UseRJLocalScalar[Index] == TRUE)
 			return TRUE;
+
+	return FALSE;
+}
+
+int		UseNonParametricMethods(OPTIONS *Opt)
+{
+	if(UseRJLocalScalar(Opt) == TRUE)
+		return TRUE;
+
+	if(Opt->UseStochasticBeta == TRUE)
+		return TRUE;
 
 	return FALSE;
 }
@@ -1067,11 +1079,19 @@ void	LogVarRatesResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 	NODE		N;
 	double		Sigma;
 
+	if(Opt->UseStochasticBeta == TRUE && UseRJLocalScalar(Opt) == FALSE)
+	{
+		fprintf(Opt->VarRatesLog, "%lld\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, GetNoStochasticBetaType(Rates, SB_RJ));
+		LogStochasticBetaResults(Opt, Trees, Rates, It);
+		fprintf(Opt->VarRatesLog,"\n");
+		return;
+	}
+
 	VarRates = Rates->VarRates;
 //	CheckPlasyNodes(P);
 
 	Out = Opt->VarRatesLog;
-
+	
 	if(Trees->NoTrees == 1)
 		fprintf(Out, "%lld\t%f\t%f\t%d\t", It, Rates->Lh, Rates->Lh + Rates->LhPrior, VarRates->NoNodes);
 	else
@@ -1111,6 +1131,10 @@ void	LogVarRatesResults(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long It)
 		OutputVarRatesType(Out, PNode->Type);
 //		fprintf(Out, "\n");
 	}
+
+	if(Opt->UseStochasticBeta == TRUE)
+		LogStochasticBetaResults(Opt,Trees,Rates,It);
+
 	fprintf(Out, "\n");
 //	exit(0);
 	fflush(Out);

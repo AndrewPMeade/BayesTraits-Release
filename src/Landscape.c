@@ -11,12 +11,16 @@
 #include "Likelihood.h"
 #include "ML.h"
 #include "NLOptBT.h"
+#include "StochasticBeta.h"
 
-int			UseLandScapeModel(OPTIONS* Opt)
+int			UseLandscapeBeta(OPTIONS* Opt)
 {
 	int Index;
 
 	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
+		return TRUE;
+
+	if(Opt->UseStochasticBeta == TRUE)
 		return TRUE;
 
 	for(Index=0;Index<Opt->NoLocalTransforms;Index++)
@@ -48,7 +52,7 @@ void		PropLandscapeBeta(TREES *Trees, NODE Node, double Change)
 {
 	int Index;
 
-	Change += Node->LandscapeBeta * Node->Length;
+	Change += Node->LandscapeBeta;
 
 	if(Node->Tip == TRUE)
 	{
@@ -170,23 +174,6 @@ void		MapLandscapeNodes(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	}
 }
 
-/* 
-	insted of beta, which will vary on a branch by brnach bases
-	use beta * branch length
-*/
-void		MakeBetaBL(TREE *Tree)
-{
-	NODE N;
-	int Index;
-
-	for(Index=0;Index<Tree->NoNodes;Index++)
-	{
-		N = Tree->NodeList[Index];
-		if(N->LandscapeBeta != 0.0)
-			N->LandscapeBeta = N->LandscapeBeta / N->Length;
-	}
-}
-
 void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE *Tree;
@@ -205,8 +192,8 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Rates->Landscape != NULL)
 		MapLandscapeNodes(Opt, Trees, Rates);
 
-	// Convert the Beta to Beta * Branch length
-	MakeBetaBL(Tree);
+	if(Opt->UseStochasticBeta == TRUE)
+		MapStochasticBeta(Trees, Rates);
 
 	PropLandscapeBeta(Trees, Tree->Root, 0.0);
 }

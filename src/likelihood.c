@@ -989,10 +989,11 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	
 	SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
 	
-	if(UseLandScapeModel(Opt) == TRUE || Opt->UseGlobalTrend)
+	if(	UseLandscapeBeta(Opt) == TRUE || 
+		Opt->UseGlobalTrend == TRUE)
 		RetSetConTraitData(Trees->Tree[Rates->TreeNo], Trees->NoSites);
 	
-	if(UseLandScapeModel(Opt) == TRUE)
+	if(UseLandscapeBeta(Opt) == TRUE)
 		MapLandscape(Opt, Trees, Rates);
 
 	if(Rates->TimeSlices != NULL)

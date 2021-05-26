@@ -6,7 +6,7 @@
 LANDSCAPE*	CreateLandScape(TREES *Tree);
 void		FreeLandScape(LANDSCAPE *Landscape);
 
-int			UseLandScapeModel(OPTIONS* Opt);
+int			UseLandscapeBeta(OPTIONS* Opt);
 
 void		ResetTreeLandscape(TREE *Tree);
 void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates);

@@ -42,6 +42,7 @@
 #include "Prob.h"
 #include "LocalTransform.h"
 #include "GlobalTrend.h"
+#include "StochasticBeta.h"
 
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
@@ -509,7 +510,12 @@ double	LogLogNormalP(double X, PRIOR *Prior)
 		Ret = B - A;
 	}
 
-	return log(Ret);
+	Ret = log(Ret);
+
+	if(ValidPriorLh(Ret) == FALSE)
+		return ERRLH;
+
+	return Ret;
 }
 
 
@@ -1107,6 +1113,15 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	{
 		PLh = CalcGlobalTrendPrior(Rates);
 		
+		if(PLh == ERRLH)
+			return;
+
+		Ret += PLh;
+	}
+
+	if(Opt->UseStochasticBeta == TRUE)
+	{
+		PLh = CaclStochasticBetaPrior(Opt->Trees, Rates);
 		if(PLh == ERRLH)
 			return;
 

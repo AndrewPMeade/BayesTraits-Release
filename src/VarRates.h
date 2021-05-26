@@ -2,7 +2,7 @@
 #define VAR_RATES_HEADDER
 
 #include "TypeDef.h"
-
+int				UseRJLocalScalar(OPTIONS *Opt);
 int				UseNonParametricMethods(OPTIONS *Opt);
 
 TRANSFORM_TYPE	StrToVarRatesType(char *Str);

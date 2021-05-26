@@ -338,6 +338,7 @@ typedef enum
 	CGLOBALTREND,
 	CRJTHRESHOLD,
 	C_LOAD_RJ_RATES, 
+	C_STOCHASTIC_BETA,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -430,6 +431,7 @@ static char    *COMMANDSTRINGS[] =
 	"GlobalTrend",		"gt",
 	"RJThreshold",		"rjt", 
 	"LoadVarRates",		"lvr", 
+	"StochasticBeta",	"sb",
 	""
 };
 
@@ -609,6 +611,12 @@ typedef enum
 	MRCA,
 	FOSSIL,
 } NODETYPE;
+
+typedef enum
+{
+	SB_NONE,
+	SB_RJ
+} STOCHASTIC_BETA_TYPE;
 
 
 typedef struct
@@ -1338,6 +1346,8 @@ typedef struct
 
 	char		*VarRatesCheckPoint;
 
+	int			UseStochasticBeta;
+
 } OPTIONS;
 
 typedef struct
@@ -1519,6 +1529,10 @@ typedef struct
 
 	double		GlobalTrend;
 
+	int						NoSB;
+	STOCHASTIC_BETA_TYPE	*SB_Type_Map;
+	double					*SB_Vect;
+
 } RATES;
 
 typedef struct
@@ -1535,7 +1549,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NO_SCHEDULE_OPT	29
+#define NO_SCHEDULE_OPT	31
 
 static char    *SHEDOP[] =
 {
@@ -1567,7 +1581,9 @@ static char    *SHEDOP[] =
 	"Time Slice - Time",
 	"Time Slice - Scale",
 	"Global Rate",
-	"GlobalTrend-Change"
+	"GlobalTrend-Change",
+	"SB RJ",
+	"SB Rate Change"
 };
 
 typedef enum
@@ -1600,7 +1616,9 @@ typedef enum
 	S_TIME_SLICE_TIME,
 	S_TIME_SLICE_SCALE,
 	S_GLOBAL_RATE, 
-	S_GLOBAL_TREND
+	S_GLOBAL_TREND,
+	S_SB_RJ,
+	S_SB_RATE
 } OPERATORS;
 
 typedef struct
@@ -1652,6 +1670,10 @@ typedef struct
 
 
 	AUTOTUNE	*LandscapeRateChangeAT;
+
+	AUTOTUNE	*StochasticBeta;
+	AUTOTUNE	*StochasticBetaPrior;
+
 
 
 	int				NoCShed;

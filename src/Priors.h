@@ -48,4 +48,7 @@ PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed);
 
 double		CalcNormalHasting(double x, double SD);
 
+int		ValidPriorLh(double LH);
+
+
 #endif

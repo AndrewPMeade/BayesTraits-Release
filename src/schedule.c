@@ -200,7 +200,7 @@ void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 	if(EstLocalTransforms(Opt->LocalTransforms, Opt->NoLocalTransforms) == TRUE && Opt->LoadModels == FALSE)
 		Shed->OptFreq[S_LOCAL_RATES] = 0.1;
 
-	if(UseNonParametricMethods(Opt) == TRUE)
+	if(UseRJLocalScalar(Opt) == TRUE)
 	{
 		Shed->OptFreq[S_VARRATES_ADD_REMOVE] = 0.5;
 		Shed->OptFreq[S_VARRATES_MOVE] = 0.05;
@@ -259,6 +259,12 @@ void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 
 	if(Opt->UseGlobalTrend == TRUE)
 		Shed->OptFreq[S_GLOBAL_TREND] = 0.1;
+
+	if(Opt->UseStochasticBeta == TRUE)
+	{
+		Shed->OptFreq[S_SB_RJ] = 0.4;
+		Shed->OptFreq[S_SB_RATE] = 0.4;
+	}
 	   
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 
@@ -407,6 +413,9 @@ SCHEDULE*	AllocSchedule()
 	Ret->GlobalTrendAT	= NULL;
 
 	Ret->LandscapeRateChangeAT	 = NULL;
+
+	Ret->StochasticBeta	=	NULL;
+	Ret->StochasticBetaPrior =	NULL;
 	
 	return Ret;
 }
@@ -710,6 +719,18 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 		AddToFullATList(Ret, Ret->GlobalRateAT);
 	}
 
+	if(Opt->UseStochasticBeta == TRUE)
+	{
+		Ret->StochasticBeta = CreatAutoTune("Stochastic Beta", RandDouble(RS) * 0.01, MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->StochasticBeta, 10000.0);
+
+		Ret->StochasticBetaPrior = CreatAutoTune("Stochastic Beta Prior", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->StochasticBetaPrior, 10000.0);
+
+		AddToFullATList(Ret, Ret->StochasticBeta);
+		AddToFullATList(Ret, Ret->StochasticBetaPrior);
+	}
+
 
 	return Ret;
 }
@@ -783,6 +804,12 @@ void		FreeeSchedule(SCHEDULE* Sched)
 	if(Sched->GlobalTrendAT != NULL)
 		FreeAutoTune(Sched->GlobalTrendAT);
 
+	if(Sched->StochasticBeta != NULL)
+		FreeAutoTune(Sched->StochasticBeta);
+
+	if(Sched->StochasticBetaPrior != NULL)
+		FreeAutoTune(Sched->StochasticBetaPrior);
+
 	if(Sched->NoCShed > 0)
 	{
 		for(Index=0;Index<Sched->NoCShed;Index++)
@@ -790,6 +817,8 @@ void		FreeeSchedule(SCHEDULE* Sched)
 
 		free(Sched->CShedList);
 	}
+
+
 
 	free(Sched->DefShed);
 

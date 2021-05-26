@@ -80,4 +80,6 @@ void			DumpStates(FILE* Str, RANDSTATES *RS);
 void			SaveDieHardTest(RANDSTATES* RS, char *FName, int NoLong);
 
 void			ShuffleIntList(RANDSTATES* RS, int *List, size_t Size);
+void			ShuffleDoubleList(RANDSTATES* RS,double *List,size_t Size);
+
 #endif
