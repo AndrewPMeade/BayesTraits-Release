@@ -70,6 +70,7 @@ void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees);
 void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Out);
 
 void	PrintTreeBL(TREE *Tree);
+void	PrintTreeNode(TREES *Trees, TREE *Tree);
 
 
 void	CheckSingleDescendent(TREES *Trees);

@@ -2072,6 +2072,21 @@ void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Ou
 	fflush(Out);
 }
 
+void	PrintTreeNode(TREES *Trees, TREE *Tree)
+{
+	int Index;
+	NODE N;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+
+		printf("%d\t%f\t", Index, N->Length);
+		PrintPart(stdout, Trees, N->Part);
+		printf("\n");
+	}
+}
+
 void	PrintTreeBL(TREE *Tree)
 {
 	int Index;

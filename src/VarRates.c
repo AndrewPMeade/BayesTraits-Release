@@ -158,6 +158,9 @@ int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type, OPTIONS *Opt)
 	if(Part->NoTaxa >= Opt->MinTransTaxaNo)
 		return TRUE;
 
+	if(Type == VR_LS_BL && N->Tip == FALSE)
+		return TRUE;	
+
 	return FALSE;
 }
 
@@ -305,13 +308,19 @@ void	CheckPlasyNodes(VARRATES *VarRates)
 		if(No != 1)
 		{
 			printf("Multiple hits of the same node %d.\n", No);
-			exit(0);
+			exit(1);
 		}
 
 		if(PNode->Type == VR_NODE && PNode->Part->NoTaxa < MIN_TAXA_VR_NODE)
 		{
 			printf("Node no taxa < minimum.\n");
-			exit(0);
+			exit(1);
+		}
+
+		if(PNode->Type == VR_LS_BL && PNode->Part->NoTaxa == 1)
+		{
+			printf("VR LS BL placed on a Tip\n");
+			exit(1);
 		}
 	}
 
@@ -1155,6 +1164,8 @@ double	CaclVRPrior(double X, TRANSFORM_TYPE Type, RATES *Rates)
 {
 	double Ret;
 	PRIOR *Prior;
+
+//	return -2.0;
 
 	if(Type == VR_KAPPA && X >= MAX_VR_KAPPA)
 		return ERRLH;

@@ -2890,7 +2890,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case S_LAND_RATE_MOVE:
-//			if(It > 10000)
+			if(It > 1000000)
 				SwapRateGroupParam(Rates);
 		break;
 

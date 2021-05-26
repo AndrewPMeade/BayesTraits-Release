@@ -586,7 +586,9 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 		if(Opt->NodeData == TRUE || Opt->NodeBLData == TRUE)
 			SetTreeAsData(Opt, Trees, Rates->TreeNo);
 
-		MLLandscape(Opt, Trees, Rates);
+
+		if(Opt->UseMLLandscape == TRUE)
+			MLLandscape(Opt, Trees, Rates);
 
 		MLTree(Opt, Trees, Rates);
 

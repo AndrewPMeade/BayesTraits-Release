@@ -25,7 +25,6 @@ void				ChangeLandRateGroupSigDist(RATES *Rates,  SCHEDULE* Shed);
 void				SetNoFixedGroups(RATES *Rates, LAND_RATE_GROUPS* LandRGroup, int NoGroup);
 
 void				LandSplitMerge(RATES *Rates);
-
-void SplitMergeTest(RATES *RateA, RATES *RateB, OPTIONS *Opt);
+void				SplitMergeTest(RATES *RateA, RATES *RateB, OPTIONS *Opt);
 
 #endif

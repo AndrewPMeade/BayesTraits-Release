@@ -11,6 +11,7 @@
 #include "Priors.h"
 #include "Rates.h"
 #include "Likelihood.h"
+#include "Trees.h"
 
 void FreeRateGroup(RATE_GROUP *RateGroup)
 {
@@ -163,6 +164,10 @@ void SetNoFixedGroups(RATES *Rates, LAND_RATE_GROUPS* LandRGroup, int NoGroup)
 	{
 //		GNo = RandUSInt(Rates->RS) % LandRGroup->NoGroups;
 		GNo = 0;
+
+//		if(LandRGroup->RateList[Index] == 3)
+//			GNo = 1;
+		
 		RateG = LandRGroup->RateGroupList[GNo];
 		RateG->PramList[RateG->NoRates++] = LandRGroup->RateList[Index];
 	}
@@ -177,6 +182,10 @@ void SetNoFixedGroups(RATES *Rates, LAND_RATE_GROUPS* LandRGroup, int NoGroup)
 		RateG = LandRGroup->RateGroupList[Index];
 		RateG->Rate = RandFromPrior(Rates->RNG, Prior);
 	}
+
+
+//	RateG = LandRGroup->RateGroupList[1];
+	//RateG->Rate = -5.0;
 }
 
 int*	CreateRateList(TREE *Tree, int *NoRates)
@@ -197,8 +206,6 @@ int*	CreateRateList(TREE *Tree, int *NoRates)
 		}
 	}
 
-
-
 	return Ret;
 }
 
@@ -206,7 +213,8 @@ LAND_RATE_GROUPS*	CreateLandRateGroups(RATES *Rates, TREES *Trees, int FixedNoRa
 {
 	LAND_RATE_GROUPS* Ret;
 	int Index, NoRates, *RateList;
-		
+
+			
 	RateList = CreateRateList(Trees->Tree[0], &NoRates);
 
 	Ret = AllocLandRateGroup(NoRates);
@@ -296,7 +304,7 @@ void	AddPramToGroup(RATE_GROUP *RGroup, int Pram)
 
 void	SwapRateGroupParam(RATES *Rates)
 {
-	int Rate, Pos;
+	int Rate, Pos, NoOld, NoNew;
 	LAND_RATE_GROUPS *LandRateGroups;
 	RATE_GROUP	*RGOld, *RGNew; 
 	
@@ -309,15 +317,23 @@ void	SwapRateGroupParam(RATES *Rates)
 	Rate = LandRateGroups->RateList[Rate];
 	RGOld = GetRateGroup(LandRateGroups, Rate, &Pos);
 
+	NoOld = RGOld->NoRates;
 	RemovePramFromGroup(RGOld, Pos);
 	
-//	do
-//	{
+	do
+	{
 		Pos = RandUSInt(Rates->RS) % LandRateGroups->NoGroups;
 		RGNew = LandRateGroups->RateGroupList[Pos];
-//	}while(RGOld == RGNew);
+	}while(RGOld == RGNew);
+
 
 	AddPramToGroup(RGNew, Rate);
+
+	NoNew = RGNew->NoRates;
+
+	Rates->LnHastings = (double)NoNew / (double)NoOld;
+		
+	Rates->LnHastings = log(Rates->LnHastings);
 }
 
 void	RecPrintNodeTaxa(FILE *Str, NODE N)
@@ -426,9 +442,9 @@ double CalcPriorLandRateGoup(RATES *Rates)
 		if(BetaPrior == ERRLH)
 			return ERRLH;
 
-	//	if(RateG->Rate != 0)
-	//		Ret += BetaPrior * RateG->NoRates;
-			Ret += BetaPrior;
+		if(RateG->Rate != 0)
+			Ret += BetaPrior * RateG->NoRates;
+	//		Ret += BetaPrior;
 	}
 
 //	exit(0);
