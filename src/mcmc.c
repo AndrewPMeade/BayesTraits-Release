@@ -342,8 +342,7 @@ double	RandFromPriorPosition(int Pos, OPTIONS *Opt, TREES *Trees, RATES *Rates, 
 void	RandRatesFromPrior(OPTIONS *Opt, TREES *Trees, RATES *Rates, gsl_rng *RNG)
 {
 	int TNo, RIndex;
-
-
+	
 	for(TNo=0;TNo<1000000;TNo++)
 	{
 		for(RIndex=0;RIndex<Rates->NoOfRates;RIndex++)
@@ -465,8 +464,6 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 		return TRUE;
 	}
 	
-//	printf("I:\t%lld\t%f\t%f\t", Itters, CRates->Lh + CRates->LhPrior, NRates->Lh + NRates->LhPrior);
-
 	ReSetAccFlags(NRates);
 
 	if((Shed->Op == S_FAT_TAIL_ANS_ALL || Shed->Op == S_FAT_TAIL_ANS) && Opt->Model == M_FATTAIL)
@@ -636,8 +633,8 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *Shed)
 				// Also a sandity check. 
 				if(CRates->Lh != Likelihood(CRates, Trees, Opt))
 				{
-					printf("err\n");
-					exit(0);
+					printf("Likelihood Error: %d::%s\n", __LINE__, __FILE__);
+					exit(1);
 				}
 	
 				#ifndef JNIRUN

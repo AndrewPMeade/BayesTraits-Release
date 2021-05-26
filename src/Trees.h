@@ -71,6 +71,8 @@ void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Ou
 
 void	PrintTreeBL(TREE *Tree);
 void	PrintTreeNode(TREES *Trees, TREE *Tree);
+void	RecPrintNode(NODE N);
+
 
 
 void	CheckSingleDescendent(TREES *Trees);

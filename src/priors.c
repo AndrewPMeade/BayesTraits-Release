@@ -233,7 +233,7 @@ PRIOR*		CreateNormalPrior(char *Name, double Mean, double SD)
 
 	if(SD <= 0)
 	{
-		printf("Normal distribution SD must be >0");
+		printf("prior %s, normal distribution SD must be >0", Name);
 		exit(0);
 	}
 
@@ -1158,7 +1158,7 @@ int			CheckPriorDistVals(PRIORDIST PDist, int Tokes, char **Passed)
 
 		P = atof(Passed[Index]);
 		
-		if(!(PDist == PDIST_UNIFORM || PDist == PDIST_NORMAL))
+		if(!(PDist == PDIST_UNIFORM || PDist == PDIST_NORMAL || PDist == PDIST_LOGNORMAL))
 		{
 			if(P < 0)
 			{

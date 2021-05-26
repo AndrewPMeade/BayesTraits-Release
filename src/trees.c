@@ -2072,6 +2072,22 @@ void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Ou
 	fflush(Out);
 }
 
+void	RecPrintNode(NODE N)
+{
+	int Index;
+
+	if(N->Tip == TRUE)
+	{
+		printf("%d\t", N->Taxa->Name);
+		return;
+	}
+
+	for(Index=0;Index<N->NoNodes;Index++)
+		RecPrintNode(N->NodeList[Index]);
+}
+
+
+
 void	PrintTreeNode(TREES *Trees, TREE *Tree)
 {
 	int Index;

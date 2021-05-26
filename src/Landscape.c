@@ -376,7 +376,10 @@ int	AddMLLandscapeNNode(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	// For all the valid odes
 	for(Index=0;Index<NoNodes;Index++)
 	{
+//		Index = 1;
+
 		Node = 	NodeList[Index];
+	
 		LandNode->NodeList[0] = Node;
 		LandNode->Beta = 0.0;
 
@@ -392,6 +395,12 @@ int	AddMLLandscapeNNode(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		// Save the Lh and Beta
 		LhList[Index] = Lh - InitLh;
 		Beta[Index] = LandNode->Beta;
+
+
+//		printf("%s\t%f\t%f\t%f\t", Opt->DataFN, Lh, InitLh, LandNode->Beta);
+	//	PrintPart(stdout, Trees, Node->Part);
+//		printf("\n");
+//		exit(0);
 	}
 
 
@@ -433,8 +442,6 @@ void	GlobalMLLandscapeOpt(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	// calck the new lh
 	Lh = Likelihood(Rates, Trees, Opt);
 
-	printf("%f\t", Lh);
-
 	FreeMLMap(ML_Map);
 
 	SetLandRateEst(Land, FALSE);
@@ -449,9 +456,8 @@ void	PrintMLLandscape(TREES *Trees, RATES *Rates)
 	Landscape = Rates->Landscape;
 
 	printf("No Betas\t%d\n", Landscape->NoNodes);
-
-
-	printf("Index\tBeta\tBL\n");
+	
+	printf("Index\tBeta X BL\tBL\n");
 	for(Index=0;Index<Landscape->NoNodes;Index++)
 	{
 		LandNode = Landscape->NodeList[Index];
@@ -462,28 +468,61 @@ void	PrintMLLandscape(TREES *Trees, RATES *Rates)
 
 }
 
+void	OutputLandscapeInfo(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double LH, Alpha, Sig;
+	
+
+	LH = Likelihood(Rates, Trees, Opt);
+
+	Alpha = Rates->Contrast->Alpha[0];
+	Sig = Rates->Contrast->Sigma[0];
+
+
+	printf("Lh\tAlpha\tSig2\n");
+	printf("%f\t%f\t%f\n", LH, Alpha, Sig);
+}
+
+
+
 void	MLLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	LANDSCAPE *Landscape;
-	int Valid;
+	int Valid, Index;
+	double InitLh, OptLh;
 
+	OutputLandscapeInfo(Opt, Trees, Rates);
 
-
+	printf("Start Lh\t1 D Opt\tGlobal Opt\n");
 	do
 	{
-		printf("Lh:\t%f\t", Likelihood(Rates, Trees, Opt));
+		InitLh = Likelihood(Rates, Trees, Opt);
 		Valid = AddMLLandscapeNNode(Opt, Trees, Rates);
-		printf("%f\t", Likelihood(Rates, Trees, Opt));
+				
+		if(Valid == TRUE)
+		{
+			OptLh = Likelihood(Rates, Trees, Opt);
+			printf("%f\t%f\t", InitLh, OptLh);
+			
+			GlobalMLLandscapeOpt(Opt, Trees, Rates);
+			
+			OptLh = Likelihood(Rates, Trees, Opt);
+			printf("%f\t", OptLh);
 
-//		GlobalMLLandscapeOpt(Opt, Trees, Rates);
-
-		printf("\n");
+			printf("\n");
+			fflush(stdout); 
+		}
 
 
 		fflush(stdout);
 	}while(Valid == TRUE);
 	
 	PrintMLLandscape(Trees, Rates);
+
+	
+	OutputLandscapeInfo(Opt, Trees, Rates);
+
+
 
 	exit(0);
 }

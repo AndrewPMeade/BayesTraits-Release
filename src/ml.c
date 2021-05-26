@@ -186,7 +186,7 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	{
 		for(Index=0;Index<Rates->Landscape->NoNodes;Index++)
 			if(Rates->Landscape->NodeList[Index]->MLEst == TRUE)
-				AddPToMLMap(MLMap, 0, -10, 10);
+				AddPToMLMap(MLMap, 0, -ML_LAND_BETA_SIZE, ML_LAND_BETA_SIZE);
 	}
 }
 

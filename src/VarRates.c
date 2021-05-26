@@ -41,6 +41,7 @@
 #include "Priors.h"
 #include "TransformTree.h"
 #include "Part.h"
+#include "StableDist.h"
 
 #include <gsl/gsl_cdf.h>
 
@@ -141,14 +142,18 @@ int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type, OPTIONS *Opt)
 
 	Part = N->Part;
 
+	/* Don't scale the root */
+	if(Type == VR_BL || Type == VR_NODE || Type == VR_LS_BL)
+	{
+		if(N->Ans == NULL)
+			return FALSE;
+	}
+
 	if(Type == VR_BL || Type == VR_NODE)
 	{
 		if(N->Tip == TRUE && Type == VR_NODE)
 			return FALSE;
-
-		if(N->Ans == NULL)
-			return FALSE;
-
+		
 		if(Type == VR_NODE && Part->NoTaxa < MIN_TAXA_VR_NODE)
 			return FALSE;
 
@@ -158,6 +163,7 @@ int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type, OPTIONS *Opt)
 	if(Part->NoTaxa >= Opt->MinTransTaxaNo)
 		return TRUE;
 
+	
 	if(Type == VR_LS_BL && N->Tip == FALSE)
 		return TRUE;	
 
@@ -277,6 +283,9 @@ void	SetVRScalar(OPTIONS *Opt, RATES *Rates, VAR_RATES_NODE *PNode)
 	Prior = GetPriorFromRJRatesScalar(Opt, PNode->Type);
 	
 	PNode->Scale = RandFromPrior(Rates->RNG, Prior);
+
+	if(PNode->Type == VR_LS_BL && RandDouble(Rates->RS) < 0.5)
+		PNode->Scale = PNode->Scale * -1;
 }
 
 int		CountPlasyID(VAR_RATES_NODE *VRNode, VARRATES *VarRates)
@@ -324,7 +333,6 @@ void	CheckPlasyNodes(VARRATES *VarRates)
 		}
 	}
 
-
 	for(Index=0;Index<VarRates->NoNodes;Index++)
 	{
 		PNode = VarRates->NodeList[Index];
@@ -341,14 +349,19 @@ void	SetScalar(OPTIONS *Opt, RATES *Rates,  VAR_RATES_NODE *PNode)
 		return;
 	}
 
-	if(PNode->Type == VR_LS_BL)
-	{
-		PNode->Scale = RandNormal(Rates->RS, 0.0, 1.0);
-		return;
-	}
-	
 	SetVRScalar(Opt, Rates, PNode);
+}
 
+double	SetLandscapeBeta(RATES *Rates, double t)
+{
+	double Z, Sig2, Beta;
+
+	Z = RandNormal(Rates->RS, 0.0, 1.0);
+	Sig2 = Rates->Rates[1];
+
+	Beta = (Z * sqrt(Sig2 * t)) / t;
+
+	return Beta;
 }
 
 void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, TRANSFORM_TYPE Type, NODE N, long long It)
@@ -361,10 +374,9 @@ void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, TRANSFORM_TYPE Ty
 	PNode = CreateVarRatesNode(It, N->Part, Trees->NoTrees);
 
 	PNode->Type = Type;
-	
+
 	SetScalar(Opt, Rates, PNode);
-
-
+	
 	VarRates->NodeList = (VAR_RATES_NODE**)AddToList(&VarRates->NoNodes, (void**)VarRates->NodeList, (void*)PNode);
 
 	Rates->LnHastings = 0;
@@ -697,7 +709,7 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	TRANSFORM_TYPE		Type;
 	
 	Type = GetVarRatesType(Rates->RS, Shed);
-			
+
 	VarRates = Rates->VarRates;
 	
 	N = GetVarRatesNode(Opt, Rates, Trees, Type);
@@ -712,6 +724,15 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	qsort(VarRates->NodeList, VarRates->NoNodes, sizeof(VAR_RATES_NODE*), CompVarRatesNode);
 	
 	CheckPlasyNodes(VarRates);
+
+//	return;
+	if(Type == VR_LS_BL)
+	{
+		if(VRNode == NULL)
+			Rates->LnHastings += -LN_P_LS_BL;
+		else
+			Rates->LnHastings += LN_P_LS_BL;
+	}
 }
 
 VAR_RATES_NODE *CloneVarRatesNode(VAR_RATES_NODE *VR_Node, int NoTrees)
@@ -857,9 +878,7 @@ void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 	double SumBL, Scale;
 	VAR_RATES_NODE *VR_Node;
 	NODE Node;
-
 	
-
 	VarRates = Rates->VarRates;
 	TNo = Rates->TreeNo;
 	Tree = Trees->Tree[TNo];
@@ -1185,6 +1204,73 @@ double	CaclVRPrior(double X, TRANSFORM_TYPE Type, RATES *Rates)
 	return Ret;
 }
 
+double	CalcVRLandPriorLh(double Beta, double T, double Sig2)
+{
+	double Lh, Z;
+
+	Z = (Beta * T) / sqrt(Sig2 * T);
+	Z = fabs(Z);
+
+	Z = Z - 3;
+	if(Z < 0)
+		Z = 0;
+
+	Lh = CaclNormalLogLh(Z, 1.0, 1.0);
+
+	return Lh;
+}
+
+double	CaclVRLandPrior(RATES *Rates, VAR_RATES_NODE *VRNode)
+{
+	double Ret, X;
+	PRIOR *Prior;
+
+	X = VRNode->Scale;
+	X = fabs(X);
+
+	Prior = GetVRPrior(VRNode->Type, Rates);
+	Ret = CalcLhPriorP(X, Prior);
+
+	return Ret;
+/*
+	double T, Beta, Sig2, Z, LhP;
+	NODE N;
+
+//	return 0;
+
+	N = VRNode->NodeList[Rates->TreeNo];
+	T = N->Length;
+
+	Beta = VRNode->Scale;
+
+	Sig2 = Rates->Rates[1];
+
+	LhP = CalcVRLandPriorLh(Beta, T, Sig2);
+
+	return LhP;*/
+}
+
+void	TestR(RATES *Rates)
+{
+	TRANSFORM_TYPE Type;
+	PRIOR *Prior;
+	double X, Lh;
+
+	Type = VR_LS_BL;
+
+	Prior = GetVRPrior(Type, Rates);
+	
+	for(X=0.0001;X<3;X+=0.01)
+	{
+		Lh = CalcLhPriorP(X, Prior);
+
+		printf("%f\t%f\t%f\n", X, Lh, exp(Lh));
+	}
+	
+	exit(0);
+
+}
+
 double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 {
 	double		Ret;
@@ -1192,7 +1278,9 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 	VARRATES	*VarRates;
 	VAR_RATES_NODE	*PNode;
 	double		PVal;
-
+	
+//	TestR(Rates);
+	
 	VarRates = Rates->VarRates;
 	Ret = 0;
 
@@ -1200,7 +1288,10 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 	{
 		PNode = VarRates->NodeList[Index];
 
-		PVal = CaclVRPrior(PNode->Scale, PNode->Type, Rates);
+		if(PNode->Type != VR_LS_BL)
+			PVal = CaclVRPrior(PNode->Scale, PNode->Type, Rates);
+		else
+			PVal = CaclVRLandPrior(Rates, PNode);
 
 		if(PVal == ERRLH)
 			return ERRLH;

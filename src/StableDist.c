@@ -88,6 +88,7 @@ double		CaclNormalLogLh(double X, double Scale, double T)
 	Ret = log(1.0 / (sqrt(Scale) * 2.506628274631));
 
 	T1 = -((X * X) / (2.0 * Scale));
+
 	return Ret + T1;
 }
 

@@ -530,8 +530,7 @@ double CalcPriorLandRateGoup(RATES *Rates)
 	LandRateGroups = Rates->LandscapeRateGroups;
 
 	Prior = GetPriorFromName("RJ_Landscape_Rate_Group", Rates->Priors, Rates->NoPriors);
-	
-	
+		
 	Ret = 0;
 	for(Index=0;Index<LandRateGroups->NoGroups;Index++)
 	{

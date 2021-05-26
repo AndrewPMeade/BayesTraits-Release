@@ -21,4 +21,7 @@ void		SetStableDist(STABLEDIST* SD, double Alpha, double Scale);
 double		StableDistPDF(STABLEDIST* SD, double x);
 double		StableDistTPDF(STABLEDIST* SD, double x, double t);
 
+double		CaclNormalLogLh(double X, double Scale, double T);
+
+
 #endif

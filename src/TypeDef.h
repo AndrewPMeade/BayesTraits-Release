@@ -202,6 +202,8 @@
 #define MIN_LOCAL_RATE 1E-07
 #define MAX_LOCAL_RATE 100
 
+#define	ML_LAND_BETA_SIZE 25
+
 #define	NORM_MEAN_BL	0.1
 
 #define	MAX_VR_KAPPA	25

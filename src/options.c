@@ -526,6 +526,8 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "RJ Landscape Rate Group:         ");
 		if(Opt->UseRJLandscapeRateGroup == TRUE)
 			fprintf(Str, "True\n");
+		else
+			fprintf(Str, "False\n");
 		
 
 		if(Opt->AlphaZero == TRUE)

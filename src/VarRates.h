@@ -3,6 +3,8 @@
 
 #include "TypeDef.h"
 
+#define LN_P_LS_BL	3.0
+
 int				UseNonParametricMethods(OPTIONS *Opt);
 
 TRANSFORM_TYPE	StrToVarRatesType(char *Str);

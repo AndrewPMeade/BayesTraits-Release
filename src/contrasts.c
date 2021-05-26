@@ -461,22 +461,6 @@ void	RecCalcContrast(NODE N, int NoSites)
 
 
 
-
-void	RecPrintNode(NODE N)
-{
-	int Index;
-
-	if(N->Tip == TRUE)
-	{
-		printf("%s,", N->Taxa->Name);
-		return;
-	}
-
-	for(Index=0;Index<N->NoNodes;Index++)
-		RecPrintNode(N->NodeList[Index]);
-}
-
-
 void	PrintContrasts(TREES* Trees, RATES* Rates)
 {
 	TREE	*Tree;
@@ -1793,13 +1777,14 @@ void	MutateContrastRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	She
 	Shed->CurrentAT = Shed->RateDevATList[Pos];
 	Dev = Shed->CurrentAT->CDev;
 
+/* Do not use, it casues the SS to go mad, i don't know why. 
 	if(Opt->Model == M_CONTRAST && Pos % 2 == 1)
 	{
 		Scale = exp(Dev * (RandDouble(Rates->RS) - 0.5));
 		Rates->LnHastings = (Rates->Rates[Pos] * Scale) / Rates->Rates[Pos];
 		Rates->Rates[Pos] = Rates->Rates[Pos] * Scale;
 	}
-	else
+	else*/
 		Rates->Rates[Pos] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
 }
 
