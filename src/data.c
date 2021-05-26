@@ -14,12 +14,12 @@
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
-* 
+*
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
-* 
+*
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>
 *
@@ -144,8 +144,18 @@ TAXA*	FindTaxaFromName(char *Name, TREES* Trees)
 	return NULL;
 }
 
-int		ValidDouble(char *Str)
+int		ValidDoubleStr(char *Str)
 {
+	double Val;
+	char *End;
+
+	Val = strtod(Str, &End);
+
+	if(Val == 0 && End == Str)
+		return FALSE;
+
+	return TRUE;
+/*
 	int	Point=FALSE;
 	int	Len,Index;
 
@@ -166,6 +176,7 @@ int		ValidDouble(char *Str)
 	}
 
 	return TRUE;
+*/
 }
 
 void	AllocEstDataInfo(TAXA *Taxa, int NoSites)
@@ -260,7 +271,7 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 		fflush(stdout);
 	}
 
-	Taxa->ConData		= (double*)SMalloc(sizeof(double)*Trees->NoSites);
+	Taxa->ConData = (double*)SMalloc(sizeof(double)*Trees->NoSites);
 
 	Taxa->Exclude = FALSE;
 
@@ -268,7 +279,7 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 	{
 		Taxa->ConData[Index-1] = atof(Passed[Index]);
 
-		if((Taxa->ConData[Index-1] == 0.0) && (ValidDouble(Passed[Index])== FALSE))
+		if((Taxa->ConData[Index-1] == 0.0) && (ValidDoubleStr(Passed[Index]) == FALSE))
 		{
 			if((strcmp(Passed[Index], "*") == 0) || (strcmp(Passed[Index], "-") == 0))
 				Taxa->Exclude = TRUE;
@@ -317,8 +328,7 @@ void	LoadTaxaData(char* FileName, TREES* Trees)
 
 			if(Tokes - 1  != Trees->NoSites)
 			{
-				
-				printf("Line %d has %d traits but was expecting %d\n", Line+1, Tokes - 1, Trees->NoSites);
+				printf("Line %d has %d sites but was expecting %d\n", Line, Tokes - 1, Trees->NoSites);
 				printf("Error occurred on line.\n%s", DataFile->Data[Line]);
 				exit(0);
 			}
@@ -746,7 +756,7 @@ void	SquashDep(TREES	*Trees)
 			Seen = TRUE;
 		}
 
-		if(		(Taxa->DesDataChar[0][0] == UNKNOWNSTATE) 
+		if(		(Taxa->DesDataChar[0][0] == UNKNOWNSTATE)
 			||	(Taxa->DesDataChar[1][0] == UNKNOWNSTATE))
 		{
 			TempS = SetDescUnknownStates(Taxa->DesDataChar[0][0], Taxa->DesDataChar[1][0]);

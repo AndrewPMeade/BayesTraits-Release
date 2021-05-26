@@ -282,7 +282,6 @@ void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 			N->Partial[SiteNo][Outter] *= Lh;
 		}
 	}
-
 	
 	CheckBigLh(N, SiteNo, Trees);
 
@@ -990,11 +989,11 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	
 	SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
 	
-	if(	UseLandscapeBeta(Opt) == TRUE || 
+	if(	UseLandscapeBeta(Opt, Rates) == TRUE || 
 		Opt->UseGlobalTrend == TRUE)
 		RetSetConTraitData(Trees->Tree[Rates->TreeNo], Trees->NoSites);
 	
-	if(UseLandscapeBeta(Opt) == TRUE)
+	if(UseLandscapeBeta(Opt, Rates) == TRUE)
 		MapLandscape(Opt, Trees, Rates);
 
 	if(Rates->TimeSlices != NULL)
@@ -1011,23 +1010,23 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		SetGlobalTrend(Opt, Trees, Rates);
 }
 
-int		ValidDoubleVal(double Val)
+int		ValidDouble(double LH)
 {
-	if(Val == Val + 1 || Val != Val)
+	if(LH == LH+1 || LH != LH || LH == ERRLH)
 		return FALSE;
-
+	
 	return TRUE;
 }
 
 int		ValidLh(double LH, MODEL_TYPE MT)
 {
-	if(ValidDoubleVal(LH) == FALSE)
-		return FALSE;
-
-	if(LH == ERRLH)
+	if(ValidDouble(LH) == FALSE)
 		return FALSE;
 
 	if(LH > 0 && MT == MT_DISCRETE)
+		return FALSE;
+
+	if(LH == ERRLH)
 		return FALSE;
 
 	return TRUE;

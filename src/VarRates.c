@@ -1333,7 +1333,7 @@ double	CalcNodeScalarTheroyPrior(VAR_RATES_NODE *PNode)
 	N = PNode->Part->NoTaxa;
 	Ret = CaclChiNodeDist(N, PNode->Scale);
 
-	if(ValidDoubleVal(Ret) == FALSE)
+	if(ValidDouble(Ret) == FALSE)
 		return ERRLH;
 
 	return Ret;

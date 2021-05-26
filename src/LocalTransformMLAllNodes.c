@@ -1,5 +1,6 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 #include "LocalTransformMLAllNodes.h"
 #include "LocalTransform.h"
@@ -209,6 +210,26 @@ int		PostProcNewScalar(LT_ALL_NODES* Data, LOCAL_TRANSFORM *LT, RATES *Rates, do
 	return FALSE;
 }
 
+void	LhTestSurce(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double Val, Lh;
+	LOCAL_TRANSFORM *LT;
+
+	LT = Rates->LocalTransforms[Rates->NoLocalTransforms-1];
+
+	for(Val=5;Val<10;Val+=1.0)
+	{
+		LT->Scale = Val;
+
+		Lh = Likelihood(Rates, Trees, Opt);
+
+		printf("%f\t%f\n",Val, Lh);
+	}
+
+	exit(0);
+
+}
+
 int		IncludeNewScalar(LT_ALL_NODES* Data, TRANSFORM_TYPE TType, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE *Tree;
@@ -232,10 +253,15 @@ int		IncludeNewScalar(LT_ALL_NODES* Data, TRANSFORM_TYPE TType, OPTIONS *Opt, TR
 			Node = Tree->NodeList[NIndex];
 			Tag = Data->TagList[NIndex];
 			LT->TagList[0] = Tag;
-			LT->Scale = 1.0;
 
+			LT->Scale = 1.0;
+			if(LT->Type == VR_LS_BL)
+				LT->Scale = 0.0;			
+
+//			LhTestSurce(Opt, Trees, Rates);
 			LhGain[NIndex] = MLLTScalar(Node, LT, Opt, Trees, Rates);
 			Scale[NIndex] = LT->Scale;
+
 		}
 	}
 
@@ -310,7 +336,10 @@ void	LocalTransformMLAllNodes(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	int Valid;
 	double InitLh, OptLh, GOptLh;
 
-	TType = VR_NODE;
+//	TType = VR_NODE;
+
+	// you need to make sure a node is allready being scaled.. 
+	TType = VR_LS_BL;
 
 	IntiLocalTransforms(Trees, Rates);
 

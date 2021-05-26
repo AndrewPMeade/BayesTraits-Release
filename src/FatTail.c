@@ -123,7 +123,7 @@ FATTAILRATES*	AllocFatTailRates(OPTIONS *Opt, TREES *Trees)
 	if(Opt->Model == M_GEO)
 		Ret->NoSD = 1;
 
-	Ret->SDList = (STABLEDIST**)SMalloc(sizeof(double) * Ret->NoSD);
+	Ret->SDList = (STABLEDIST**)SMalloc(sizeof(STABLEDIST*) * Ret->NoSD);
 	for(Index=0;Index<Ret->NoSD;Index++)
 		Ret->SDList[Index] = CreatStableDist();
 	

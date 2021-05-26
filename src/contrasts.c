@@ -283,43 +283,7 @@ void	AddPolyContrast(CONTRAST *C0, CONTRAST *Dest, NODE Add, int NoSites)
 	}
 }
 
-void	PrintNodeContrast(NODE N, int NoSites)
-{
-	int Index;
-	int CIndex;
-	CONDATA *ConData;
 
-	ConData = N->ConData;
-	
-//	printf("Con\t");
-	// Data	Cont	Var	Err	u	y	v	V
-
-	if(N->Tip == TRUE)
-		return;
-
-	for(CIndex=0;CIndex<ConData->NoContrast;CIndex++)
-	{
-		printf("%d\t", ConData->NoContrast);
-
-		for(Index=0;Index<NoSites;Index++)
-		{ 
-			printf("%12.12f\t", ConData->Contrast[CIndex]->Data[Index]); 
-			printf("%12.12f\t", ConData->Contrast[CIndex]->Cont[Index]);
-			printf("%12.12f\t", ConData->Contrast[CIndex]->Var);
-			printf("%12.12f\t", ConData->Contrast[CIndex]->Err);
-
-
-			printf("%12.12f\t", N->Length);
-			printf("%12.12f\t", N->DistToRoot);
-			
-
-
-			printf("\t");
-		}
-
-		printf("\n");
-	}
-}
 
 void	PrintConNodeDx(NODE N, TREES *Trees)
 {
@@ -377,6 +341,46 @@ void	PrintPrintContrastDx(RATES *Rates, TREES *Trees)
 	exit(0);
 }
 
+void	PrintNodeContrast(NODE N, int NoSites)
+{
+	int Index;
+	int CIndex;
+	CONDATA *ConData;
+
+	ConData = N->ConData;
+	
+//	printf("Con\t");
+	// Data	Cont	Var	Err	u	y	v	V
+
+	if(N->Tip == TRUE)
+		return;
+
+	for(CIndex=0;CIndex<ConData->NoContrast;CIndex++)
+	{
+		printf("%d\t%d\t", N->ID, ConData->NoContrast);
+
+		for(Index=0;Index<NoSites;Index++)
+		{ 
+			printf("%12.12f\t", ConData->Contrast[CIndex]->Data[Index]); 
+			printf("%12.12f\t", ConData->Contrast[CIndex]->Cont[Index]);
+			printf("%12.12f\t", ConData->Contrast[CIndex]->Var);
+			printf("%12.12f\t", ConData->Contrast[CIndex]->Err);
+
+
+			printf("%12.12f\t", N->Length);
+			printf("%12.12f\t", N->UserLength);
+
+			printf("%12.12f\t", N->DistToRoot);
+			
+
+
+			printf("\t");
+		}
+
+		printf("\n");
+	}
+}
+
 void	PrintContrast(RATES *Rates, TREES *Trees)
 {
 	TREE *Tree;
@@ -391,7 +395,7 @@ void	PrintContrast(RATES *Rates, TREES *Trees)
 	Tree = Trees->Tree[Rates->TreeNo];
 
 	for(Index=0;Index<CR->NoSites;Index++)
-		printf("Data\tCon\tVar\tErr\tV\tLen\tDistToRoot\t"); 
+		printf("NodeID\tNo Node Con\tCon\tVar\tErr\tV\tLen\tUser Length\tDistToRoot\t"); 
 	printf("\n");
 
 	for(Index=0;Index<Tree->NoNodes;Index++)
@@ -460,21 +464,13 @@ void	RecCalcContrast(NODE N, int NoSites)
 
 	if(N->Tip == TRUE)
 		return;
-#ifndef  CLIK_P
+
 	for(Index=0;Index<N->NoNodes;Index++)
 //#ifdef OPENMP_THR
 //		if(N->NodeList[Index]->Visited == FALSE)
 //#endif
 			RecCalcContrast(N->NodeList[Index], NoSites);
-#else 
-	for(Index=0;Index<N->NoNodes-1;Index++)
-	{
-		cilk_spawn RecCalcContrast(N->NodeList[Index], NoSites);
-	}
 
-	RecCalcContrast(N->NodeList[Index], NoSites);
-	cilk_sync;
-#endif
 
 	CalcNodeContrast(N, NoSites);
 }
@@ -1491,8 +1487,7 @@ double	CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 	if(ValidLh(Lh, Opt->ModelType) == FALSE)
 		Lh = ERRLH;
 
-//	PrintContrast(Rates, Trees);
-//	exit(0);
+//	PrintContrast(Rates, Trees); exit(0);
 
 	return Lh;
 }

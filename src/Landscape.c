@@ -12,15 +12,15 @@
 #include "ML.h"
 #include "NLOptBT.h"
 
-int			UseLandscapeBeta(OPTIONS* Opt)
+int			UseLandscapeBeta(OPTIONS* Opt, RATES *Rates)
 {
 	int Index;
 
 	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
 		return TRUE;
 
-	for(Index=0;Index<Opt->NoLocalTransforms;Index++)
-		if(Opt->LocalTransforms[Index]->Type == VR_LS_BL)
+	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+		if(Rates->LocalTransforms[Index]->Type == VR_LS_BL)
 			return TRUE;
 
 	return FALSE;

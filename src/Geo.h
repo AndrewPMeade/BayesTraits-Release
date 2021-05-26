@@ -20,6 +20,5 @@ void	GeoTest(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 void	GeoUpDateAnsStates (OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
-
 void	LoadGeoData(OPTIONS *Opt, TREES *Trees, RATES *CRates, char *Str);
 #endif
