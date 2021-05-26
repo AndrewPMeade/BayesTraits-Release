@@ -13,6 +13,20 @@
 #include "ML.h"
 #include "NLOptBT.h"
 
+int			UseLandScapeModel(OPTIONS* Opt)
+{
+	int Index;
+
+	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
+		return TRUE;
+
+	for(Index=0;Index<Opt->NoLocalTransforms;Index++)
+		if(Opt->LocalTransforms[Index]->Type == VR_LS_BL)
+			return TRUE;
+
+	return FALSE;
+}
+
 void		ResetTreeLandscape(TREE *Tree)
 {
 	int Index;
@@ -177,7 +191,6 @@ void		MakeBetaBL(TREE *Tree)
 
 void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-
 	TREE *Tree;
 	int TreeNo;
 

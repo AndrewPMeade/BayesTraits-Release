@@ -228,6 +228,11 @@ double	GetRandValFromType(TRANSFORM_TYPE Type, RATES *Rates, gsl_rng *RNG)
 	if(Type == VR_BL)
 		Prior = GetPriorFromName("VRBL", Rates->Priors, Rates->NoPriors);
 
+	if(Type == VR_LS_BL)
+		Prior = GetPriorFromName("VR_LS_BL", Rates->Priors, Rates->NoPriors);
+
+	assert(Prior != NULL);
+
 	return RandFromPrior(RNG, Prior);
 }
 
@@ -572,8 +577,6 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *Shed)
 	CRates->Lh	=	Likelihood(CRates, Trees, Opt);
 	
 	CalcPriors(CRates, Opt); 
-
-
 	
 	if(Opt->UseSchedule == TRUE)
 		ShedFile = SetScheduleFile(Opt, Shed);

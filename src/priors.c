@@ -668,9 +668,27 @@ void	ChiSTest(void)
 	exit(0);
 }
 
+void	PriorTest(void)
+{
+	PRIOR* Prior;
+	double X, P;
+
+	Prior = CreateLogNormalPrior("Prior", -0.6, 0.55);
+
+	for(X=0.00001;X<5;X+=0.01)
+	{
+		P = LogLogNormalP(X, Prior);
+		printf("%f\t%f\n", X, P);
+	}
+
+	exit(0);
+}
+
 double	CalcLhPriorP(double X, PRIOR *Prior)
 {
 	double Ret;
+
+//	PriorTest();
 	
 	switch(Prior->Dist)
 	{

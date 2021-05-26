@@ -806,6 +806,10 @@ void	VarRatesNode(TREES *Trees, TREE *Tree, NODE N, double Scale, TRANSFORM_TYPE
 
 	Norm = FALSE;
 
+	// this will have been applyed. 
+	if(Type == VR_LS_BL)
+		return;
+
 	if(Type == VR_BL)
 		N->Length = N->Length * Scale;
 
@@ -830,8 +834,6 @@ void	VarRatesNode(TREES *Trees, TREE *Tree, NODE N, double Scale, TRANSFORM_TYPE
 		TransformTreeOU(Trees, N, Scale, Norm);
 	}
 
-	if(Type == VR_LS_BL)
-		return;
 }
 
 void	CheckVarRatesData(OPTIONS *Opt, TREES *Trees, RATES *Rates)	

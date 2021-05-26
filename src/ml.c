@@ -48,6 +48,7 @@
 #include "NLOptBT.h"
 #include "Landscape.h"
 #include "Part.h"
+#include "StateSpeciationRate.h"
 
 #include <gsl/gsl_matrix.h>
 
@@ -549,7 +550,8 @@ void	CalcAllNodeTransfroms(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	Tree = Trees->Tree[0];
 	
-	for(Index=1;Index<Tree->NoNodes;Index++)
+//	for(Index=1;Index<Tree->NoNodes;Index++)
+	Index = 3;
 	{
 		Node = Tree->NodeList[Index];
 
@@ -563,20 +565,58 @@ void	CalcAllNodeTransfroms(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			MLTree(Opt, Trees, Rates);
 
 			OLh = Likelihood(Rates, Trees, Opt);
-			printf("Lh:\t%f\t%f\t", ILh, OLh);
+			fprintf(Opt->LogFile, "%s\tLh:\t%f\t%f\t", Opt->DataFN, ILh, OLh);
 
-			printf("%.12f\t%f\t", Rates->LocalTransforms[0]->Scale, Node->UserLength);
+			fprintf(Opt->LogFile, "%.12f\t%f\t", Rates->LocalTransforms[0]->Scale, Node->UserLength);
 
 			Height = GetNodeHeight(Node);
-			printf("%f\t", Height);
-
-				
-	//		PrintPart(stdout, Trees, Node->Part);
-			PrintPartData(stdout, Trees, Node->Part);
-
-			printf("\n");
-			fflush(stdout);
+			fprintf(Opt->LogFile, "%f\t", Height);
+							
+			PrintPart(Opt->LogFile, Trees, Node->Part);
+	//		PrintPartData(stdout, Trees, Node->Part);
+	//		RecPrintNode(Node);
+			fprintf(Opt->LogFile, "\n");
+			fflush(Opt->LogFile);
 		}
+	}
+
+	exit(0);
+}
+
+void	AddTipVal(TREE *Tree, double Scale)
+{
+	int Index;
+	NODE N;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+		if(N->Tip == TRUE)
+		{
+			N->Length = N->UserLength + (1.0 + Scale);
+			//N->Length = N->UserLength + Scale;
+//			N->UserLength = N->Length;
+		}
+	}
+}
+
+void	TestErrModel(OPTIONS *Opt, RATES *Rates, TREES *Trees)
+{
+	TREE *Tree;
+	double	Scale, Lh;
+//	return;
+	Tree = Trees->Tree[0];
+
+
+//	AddTipVal(Tree, 18.254);
+//	SaveTrees("sout.trees", Trees);
+//	exit(0);
+
+	for(Scale=0;Scale<25;Scale+=0.01)
+	{
+		AddTipVal(Tree, Scale);
+		Lh = Likelihood(Rates, Trees, Opt);
+		printf("%f\t%f\n", Scale, Lh);
 	}
 
 	exit(0);
@@ -604,6 +644,8 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 //	CalcAllNodeTransfroms(Opt, Trees, Rates); return;
 //	MLTestF(Opt, Trees, Rates);
+
+//	TestErrModel(Opt, Rates, Trees);
 	
 	for(Index=0;Index<Trees->NoTrees;Index++)
 	{
@@ -643,6 +685,8 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 	TEnd = GetSeconds();
 	printf("Sec:\t%f\n", TEnd - TStart);
+
+//	CaclStateSpeciationRateLh(Opt, Trees, Rates);
 
 	FreeRates(Rates, Trees);
 }

@@ -991,13 +991,11 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
 
-//	if(Opt->UseRJLocalScalar[VR_LS_BL]	== TRUE)
-	MapLandscape(Opt, Trees, Rates);
+	if(UseLandScapeModel(Opt) == TRUE)
+		MapLandscape(Opt, Trees, Rates);
 
 	if(Rates->TimeSlices != NULL)
 		ApplyTimeSlices(Rates, Trees);
-
-//	PrintTreeBL(Trees->Tree[Rates->TreeNo]); exit(0);			
 
 	TransformTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
@@ -1005,10 +1003,6 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	if(Rates->VarRates != NULL)
 		VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
-	
-//	ScaleTrees(Trees, 0.0000000001);
-//	ScaleTrees(Trees, 0.000000001);
-//	SaveTrees("DTest.trees", Trees); 
 }
 
 int		ValidLh(double LH, MODEL_TYPE MT)

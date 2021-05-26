@@ -2078,7 +2078,7 @@ void	RecPrintNode(NODE N)
 
 	if(N->Tip == TRUE)
 	{
-		printf("%d\t", N->Taxa->Name);
+		printf("%d\t", N->Taxa->No);
 		return;
 	}
 
