@@ -1168,7 +1168,7 @@ PRIOR*	GetVRPrior(TRANSFORM_TYPE Type, RATES *Rates)
 		return GetPriorFromName("Delta", Rates->Priors, Rates->NoPriors);
 
 	if(Type == VR_LAMBDA)
-		return GetPriorFromName("Lambda", Rates->Priors, Rates->NoPriors);
+		return GetPriorFromName("Lambda", Rates->Priors, Rates->NoPriors); 
 
 	if(Type == VR_OU)
 		return GetPriorFromName("OU", Rates->Priors, Rates->NoPriors);

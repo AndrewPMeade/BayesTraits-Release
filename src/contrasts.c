@@ -291,7 +291,7 @@ void	PrintNodeContrast(NODE N, int NoSites)
 
 			printf("%12.12f\t", N->Length);
 			printf("%12.12f\t", N->DistToRoot);
-
+			
 
 
 			printf("\t");

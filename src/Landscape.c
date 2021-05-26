@@ -130,10 +130,13 @@ void		MapLocalTranfromsBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	{
 		LRate = Rates->LocalTransforms[Index];
 
-		for(TIndex=0;TIndex<LRate->NoTags;TIndex++)
+		if(LRate->Type == VR_LS_BL)
 		{
-			N = LRate->TagList[TIndex]->NodeList[Rates->TreeNo];
-			N->LandscapeBeta = LRate->Scale;
+			for(TIndex=0;TIndex<LRate->NoTags;TIndex++)
+			{
+				N = LRate->TagList[TIndex]->NodeList[Rates->TreeNo];
+				N->LandscapeBeta = LRate->Scale;
+			}
 		}
 	}	
 }
@@ -177,7 +180,8 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	TREE *Tree;
 	int TreeNo;
-	
+
+
 	TreeNo = Rates->TreeNo;
 	Tree = Trees->Tree[TreeNo];
 	
@@ -192,12 +196,12 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	if(Rates->Landscape != NULL)
 		MapLandscapeNodes(Opt, Trees, Rates);
-	
 
 	// Convert the Beta to Beta * Branch length
 	MakeBetaBL(Tree);
 
 	PropLandscapeBeta(Trees, Tree->Root, 0.0);
+
 }
 
 LANDSCAPE*	AllocLandscape(int MaxNodes)

@@ -127,7 +127,7 @@ void	ApplyLocalTransforms(RATES *Rates, TREES *Trees, OPTIONS *Opt, int Norm)
 	int TIndex, Index;
 	TREE *Tree;
 	NODE N;
-
+	
 	Tree = Trees->Tree[Rates->TreeNo];
 	
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)

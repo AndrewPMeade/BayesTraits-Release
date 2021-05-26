@@ -60,6 +60,9 @@ void	RecSetDistToRoot(NODE N);
 
 void	RecScaleSubTree(NODE N, double Scale);
 double	SumNodeBL(NODE N);
+
+double	GetNodeHeight(NODE Node);
+
 void	ScaleSubTree(NODE N, double Scale);
 void	ScaleTrees(TREES *Trees, double Scale);
 void	ScaleUserTrees(TREES *Trees, double Scale);

@@ -521,36 +521,65 @@ void	CalclAllNodeBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	}
 }
 */
+
+void	PrintPartData(FILE *Str, TREES *Trees, PART *Part)
+{
+	int Index, ID;
+	TAXA *T;
+
+	fprintf(Str, "%zu\t%d\t%f\t", Part->PartID, Part->Freq, Part->Prob);
+	fprintf(Str, "\t%d\t", Part->NoTaxa);
+
+	for(Index=0;Index<Part->NoTaxa;Index++)
+	{
+		ID = Part->Taxa[Index];
+		T = Trees->Taxa[ID];
+		fprintf(Str, "%f\t", T->ConData[0]);
+	}
+}
+
+
+
 void	CalcAllNodeTransfroms(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE *Tree;
 	int Index;
 	NODE Node;
-	double ILh, OLh, BL;
-
+	double ILh, OLh, BL, Height;
+	
 	Tree = Trees->Tree[0];
-
+	
 	for(Index=1;Index<Tree->NoNodes;Index++)
 	{
 		Node = Tree->NodeList[Index];
 
-		Rates->LocalTransforms[0]->TagList[0]->NodeList[0] = Node;
-		Rates->LocalTransforms[0]->Scale = 1.0;
+		if(Node->Tip == FALSE)
+		{
+			Rates->LocalTransforms[0]->TagList[0]->NodeList[0] = Node;
+			Rates->LocalTransforms[0]->Scale = 1.0;
 			
-		ILh = Likelihood(Rates, Trees, Opt);
+			ILh = Likelihood(Rates, Trees, Opt);
 
-		MLTree(Opt, Trees, Rates);
+			MLTree(Opt, Trees, Rates);
 
-		OLh = Likelihood(Rates, Trees, Opt);
-		printf("Lh:\t%f\t%f\t", ILh, OLh);
+			OLh = Likelihood(Rates, Trees, Opt);
+			printf("Lh:\t%f\t%f\t", ILh, OLh);
 
-		printf("%f\t%f\t", Rates->LocalTransforms[0]->Scale, Node->UserLength);
+			printf("%.12f\t%f\t", Rates->LocalTransforms[0]->Scale, Node->UserLength);
 
-		PrintPart(stdout, Trees, Node->Part);
+			Height = GetNodeHeight(Node);
+			printf("%f\t", Height);
 
-		printf("\n");
-		fflush(stdout);
+				
+	//		PrintPart(stdout, Trees, Node->Part);
+			PrintPartData(stdout, Trees, Node->Part);
+
+			printf("\n");
+			fflush(stdout);
+		}
 	}
+
+	exit(0);
 }
 
 void	FindML(OPTIONS *Opt, TREES *Trees)

@@ -656,10 +656,12 @@ void	ChiSTest(void)
 	double X, P;
 
 	Prior = CreateExpPrior("SG", 1.0);
+	Prior = CreateChiPrior("SG", 9);
 
-	for(X=0.000001;X<100;X+=0.01)
+	for(X=0.000001;X<8;X+=0.01)
 	{
-		P = LogExpP(X, Prior);
+		P = LogChiSquaredP(X, Prior);
+		P = exp(P);
 		printf("%f\t%f\n", X, P);
 	}
 

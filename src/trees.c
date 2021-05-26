@@ -2210,3 +2210,57 @@ int		GetNoInternalNodes(TREE *Tree)
 
 	return Ret;
 }
+
+void	RecFillNodeList(NODE Node, NODE *NodeList, int *Pos)
+{
+	int Index;
+
+	if(Node->Tip == TRUE)
+	{
+		NodeList[*Pos]  = Node;
+		(*Pos)++;
+		return;
+	}
+
+	for(Index=0;Index<Node->NoNodes;Index++)
+		RecFillNodeList(Node->NodeList[Index], NodeList, Pos);
+}
+
+double	GetNodeDist(NODE Node, NODE Anc)
+{
+	double Ret;
+
+	Ret = 0;
+	while(Node != Anc)
+	{
+		Ret += Anc->Length;
+		Anc = Anc->Ans;
+	}
+
+	return Ret;
+}
+
+double	GetNodeHeight(NODE Node)
+{
+	NODE *NodeList;
+	int Index;
+	double Ret, Height;
+
+	NodeList = (NODE*)SMalloc(sizeof(NODE) * Node->Part->NoTaxa);
+
+	Index = 0;
+	RecFillNodeList(Node, NodeList, &Index);
+
+	Ret = 0;
+	for(Index=0;Index<Node->Part->NoTaxa;Index++)
+	{
+		Height = GetNodeDist(Node, NodeList[Index]);
+
+		if(Height > Ret)
+			Ret = Height;
+	}
+	
+	free(NodeList);
+
+	return Ret;
+}
