@@ -3,7 +3,6 @@
 
 #include "TypeDef.h"
 
-
 int				UseNonParametricMethods(OPTIONS *Opt);
 
 TRANSFORM_TYPE	StrToVarRatesType(char *Str);

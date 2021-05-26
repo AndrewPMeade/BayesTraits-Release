@@ -897,23 +897,25 @@ void PrintCustomSchedule(FILE *Str, int NoCShed, CUSTOM_SCHEDULE **ShedList)
 	}
 }
 
-void SetCustomSchedule(long long It, SCHEDULE* Sched)
+void SetCustomSchedule(OPTIONS* Opt, FILE* ShedFile, long long Itters, SCHEDULE* Shed)
 {
 	int Index;
-	CUSTOM_SCHEDULE *Shed;
+	CUSTOM_SCHEDULE *NShed;
 
-	if(Sched->NoCShed == 0)
+	if(Shed->NoCShed == 0)
 		return;
 
-	for(Index=0;Index<Sched->NoCShed;Index++)
+	for(Index=0;Index<Shed->NoCShed;Index++)
 	{
-		Shed = Sched->CShedList[Index];
-		if(It == Shed->Iteration)
+		NShed = Shed->CShedList[Index];
+		if(Itters == NShed->Iteration)
 		{
-			if(Shed->Default == TRUE)
-				memcpy(Sched->OptFreq, Sched->DefShed, sizeof(double) * NO_SCHEDULE_OPT);
+			if(NShed->Default == TRUE)
+				memcpy(Shed->OptFreq, Shed->DefShed, sizeof(double) * NO_SCHEDULE_OPT);
 			else
-				memcpy(Sched->OptFreq, Shed->Frequencies, sizeof(double) * NO_SCHEDULE_OPT);
+				memcpy(Shed->OptFreq, NShed->Frequencies, sizeof(double) * NO_SCHEDULE_OPT);
+
+			PrintShedHeadder(Opt, Shed, ShedFile);
 
 			return;
 		}

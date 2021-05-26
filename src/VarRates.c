@@ -149,6 +149,9 @@ int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type, OPTIONS *Opt)
 			return FALSE;
 	}
 
+//	if(Type == VR_LS_BL && N->Tip == TRUE)
+//		return FALSE;
+
 	if(Type == VR_LS_BL)
 		return TRUE;
 
@@ -1262,7 +1265,30 @@ void	TestR(RATES *Rates)
 	}
 	
 	exit(0);
+}
 
+double CalcDiffTHoldCost(RATES *Rates, OPTIONS* Opt)
+{
+	double Ret;
+	int Index;
+	VARRATES* VarRates;
+	VAR_RATES_NODE* PNode;
+
+	VarRates = Rates->VarRates;
+
+	Ret = 0;
+	for(Index=0;Index<VarRates->NoNodes;Index++)
+	{
+		PNode = VarRates->NodeList[Index];
+
+		if(PNode->Type == VR_NODE)
+			Ret += -1.0;
+		else
+			Ret += Opt->RJThreshold;
+
+	}
+	
+	return Ret;
 }
 
 double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
@@ -1295,6 +1321,7 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 	
 	// Add a theshold cost for all VR paramiters
 	Ret += VarRates->NoNodes * Opt->RJThreshold;
+//	Ret += CalcDiffTHoldCost(Rates, Opt);
 	
 	return Ret;
 }
@@ -1362,7 +1389,7 @@ void	AddTextVarRate(TREE *Tree, RATES *Rates, int Tokes, char **Passed)
 		
 	PNode = CreateTextPNode(N, Scale, Itter, Type);
 
-	Plasty->NodeList = (VAR_RATES_NODE**) AddToList(&Plasty->NoNodes, (void**)Plasty->NodeList, (void*)PNode);
+	Plasty->NodeList = (VAR_RATES_NODE**)AddToList(&Plasty->NoNodes, (void**)Plasty->NodeList, (void*)PNode);
 }
 
 VAR_RATES_NODE**	MakeNewList(VARRATES *Plasty, int Pos)
@@ -1593,6 +1620,7 @@ void	SetVarRatesFromStr(RATES *Rates, OPTIONS *Opt, char *Str)
 	char **Passed;
 	int Index, Tokes;
 	char *S;
+	double Lh;
 	
 	S = StrMake(Str);
 
@@ -1606,6 +1634,13 @@ void	SetVarRatesFromStr(RATES *Rates, OPTIONS *Opt, char *Str)
 	Index = 7;
 	for(;Index<Tokes;Index+=4)
 		AddTextVarRate(Opt->Trees->Tree[0], Rates, 4, &Passed[Index]);
+
+
+	Lh = Likelihood(Rates, Opt->Trees, Opt);
+
+//	printf("%f\n", Lh);
+//	exit(0);
+
 	
 //	PrintVarRatesOutput(Opt, Opt->Trees, Rates, 1); exit(0);
 

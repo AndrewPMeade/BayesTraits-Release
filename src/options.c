@@ -583,6 +583,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->LoadModels == TRUE)
 		fprintf(Str, "Load Model:                      %s\n", Opt->LoadModelsFN);
 
+	if(Opt->VarRatesCheckPoint != NULL)
+		fprintf(Str, "Var Rates Check Point:           %s\n", Opt->VarRatesCheckPoint);
+
 	PrintEstData(Str, Opt);
 
 	if(Opt->ScaleTrees != -1)
@@ -623,8 +626,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		PrintCustomSchedule(Str, Opt->NoCShed, Opt->CShedList);
 	}
 	
-
-
 	PrintTimeSlices(Str, Opt->TimeSlices);
 	PrintPatterns(Str, Opt->NoPatterns, Opt->PatternList);
 
@@ -722,6 +723,9 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->RateScalars != NULL)
 		free(Opt->RateScalars);
+
+	if(Opt->VarRatesCheckPoint != NULL)
+		free(Opt->VarRatesCheckPoint);
 
 	free(Opt);
 }
@@ -1402,6 +1406,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->UseMLLandscape		= FALSE;
 
 	Ret->UseGlobalTrend		= FALSE;
+
+	Ret->VarRatesCheckPoint	= NULL;
 
 	free(Buffer);
 
@@ -4138,6 +4144,47 @@ void	SetRJThreshold(OPTIONS* Opt, int Tokes, char** Passed)
 	Opt->RJThreshold = atof(Passed[1]);
 }
 
+char*	AllocRJStr(int Tokes, char **Passed)
+{
+	char *Ret;
+	size_t Size, Index;
+	
+	Size = 0;
+	for(Index=0;Index<Tokes;Index++)
+		Size += strlen(Passed[Index]);
+
+	Ret = (char*)SMalloc(sizeof(char) * Size * 3);
+
+	return Ret;
+}
+
+void	LoadRJRates(OPTIONS* Opt, int Tokes, char** Passed)
+{
+	char *Str;
+	size_t Index;
+
+
+	if(Opt->VarRatesCheckPoint != NULL)
+	{
+		free(Opt->VarRatesCheckPoint);
+		Opt->VarRatesCheckPoint = NULL;
+	}
+	
+	if(Tokes == 1)
+		return;
+
+	Str = AllocRJStr(Tokes, Passed);
+	Str[0] = '\0';
+
+	for(Index=1;Index<Tokes;Index++)
+	{
+		strcat(Str, Passed[Index]);
+		strcat(Str, " ");
+	}
+
+	Opt->VarRatesCheckPoint = Str;
+}
+
 void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	if(Opt->SaveInitialTrees != NULL)
@@ -4843,6 +4890,9 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CRJTHRESHOLD)
 		SetRJThreshold(Opt, Tokes, Passed);
+
+	if(Command == C_LOAD_RJ_RATES)
+		LoadRJRates(Opt, Tokes, Passed);
 
 	return FALSE;
 }

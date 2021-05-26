@@ -166,8 +166,6 @@
 #define OUTPUT_EXT_STONES		".Stones.txt"
 #define OUTPUT_EXT_TREES		".Output.trees"
 
-
-
 #define UNKNOWNSTATE	'-'
 #define ESTDATAPOINT	"?"
 
@@ -339,6 +337,7 @@ typedef enum
 	CMLLANDSCAPE,
 	CGLOBALTREND,
 	CRJTHRESHOLD,
+	C_LOAD_RJ_RATES, 
 	CUNKNOWN,
 } COMMANDS;
 
@@ -430,6 +429,7 @@ static char    *COMMANDSTRINGS[] =
 	"MLLandscape",			"lls",
 	"GlobalTrend",		"gt",
 	"RJThreshold",		"rjt", 
+	"LoadVarRates",		"lvr", 
 	""
 };
 
@@ -1335,6 +1335,8 @@ typedef struct
 	int			UseGlobalTrend;
 
 	double		RJThreshold;
+
+	char		*VarRatesCheckPoint;
 
 } OPTIONS;
 
