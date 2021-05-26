@@ -79,6 +79,9 @@ int		IsValidPPNode(NODE N)
 	if(N->Length == 0)
 		return FALSE;
 
+	if(N->Ans == NULL)
+		return FALSE;
+
 	return TRUE;
 }
 
@@ -506,7 +509,15 @@ void	Plasty(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise)
 		SumBL = SumNodeBL(T->Root);
 
 	for(Index=0;Index<P->NoNodes;Index++)
+	{
+		if(P->NodeList[Index]->Node->Ans == NULL)
+		{
+			printf("PP root node scale\n");
+			exit(0);
+		}
+
 		PlastyNode(P->NodeList[Index]->Node, P->NodeList[Index]);
+	}
 
 	if(Normalise == FALSE)
 		return;
