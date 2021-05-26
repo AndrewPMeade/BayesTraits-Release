@@ -851,7 +851,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	if(Opt->UseRJLandscapeRateGroup == TRUE)
 	{
-		Ret->LandscapeRateGroups = CreateLandRateGroups(Ret, Opt->Trees);
+		Ret->LandscapeRateGroups = CreateLandRateGroups(Ret, Opt->Trees, Opt->NoLandscapeRateGroup);
 //		SetNoFixedGroups(Ret, Ret->LandscapeRateGroups, Opt->NoLandscapeRateGroup);
 	}
 
@@ -1227,8 +1227,8 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		OutputDataDistHeadder(Str, Opt);
 
 
-	if(Opt->UseRJLandscapeRateGroup == TRUE)
-		fprintf(Str, "RJLandRateSig\t");
+//	if(Opt->UseRJLandscapeRateGroup == TRUE)
+//		fprintf(Str, "RJLandRateSig\t");
 
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
@@ -1799,15 +1799,14 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		fprintf(Str, "%0.12f\t", Rates->EstData[Index]);
 
 	PrintConRecNodes(Str, Rates, Opt);
-
-
+	
 	PrintLocalTransformNo(Str, Rates, Opt);
 
 	if(Opt->UseDistData == TRUE)
 		OutputDataDist(Str, Rates, Opt);
 
-	if(Opt->UseRJLandscapeRateGroup == TRUE)
-		fprintf(Str, "%0.12f\t", Rates->LandscapeRateGroups->Sig);
+//	if(Opt->UseRJLandscapeRateGroup == TRUE)
+//		fprintf(Str, "%0.12f\t", Rates->LandscapeRateGroups->Sig);
 
 }
 
@@ -2891,12 +2890,17 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		break;
 
 		case S_LAND_RATE_MOVE:
-			SwapRateGroupParam(Rates);
+//			if(It > 10000)
+				SwapRateGroupParam(Rates);
 		break;
 
 		case S_LAND_RATE_CHANGE:
-//				ChangeLandRateGoup(Rates, Shed);
-				ChangeLandRateGroupSigDist(Rates,  Shed);
+				ChangeLandRateGoup(Rates, Shed);
+//				ChangeLandRateGroupSigDist(Rates,  Shed);
+		break;
+
+		case S_LAND_SPLIT_MERGE:
+			LandSplitMerge(Rates);
 		break;
 	}
 }

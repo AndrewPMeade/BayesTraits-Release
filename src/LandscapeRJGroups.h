@@ -4,7 +4,7 @@
 #include "GenLib.h"
 #include "TypeDef.h"
 
-LAND_RATE_GROUPS*	CreateLandRateGroups(RATES *Rates, TREES *Trees);
+LAND_RATE_GROUPS*	CreateLandRateGroups(RATES *Rates, TREES *Trees, int FixedNoRates);
 void				FreeLandRateGroups(LAND_RATE_GROUPS* LandRateG);
 
 void				CopyLandRateGroups(LAND_RATE_GROUPS* A, LAND_RATE_GROUPS* B);
@@ -24,5 +24,8 @@ void				ChangeLandRateGroupSigDist(RATES *Rates,  SCHEDULE* Shed);
 
 void				SetNoFixedGroups(RATES *Rates, LAND_RATE_GROUPS* LandRGroup, int NoGroup);
 
+void				LandSplitMerge(RATES *Rates);
+
+void SplitMergeTest(RATES *RateA, RATES *RateB, OPTIONS *Opt);
 
 #endif

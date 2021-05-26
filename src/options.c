@@ -4093,13 +4093,26 @@ void	SetRJLandscapeRateGroup(OPTIONS *Opt, int Tokes, char **Passed)
 
 	RemovePriorFormOpt("RJ_Landscape_Rate_Group", Opt);
 
+	Opt->NoLandscapeRateGroup = -1;
+
 	if(Opt->UseRJLandscapeRateGroup == FALSE)
 	{
 		Opt->UseRJLandscapeRateGroup = TRUE;
-		Prior = CreateNormalPrior("RJ_Landscape_Rate_Group", 0, 2.0);
+		
+//		Prior = CreateNormalPrior("RJ_Landscape_Rate_Group", 0, 2.0);
+		Prior = CreateUniformPrior("RJ_Landscape_Rate_Group", -5, 5);
 		AddPriorToOpt(Opt, Prior);
 
-		Opt->NoLandscapeRateGroup = atoi(Passed[1]);
+		if(Tokes == 2)
+		{
+			if(IsValidInt(Passed[1]) == FALSE)
+			{
+				printf("Cannot convert %s to a valild number of rates.\n", Passed[1]);
+				exit(1);
+			}
+
+			Opt->NoLandscapeRateGroup = atoi(Passed[1]);
+		}
 	}
 	else
 		Opt->UseRJLandscapeRateGroup = FALSE;

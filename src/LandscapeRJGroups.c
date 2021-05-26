@@ -10,6 +10,7 @@
 #include "LandscapeRJGroups.h"
 #include "Priors.h"
 #include "Rates.h"
+#include "Likelihood.h"
 
 void FreeRateGroup(RATE_GROUP *RateGroup)
 {
@@ -38,6 +39,7 @@ LAND_RATE_GROUPS*	AllocLandRateGroup(int NoRates)
 	Ret->NoGroups = 0;
 	Ret->RateGroupList = (RATE_GROUP**)SMalloc(sizeof(RATE_GROUP*) * NoRates);
 	Ret->Sig = -1;
+	Ret->FixedNoGroups = FALSE;
 
 	return Ret;
 }
@@ -64,9 +66,7 @@ void	SetOneGroup(LAND_RATE_GROUPS* LandRateGroups, double RateValue)
 	RateG->NoRates = LandRateGroups->NoRates;
 	RateG->Rate = RateValue;
 
-	for(Index=0;Index<RateG->NoRates;Index++)
-		RateG->PramList[Index] = LandRateGroups->RateList[Index];
-	
+	memcpy(&RateG->PramList[0], &LandRateGroups->RateList[0], RateG->NoRates * sizeof(int));
 }
 
 void	FreeLandRateGroups(LAND_RATE_GROUPS* LandRateG)
@@ -161,7 +161,8 @@ void SetNoFixedGroups(RATES *Rates, LAND_RATE_GROUPS* LandRGroup, int NoGroup)
 
 	for(Index=0;Index<LandRGroup->NoRates;Index++)
 	{
-		GNo = RandUSInt(Rates->RS) % LandRGroup->NoGroups;
+//		GNo = RandUSInt(Rates->RS) % LandRGroup->NoGroups;
+		GNo = 0;
 		RateG = LandRGroup->RateGroupList[GNo];
 		RateG->PramList[RateG->NoRates++] = LandRGroup->RateList[Index];
 	}
@@ -196,10 +197,12 @@ int*	CreateRateList(TREE *Tree, int *NoRates)
 		}
 	}
 
+
+
 	return Ret;
 }
 
-LAND_RATE_GROUPS*	CreateLandRateGroups(RATES *Rates, TREES *Trees)
+LAND_RATE_GROUPS*	CreateLandRateGroups(RATES *Rates, TREES *Trees, int FixedNoRates)
 {
 	LAND_RATE_GROUPS* Ret;
 	int Index, NoRates, *RateList;
@@ -217,9 +220,14 @@ LAND_RATE_GROUPS*	CreateLandRateGroups(RATES *Rates, TREES *Trees)
 	Ret->NoGroups = 1;
 	SetOneGroup(Ret, 0.0);
 
-	FixedBetaDiscretised(Rates, Ret, Rates->RS, 11);
+//	FixedBetaDiscretised(Rates, Ret, Rates->RS, 11);
 	
-//	SetNoFixedGroups(Rates, Ret, 2);
+	if(FixedNoRates != -1)
+	{
+		Ret->FixedNoGroups = TRUE;
+		SetNoFixedGroups(Rates, Ret, FixedNoRates);
+	}
+		
 	
 	return Ret;
 }
@@ -294,7 +302,9 @@ void	SwapRateGroupParam(RATES *Rates)
 	
 	LandRateGroups = Rates->LandscapeRateGroups;
 
-
+	if(LandRateGroups->NoGroups == 1)
+		return;
+	
 	Rate = RandUSInt(Rates->RS) % LandRateGroups->NoRates;
 	Rate = LandRateGroups->RateList[Rate];
 	RGOld = GetRateGroup(LandRateGroups, Rate, &Pos);
@@ -399,15 +409,12 @@ double CalcPriorLandRateGoup(RATES *Rates)
 	int Index;
 	LAND_RATE_GROUPS* LandRateGroups;
 	
-	return 0;
+//	return 0;
 
 	LandRateGroups = Rates->LandscapeRateGroups;
 
 	Prior = GetPriorFromName("RJ_Landscape_Rate_Group", Rates->Priors, Rates->NoPriors);
 	
-//	LandRateGroups->Sig = 3.4761097485661408e-17;
-	Prior->DistVals[1] = LandRateGroups->Sig;
-
 	
 	Ret = 0;
 	for(Index=0;Index<LandRateGroups->NoGroups;Index++)
@@ -415,15 +422,15 @@ double CalcPriorLandRateGoup(RATES *Rates)
 		RateG = LandRateGroups->RateGroupList[Index];
 		BetaPrior = CalcLhPriorP(RateG->Rate, Prior);
 
-//		printf("%d\t%f\t%f\n", Index, RateG->Rate, BetaPrior);
 
 		if(BetaPrior == ERRLH)
 			return ERRLH;
 
-		if(RateG->Rate != 0)
+	//	if(RateG->Rate != 0)
 	//		Ret += BetaPrior * RateG->NoRates;
 			Ret += BetaPrior;
 	}
+
 //	exit(0);
 	return Ret;
 }
@@ -466,4 +473,119 @@ void	ChangeLandRateGroupSigDist(RATES *Rates,  SCHEDULE* Shed)
 	LandRateGroups->Sig = ChangeRateExp(LandRateGroups->Sig, Dev, Rates->RS, &Rates->LnHastings);
 
 	SetDiscretisedDist(LandRateGroups);
+}
+
+int		GetSplitRateGroupPos(RATES *Rates, LAND_RATE_GROUPS* LandRateGroups)
+{
+	int RatePos;
+	RATE_GROUP	*RateG;
+
+	do
+	{
+		RatePos = RandUSInt(Rates->RS) % LandRateGroups->NoGroups;
+		RateG = LandRateGroups->RateGroupList[RatePos];
+	} while(RateG->NoRates == 1);
+
+	return RatePos;
+}
+
+int		Splitable(LAND_RATE_GROUPS* LandRateGroups)
+{
+	int Index;
+
+	for(Index=0;Index<LandRateGroups->NoGroups;Index++)
+	{
+		if(LandRateGroups->RateGroupList[Index]->NoRates > 1)
+			return TRUE;	
+	}
+
+	return FALSE;
+}
+
+void	PrintRateGroup(RATE_GROUP *RateG)
+{
+	int Index;
+
+	printf("%d\t", RateG->NoRates);
+	for(Index=0;Index<RateG->NoRates;Index++)
+		printf("%d\t", RateG->PramList[Index]);
+
+	printf("\n");
+}
+
+double	GetNewRate(RATES *Rates)
+{
+	PRIOR *Prior;
+
+	Prior = GetPriorFromName("RJ_Landscape_Rate_Group", Rates->Priors, Rates->NoPriors);
+
+//	return RandFromPrior(Rates->RNG, Prior);
+	return RandUniDouble(Rates->RS, -1, 1);
+}
+
+void	LandSplit(RATES *Rates)
+{
+	LAND_RATE_GROUPS* LandRateGroups;
+	RATE_GROUP	*RateG, *NewRateG;
+	int RatePos, CutPoint;
+	
+	LandRateGroups = Rates->LandscapeRateGroups;
+
+	if(Splitable(LandRateGroups) == FALSE)
+		return;
+
+	RatePos = GetSplitRateGroupPos(Rates, LandRateGroups);
+	RateG = LandRateGroups->RateGroupList[RatePos];
+
+	ShuffleIntList(Rates->RS, RateG->PramList, RateG->NoRates);
+
+
+	CutPoint = RandUSInt(Rates->RS) % (RateG->NoRates - 1);
+//	CutPoint = RandUSInt(Rates->RS) % 9;
+	
+	CutPoint += 1;
+
+	CutPoint = RateG->NoRates - CutPoint;
+
+	NewRateG = LandRateGroups->RateGroupList[LandRateGroups->NoGroups];
+
+	NewRateG->NoRates = RateG->NoRates - CutPoint;
+	
+	memcpy(&NewRateG->PramList[0], &RateG->PramList[CutPoint], NewRateG->NoRates * sizeof(int));
+		
+	RateG->NoRates = CutPoint;
+	LandRateGroups->NoGroups++;
+
+	NewRateG->Rate = GetNewRate(Rates);
+}
+
+void LandSplitMerge(RATES *Rates)
+{
+	double P;
+	return;
+	LandSplit(Rates);
+
+
+}
+
+void SplitMergeTest(RATES *RatesA, RATES *RatesB, OPTIONS *Opt)
+{
+	int Index;
+	double InitLh, NLh;
+
+	InitLh = Likelihood(RatesA, Opt->Trees, Opt);
+
+	for(Index=0;Index<100000;Index++)
+	{
+		CopyRates(RatesB, RatesA, Opt);
+		LandSplit(RatesB);
+		NLh = Likelihood(RatesB, Opt->Trees, Opt);
+
+		printf("%d\t%f\t%f\t%f\t", Index, NLh - InitLh , InitLh, NLh);
+
+		printf("%f\t%d\t", RatesB->LandscapeRateGroups->RateGroupList[1]->Rate, RatesB->LandscapeRateGroups->RateGroupList[1]->NoRates);
+		printf("\n");
+	}
+
+	exit(0);
 }

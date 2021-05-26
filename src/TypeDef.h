@@ -637,6 +637,7 @@ typedef struct
 	RATE_GROUP	**RateGroupList;
 
 	double	Sig;
+	int		FixedNoGroups;
 } LAND_RATE_GROUPS;
 
 typedef struct
@@ -1518,7 +1519,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NO_SCHEDULE_OPT	30
+#define NO_SCHEDULE_OPT	31
 
 static char    *SHEDOP[] =
 {
@@ -1551,7 +1552,8 @@ static char    *SHEDOP[] =
 	"Time Slice - Scale",
 	"Global Rate",
 	"LandRate-Move", 
-	"LandRate-Change"
+	"LandRate-Change",
+	"LandRate-SplitMerge"
 };
 
 typedef enum
@@ -1585,7 +1587,8 @@ typedef enum
 	S_TIME_SLICE_SCALE,
 	S_GLOBAL_RATE, 
 	S_LAND_RATE_MOVE,
-	S_LAND_RATE_CHANGE
+	S_LAND_RATE_CHANGE,
+	S_LAND_SPLIT_MERGE 
 } OPERATORS;
 
 typedef struct
