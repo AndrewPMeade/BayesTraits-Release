@@ -617,32 +617,27 @@ void	TestErrModel(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 
 void	MLTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	double X, Lh;
-	return;
-	Rates->Rates[0] = 9.998893;
-	Rates->Rates[1] = 0.233734;
-	Rates->Rates[2] = 8.434539;
-	Rates->Rates[3] = 2.276221;
-	Rates->Rates[4] = 0;
-	Rates->Rates[5] = 3.056001;
-	Rates->Rates[6] = 0.055404;
-	Rates->Rates[7] = 0.205653;
+	int Index;
+	char *Str;
+	double Rand;
 
-//	Rates->OffToOn = 0.205653;
-//	Rates->OnToOff = 0.205653;
-
-
-	for(X=0.00000001;X<1000; X+=0.01)
+	for(Index=0;Index<1000;Index++)
 	{
-		Rates->Rates[0] = X;
+		Rand = RandDouble(Rates->RS);
 
-		Lh = Likelihood(Rates, Trees, Opt);
+		Str = DoubleToHexStr(Rand);
 
-		printf("%f\t%f\n", X, Lh);
+		printf("%12.12f\t%s\t", Rand, Str);
+		
+		Rand = HexStrToDouble(Str);
+
+		printf("%12.12f\t", Rand);
+		
+
+		free(Str);
+
+		printf("\n");
 	}
-
-	printf("Lh:\t%f\n", Lh);
-
 	exit(0);
 }
 
@@ -709,8 +704,7 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 			SetTreeAsData(Opt, Trees, Rates->TreeNo);
 
 
-		if(Opt->UseMLLandscape == TRUE)
-			MLLandscape(Opt, Trees, Rates);
+
 
 		MLTree(Opt, Trees, Rates);
 

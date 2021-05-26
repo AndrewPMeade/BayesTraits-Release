@@ -68,7 +68,6 @@ void		RemoveChar(char c, char* String);
 int			MakeArgv(char*	string, char *argv[], int argvsize);
 int			MakeArgvChar(char*	string, char *argv[], int argvsize, char Break);
 
-
 int			IsValidInt(char* Str);
 int			IsValidDouble(char* Str);
 
@@ -102,6 +101,10 @@ int			StrICmp(char const *a, char const *b);
 void	NormaliseVector(double *Vect, int Size);
 
 FILE*		OpenWriteWithExt(char *Base, char *Ext);
+
+void		PrintDoubleHexStr(double Double);
+double		HexStrToDouble(char *Str);
+char*		DoubleToHexStr(double Double);
 
 
 #endif

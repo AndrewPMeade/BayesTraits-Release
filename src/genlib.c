@@ -1164,3 +1164,78 @@ void	NormaliseVector(double *Vect, int Size)
 }
 
 
+union DoubleStr 
+{
+    double Double;
+    uint8_t i8[sizeof(double) + 1];
+};
+
+
+void	PrintDoubleHexStr(double Double)
+{
+	union DoubleStr DS;
+	int i;
+
+	DS.Double = Double;
+
+	for(i = 0; i < (int) sizeof(DS.i8) - 1; ++i) 
+	{
+		printf("%02X", DS.i8[i]);
+
+	}
+}
+
+char*	DoubleToHexStr(double Double)
+{
+	char *Ret, *P;
+	union DoubleStr DS;
+	size_t Size;
+	int i;
+
+	DS.Double = Double;
+
+	Size = sizeof(DS.i8) * 2;
+
+	Ret = (char*)SMalloc(Size);
+	memset(Ret, 0, Size);
+	P = Ret;
+
+	for(i = 0; i < (int) sizeof(DS.i8) - 1; ++i) 
+	{
+		sprintf(P, "%02X", DS.i8[i]);
+		P+=2;		
+	}
+
+	return Ret;
+}
+
+double	HexStrToDouble(char *Str)
+{	
+	union DoubleStr DS;
+	int j, i, k;
+	
+	j = 0;
+
+
+	for(i = 0; i < (int) strlen(Str); i += 2) 
+	{
+		uint8_t val = 0;
+		for(k = 0; k < 2; ++k) 
+		{
+			char ch = Str[i + k];
+
+			val *= 16;
+			if (ch >= '0' && ch <= '9') 
+			{
+				val += ch - '0';
+			}
+			else if (ch >= 'A' && ch <= 'F') 
+			{
+				val += ch - 'A' + 10;
+			}
+		}
+		DS.i8[j++] = val;
+	}
+
+	return DS.Double;
+}

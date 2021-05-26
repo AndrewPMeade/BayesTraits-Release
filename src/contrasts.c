@@ -530,7 +530,9 @@ void	CalcContrastP(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 		}
 		else
 		{
+#ifdef OPENMP_THR
 			#pragma omp parallel for num_threads(Opt->Cores)
+#endif
 			for(NIndex=0;NIndex<Tree->ParallelGroupSize[PIndex];NIndex++)
 				CalcNodeContrast(Tree->ParallelNodes[PIndex][NIndex], Trees->NoSites);
 		}
