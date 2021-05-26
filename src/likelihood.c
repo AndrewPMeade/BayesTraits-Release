@@ -282,6 +282,7 @@ void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 			N->Partial[SiteNo][Outter] *= Lh;
 		}
 	}
+
 	
 	CheckBigLh(N, SiteNo, Trees);
 

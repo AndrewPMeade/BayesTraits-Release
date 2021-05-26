@@ -508,13 +508,12 @@ void	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *Shed)
 {
 	double x, lh;
 
-	for(x=-1;x<1;x+=0.01)
-	{
-		Rates->GlobalTrend = x;
-		lh = Likelihood(Rates, Trees, Opt);
+	Rates->Rates[0] = 0.5;
+	Rates->Rates[1] = 0.5;
 
-		printf("%f\t%f\n", x, lh);
-	}
+	lh = Likelihood(Rates, Trees, Opt);
+
+	printf("%f\n", lh);
 
 	exit(0);
 }
