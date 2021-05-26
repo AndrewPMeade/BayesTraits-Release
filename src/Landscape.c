@@ -155,6 +155,22 @@ void		MapLandscapeNodes(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	}
 }
 
+/* 
+	insted of beta, which will vary on a branch by brnach bases
+	use beta * branch length
+*/
+void		MakeBetaBL(TREE *Tree)
+{
+	NODE N;
+	int Index;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+		if(N->LandscapeBeta != 0.0)
+			N->LandscapeBeta = N->LandscapeBeta / N->Length;
+	}
+}
 
 void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
@@ -176,6 +192,10 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	if(Rates->Landscape != NULL)
 		MapLandscapeNodes(Opt, Trees, Rates);
+	
+
+	// Convert the Beta to Beta * Branch length
+	MakeBetaBL(Tree);
 
 	PropLandscapeBeta(Trees, Tree->Root, 0.0);
 }
@@ -430,6 +450,8 @@ void	PrintMLLandscape(TREES *Trees, RATES *Rates)
 
 	printf("No Betas\t%d\n", Landscape->NoNodes);
 
+
+	printf("Index\tBeta\tBL\n");
 	for(Index=0;Index<Landscape->NoNodes;Index++)
 	{
 		LandNode = Landscape->NodeList[Index];
@@ -445,13 +467,15 @@ void	MLLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	LANDSCAPE *Landscape;
 	int Valid;
 
+
+
 	do
 	{
 		printf("Lh:\t%f\t", Likelihood(Rates, Trees, Opt));
 		Valid = AddMLLandscapeNNode(Opt, Trees, Rates);
 		printf("%f\t", Likelihood(Rates, Trees, Opt));
 
-		GlobalMLLandscapeOpt(Opt, Trees, Rates);
+//		GlobalMLLandscapeOpt(Opt, Trees, Rates);
 
 		printf("\n");
 
