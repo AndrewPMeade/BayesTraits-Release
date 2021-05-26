@@ -2537,7 +2537,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 		if( (Command == CNODE)		||
 			(Command == CADDTAXA)	||
 			(Command == CDELTAXA)	||
-			(Command == CCOVARION)	||
+			(Command == C_COVARION)	||
 			(Command == CRES)		||
 			(Command == CRESALL)	||
 			(Command == CGAMMA)		||
@@ -2848,12 +2848,33 @@ void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed)
 	SetParts(Opt->Trees);
 }
 
+void	SetCovarion(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	PRIOR		*Prior;
+
+	if(Opt->UseCovarion == TRUE)
+		Opt->UseCovarion = FALSE;
+	else
+		Opt->UseCovarion = TRUE;
+
+	if(Opt->Analsis == ANALML)
+		return;
+
+	RemovePriorFormOpt("CVSwichRate", Opt);
+
+	if(Opt->UseCovarion == TRUE)
+	{
+		Prior	= CreateUniformPrior("CVSwichRate", 0, 100);
+		AddPriorToOpt(Opt,Prior);
+	}
+}
+
 void	RemoveRatePriors(OPTIONS *Opt)
 {
 	int Index;
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
-		RemovePriorFormOpt(Opt->RateName[Index], Opt);
+		RemovePriorFormOpt(Opt->RateName[Index],Opt);
 }
 
 void	SetRJMCMC(OPTIONS *Opt, int Tokes, char** Passed)
@@ -4679,13 +4700,8 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetTestCorrel(Opt);
 	}
 
-	if(Command == CCOVARION)
-	{
-		if(Opt->UseCovarion == TRUE)
-			Opt->UseCovarion = FALSE;
-		else
-			Opt->UseCovarion = TRUE;
-	}
+	if(Command == C_COVARION)
+		SetCovarion(Opt, Tokes-1, &Passed[1]);
 
 	if(Command == CREVJUMP)
 		SetRJMCMC(Opt, Tokes-1, &Passed[1]);
@@ -4695,13 +4711,10 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetRJMCMCHP(Opt, Tokes-1, &Passed[1]);
 	
 	if(Command == CEXIT)
-	{
 		exit(0);
-	}
-
+	
 	if(Command == CFOSSIL)
 		AddRecNode(Opt, FOSSIL, Tokes, Passed);
-
 
 	if(Command == CNODEDATA)
 	{

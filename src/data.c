@@ -317,7 +317,9 @@ void	LoadTaxaData(char* FileName, TREES* Trees)
 
 			if(Tokes - 1  != Trees->NoSites)
 			{
-				printf("Line %d has %d sites but was expecting %d\n", Line, Tokes - 1, Trees->NoSites);
+				
+				printf("Line %d has %d traits but was expecting %d\n", Line+1, Tokes - 1, Trees->NoSites);
+				printf("Error occurred on line.\n%s", DataFile->Data[Line]);
 				exit(0);
 			}
 

@@ -56,6 +56,7 @@
 #include "Geo.h"
 #include "TransformTree.h"
 #include "Prob.h"
+#include "MCMC.h"
 
 #include <gsl/gsl_rng.h>
 
@@ -245,6 +246,7 @@ void	SetDefMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates, 	gsl_rng *RN
 	int Index;
 	LOCAL_TRANSFORM *LR;
 	PRIOR *Prior;
+	double PriorVal;
 
 	if(Opt->EstKappa == TRUE)
 		Rates->Kappa = GetRandValFromType(VR_KAPPA, Rates, RNG);
@@ -280,6 +282,13 @@ void	SetDefMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates, 	gsl_rng *RN
 
 	if(Rates->NoEstData > 0 && Opt->DataType == CONTINUOUS)
 		SetEstDataFromPrior(Rates);
+
+	if(Opt->UseCovarion == TRUE)
+	{
+		Prior = GetPriorFromName("CVSwichRate",Rates->Priors,Rates->NoPriors);
+		PriorVal = RandFromPrior(RNG,Prior);
+		Rates->OffToOn = Rates->OnToOff = PriorVal;
+	}
 }
 
 double		ValidMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -357,11 +366,15 @@ double	RandFromPriorPosition(int Pos, OPTIONS *Opt, TREES *Trees, RATES *Rates, 
 void	RandRatesFromPrior(OPTIONS *Opt, TREES *Trees, RATES *Rates, gsl_rng *RNG)
 {
 	int TNo, RIndex;
-	
-	for(TNo=0;TNo<1000000;TNo++)
+		
+	for(TNo=0;TNo<NO_RAND_START_TRIES;TNo++)
 	{
-		for(RIndex=0;RIndex<Rates->NoOfRates;RIndex++)
-			Rates->Rates[RIndex] = RandFromPriorPosition(RIndex, Opt, Trees, Rates, RNG);
+		if(gsl_rng_uniform(RNG) < 0.1)
+			FindValidStartRateAllSame(Opt, Trees, Rates);
+		{
+			for(RIndex=0;RIndex<Rates->NoOfRates;RIndex++)
+				Rates->Rates[RIndex] = RandFromPriorPosition(RIndex, Opt, Trees, Rates, RNG);
+		}
 
 		SetDefMCMCParameters(Opt, Trees, Rates, RNG); 
 
@@ -375,13 +388,6 @@ void	RandRatesFromPrior(OPTIONS *Opt, TREES *Trees, RATES *Rates, gsl_rng *RNG)
 
 void FindValidStartLh(OPTIONS *Opt, TREES *Trees, RATES *Rates, gsl_rng *RNG)
 { 
-
-	if(Opt->ModelType == MT_DISCRETE)
-	{
-		if(FindValidStartRateAllSame(Opt, Trees, Rates) == TRUE)
-			return;
-	}
-	
 	RandRatesFromPrior(Opt, Trees, Rates, RNG);
 }
 

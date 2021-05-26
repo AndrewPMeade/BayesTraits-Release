@@ -132,6 +132,7 @@ double CaclStochasticBetaPrior(TREES *Trees, RATES *Rates)
 	return Ret;
 }
 
+
 int		GetCaclStochasticBetaPoint(RATES *Rates)
 {
 	int Point;

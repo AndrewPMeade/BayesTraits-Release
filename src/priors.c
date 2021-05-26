@@ -1039,6 +1039,27 @@ double	CaclNormQPrior(RATES* Rates, OPTIONS* Opt)
 	return Ret;
 }
 
+double CaclCVPrior(OPTIONS *Opt,RATES *Rates)
+{
+	double Ret,POnToOff;
+	PRIOR *Prior;
+
+	Prior = GetPriorFromName("CVSwichRate", Rates->Priors, Rates->NoPriors);
+
+	Ret = CalcLhPriorP(Rates->OffToOn, Prior);
+	if(Ret == ERRLH)
+		return ERRLH;
+
+	if(Rates->OffToOn == Rates->OnToOff)
+		return Ret;
+
+	POnToOff = CalcLhPriorP(Rates->OnToOff, Prior);
+	if(POnToOff == ERRLH)
+		return ERRLH;
+
+	return POnToOff + Ret;
+}
+
 void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 {
 	double	PLh, Ret;
@@ -1138,6 +1159,17 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 	if(Opt->UseStochasticBeta == TRUE)
 	{
 		PLh = CaclStochasticBetaPrior(Opt->Trees, Rates);
+		
+		if(PLh == ERRLH)
+			return;
+
+		Ret += PLh;
+	}
+
+	if(Opt->UseCovarion == TRUE)
+	{
+		PLh = CaclCVPrior(Opt, Rates);
+
 		if(PLh == ERRLH)
 			return;
 

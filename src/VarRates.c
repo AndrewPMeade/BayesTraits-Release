@@ -1342,8 +1342,8 @@ double	CalcVarRatesPriors(RATES *Rates,OPTIONS *Opt)
 	}
 
 	// Add a theshold cost for all VR paramiters
-	Ret += VarRates->NoNodes * Opt->RJThreshold;
-	//	Ret += CalcDiffTHoldCost(Rates, Opt);
+	//Ret += VarRates->NoNodes * Opt->RJThreshold;
+	Ret += CalcDiffTHoldCost(Rates, Opt);
 
 	return Ret;
 }
