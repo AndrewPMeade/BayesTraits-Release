@@ -74,6 +74,7 @@ void	PrintTreeBL(TREE *Tree);
 void	PrintTreeNode(TREES *Trees, TREE *Tree);
 void	RecPrintNode(NODE N);
 void	RecPRintNodeTaxa(NODE N, char Sep);
+void	PrintTaxaFromNo(int No, TREES *Trees, char Sep);
 
 void	CheckSingleDescendent(TREES *Trees);
 

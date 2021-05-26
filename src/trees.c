@@ -398,6 +398,48 @@ void	CheckPoly(NTREES *Trees)
 	}
 }
 
+void	PrintTaxaFromNo(int No, TREES *Trees, char Sep)
+{
+	int Index;
+
+	for(Index=0;Index<Trees->NoTaxa;Index++)
+	{
+		if(Trees->Taxa[Index]->No == No)
+			printf("%s%c", Trees->Taxa[Index]->Name, Sep);
+	}
+}
+
+void	PrintTaxaNNode(NNODE Node, char Sep)
+{
+	int Index;
+
+	if(Node->Tip == TRUE)
+	{
+		printf("%s%c", Node->Taxa->Name, Sep);
+		return;
+	}
+
+	for(Index=0;Index<Node->NoOfNodes;Index++)
+		PrintTaxaNNode(Node->NodeList[Index], Sep);
+}
+
+void	DumpTreeFile(NTREES *Trees, NTREE *Tree)
+{
+	int Index;
+	NNODE N;
+
+	for(Index=0;Index<Tree->NoOfNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+
+		printf("%d\t%d\t%f\t", Index, N->NoOfNodes, N->Length);
+		PrintTaxaNNode(N, ' ');
+		printf("\n");
+	}
+
+	exit(0);
+}
+
 void	CheckPresentBL(NTREES *Trees)
 {
 	int		TIndex;
@@ -415,9 +457,12 @@ void	CheckPresentBL(NTREES *Trees)
 
 			if((N->Length == -1) && (N != Tree->Root))
 			{
+				DumpTreeFile(Trees, Tree);
 				printf("Error: Node in tree %d does not have a valid branch length.\n", TIndex++);
 				printf("Tree:\t");
 				PrintNTree(stdout, N);
+				printf("\nTaxa:\t");
+				PrintTaxaNNode(N, ' ');
 				printf("\n");
 				exit(0);
 			}

@@ -636,6 +636,26 @@ void	MLTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	exit(0);
 }
 
+void	PrintMLHeader()
+{
+	printf("Tree No\tLh\tLh Elapsed Seconds");
+	printf("\n");
+	fflush(stdout);
+}
+
+void PrintMLStdOutHeader(void)
+{
+	printf("Tree No\tLh\tElapsed Seconds\n");
+
+}
+
+void PrintMLTree(int TreeNo, double Lh, double Sec)
+{
+	printf("%d\t%f\t%f", TreeNo, Lh, Sec);
+	printf("\n");
+	fflush(stdout);
+}
+
 
 void	FindML(OPTIONS *Opt, TREES *Trees)
 {
@@ -645,12 +665,14 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 	double	TStart, TEnd;
 
 	Rates = CreatRates(Opt);
-	
-	PrintOptions(stdout, Opt);
-	PrintRatesHeadder(stdout, Opt);
 
 	PrintOptions(Opt->LogFile, Opt);
 	PrintRatesHeadder(Opt->LogFile, Opt);
+
+	PrintOptions(stdout, Opt);
+	PrintMLStdOutHeader();
+//	PrintRatesHeadder(stdout, Opt);
+
 
 	fflush(stdout);
 	fflush(Opt->LogFile);
@@ -687,9 +709,7 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 		fprintf(Opt->LogFile, "\n");
 		fflush(Opt->LogFile);
 
-		PrintRates(stdout, Rates, Opt, NULL);
-		printf("\n");
-		fflush(stdout);
+		PrintMLTree(Index, Rates->Lh, GetSeconds() - TStart);
 
 		if(Opt->SaveTrees == TRUE)
 			OutputTree(Opt, Trees, Rates, Index+1, Opt->OutTrees);

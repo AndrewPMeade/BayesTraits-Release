@@ -335,9 +335,11 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates)
 			Changed = TRUE;
 		else
 			Tried++;
-	} while(Changed == FALSE);
 
-	XYZToNode(N, RX, RY, RZ);
+	} while(Changed == FALSE && Tried < 1);
+
+	if(Changed == TRUE)
+		XYZToNode(N, RX, RY, RZ);
 
 //	Rates->Lh = Rates->Lh + (NLh - CLh);
 }
@@ -372,17 +374,12 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 #ifdef OPENMP_THR
 // Dynamic slows things down oddly and can leve long long running process. 
-	#pragma omp parallel for num_threads(Opt->Cores) schedule(dynamic)
-//	#pragma omp parallel for num_threads(Opt->Cores) schedule(static)
+//	#pragma omp parallel for num_threads(Opt->Cores) schedule(dynamic)
+	#pragma omp parallel for num_threads(Opt->Cores) schedule(static)
 #endif
 		for(NIndex=0;NIndex<GroupSize;NIndex++)
 			GeoForceUpDateNode(NodeList[NIndex], Rates);
 	}
-//	for(NIndex=0;NIndex<Tree->NoInternalNodes;NIndex++)
-//		GeoForceUpDateNode(Tree->InternalNodesList[NIndex], Rates);
-
-//	for(NIndex=0;NIndex<GroupSize;NIndex++)
-//		GeoForceUpDateNode(NodeList[NIndex], Rates);
 
 	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
 
