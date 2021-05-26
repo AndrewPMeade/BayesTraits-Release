@@ -415,7 +415,6 @@ void	CalcNodeContrast(NODE N, int NoSites)
 
 		C->Err = (l0 * l1) / (l0 + l1);
 		C->Var = l0 + l1;
-
 	}
 
 	for(Index=1;Index<N->ConData->NoContrast;Index++)

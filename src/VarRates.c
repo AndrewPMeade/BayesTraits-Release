@@ -149,6 +149,9 @@ int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type, OPTIONS *Opt)
 			return FALSE;
 	}
 
+	if(Type == VR_LS_BL)
+		return TRUE;
+
 	if(Type == VR_BL || Type == VR_NODE)
 	{
 		if(N->Tip == TRUE && Type == VR_NODE)
@@ -162,10 +165,7 @@ int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type, OPTIONS *Opt)
 
 	if(Part->NoTaxa >= Opt->MinTransTaxaNo)
 		return TRUE;
-
 	
-	if(Type == VR_LS_BL && N->Tip == FALSE)
-		return TRUE;	
 
 	return FALSE;
 }
@@ -326,11 +326,11 @@ void	CheckPlasyNodes(VARRATES *VarRates)
 			exit(1);
 		}
 
-		if(PNode->Type == VR_LS_BL && PNode->Part->NoTaxa == 1)
+		/*if(PNode->Type == VR_LS_BL && PNode->Part->NoTaxa == 1)
 		{
 			printf("VR LS BL placed on a Tip\n");
 			exit(1);
-		}
+		}*/
 	}
 
 	for(Index=0;Index<VarRates->NoNodes;Index++)
@@ -725,14 +725,6 @@ void	VarRatesAddRemove(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE *Shed,
 	
 	CheckPlasyNodes(VarRates);
 
-//	return;
-	if(Type == VR_LS_BL)
-	{
-		if(VRNode == NULL)
-			Rates->LnHastings += -LN_P_LS_BL;
-		else
-			Rates->LnHastings += LN_P_LS_BL;
-	}
 }
 
 VAR_RATES_NODE *CloneVarRatesNode(VAR_RATES_NODE *VR_Node, int NoTrees)
@@ -1298,7 +1290,10 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 
 		Ret += PVal;
 	}
-
+	
+	// Add a theshold cost for all VR paramiters
+	Ret += VarRates->NoNodes * VR_LN_THOLD_COST;
+	
 	return Ret;
 }
 

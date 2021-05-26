@@ -3,7 +3,7 @@
 
 #include "TypeDef.h"
 
-#define LN_P_LS_BL	3.0
+#define VR_LN_THOLD_COST	-2.0
 
 int				UseNonParametricMethods(OPTIONS *Opt);
 
