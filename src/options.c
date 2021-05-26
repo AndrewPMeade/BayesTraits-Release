@@ -2499,7 +2499,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 		if(Opt->Model != M_FATTAIL && Command == CNOSLICESAMPLESTEPS)
 			return FALSE;
 
-		if(Opt->ModelType != MT_CONTRAST && Command == CGLOBALTREND)
+		if(Opt->ModelType != MT_CONTRAST && Command == C_GLOBAL_TREND)
 			return FALSE;
 
 		if(Command == CVARRATES)
@@ -4900,7 +4900,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CRJZERO)
 		SetRJZero(Opt, Tokes, Passed);
 
-	if(Command == CLANDSCAPE)
+	if(Command == C_LANDSCAPE)
 		SetLandscape(Opt, Tokes, Passed);
 	
 	if(Command == CRATESCALARS)
@@ -4909,10 +4909,10 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == CMLLANDSCAPE)
 		SetMLLandScape(Opt, Tokes, Passed);
 
-	if(Command == CGLOBALTREND)
+	if(Command == C_GLOBAL_TREND)
 		SetGlobalTrendOpt(Opt, Tokes, Passed);
 
-	if(Command == CRJTHRESHOLD)
+	if(Command == C_RJ_THRESHOLD)
 		SetRJThreshold(Opt, Tokes, Passed);
 
 	if(Command == C_LOAD_RJ_RATES)

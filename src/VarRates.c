@@ -180,7 +180,6 @@ int		IsValidVarRatesNode(NODE N, TRANSFORM_TYPE	Type, OPTIONS *Opt)
 
 	if(Part->NoTaxa >= Opt->MinTransTaxaNo)
 		return TRUE;
-	
 
 	return FALSE;
 }
@@ -1315,6 +1314,42 @@ double CalcDiffTHoldCost(RATES *Rates, OPTIONS* Opt)
 	return Ret;
 }
 
+double	CalcVarRatesPriors(RATES *Rates,OPTIONS *Opt)
+{
+	double		Ret;
+	int			Index;
+	VARRATES	*VarRates;
+	VAR_RATES_NODE	*PNode;
+	double		PVal;
+
+
+	VarRates = Rates->VarRates;
+	Ret = 0;
+
+	for(Index=0;Index<VarRates->NoNodes;Index++)
+	{
+		PNode = VarRates->NodeList[Index];
+
+		if(PNode->Type != VR_LS_BL)
+			PVal = CaclVRPrior(PNode->Scale,PNode->Type,Rates);
+		else
+			PVal = CaclVRLandPrior(Rates,PNode);
+
+		if(PVal == ERRLH)
+			return ERRLH;
+
+		Ret += PVal;
+	}
+
+	// Add a theshold cost for all VR paramiters
+	Ret += VarRates->NoNodes * Opt->RJThreshold;
+	//	Ret += CalcDiffTHoldCost(Rates, Opt);
+
+	return Ret;
+}
+
+
+/*
 double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 {
 	double		Ret;
@@ -1323,8 +1358,7 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 	VAR_RATES_NODE	*PNode;
 	double		PVal;
 	
-//	TestR(Rates);
-	
+
 	VarRates = Rates->VarRates;
 	Ret = 0;
 
@@ -1349,7 +1383,7 @@ double	CalcVarRatesPriors(RATES *Rates, OPTIONS *Opt)
 	
 	return Ret;
 }
-
+*/
 VAR_RATES_NODE*	CreateTextPNode(NODE N, double Scale, long long CIt, TRANSFORM_TYPE Type)
 {
 	VAR_RATES_NODE*	Ret;

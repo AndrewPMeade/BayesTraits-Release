@@ -628,6 +628,38 @@ void	TestErrModel(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 	exit(0);
 }
 
+void	MLTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double X, Lh;
+	return;
+	Rates->Rates[0] = 9.998893;
+	Rates->Rates[1] = 0.233734;
+	Rates->Rates[2] = 8.434539;
+	Rates->Rates[3] = 2.276221;
+	Rates->Rates[4] = 0;
+	Rates->Rates[5] = 3.056001;
+	Rates->Rates[6] = 0.055404;
+	Rates->Rates[7] = 0.205653;
+
+//	Rates->OffToOn = 0.205653;
+//	Rates->OnToOff = 0.205653;
+
+
+	for(X=0.00000001;X<1000; X+=0.01)
+	{
+		Rates->Rates[0] = X;
+
+		Lh = Likelihood(Rates, Trees, Opt);
+
+		printf("%f\t%f\n", X, Lh);
+	}
+
+	printf("Lh:\t%f\n", Lh);
+
+	exit(0);
+}
+
+
 void	FindML(OPTIONS *Opt, TREES *Trees)
 {
 	RATES *Rates; 
@@ -649,7 +681,7 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 	TStart = GetSeconds();
 
 //	CalcAllNodeTransfroms(Opt, Trees, Rates); return;
-//	MLTestF(Opt, Trees, Rates);
+	MLTest(Opt, Trees, Rates);
 
 //	TestErrModel(Opt, Rates, Trees);
 

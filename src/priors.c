@@ -578,9 +578,25 @@ double	LogGammaP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
+void	TestP(PRIOR *Prior)
+{
+	double X, Lh;
+
+	for(X=00.0000001;X<2.5;X+=0.001)
+	{
+	//	Lh = gsl_ran_weibull_pdf(X,Prior->DistVals[0],Prior->DistVals[1]);
+		Lh = gsl_ran_gamma_pdf(X, 2.0, 0.3);
+		printf("%f\t%f\n", X, Lh);
+	}
+
+	exit(0);
+}
+
 double	LogWeibullP(double X, PRIOR* Prior)
 {
 	double Ret;
+
+	TestP(Prior);
 
 	if(X < 0.0)
 		return ERRLH;

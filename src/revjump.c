@@ -87,7 +87,7 @@ void	MapRJRates(OPTIONS *Opt, RATES *Rates)
 		if(Opt->ResTypes[Index] == RESNONE)
 		{
 			if(Rates->MappingVect[MIndex] == ZERO_RATE_NO)
-				Rates->FullRates[Index] = 0.000000000000000000001;
+				Rates->FullRates[Index] = 0.0000001;
 			else
 				Rates->FullRates[Index] = Rates->Rates[Rates->MappingVect[MIndex]];
 			
