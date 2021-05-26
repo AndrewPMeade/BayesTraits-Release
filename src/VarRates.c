@@ -45,6 +45,8 @@
 
 
 #include <gsl/gsl_cdf.h>
+#include <gsl/gsl_sf_gamma.h>
+
 
 void	OutputVarRatesType(FILE *Out, TRANSFORM_TYPE Type);
 
@@ -1297,13 +1299,43 @@ double CalcDiffTHoldCost(RATES *Rates, OPTIONS* Opt)
 	{
 		PNode = VarRates->NodeList[Index];
 
-		if(PNode->Type == VR_NODE)
+		if(PNode->Type != VR_NODE)
+			Ret += Opt->RJThreshold;
+
+/*		if(PNode->Type == VR_NODE)
 			Ret += -1.0;
 		else
 			Ret += Opt->RJThreshold;
-
+*/
 	}
 	
+	return Ret;
+}
+
+double	CaclChiNodeDist(int NoTaxa, double Scalar)
+{
+	double Ret;
+
+	Ret = -(NoTaxa / 2.0)*log(2.0);
+	Ret += -(NoTaxa * Scalar)/2.0;
+	Ret += log((double)NoTaxa);
+	Ret += ((NoTaxa / 2.0)-1)*log(NoTaxa * Scalar);
+	Ret -= gsl_sf_lngamma(NoTaxa / 2.0);
+
+	return Ret;
+}
+
+double	CalcNodeScalarTheroyPrior(VAR_RATES_NODE *PNode)
+{
+	int N;
+	double Ret; 
+	
+	N = PNode->Part->NoTaxa;
+	Ret = CaclChiNodeDist(N, PNode->Scale);
+
+	if(ValidDoubleVal(Ret) == FALSE)
+		return ERRLH;
+
 	return Ret;
 }
 
@@ -1315,7 +1347,6 @@ double	CalcVarRatesPriors(RATES *Rates,OPTIONS *Opt)
 	VAR_RATES_NODE	*PNode;
 	double		PVal;
 
-
 	VarRates = Rates->VarRates;
 	Ret = 0;
 
@@ -1323,11 +1354,18 @@ double	CalcVarRatesPriors(RATES *Rates,OPTIONS *Opt)
 	{
 		PNode = VarRates->NodeList[Index];
 
-		if(PNode->Type != VR_LS_BL)
-			PVal = CaclVRPrior(PNode->Scale,PNode->Type,Rates);
-		else
+		if(PNode->Type == VR_LS_BL)
 			PVal = CaclVRLandPrior(Rates,PNode);
+		else
+		{
+			PVal = CaclVRPrior(PNode->Scale,PNode->Type,Rates);
 
+/*			if(PNode->Type == VR_NODE)
+				PVal = CalcNodeScalarTheroyPrior(PNode);
+			else
+				PVal = CaclVRPrior(PNode->Scale, PNode->Type, Rates);
+*/		}
+		
 		if(PVal == ERRLH)
 			return ERRLH;
 
@@ -1335,8 +1373,8 @@ double	CalcVarRatesPriors(RATES *Rates,OPTIONS *Opt)
 	}
 
 	// Add a theshold cost for all VR paramiters
-	//Ret += VarRates->NoNodes * Opt->RJThreshold;
-	Ret += CalcDiffTHoldCost(Rates, Opt);
+	Ret += VarRates->NoNodes * Opt->RJThreshold;
+	//Ret += CalcDiffTHoldCost(Rates, Opt);
 
 	return Ret;
 }

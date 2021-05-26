@@ -373,6 +373,9 @@ int	AddMLLandscapeNNode(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 		LandNode->NodeList[0] = Node;
 		LandNode->Beta = 0.0;
+		
+		LandNode->Beta = 1.0;
+		Lh = Likelihood(Rates,Trees,Opt);
 
 		// get the ML value
 		NLOptBT(Rates, Opt, Trees, ML_Map);
@@ -387,11 +390,7 @@ int	AddMLLandscapeNNode(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		LhList[Index] = Lh - InitLh;
 		Beta[Index] = LandNode->Beta;
 
-
-//		printf("%s\t%f\t%f\t%f\t", Opt->DataFN, Lh, InitLh, LandNode->Beta);
-	//	PrintPart(stdout, Trees, Node->Part);
-//		printf("\n");
-//		exit(0);
+		printf("%d\t%f\t%f\n", Index, LhList[Index], Beta[Index]);
 	}
 
 

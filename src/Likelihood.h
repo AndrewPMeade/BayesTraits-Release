@@ -10,6 +10,8 @@ void		AllocLHInfo(TREES *Trees, OPTIONS *Opt);
 void		FreeInvInfo(INVINFO* InvInfo);
 INVINFO*	AllocInvInfo(int NOS);
 
+int			ValidDoubleVal(double Val);
+
 int			ValidLh(double LH, MODEL_TYPE MT);
 
 double		LhPraxis(void* PState, double *List);

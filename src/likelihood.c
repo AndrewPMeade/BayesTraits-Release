@@ -1010,15 +1010,23 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		SetGlobalTrend(Opt, Trees, Rates);
 }
 
-int		ValidLh(double LH, MODEL_TYPE MT)
+int		ValidDoubleVal(double Val)
 {
-	if(LH == LH+1 || LH != LH || LH == ERRLH)
+	if(Val == Val + 1 || Val != Val)
 		return FALSE;
 
-	if(LH > 0 && MT == MT_DISCRETE)
+	return TRUE;
+}
+
+int		ValidLh(double LH, MODEL_TYPE MT)
+{
+	if(ValidDoubleVal(LH) == FALSE)
 		return FALSE;
 
 	if(LH == ERRLH)
+		return FALSE;
+
+	if(LH > 0 && MT == MT_DISCRETE)
 		return FALSE;
 
 	return TRUE;
