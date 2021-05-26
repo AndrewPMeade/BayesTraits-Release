@@ -4226,8 +4226,7 @@ void	OptTestPrior(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	size_t NoSample;
 	PRIOR *Prior;
-	double Draw;
-	gsl_rng *RNG;
+
 
 	if(Tokes != 3)
 	{

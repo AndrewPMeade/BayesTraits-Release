@@ -9,18 +9,30 @@ Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|x64 = Debug|x64
 		Debug|x86 = Debug|x86
+		Debug-Lapack|x64 = Debug-Lapack|x64
+		Debug-Lapack|x86 = Debug-Lapack|x86
 		Release|x64 = Release|x64
 		Release|x86 = Release|x86
+		Release-Lapack|x64 = Release-Lapack|x64
+		Release-Lapack|x86 = Release-Lapack|x86
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Debug|x64.ActiveCfg = Debug|x64
 		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Debug|x64.Build.0 = Debug|x64
 		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Debug|x86.ActiveCfg = Debug|Win32
 		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Debug|x86.Build.0 = Debug|Win32
+		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Debug-Lapack|x64.ActiveCfg = Debug-Lapack|x64
+		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Debug-Lapack|x64.Build.0 = Debug-Lapack|x64
+		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Debug-Lapack|x86.ActiveCfg = Debug-Lapack|Win32
+		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Debug-Lapack|x86.Build.0 = Debug-Lapack|Win32
 		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Release|x64.ActiveCfg = Release|x64
 		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Release|x64.Build.0 = Release|x64
 		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Release|x86.ActiveCfg = Release|Win32
 		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Release|x86.Build.0 = Release|Win32
+		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Release-Lapack|x64.ActiveCfg = Release-Lapack|x64
+		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Release-Lapack|x64.Build.0 = Release-Lapack|x64
+		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Release-Lapack|x86.ActiveCfg = Release-Lapack|Win32
+		{20DEA946-F5B8-41F4-9391-9651022DFCCE}.Release-Lapack|x86.Build.0 = Release-Lapack|Win32
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
