@@ -49,6 +49,7 @@ void	AddTaxaErr(TREES *Trees, int TaxaID, double Err);
 
 int		TaxaIndexToNo(TREES *Trees, int Index);
 int		TaxaNoToIndex(TREES *Trees, int ID);
+int		NoTaxa(NODE N);
 
 void	SaveUserBrachLengths(TREES *Trees);
 void	SetUserBranchLength(TREE *Tree);

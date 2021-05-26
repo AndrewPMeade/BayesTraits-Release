@@ -346,7 +346,8 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates)
 
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	int NIndex, GIndex, Group;
+//	int NIndex, GIndex, Group;
+	int NIndex, GIndex;
 	FATTAILTREE *FTT;
 	size_t	GroupSize;
 	NODE	*NodeList;

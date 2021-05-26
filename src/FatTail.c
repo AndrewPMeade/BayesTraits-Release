@@ -820,11 +820,14 @@ void	TestMapping(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	exit(0);
 }
 
-void	SSNodeFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates, SLICESAMPLER *SS, RANDSTATES *RS) 
+void	SSNodeFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates, SLICESAMPLER *SS) 
 {
 	int Changed, Valid;
 	double CLh, CAns, NAns, NLh, Min, Max;
 	FATTAILRATES *FTR;
+	gsl_rng *RNG;
+
+	RNG = N->RNG;
 
 	FTR = Rates->FatTailRates;
 	
@@ -843,13 +846,13 @@ void	SSNodeFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates,
 	do
 	{
 		if(Valid == FALSE)
-			NAns = Min + (RandDouble(RS) * (Max - Min));
+			NAns = Min + (gsl_rng_uniform(RNG) * (Max - Min));
 		else
-			NAns = SSGetNewPoint(SS, RS, CLh);
+			NAns = SSGetNewPoint(SS, RNG, CLh);
 
 		NLh = AnsStateLh(NAns, SiteNo, N, FTR->SDList[SiteNo]);
 
-		if(log(RandDouble(RS)) < (NLh - CLh))
+		if(log(gsl_rng_uniform(RNG)) < (NLh - CLh))
 			Changed = TRUE;
 
 	} while(Changed == FALSE);
@@ -878,8 +881,9 @@ void	PrintAllAnsStates(TREES *Trees)
 
 void	SSAllAnsStatesFatTailSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, FATTAILRATES *FTR, TREE *Tree, int SiteNo)
 {
-	int FIndex, NIndex, TNo;
+	int FIndex, NIndex;
 	NODE N;
+	int TNo;
 
 	SetStableDist(FTR->SDList[SiteNo], FTR->Alpha[SiteNo], FTR->Scale[SiteNo]);
 	
@@ -892,7 +896,7 @@ void	SSAllAnsStatesFatTailSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, FATTAIL
 		{			
 			N = Tree->ParallelNodes[FIndex][NIndex];
 			TNo = GetThreadNo();
-			SSNodeFatTail(N, SiteNo, Opt, Trees, Rates, FTR->SliceSamplers[TNo], Rates->RSList[TNo]);
+			SSNodeFatTail(N, SiteNo, Opt, Trees, Rates, FTR->SliceSamplers[TNo]);
 		}
 	}
 }
@@ -944,7 +948,7 @@ void	SSAnsStatesFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	N = GetSliceSampleNode(Tree, Rates->RS);
 
-	SSNodeFatTail(N, SIndex, Opt, Trees, Rates, FTR->SliceSamplers[0], Rates->RS);
+	SSNodeFatTail(N, SIndex, Opt, Trees, Rates, FTR->SliceSamplers[0]);
 
 	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
 

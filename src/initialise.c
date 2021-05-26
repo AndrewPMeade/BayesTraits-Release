@@ -69,13 +69,13 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 
 
 	Model	= GetModel(Trees);
-	
-	if(GetModelType(Model) == MT_FATTAIL)
-		Analsis = ANALMCMC;
-	else
-		Analsis = GetAnalsis(Trees);
+	Analsis = GetAnalsis(Trees);
 
-
+	if(GetModelType(Model) == MT_FATTAIL && Analsis == ANALML)
+	{
+		printf("Fat Tail models require MCMC analysis.\n");
+		exit(1);
+	}
 
 	CheckDataWithModel(DataFN, Trees, Model);
 

@@ -196,8 +196,7 @@ int main(int argc, char** argv)
 
 		return 0;
 	}
-
-	
+		
 	GetTreeDataF(argc, argv, &TreeFN, &DataFN);
 
 	Trees  = LoadTrees(TreeFN);

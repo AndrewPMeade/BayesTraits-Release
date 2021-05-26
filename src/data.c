@@ -502,7 +502,7 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 		if(strlen(Trees->SymbolList) == 1)
 		{
 			printf("There has to be more then one state in file %s\n", FileName);
-			exit(0);
+			exit(1);
 		}
 	}
 	else

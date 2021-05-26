@@ -161,7 +161,6 @@
 #define OUTPUT_EXT_ANC			".AncStates.txt"
 #define OUTPUT_EXT_DUMMY_CODE	".DummyCode.txt"
 #define OUTPUT_EXT_SIM			".Sim.txt"
-#define OUTPUT_EXT_LAND_GROUP	".LandscapeGroups.txt"
 #define OUTPUT_EXT_VAR_RATES	".VarRates.txt"
 #define OUTPUT_EXT_STONES		".Stones.txt"
 #define OUTPUT_EXT_TREES		".Output.trees"
@@ -338,6 +337,7 @@ typedef enum
 	C_GLOBAL_TREND,
 	C_RJ_THRESHOLD,
 	C_LOAD_RJ_RATES,
+	C_TEST_PRIOR,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -430,6 +430,7 @@ static char    *COMMANDSTRINGS[] =
 	"GlobalTrend",		"gt",
 	"RJThreshold",		"rjt",
 	"LoadVarRates",		"lvr",
+	"TestPrior",		"TestPrior",
 	""
 };
 
@@ -1194,7 +1195,6 @@ typedef struct
 	FILE		*OutTrees;
 	FILE		*VarRatesLog;
 	FILE		*LogFatTail;
-	FILE		*LogLandscapeGroups;
 	char		*LogFileBuffer;
 	char		**PassedOut;
 
@@ -1293,6 +1293,9 @@ typedef struct
 	double		ScaleTrees;
 
 	int			UseRJLocalScalar[NO_RJ_LOCAL_SCALAR];
+	double		*RJLocalScalarThreshold;
+
+
 	int			FatTailNormal;
 
 	int			EstData;
@@ -1337,8 +1340,6 @@ typedef struct
 	int			UseMLLandscape;
 
 	int			UseGlobalTrend;
-
-	double		RJThreshold;
 
 	char		*VarRatesCheckPoint;
 

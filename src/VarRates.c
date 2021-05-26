@@ -1200,8 +1200,6 @@ double	CaclVRPrior(double X, TRANSFORM_TYPE Type, RATES *Rates)
 	double Ret;
 	PRIOR *Prior;
 
-//	return -2.0;
-
 	if(Type == VR_KAPPA && X >= MAX_VR_KAPPA)
 		return ERRLH;
 
@@ -1236,6 +1234,7 @@ double	CalcVRLandPriorLh(double Beta, double T, double Sig2)
 	return Lh;
 }
 
+
 double	CaclVRLandPrior(RATES *Rates, VAR_RATES_NODE *VRNode)
 {
 	double Ret, X;
@@ -1248,22 +1247,6 @@ double	CaclVRLandPrior(RATES *Rates, VAR_RATES_NODE *VRNode)
 	Ret = CalcLhPriorP(X, Prior);
 
 	return Ret;
-/*
-	double T, Beta, Sig2, Z, LhP;
-	NODE N;
-
-//	return 0;
-
-	N = VRNode->NodeList[Rates->TreeNo];
-	T = N->Length;
-
-	Beta = VRNode->Scale;
-
-	Sig2 = Rates->Rates[1];
-
-	LhP = CalcVRLandPriorLh(Beta, T, Sig2);
-
-	return LhP;*/
 }
 
 void	TestR(RATES *Rates)
@@ -1286,33 +1269,6 @@ void	TestR(RATES *Rates)
 	exit(0);
 }
 
-double CalcDiffTHoldCost(RATES *Rates, OPTIONS* Opt)
-{
-	double Ret;
-	int Index;
-	VARRATES* VarRates;
-	VAR_RATES_NODE* PNode;
-
-	VarRates = Rates->VarRates;
-
-	Ret = 0;
-	for(Index=0;Index<VarRates->NoNodes;Index++)
-	{
-		PNode = VarRates->NodeList[Index];
-
-		if(PNode->Type != VR_NODE)
-			Ret += Opt->RJThreshold;
-
-/*		if(PNode->Type == VR_NODE)
-			Ret += -1.0;
-		else
-			Ret += Opt->RJThreshold;
-*/
-	}
-	
-	return Ret;
-}
-
 double	CaclChiNodeDist(int NoTaxa, double Scalar)
 {
 	double Ret;
@@ -1325,6 +1281,7 @@ double	CaclChiNodeDist(int NoTaxa, double Scalar)
 
 	return Ret;
 }
+
 
 double	CalcNodeScalarTheroyPrior(VAR_RATES_NODE *PNode)
 {
@@ -1351,31 +1308,24 @@ double	CalcVarRatesPriors(RATES *Rates,OPTIONS *Opt)
 	VarRates = Rates->VarRates;
 	Ret = 0;
 
+//	TestPriorLh(Opt, Rates, VR_LS_BL);
+
 	for(Index=0;Index<VarRates->NoNodes;Index++)
 	{
 		PNode = VarRates->NodeList[Index];
 
 		if(PNode->Type == VR_LS_BL)
-			PVal = CaclVRLandPrior(Rates,PNode);
+			PVal = CaclVRLandPrior(Rates, PNode);
 		else
-		{
-			PVal = CaclVRPrior(PNode->Scale,PNode->Type,Rates);
-
-/*			if(PNode->Type == VR_NODE)
-				PVal = CalcNodeScalarTheroyPrior(PNode);
-			else
-				PVal = CaclVRPrior(PNode->Scale, PNode->Type, Rates);
-*/		}
-		
+			PVal = CaclVRPrior(PNode->Scale, PNode->Type, Rates);
+				
 		if(PVal == ERRLH)
 			return ERRLH;
 
+		PVal += Opt->RJLocalScalarThreshold[PNode->Type];
+
 		Ret += PVal;
 	}
-
-	// Add a theshold cost for all VR paramiters
-	Ret += VarRates->NoNodes * Opt->RJThreshold;
-	//Ret += CalcDiffTHoldCost(Rates, Opt);
 
 	return Ret;
 }

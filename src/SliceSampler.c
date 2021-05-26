@@ -154,7 +154,7 @@ double SSFindSliceEnd(SLICESAMPLER *SS, double YPoint, int *Pos)
 	return 0.0;
 }
 
-double	FindNewPoint(SLICESAMPLER *SS, RANDSTATES *RS)
+double	FindNewPoint(SLICESAMPLER *SS, gsl_rng *RNG)
 {
 	double Sum, Point;
 	int Index;
@@ -164,7 +164,7 @@ double	FindNewPoint(SLICESAMPLER *SS, RANDSTATES *RS)
 	for(Index=0;Index<SS->NoSlices;Index++)
 		Sum += SS->SliceMax[Index] - SS->SliceMin[Index];
 
-	Point = Sum * RandDouble(RS);
+	Point = Sum * gsl_rng_uniform(RNG);
 
 	Sum = 0.0;
 
@@ -187,7 +187,7 @@ double	FindNewPoint(SLICESAMPLER *SS, RANDSTATES *RS)
 }
 
 
-double	SSGetNewPoint(SLICESAMPLER *SS, RANDSTATES *RS, double POld)
+double	SSGetNewPoint(SLICESAMPLER *SS, gsl_rng *RNG, double POld)
 {
 	int CPos, Exit, NoSlices;
 	double	SPos, EPos, Ret, YPoint, MinY, MaxY;
@@ -199,7 +199,7 @@ double	SSGetNewPoint(SLICESAMPLER *SS, RANDSTATES *RS, double POld)
 
 	do
 	{
-		YPoint = MinY + ((POld - MinY) * RandDouble(RS));
+		YPoint = MinY + ((POld - MinY) * gsl_rng_uniform(RNG));
 	} while(YPoint > MaxY);
 	
 	Exit = FALSE;
@@ -227,6 +227,6 @@ double	SSGetNewPoint(SLICESAMPLER *SS, RANDSTATES *RS, double POld)
 
 	SS->NoSlices = NoSlices;
 
-	Ret = FindNewPoint(SS, RS);
+	Ret = FindNewPoint(SS, RNG);
 	return Ret;
 }

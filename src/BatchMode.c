@@ -37,6 +37,7 @@
 #include "Initialise.h"
 #include "MCMC.h"
 #include "ML.h"
+#include "BatchMode.h"
 
 #ifdef BTOCL
 #include "btocl_runtime.h"
@@ -240,30 +241,42 @@ void	BatchRun(char *BatchFN)
 
 */
 
+void	RunLine(char *Line, int Index)
+{
+	char *TreeFN, *DataFN, *CList;
+	char **ComList;
+	int NoComs;
+
+	if(PassBatchLine(Line, &TreeFN, &DataFN, &CList) == TRUE)
+	{
+		ComList = MakeCommands(CList, &NoComs);
+		printf("\n\n\n\n\nBatch Command:\t%d\t%s\n", Index, Line);
+		fflush(stdout);
+		BatchRunLine(Index, TreeFN, DataFN,  ComList, NoComs);
+		free(ComList);
+	}
+	
+}
+
 void	BatchRun(char *BatchFN)
 {
 	TEXTFILE *TF;
-	int		Index, NoComs, BNo;
-	char	*TreeFN, *DataFN, *CList;
+	int		Index, BNo;
 	char	*TLine;
 	char	**Buffer;
-	char	**ComList;
 
 	TF = LoadTextFile(BatchFN, FALSE);
 
 	Buffer = (char**)SMalloc(sizeof(char*) * TF->MaxLine);
 	BNo = 1;
+
+#ifdef PBATCH
+	#pragma omp parallel for private(TLine)
+#endif
 	for(Index=0;Index<TF->NoOfLines;Index++)
 	{
 		TLine = StrMake(TF->Data[Index]);
-
-		if(PassBatchLine(TF->Data[Index], &TreeFN, &DataFN, &CList) == TRUE)
-		{
-			ComList = MakeCommands(CList, &NoComs);
-			printf("\n\n\n\n\nBatch Command:\t%d\t%s\n", Index, TLine);fflush(stdout);
-			BatchRunLine(Index, TreeFN, DataFN,  ComList, NoComs);
-			free(ComList);
-		}
+		RunLine(TLine, Index);
 		free(TLine);
 	}
 

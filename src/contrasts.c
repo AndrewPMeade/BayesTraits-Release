@@ -370,9 +370,10 @@ void	PrintNodeContrast(NODE N, int NoSites)
 			printf("%12.12f\t", N->Length);
 			printf("%12.12f\t", N->UserLength);
 
-			printf("%12.12f\t", N->DistToRoot);
-			
-
+			printf("%12.12f\t", GetNodeHeight(N));
+						
+			printf("%d\t", NoTaxa(N));
+			RecPRintNodeTaxa(N, ',');
 
 			printf("\t");
 		}
@@ -395,7 +396,7 @@ void	PrintContrast(RATES *Rates, TREES *Trees)
 	Tree = Trees->Tree[Rates->TreeNo];
 
 	for(Index=0;Index<CR->NoSites;Index++)
-		printf("NodeID\tNo Node Con\tCon\tVar\tErr\tV\tLen\tUser Length\tDistToRoot\t"); 
+		printf("NodeID\tNo Node Con\tData\tContrast\tVar\tError\tLen\tUser Length\tHeight\tNo Taxa\tTaxa"); 
 	printf("\n");
 
 	for(Index=0;Index<Tree->NoNodes;Index++)

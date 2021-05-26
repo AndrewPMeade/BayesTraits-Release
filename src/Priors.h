@@ -50,5 +50,7 @@ double		CalcNormalHasting(double x, double SD);
 
 int		ValidPriorLh(double LH);
 
+void	TestPrior(PRIOR *Prior, size_t NoSamples);
+
 
 #endif
