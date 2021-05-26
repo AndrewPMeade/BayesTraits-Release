@@ -565,6 +565,17 @@ void	RecPrintPPNodes(FILE *Out, NODE N)
 
 }
 
+void	PPLogFileHeaderNode(FILE *Str, NODE N)
+{
+	int No;
+
+	No = 0;
+	CTaxaBelow(N, &No);
+	fprintf(Str, "%d\t%f\t%d\t", N->ID, N->Length, No);
+	RecPrintPPNodes(Str, N);
+	fprintf(Str, "\n");
+}
+
 
 void	PPLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
@@ -581,15 +592,15 @@ void	PPLogFileHeader(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	for(Index=0;Index<Trees->NoOfTaxa;Index++)
 		fprintf(Opt->PPLog, "%d\t%s\n", Trees->Taxa[Index]->No, Trees->Taxa[Index]->Name);
 
-	fprintf(Opt->PPLog, "%d\n", P->NoValidNode);
+	fprintf(Opt->PPLog, "%d\n", P->NoValidNode+1);
+
+//	if(P->ValidNode[0]->Ans != NULL)
+		PPLogFileHeaderNode(Opt->PPLog, T->Root);
+
 	for(Index=0;Index<P->NoValidNode;Index++)
 	{
 		N = P->ValidNode[Index];
-		No = 0;
-		CTaxaBelow(N, &No);
-		fprintf(Opt->PPLog, "%d\t%f\t%d\t", N->ID, N->Length, No);
-		RecPrintPPNodes(Opt->PPLog, N);
-		fprintf(Opt->PPLog, "\n");
+		PPLogFileHeaderNode(Opt->PPLog, N);
 	}
 
 	fprintf(Opt->PPLog, "It\tLh\tLh + Prior\tNo Pram\tAlpha\tSigma^2\tAlpha Scale Prior\t");
