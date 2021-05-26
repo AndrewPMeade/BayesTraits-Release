@@ -47,7 +47,7 @@ TRANSFORM_TYPE	NameToRJLocalType(char *Name, int *Err)
 
 	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
 	{
-		if(strcmp(Name, RJ_LOCAL_SCALAR_NAMES[Index]) == 0)
+		if(StrICmp(Name, RJ_LOCAL_SCALAR_NAMES[Index]) == 0)
 			return (TRANSFORM_TYPE)Index;
 	}
 
@@ -89,6 +89,9 @@ PRIOR*	GetPriorFromRJRatesScalar(OPTIONS *Opt, TRANSFORM_TYPE Type)
 
 	if(Type == VR_BL)
 		return GetPriorFromName("VRBranch", Opt->AllPriors, Opt->NoAllPriors);
+
+	if(Type == VR_LS_BL)
+		return GetPriorFromName("VR_LS_BL", Opt->AllPriors, Opt->NoAllPriors);
 
 	printf("Unknown transform type");
 	exit(1);

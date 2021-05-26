@@ -69,11 +69,13 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 
 
 	Model	= GetModel(Trees);
-	
-	if(GetModelType(Model) == MT_FATTAIL)
-		Analsis = ANALMCMC;
-	else
-		Analsis = GetAnalsis(Trees);
+	Analsis = GetAnalsis(Trees);
+
+	if(GetModelType(Model) == MT_FATTAIL && Analsis == ANALML)
+	{
+		printf("Fat Tail models require MCMC analysis.\n");
+		exit(1);
+	}
 
 	CheckDataWithModel(DataFN, Trees, Model);
 
@@ -117,7 +119,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		ID = 0;
 		SetNodeIDs(Trees->Tree[Index]);
 	}
-	
+
 	Opt->LogFile		= OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_LOG);
 
 	#ifdef JNIRUN
@@ -129,6 +131,9 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	Trees->UseCovarion	= Opt->UseCovarion;
 
 	SetPTrees(Opt, Trees);
+
+	SetTreesInternalNodes(Trees);
+
 
 	if(Opt->ModelType == MT_CONTINUOUS)
 		InitContinus(Opt, Trees);
@@ -146,7 +151,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		if(Opt->UseCovarion == TRUE)
 			Trees->NoStates = Trees->NoStates * 2;
 
-		if(Opt->Model == M_DESCCV)
+		if(Opt->Model == M_DISC_CV)
 			Trees->NoStates = Trees->NoStates * 2;
 
 		if(Opt->UseKappa == TRUE && Opt->FixKappa != -1)
@@ -176,6 +181,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		//btocl_AllocLhInfo(Trees);
 #endif
 	}
+
 		
 	if(FindNoEstDataPoint(Trees) > 0)
 		Opt->EstData = TRUE;
@@ -189,6 +195,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		InitialiseOutputTrees(Opt, Trees);
 	
 	SaveUserBrachLengths(Trees);
+
 }
 
 

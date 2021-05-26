@@ -376,8 +376,6 @@ void	SetDistDataTaxaGeo(NODE N, DIST_DATA_TAXA *DTaxa, int NoSites, int *PosList
 	
 	for(SIndex=0;SIndex<NoSites;SIndex++)
 		FTN->Ans[SIndex] = DTaxa->Data[SIndex][PosList[SIndex]];
-
-
 }
 
 void	SetDistDataTaxa(DIST_DATA *DD, DIST_DATA_TAXA *DTaxa, TREE *Tree, OPTIONS *Opt, int *PosList)

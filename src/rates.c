@@ -14,12 +14,12 @@
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
-* 
+*
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
-* 
+*
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>
 *
@@ -58,6 +58,9 @@
 #include "LocalTransform.h"
 #include "DistData.h"
 #include "TimeSlices.h"
+#include "Landscape.h"
+#include "Part.h"
+#include "GlobalTrend.h"
 
 void	SetRegBetaZero(int NoSites, RATES *Rates)
 {
@@ -96,11 +99,11 @@ int		FindNoConRates(OPTIONS *Opt)
 		break;
 
 		case M_FATTAIL:
-			return Opt->Trees->NoUserSites * 2;
+			return Opt->Trees->NoUserSites;
 		break;
 
 		case M_GEO:
-			return 2;
+			return 1;
 		break;
 
 		default:
@@ -290,6 +293,8 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 
 			if(Rates->FullRates[Index] > Opt->RateMax)
 				Rates->FullRates[Index] = Opt->RateMax;
+
+			Rates->FullRates[Index] = Rates->FullRates[Index] * Opt->RateScalars[Index];
 		}
 	}
 
@@ -310,6 +315,41 @@ void	MapRates(RATES* Rates, OPTIONS *Opt)
 	//	Rates->OffToOn = Rates->Rates[Pos++];
 		Rates->OffToOn = Rates->OnToOff;
 	}
+/*
+	if((Opt->EstKappa == TRUE) && (Opt->Analsis == ANALML))
+	{
+		Rates->Kappa = Rates->Rates[Pos++];
+
+		if(Rates->Kappa < 0)
+			Rates->Kappa = 0.0000001;
+
+		if(Rates->Kappa > 5)
+			Rates->Kappa = 5;
+	}
+
+	if((Opt->EstGamma == TRUE) && (Opt->Analsis == ANALML))
+	{
+		Rates->Gamma = Rates->Rates[Pos++];
+
+		if(Rates->Gamma < MIN_GAMMA)
+			Rates->Gamma = MIN_GAMMA;
+
+		if(Rates->Gamma > MAX_GAMMA)
+			Rates->Gamma = MAX_GAMMA;
+	}
+
+	*/
+}
+
+int		MissingDepSite(OPTIONS *Opt, char *SiteData)
+{
+	if(ModelDep(Opt->Model) == FALSE)
+		return FALSE;
+
+	if(strlen(SiteData) > 1)
+		return TRUE;
+
+	return FALSE;
 }
 
 double* GetEmpPis(OPTIONS *Opt)
@@ -319,7 +359,7 @@ double* GetEmpPis(OPTIONS *Opt)
 	int		State;
 	double	Weight;
 	double	Total;
-	int		SIndex,TIndex,SymbolIndex;
+	int		SIndex, TIndex, SymbolIndex;
 	TAXA	*Taxa;
 
 	Trees = Opt->Trees;
@@ -336,9 +376,10 @@ double* GetEmpPis(OPTIONS *Opt)
 		{
 			Taxa = Trees->Taxa[TIndex];
 
-			if(SiteHadUnKnownState(Taxa->DesDataChar[SIndex]) == FALSE)
+			if(	SiteHadUnKnownState(Taxa->DesDataChar[SIndex]) == FALSE &&
+				MissingDepSite(Opt, Taxa->DesDataChar[SIndex]) == FALSE)
 			{
-				Weight = 1.0/strlen(Taxa->DesDataChar[SIndex]);
+ 				Weight = 1.0 / strlen(Taxa->DesDataChar[SIndex]);
 
 				for(SymbolIndex=0;SymbolIndex<(int)strlen(Taxa->DesDataChar[SIndex]);SymbolIndex++)
 				{
@@ -348,14 +389,14 @@ double* GetEmpPis(OPTIONS *Opt)
 			}
 			else
 			{
-				for(SymbolIndex=0;SymbolIndex<Trees->NoStates;SymbolIndex++)
-					TempPis[SymbolIndex] += 1.0/Trees->NoStates;
+				if(MissingDepSite(Opt, Taxa->DesDataChar[SIndex]) == FALSE)
+					for(SymbolIndex=0;SymbolIndex<Trees->NoStates;SymbolIndex++)
+						TempPis[SymbolIndex] += 1.0 / Trees->NoStates;
 			}
 		}
 	}
 
 	Total = 0;
-
 	for(SIndex=0;SIndex<Trees->NoStates;SIndex++)
 		Total += TempPis[SIndex];
 
@@ -489,7 +530,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 			MallocErr();
 
 		for(Index=0;Index<Rates->NoOfRates;Index++)
-			Rates->Rates[Index] = 0;
+			Rates->Rates[Index] = 0.0;
 
 		if(Opt->ModelType == MT_CONTRAST)
 		{
@@ -516,6 +557,7 @@ void	CreatCRates(OPTIONS *Opt, RATES *Rates)
 	Rates->EstData		=	NULL;
 
 	Rates->NoEstData	=	FindNoEstDataPoint(Trees);
+
 
 	if(Rates->NoEstData > 0)
 	{
@@ -665,9 +707,7 @@ void	SetRatesLocalRates(RATES *Rates, OPTIONS *Opt)
 	if(Opt->NoLocalTransforms == 0)
 		return;
 
-	Rates->LocalTransforms = (LOCAL_TRANSFORM**)malloc(sizeof(LOCAL_TRANSFORM*) * Opt->NoLocalTransforms);
-	if(Rates->LocalTransforms == NULL)
-		MallocErr();
+	Rates->LocalTransforms = (LOCAL_TRANSFORM**)SMalloc(sizeof(LOCAL_TRANSFORM*) * Opt->NoLocalTransforms);
 
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
 		Rates->LocalTransforms[Index] = CloneLocalTransform(Opt->LocalTransforms[Index]);
@@ -676,6 +716,7 @@ void	SetRatesLocalRates(RATES *Rates, OPTIONS *Opt)
 	Rates->UseLocalTransforms = TRUE;
 
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
+	{
 		if(Rates->LocalTransforms[Index]->Est == TRUE)
 		{
 			if(Rates->LocalTransforms[Index]->Type == VR_OU)
@@ -683,7 +724,9 @@ void	SetRatesLocalRates(RATES *Rates, OPTIONS *Opt)
 			else
 				Rates->LocalTransforms[Index]->Scale = 1.0;
 		}
+	}
 }
+
 
 void	SetDiscretisedPrior(PRIOR *Prior, OPTIONS *Opt)
 {
@@ -778,6 +821,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 	Ret->AutoAccept		=	FALSE;
 	Ret->CalcLh			=	TRUE;
 
+	Ret->UseMLLandscape	=	FALSE;
+
 	Ret->RS				=	CreateSeededRandStates(Opt->Seed);
 	Ret->RSList			=	CreateRandStatesList(Ret->RS, GetMaxThreads());
 	Ret->RNG			=	gsl_rng_alloc(gsl_rng_mt19937);
@@ -789,7 +834,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 	SetRatesLocalRates(Ret, Opt);
 
 
-
 	if(Opt->UseDistData == TRUE)
 		Ret->DistDataRates = CreateDistDataRates(Opt->DistData, Ret->RS);
 
@@ -799,7 +843,6 @@ RATES*	CreatRates(OPTIONS *Opt)
 		if(Opt->ModelType == MT_DISCRETE)
 			SetDiscretisedPriors(Ret, Opt);
 	}
-
 
 	if(Opt->UseGamma == TRUE)
 	{
@@ -895,7 +938,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 		}
 	}
 
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		Ret->Hetero = CreatHetero(Opt, Ret);
 
 	MapRates(Ret, Opt);
@@ -906,7 +949,11 @@ RATES*	CreatRates(OPTIONS *Opt)
 		ChangeModelFile(Ret, Ret->RS);
 	}
 
+
+
 	SimData(Opt, Opt->Trees, Ret);
+
+	Ret->GlobalTrend = 0.0;
 
 	return Ret;
 }
@@ -942,7 +989,7 @@ void	PrintEstDataHeader(FILE *Str, OPTIONS *Opt)
 
 	NOS = Trees->NoSites;
 
-	if((Opt->Model == M_DESCINDEP) || (Opt->Model == M_DESCDEP))
+	if((Opt->Model == M_DISC_INDEP) || (Opt->Model == M_DISC_DEP))
 		NOS = 2;
 
 	for(Index=0;Index<Trees->NoTaxa;Index++)
@@ -1010,11 +1057,11 @@ void	PrintLocalRateHeader(FILE *Str, OPTIONS *Opt)
 
 void	PrintLocalTransformHeadder(FILE *Str, OPTIONS *Opt)
 {
-	if(Opt->UseVarRates == TRUE)
-	{
+	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
 		fprintf(Str, "No RJ Local Branch\t");
+
+	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
 		fprintf(Str, "No RJ Local Node\t");
-	}
 
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
 		fprintf(Str, "No RJ Local Kappa\t");
@@ -1027,6 +1074,9 @@ void	PrintLocalTransformHeadder(FILE *Str, OPTIONS *Opt)
 
 	if(Opt->UseRJLocalScalar[VR_OU] == TRUE)
 		fprintf(Str, "No RJ Local OU\t");
+
+	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
+		fprintf(Str, "No RJ LS Betas\t");
 }
 
 void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
@@ -1130,7 +1180,8 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 		else
 		{
 			for(Index=0;Index<Opt->Trees->NoSites;Index++)
-				fprintf(Str, "Alpha %d\tScale %d\t", Index+1, Index+1);
+				fprintf(Str, "Sig2 %d\t", Index+1);
+		//		fprintf(Str, "Alpha %d\tScale %d\t", Index+1, Index+1);
 		}
 	}
 
@@ -1166,6 +1217,12 @@ void	PrintRatesHeadderCon(FILE *Str, OPTIONS *Opt)
 	if(Opt->UseDistData == TRUE)
 		OutputDataDistHeadder(Str, Opt);
 
+	if(Opt->UseGlobalTrend == TRUE)
+		fprintf(Str, "Global Trend\t");
+
+//	if(Opt->UseRJLandscapeRateGroup == TRUE)
+//		fprintf(Str, "RJLandRateSig\t");
+
 	if(Opt->Analsis == ANALML)
 		fprintf(Str, "\n");
 }
@@ -1176,7 +1233,7 @@ void	PrintRecNodeHeadder(FILE* Str, OPTIONS *Opt, char* Name, int SiteNo)
 	int		NOS;
 	TREES	*Trees;
 
-	if((Opt->Model == M_DESCDEP) || (Opt->Model == M_DESCINDEP))
+	if((Opt->Model == M_DISC_DEP) || (Opt->Model == M_DISC_INDEP))
 	{
 		fprintf(Str, "%s - P(0,0)\t", Name);
 		fprintf(Str, "%s - P(0,1)\t", Name);
@@ -1185,7 +1242,7 @@ void	PrintRecNodeHeadder(FILE* Str, OPTIONS *Opt, char* Name, int SiteNo)
 		return;
 	}
 
-	if(Opt->Model == M_DESCCV)
+	if(Opt->Model == M_DISC_CV)
 	{
 		fprintf(Str, "%s - I P(0,0)\t", Name);
 		fprintf(Str, "%s - I P(0,1)\t", Name);
@@ -1249,7 +1306,7 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "No Off Parmeters\t");
 		fprintf(Str, "No Off Zero\t");
 		fprintf(Str, "Model string\t");
-		if(Opt->Model == M_DESCDEP)
+		if(Opt->Model == M_DISC_DEP)
 			fprintf(Str, "Dep / InDep\t");
 	}
 
@@ -1272,7 +1329,7 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 	if(Opt->UseCovarion == TRUE)
 		fprintf(Str, "Covar On to Off\t Covar Off to On\t");
 
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		fprintf(Str, "No Indep\tNo Dep\tMap\t");
 
 
@@ -1318,7 +1375,8 @@ void	PrintRatesHeadder(FILE* Str, OPTIONS *Opt)
 
 double	TransVarCoVar(int N, double x)
 {
-	return (x * (double)N) / (double)(N-1);
+	return x;
+//	return (x * (double)N) / (double)(N-1);
 }
 
 double	CalcR(double CV, double VT1, double VT2)
@@ -1557,11 +1615,12 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 
 void	PrintLocalTransformNo(FILE* Str, RATES* Rates, OPTIONS *Opt)
 {
-	if(Opt->UseVarRates == TRUE)
-	{
+
+	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_BL, Rates));
+
+	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_NODE, Rates));
-	}
 
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_KAPPA, Rates));
@@ -1574,6 +1633,10 @@ void	PrintLocalTransformNo(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	if(Opt->UseRJLocalScalar[VR_OU] == TRUE)
 		fprintf(Str, "%d\t", GetNoTransformType(VR_OU, Rates));
+
+	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
+		fprintf(Str, "%d\t", GetNoTransformType(VR_LS_BL, Rates));
+
 }
 
 void	PrintRateLocalTransform(FILE *Str, RATES *Rates)
@@ -1673,7 +1736,8 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 		else
 		{
 			for(Index=0;Index<Trees->NoSites;Index++)
-				fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[Index], Rates->FatTailRates->Scale[Index]);
+			//	fprintf(Str, "%0.12f\t%0.12f\t", Rates->FatTailRates->Alpha[Index], Rates->FatTailRates->Scale[Index]);
+				fprintf(Str, "%0.12f\t", Rates->FatTailRates->Scale[Index]);
 		}
 	}
 
@@ -1729,11 +1793,14 @@ void	PrintRatesCon(FILE* Str, RATES* Rates, OPTIONS *Opt)
 
 	PrintConRecNodes(Str, Rates, Opt);
 
-
 	PrintLocalTransformNo(Str, Rates, Opt);
 
 	if(Opt->UseDistData == TRUE)
 		OutputDataDist(Str, Rates, Opt);
+
+	if(Opt->UseGlobalTrend == TRUE)
+		fprintf(Str, "%0.12f\t", Rates->GlobalTrend);
+
 }
 
 double	GetPartailPi(RATES *Rates, NODE N, int StateNo, int SiteNo)
@@ -1779,8 +1846,6 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoSites, RATES* Rates, OPTI
 
 	Trees = Opt->Trees;
 
-
-
 	if(Node == NULL)
 	{
 		for(SiteIndex=0;SiteIndex<NoSites;SiteIndex++)
@@ -1810,9 +1875,10 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoSites, RATES* Rates, OPTI
 
 		Tot=0;
 		for(Index=0;Index<NOS;Index++)
-			Tot += (Node->Partial[SiteIndex][Index] * Rates->Pis[Index]);
-//			Tot += (Node->Partial[SiteIndex][Index]);
-
+			if(Opt->UsePisInAncStates == TRUE)
+				Tot += Node->Partial[SiteIndex][Index] * Rates->Pis[Index];
+			else
+				Tot += Node->Partial[SiteIndex][Index];
 
 	/*
 		if(Opt->Model == DESCINDEP)
@@ -1854,15 +1920,20 @@ void	PrintNodeRec(FILE *Str, NODE Node, int NOS, int NoSites, RATES* Rates, OPTI
 			if(Opt->UseCovarion == FALSE)
 			{
 				for(Index=0;Index<NOS;Index++)
-					fprintf(Str, "%f\t", (Node->Partial[SiteIndex][Index] *  Rates->Pis[Index]) / Tot);
+					if(Opt->UsePisInAncStates == TRUE)
+						fprintf(Str, "%f\t", (Node->Partial[SiteIndex][Index] *  Rates->Pis[Index]) / Tot);
+					else
+						fprintf(Str, "%f\t", Node->Partial[SiteIndex][Index] / Tot);
 //					fprintf(Str, "%f\t", (Node->Partial[SiteIndex][Index]) / Tot);
 			}
 			else
 			{
 				TrueNOS = NOS / 2;
 				for(Index=0;Index<TrueNOS;Index++)
-					fprintf(Str, "%f\t", ((Node->Partial[SiteIndex][Index] *  Rates->Pis[Index]) +
-										  (Node->Partial[SiteIndex][Index+TrueNOS] *  Rates->Pis[Index+TrueNOS]))/ Tot);
+					if(Opt->UsePisInAncStates == TRUE)
+						fprintf(Str, "%f\t", ((Node->Partial[SiteIndex][Index] *  Rates->Pis[Index]) + (Node->Partial[SiteIndex][Index+TrueNOS] *  Rates->Pis[Index+TrueNOS]))/ Tot);
+					else
+						fprintf(Str, "%f\t", (Node->Partial[SiteIndex][Index] + Node->Partial[SiteIndex][Index+TrueNOS])/ Tot);
 			}
 
 		}
@@ -1974,7 +2045,7 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 		}
 		fprintf(Str, "\t");
 
-		if(Opt->Model == M_DESCDEP)
+		if(Opt->Model == M_DISC_DEP)
 			fprintf(Str, "%c\t", RJModelType(Rates->MappingVect));
 	}
 
@@ -2002,7 +2073,7 @@ void	PrintRates(FILE* Str, RATES* Rates, OPTIONS *Opt, SCHEDULE* Shed)
 	if(Opt->UseCovarion == TRUE)
 		fprintf(Str, "%f\t%f\t", Rates->OffToOn, Rates->OnToOff);
 
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		PrintHetro(Str, Rates);
 
 	if(Opt->UseKappa == TRUE)
@@ -2113,7 +2184,7 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 		CopyContrastRates(Opt, A, B, Opt->Trees->NoSites);
 
 	if(UseNonParametricMethods(Opt) == TRUE)
-		VarRatesCopy(A, B);
+		VarRatesCopy(Opt->Trees, A, B);
 
 	if(A->Hetero != NULL)
 		CopyHetero(A->Hetero, B->Hetero);
@@ -2132,7 +2203,25 @@ void	CopyRates(RATES *A, RATES *B, OPTIONS *Opt)
 
 	A->NormConst = B->NormConst;
 	A->GlobablRate = B->GlobablRate;
+	A->GlobalTrend = B->GlobalTrend;
 }
+
+
+double ChangeRateExp(double Value, double Dev, RANDSTATES *RS, double *LnHastings)
+{
+	double	Ret, Scale;
+
+	Scale = exp(Dev * (RandDouble(RS) - 0.5));
+
+	Ret = Value * Scale;
+
+
+	// Working ish with 1.
+	*LnHastings += log(Ret / Value);
+
+	return Ret;
+}
+
 
 double ChangeRate(RATES *Rates, double RateV, double dev)
 {
@@ -2439,7 +2528,6 @@ void	MutateEstRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 
 	Changes	=	GetMultVarChanges(Rates, Opt, Shed);
 
-//	Changes =	GetPhyChanges(Trees, Trees->Tree[Rates->TreeNo], Opt->EstDataDev, Rates->RS);
 
 	Site	=	Opt->EstDataSites[RandUSLong(Rates->RS) % Opt->NoEstDataSite];
 	RIndex	=	0;
@@ -2490,12 +2578,15 @@ int		TryRJMove(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed)
 
 	NoOfGroups = NoOfPramGroups(Rates, NULL, NULL);
 
-	if(RandDouble(Rates->RS) < 0.25)
+	if(Opt->RJZero == TRUE)
 	{
-		if(RandDouble(Rates->RS) < 0.5)
-			return RJAugment(Rates, Opt);
-		else
-			return RJReduce(Rates, Opt);
+		if(RandDouble(Rates->RS) < 0.25)
+		{
+			if(RandDouble(Rates->RS) < 0.5)
+				return RJAugment(Rates, Opt);
+			else
+				return RJReduce(Rates, Opt);
+		}
 	}
 
 	if(RandDouble(Rates->RS) < 0.5)
@@ -2657,6 +2748,8 @@ void	ChangeGlobalRate(RATES* Rates, SCHEDULE* Shed)
 {
 	double Dev, NRate;
 
+	Shed->CurrentAT = Shed->GlobalRateAT;
+
 	Dev = Shed->GlobalRateAT->CDev;
 
 	NRate = ChangeLocalScale(Rates->RS, Rates->GlobablRate, Dev);
@@ -2665,6 +2758,7 @@ void	ChangeGlobalRate(RATES* Rates, SCHEDULE* Shed)
 
 	Rates->GlobablRate = NRate;
 }
+
 
 void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 {
@@ -2706,6 +2800,7 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 
 		case S_PPROR:
 			MutatePriorsNormal(Rates, Rates->Priors, Rates->NoPriors, Opt->HPDev);
+		//	MutatePriorsNormal(Rates, Rates->Priors, Rates->NoPriors, 0.1);
 		break;
 
 		case S_EST_DATA:
@@ -2756,15 +2851,17 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 			RJDummyChange(Opt, Opt->Trees, Rates);
 		break;
 
-		case S_FAT_TAILANS:
-			if(Opt->Model == M_FATTAIL)
-			{
-			//	SliceSampleFatTail(Opt, Opt->Trees, Rates);
-				AllSliceSampleFatTail(Opt, Opt->Trees, Rates);
-			}
-			else
-				GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
-			//	GeoUpDateAnsStates(Opt, Opt->Trees, Rates);
+		case S_FAT_TAIL_ANS_ALL:
+			SSAllAnsStatesFatTail(Opt, Opt->Trees, Rates);
+		break;
+
+		case S_FAT_TAIL_ANS:
+			SSAnsStatesFatTail(Opt, Opt->Trees, Rates);
+		break;
+
+		case S_GEO_MOVE_ALL:
+			GeoUpDateAllAnsStates(Opt, Opt->Trees, Rates);
+			//	GeoUpDateAnsStates(Opt, Opt->Trees, Rates)
 		break;
 
 		case S_LOCAL_RATES:
@@ -2786,6 +2883,10 @@ void	MutateRates(OPTIONS* Opt, RATES* Rates, SCHEDULE* Shed, long long It)
 		case S_GLOBAL_RATE:
 			ChangeGlobalRate(Rates, Shed);
 		break;
+
+		case S_GLOBAL_TREND:
+			ChangeGlobalTrend(Rates, Shed);
+		break;
 	}
 }
 
@@ -2800,7 +2901,7 @@ void	FreeRates(RATES *Rates, TREES *Trees)
 		FreeDistDataRates(Rates->DistDataRates);
 
 	if(Rates->FatTailRates != NULL)
-		FreeFatTailRates(Rates->FatTailRates, Trees->NoSites);
+		FreeFatTailRates(Rates->FatTailRates, Trees->NoSites, GetMaxThreads());
 
 	if(Rates->Contrast != NULL)
 		FreeContrastRates(Rates);
@@ -2999,11 +3100,20 @@ void	SetEstDataFromPrior(RATES *Rates)
 	int Index, SiteNo;
 	PRIOR *Prior;
 
-
 	for(Index=0;Index<Rates->NoEstData;Index++)
 	{
 		SiteNo = Rates->EstDataSiteNo[Index];
+
 		Prior = GetAnsStatePrior(SiteNo, Rates->Priors, Rates->NoPriors);
+
 		Rates->EstData[Index] = RandFromPrior(Rates->RNG, Prior);
 	}
+}
+
+int			ModelDep(MODEL Model)
+{
+	if(Model == M_DISC_DEP || Model == M_DISC_INDEP || Model == M_DISC_CV || Model == M_DISC_HET)
+		return TRUE;
+
+	return FALSE;
 }

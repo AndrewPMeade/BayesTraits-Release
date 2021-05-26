@@ -33,6 +33,7 @@ PRIOR*		CreateExpPrior(char *Name, double Alpha);
 PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta);
 PRIOR*		CreateLogNormalPrior(char *Name, double Location, double Scale);
 PRIOR*		CreateNormalPrior(char *Name, double Mean, double SD);
+PRIOR*		CreateWeibullPrior(char *Name, double Scale, double Exponent);
 
 
 PRIOR*		CreatePrior(char *Name, PRIORDIST PDist, double *PVal);
@@ -46,5 +47,10 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed);
 PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed);
 
 double		CalcNormalHasting(double x, double SD);
+
+int		ValidPriorLh(double LH);
+
+void	TestPrior(PRIOR *Prior, size_t NoSamples);
+
 
 #endif

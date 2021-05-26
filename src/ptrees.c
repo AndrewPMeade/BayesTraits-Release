@@ -159,19 +159,19 @@ void	SetPTrees(OPTIONS *Opt, TREES *Trees)
  {
 	 int Index,j;
 
-	 printf("No Groups\t%d\n", T->NoFGroups);
+	 printf("No Groups\t%d\n", T->NoParallelGroups);
 	 printf("Size\t");
-	 for(Index=0;Index<T->NoFGroups;Index++)
-		 printf("%d\t", T->NoFNodes[Index]);
+	 for(Index=0;Index<T->NoParallelGroups;Index++)
+		 printf("%d\t", T->ParallelGroupSize[Index]);
 	 printf("\n");
 
-	 for(Index=0;Index<T->NoFGroups;Index++)
+	 for(Index=0;Index<T->NoParallelGroups;Index++)
 	 {
-		 printf("%d\t%d\n", Index, T->NoFNodes[Index]);
-		 for(j=0;j<T->NoFNodes[Index];j++)
+		 printf("%d\t%d\n", Index, T->ParallelGroupSize[Index]);
+		 for(j=0;j<T->ParallelGroupSize[Index];j++)
 		 {
-			printf("\t%d\t", T->FNodes[Index][j]->Part->NoTaxa);
-			RecPrintNodeBelow(T->FNodes[Index][j]);
+			printf("\t%d\t", T->ParallelNodes[Index][j]->Part->NoTaxa);
+			RecPrintNodeBelow(T->ParallelNodes[Index][j]);
 			printf("\n");
 		 }
 	 }
@@ -205,15 +205,12 @@ void	SetPTrees(OPTIONS *Opt, TREES *Trees)
 		 }
 	 }while(PN != NULL);
 
-	 T->NoFGroups = NoGroups;
-	 T->NoFNodes = (int*)malloc(sizeof(int) * NoGroups);
-	 T->FNodes	 = (NODE**)malloc(sizeof(NODE*) * NoGroups);
+	 T->NoParallelGroups = NoGroups;
+	 T->ParallelGroupSize = (int*)SMalloc(sizeof(int) * NoGroups);
+	 T->ParallelNodes = (NODE**)SMalloc(sizeof(NODE*) * NoGroups);
 
-	 if((T->NoFNodes == NULL) || (T->FNodes == NULL))
-		 MallocErr();
-
-	 memcpy(T->NoFNodes, NoNodes, sizeof(int) * NoGroups);
-	 memcpy(T->FNodes, PNodes, sizeof(NODE*) * NoGroups);
+	 memcpy(T->ParallelGroupSize, NoNodes, sizeof(int) * NoGroups);
+	 memcpy(T->ParallelNodes, PNodes, sizeof(NODE*) * NoGroups);
 	 
 	 free(PNodes);
 	 free(NoNodes);

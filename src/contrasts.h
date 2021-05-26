@@ -12,7 +12,7 @@ void		FreeAllContrast(OPTIONS *Opt, TREES* Trees);
 void		FreeContrast(OPTIONS *Opt, TREES* Trees, int TreeNo);
 
 
-void		CalcContrast(TREES* Trees, RATES* Rates);
+void		CalcContrast(OPTIONS *Opt, TREES* Trees, RATES* Rates);
 double		CalcContrastLh(OPTIONS *Opt, TREES* Trees, RATES* Rates);
 
 CONTRASTR*	CreatContrastRates(OPTIONS *Opt, RATES *Rates);
@@ -28,5 +28,7 @@ void		RecIntNode(NODE N, int SiteNo, double *Alpha);
 double		DataToZScore(double X, double Mean, double SD);
 
 void		PrintContrast(RATES *Rates, TREES *Trees);
+
+void		RetSetConTraitData(TREE *Tree, int NoSites);
 
 #endif

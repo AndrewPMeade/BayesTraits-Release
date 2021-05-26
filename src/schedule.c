@@ -141,24 +141,18 @@ void	SetVarRatesShed(OPTIONS *Opt, SCHEDULE *Shed)
 			No++;
 		}
 	}
-	
-	if(Opt->UseVarRates == TRUE)
-	{
-		Shed->VarRatesOp[No] = VR_NODE;
-		Shed->FreqVarRatesOp[No] = 0.1;
-		No++;
 
-		Shed->VarRatesOp[No] = VR_BL;
-		Shed->FreqVarRatesOp[No] = 0.1;
-		No++;
-	}
-	
 	Shed->NoVarRatesOp = No;
 
 	NormaliseVector(Shed->FreqVarRatesOp, Shed->NoVarRatesOp);
 }
 
-void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
+void	SetCustomSchdule(SCHEDULE *Shed, OPTIONS *Opt)
+{
+	return;
+}
+
+void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 {
 	int		Rates, Index;
 	
@@ -192,8 +186,13 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	if(Opt->EstGamma == TRUE)
 		Shed->OptFreq[S_GAMMA_MOVE] = 0.1;
 
-	if(Opt->ModelType == MT_FATTAIL)
-		Shed->OptFreq[S_FAT_TAILANS] = 0.5;
+	if(Opt->Model == M_GEO)
+	{
+		Shed->OptFreq[S_GEO_MOVE_ALL] = 0.9;
+	}
+
+	if(Opt->Model == M_FATTAIL)
+		Shed->OptFreq[S_FAT_TAIL_ANS_ALL] = 0.8;
 
 	if(MultiTree(Opt) == TRUE)
 		Shed->OptFreq[S_TREE_MOVE] = 0.1;
@@ -201,7 +200,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	if(EstLocalTransforms(Opt->LocalTransforms, Opt->NoLocalTransforms) == TRUE && Opt->LoadModels == FALSE)
 		Shed->OptFreq[S_LOCAL_RATES] = 0.1;
 
-	if(UseNonParametricMethods(Opt) == TRUE)
+	if(UseRJLocalScalar(Opt) == TRUE)
 	{
 		Shed->OptFreq[S_VARRATES_ADD_REMOVE] = 0.5;
 		Shed->OptFreq[S_VARRATES_MOVE] = 0.05;
@@ -210,7 +209,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 		SetVarRatesShed(Opt, Shed);
 	}
 
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		Shed->OptFreq[S_HETERO] = 0.4;
 
 	Rates = 0;
@@ -227,7 +226,7 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 	{
 		Shed->OptFreq[S_RATES] = 0.5;
 		if(Opt->ModelType == MT_FATTAIL)
-			Shed->OptFreq[S_RATES] = 0.05;
+			Shed->OptFreq[S_RATES] = 0.1;
 	}
 	
 #ifdef CONTRAST_ML_PARAM
@@ -257,7 +256,10 @@ void	SetSchedule(SCHEDULE*	Shed, OPTIONS *Opt)
 
 	if(Opt->NormQMat == TRUE)
 		Shed->OptFreq[S_GLOBAL_RATE] = 0.1;
-		
+
+	if(Opt->UseGlobalTrend == TRUE)
+		Shed->OptFreq[S_GLOBAL_TREND] = 0.1;
+	   
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 
 	memcpy(Shed->DefShed, Shed->OptFreq, sizeof(double) * Shed->NoOfOpts);
@@ -278,27 +280,47 @@ void	PrintAutoTuneHeader(FILE* Str,SCHEDULE* Shed)
 		PrintATHeader(Str,Shed->FullATList[Index]);
 }
 
+void	PrintCustomShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
+{
+	int ShedNo, Index;
+	CUSTOM_SCHEDULE *CSched;
+
+	for(ShedNo=0;ShedNo<Shed->NoCShed;ShedNo++)
+	{
+		CSched = Shed->CShedList[ShedNo];
+
+		fprintf(Str, "\nCustom schedule %d\tStarting\t%lld\n", ShedNo, CSched->Iteration);
+	//	fprintf(Str, "It:\t%lld\t", CSched->Iteration);
+
+		for(Index=0;Index<Shed->NoOfOpts;Index++)
+		{
+			if(CSched->Frequencies[Index] != 0)
+				fprintf(Str, "%s\t%2.2f\n", SHEDOP[Index], CSched->Frequencies[Index]*100);
+		}
+
+		fprintf(Str, "\n\n");
+	}
+}
 
 void	PrintShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
 {
 	int	Index;
-	double	Last;
-
-	Last = 0;
 	
+	fprintf(Str, "Default schedule\n");
+
 	for(Index=0;Index<Shed->NoOfOpts;Index++)
 	{
 		if(Shed->OptFreq[Index] != 0)
 			fprintf(Str, "%s\t%2.2f\n", SHEDOP[Index], Shed->OptFreq[Index]*100);
-		Last = Shed->OptFreq[Index];
 	}
-	
-	Last = 0;
+		
+
+	PrintCustomShedHeadder(Opt, Shed, Str);
+
 	for(Index=0;Index<Shed->NoOfOpts;Index++)
 	{
 		if(Shed->OptFreq[Index] != 0)
 			fprintf(Str, "%s Tried\t%% Accepted\t", SHEDOP[Index]);
-		Last = Shed->OptFreq[Index];
 	}
 
 	PrintAutoTuneHeader(Str, Shed);
@@ -326,7 +348,7 @@ void	PrintShed(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
 		}
 		Last = Shed->OptFreq[Index];
 	}
-
+	
 	PrintAutoTune(Str, Opt, Shed);
 
 	fprintf(Str, "%f\t", (double)Shed->SNoAcc / Shed->SNoTried);
@@ -382,6 +404,12 @@ SCHEDULE*	AllocSchedule()
 	Ret->TimeSliceScaleAT= NULL;
 
 	Ret->GlobalRateAT	= NULL;
+	Ret->GlobalTrendAT	= NULL;
+
+	Ret->LandscapeRateChangeAT	 = NULL;
+
+	Ret->StochasticBeta	=	NULL;
+	Ret->StochasticBetaPrior =	NULL;
 	
 	return Ret;
 }
@@ -418,11 +446,8 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		NoS = Opt->Trees->NoSites;
 		if(Opt->Model == M_GEO)
 		{
-			sprintf(Buffer,"Alpha");
-			Ret[0] = StrMake(Buffer);
-
 			sprintf(Buffer,"Scale");
-			Ret[1] = StrMake(Buffer);
+			Ret[0] = StrMake(Buffer);
 			free(Buffer);
 			return Ret;
 		}
@@ -430,10 +455,13 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 		for(Index=0;Index<NoS;Index++)
 		{
-			sprintf(Buffer,"Alpha %d",Index+1);
+/*			sprintf(Buffer,"Alpha %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
 
 			sprintf(Buffer,"Scale %d",Index+1);
+			Ret[PIndex++] = StrMake(Buffer);*/
+
+			sprintf(Buffer,"Sig2 %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
 		}
 
@@ -531,7 +559,11 @@ void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, RANDSTATES *RS)
 	
 	for(Index=0;Index<Shed->NoParm;Index++)
 	{
-		Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		if(Opt->Model != M_GEO)
+			Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		else
+			Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], RandDouble(RS) * 10000, MIN_VALID_ACC, MAX_VALID_ACC);
+
 		AddToFullATList(Shed, Shed->RateDevATList[Index]);
 
 		if(Opt->ModelType == MT_DISCRETE)
@@ -556,6 +588,7 @@ CUSTOM_SCHEDULE* CloneCustomSchedule(CUSTOM_SCHEDULE* CShed)
 	return Ret;
 
 }
+
 CUSTOM_SCHEDULE**		CloneCustomScheduleList(int NoCShed, CUSTOM_SCHEDULE **CShedList)
 {
 	int Index;
@@ -667,6 +700,13 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 		AddToFullATList(Ret, Ret->TimeSliceScaleAT);
 	}
 
+	if(Opt->UseGlobalTrend == TRUE)
+	{
+		Ret->GlobalTrendAT = CreatAutoTune("Global Trend", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->GlobalTrendAT, 100.0);
+		AddToFullATList(Ret, Ret->GlobalTrendAT);
+	}
+
 	if(Opt->NormQMat == TRUE)
 	{
 		Ret->GlobalRateAT = CreatAutoTune("Global Rate", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
@@ -740,6 +780,18 @@ void		FreeeSchedule(SCHEDULE* Sched)
 	if(Sched->GlobalRateAT != NULL)
 		FreeAutoTune(Sched->GlobalRateAT);
 
+	if(Sched->LandscapeRateChangeAT != NULL)
+		FreeAutoTune(Sched->LandscapeRateChangeAT);
+
+	if(Sched->GlobalTrendAT != NULL)
+		FreeAutoTune(Sched->GlobalTrendAT);
+
+	if(Sched->StochasticBeta != NULL)
+		FreeAutoTune(Sched->StochasticBeta);
+
+	if(Sched->StochasticBetaPrior != NULL)
+		FreeAutoTune(Sched->StochasticBetaPrior);
+
 	if(Sched->NoCShed > 0)
 	{
 		for(Index=0;Index<Sched->NoCShed;Index++)
@@ -747,6 +799,8 @@ void		FreeeSchedule(SCHEDULE* Sched)
 
 		free(Sched->CShedList);
 	}
+
+
 
 	free(Sched->DefShed);
 
@@ -854,23 +908,25 @@ void PrintCustomSchedule(FILE *Str, int NoCShed, CUSTOM_SCHEDULE **ShedList)
 	}
 }
 
-void SetCustomSchedule(long long It, SCHEDULE* Sched)
+void SetCustomSchedule(OPTIONS* Opt, FILE* ShedFile, long long Itters, SCHEDULE* Shed)
 {
 	int Index;
-	CUSTOM_SCHEDULE *Shed;
+	CUSTOM_SCHEDULE *NShed;
 
-	if(Sched->NoCShed == 0)
+	if(Shed->NoCShed == 0)
 		return;
 
-	for(Index=0;Index<Sched->NoCShed;Index++)
+	for(Index=0;Index<Shed->NoCShed;Index++)
 	{
-		Shed = Sched->CShedList[Index];
-		if(It == Shed->Iteration)
+		NShed = Shed->CShedList[Index];
+		if(Itters == NShed->Iteration)
 		{
-			if(Shed->Default == TRUE)
-				memcpy(Sched->OptFreq, Sched->DefShed, sizeof(double) * NO_SCHEDULE_OPT);
+			if(NShed->Default == TRUE)
+				memcpy(Shed->OptFreq, Shed->DefShed, sizeof(double) * NO_SCHEDULE_OPT);
 			else
-				memcpy(Sched->OptFreq, Shed->Frequencies, sizeof(double) * NO_SCHEDULE_OPT);
+				memcpy(Shed->OptFreq, NShed->Frequencies, sizeof(double) * NO_SCHEDULE_OPT);
+
+			PrintShedHeadder(Opt, Shed, ShedFile);
 
 			return;
 		}

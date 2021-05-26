@@ -598,3 +598,42 @@ double			RandExp(RANDSTATES* RS, double Mean)
 
 	return Ret;	
 }
+
+void		ShuffleIntList(RANDSTATES* RS, int *List, size_t Size)
+{
+	size_t Index, Pos;
+	int		Temp;
+
+	if(Size < 2)
+		return;
+
+	for(Index=0;Index<Size-1;Index++)
+	{
+		Pos = RandUSInt(RS) % (Size - Index);
+		Pos += Index;
+
+		Temp = List[Pos];
+		List[Pos] = List[Index];
+		List[Index] = Temp;
+	}
+}
+
+void		ShuffleDoubleList(RANDSTATES* RS,double *List,size_t Size)
+{
+	size_t Index,Pos;
+	double Temp;
+
+	if(Size < 2)
+		return;
+
+	for(Index=0;Index<Size-1;Index++)
+	{
+		Pos = RandUSInt(RS) % (Size - Index);
+		Pos += Index;
+
+		Temp = List[Pos];
+		List[Pos] = List[Index];
+		List[Index] = Temp;
+	}
+}
+

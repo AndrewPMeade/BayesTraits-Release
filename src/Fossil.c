@@ -14,12 +14,12 @@
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
-*
+* 
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
-*
+* 
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>
 *
@@ -136,14 +136,11 @@ int*	MakeFossilMask(RECNODE *RNode, int NOS, MODEL M)
 		return Ret;
 	}
 
-	if(M == M_DESCINDEP || M == M_DESCDEP)
+	if(M == M_DISC_INDEP || M == M_DISC_DEP)
 	{
 		MakeDiscreteFossilMask(Ret, RNode->FossilStates[0]);
 		return Ret;
 	}
-
-	printf("CV not supported with Fossil, Please contact support if you need this feature\n");
-	exit(1);
 
 	return NULL;
 }
@@ -154,22 +151,23 @@ void	SetFossils(TREES *Trees, OPTIONS *Opt)
 	RECNODE	*RNode;
 	int		Index, TIndex;
 	NODE	N;
-
+	
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
-		if(Opt->UseCovarion == TRUE)
-		{
-			printf("CV not supported with Fossil, Please contact support if you need this feature\n");
-			exit(1);
-		}
-
 		RNode = Opt->RecNodeList[Index];
+	
 		if(RNode->NodeType == FOSSIL)
 		{
+			if(Opt->UseCovarion == TRUE)
+			{
+				printf("CV not supported with Fossil, Please contact support if you need this feature\n");
+				exit(1);
+			}
+
 			for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 			{
 				N = RNode->Tag->NodeList[TIndex];
-
+							
 				N->FossilMask = MakeFossilMask(RNode, Trees->NoStates, Opt->Model);
 			}
 		}
@@ -181,7 +179,7 @@ void	FossilLh(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 {
 	int	Index, NOS;
 	int *Mask;
-
+	
 	NOS = Trees->NoStates;
 
 	Mask = N->FossilMask;

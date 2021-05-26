@@ -68,15 +68,20 @@ void			SetRegConPost(TREE *Tree, REG_CON_POST* RegConPost)
 			{
 				for(SIndex=0;SIndex<RegConPost->NoSites;SIndex++)
 				{
-					RegConPost->Contrasts[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(N->ConData->Contrast[CIndex]->Var[SIndex]);
+					RegConPost->Contrasts[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(N->ConData->Contrast[CIndex]->Var);
 				//	RegConPost->Contrasts[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex];
 				//	RegConPost->ContrastsVar[Pos][SIndex] = N->ConData->Contrast[CIndex]->Cont[SIndex] / sqrt(N->ConData->Contrast[CIndex]->Var[SIndex]);
+
+				
 				}
+				
 
 				Pos++;
 			}
 		}
 	}
+
+	
 }
 
 void			SetRegConPostPreRes(double *Beta, REG_CON_POST* RegConPost)
@@ -266,8 +271,7 @@ double	CalcGlobalR2(REG_CON_POST* RegConPost)
 	SST = 0;
 	for(Index=0;Index<RegConPost->NoContrasts;Index++)
 		SST += (Mean - RegConPost->Contrasts[Index][0]) * (Mean - RegConPost->Contrasts[Index][0]);
-
-
+	
 	Ret = 1.0 - (SSR / SST);
 	return Ret;
 }
@@ -353,7 +357,7 @@ void	CalcMSE(REG_CON_POST*	RegConPost)
 	{
 		Ret += RegConPost->Residuals[Index] * RegConPost->Residuals[Index];
 	}
-
+		
 	Ret = Ret / (RegConPost->NoContrasts - RegConPost->NoSites);
 
 	RegConPost->MSE = Ret;
@@ -399,6 +403,9 @@ void	ProcRegConPost(REG_CON_POST *RegConPost, int TestCorrel)
 	RegConPost->GR2 = CalcGlobalR2(RegConPost);
 }
 
+//./Seq/Bug/tree.trees ./Seq/Bug/logCval.logLongVol.txt < ./Seq/Bug/in.txt > ./Seq/Bug/sout.txt
+//./Seq/Bug/Mammal-1.trees ./Seq/Bug/MammalBrainBody.txt < ./Seq/Bug/in.txt > ./Seq/Bug/sout.txt
+
 
 void	OutputConReg(FILE *Str, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
@@ -425,7 +432,6 @@ void	OutputConReg(FILE *Str, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 //	PrintRegConPost(RegConPost);
 //	exit(0);
-
-
+	
 	FreeRegConPost(RegConPost);
 }

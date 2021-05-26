@@ -46,6 +46,12 @@
 #include "Data.h"
 #include "TimeSlices.h"
 #include "NLOptBT.h"
+#include "Landscape.h"
+#include "Part.h"
+#include "StateSpeciationRate.h"
+#include "LocalTransformMLAllNodes.h"
+
+#include <gsl/gsl_matrix.h>
 
 #define MAX_ML_FREE_P 1048576
 #define NO_RAND_TRIES 10000
@@ -143,6 +149,9 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->EstGamma == TRUE)
 		AddPToMLMap(MLMap, 1.0, MIN_GAMMA, MAX_GAMMA);
 
+	if(Opt->UseGlobalTrend == TRUE)
+		AddPToMLMap(MLMap, 0.0, MIN_GLOBAL_TREND, MAX_GLOBAL_TREND);
+
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
 	{
 		LT = Rates->LocalTransforms[Index];
@@ -155,7 +164,12 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 				if(LT->Type == VR_NODE || LT->Type == VR_BL)
 					AddTypePToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE, ML_P_TYPE_RATE_S);
 				else
-					AddPToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
+				{
+					if(LT->Type == VR_LS_BL)
+						AddPToMLMap(MLMap, 1.0, -MAX_LOCAL_RATE, MAX_LOCAL_RATE);
+					else
+						AddPToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
+				}
 			}
 		}
 	}
@@ -202,7 +216,6 @@ void	MLMapToRatesTimeSlices(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates, int *Pos)
 		if(TS->FixedScale == FALSE)
 			TS->Scale = MLMap->PVal[(*Pos)++];
 	}
-	
 }
 
 void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
@@ -231,11 +244,16 @@ void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
 	if(Opt->EstGamma == TRUE)
 		Rates->Gamma = MLMap->PVal[Pos++];
 
+	if(Opt->UseGlobalTrend == TRUE)
+		Rates->GlobalTrend = MLMap->PVal[Pos++];
+
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
 		if(Rates->LocalTransforms[Index]->Est == TRUE)
 			Rates->LocalTransforms[Index]->Scale = MLMap->PVal[Pos++];
 
 	MLMapToRatesTimeSlices(MLMap, Opt, Rates, &Pos);
+
+
 }
 
 double	LikelihoodML(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -286,7 +304,7 @@ void	FindValidMLStartSet(ML_MAP *MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates
 {
 	int Index;
 	double Lh;
-
+	
 	for(Index=0;Index<NO_RAND_TRIES;Index++)
 	{
 		MLMapSetRandVals(MLMap, Rates->RS);
@@ -332,7 +350,7 @@ double*	MLMapClonePVect(ML_MAP*	MLMap)
 	return (double*)CloneMem(sizeof(double) * MLMap->NoP, (void*)MLMap->PVal);
 }
 
-ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates, ML_MAP *Init)
 {
 	ML_MAP		*Ret;
 	PRAXSTATE	*PState;
@@ -343,6 +361,10 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	BuildMLMap(Ret, Opt, Trees, Rates);
 	
 	FindValidMLStartSet(Ret, Opt, Trees, Rates);	
+
+	if(Init != NULL)
+		CopyMLMap(Ret, Init);
+
 
 	Lh = LikelihoodML(Ret, Opt, Trees, Rates);
 
@@ -376,19 +398,22 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 }
 
 
-
 void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	ML_MAP*	CMap, *BMap;
 	double CLh, BLh;
 	int Index;
-
-		
+			
 	BMap = AllocMLMap();
 
 	BuildMLMap(BMap, Opt, Trees, Rates);
-	FindValidMLStartSet(BMap, Opt, Trees, Rates);	
 	BLh = LikelihoodML(BMap, Opt, Trees, Rates);
+
+	if(ValidLh(BLh, Opt->Model) == FALSE)
+	{
+		FindValidMLStartSet(BMap, Opt, Trees, Rates);	
+		BLh = LikelihoodML(BMap, Opt, Trees, Rates);
+	}
 
 	if(BMap->NoP != 0)
 	{
@@ -400,7 +425,13 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		{
 			for(Index=0;Index<Opt->MLTries;Index++)
 			{
-				CMap = MLMapTreeTry(Opt, Trees, Rates);
+				if(Index!=0)
+					CMap = MLMapTreeTry(Opt, Trees, Rates, NULL);
+				else
+					CMap = MLMapTreeTry(Opt, Trees, Rates, BMap);
+
+				
+				
 				CLh = LikelihoodML(CMap, Opt, Trees, Rates);
 			
 				if(CLh > BLh)
@@ -418,68 +449,216 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FreeMLMap(BMap);
 }
 
-void	MLTest2(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+
+/*
+void	CalclAllNodeBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	double R, Lh;
+	TREE *Tree;
+	int Index;
+	NODE Node;
+	double ILh, OLh, BL;
 
-	for(R=0.0001;R<4;R+=0.01)
+	Tree = Trees->Tree[0];
+
+	
+	BlankLandscape(Rates->Landscape);
+	AddLandscapeFromPart(Rates->Landscape, Tree->Root->Part, Trees, 0.0);
+
+	for(Index=1;Index<Tree->NoNodes;Index++)
 	{
-		Rates->Rates[0] = R;
-		Lh = Likelihood(Rates, Trees, Opt);
-		printf("%f\t%f\n", R, Lh);
+		Node = Tree->NodeList[Index];
+		
+		Rates->Landscape->NodeList[0]->Beta = 0.0;
+		Rates->Landscape->NodeList[0]->Part = Node->Part;
+		Rates->Landscape->NodeList[0]->NodeList[0] = NULL;
 
+		ILh = Likelihood(Rates, Trees, Opt);
+		
+				
+		MLTree(Opt, Trees, Rates);
+
+		OLh = Likelihood(Rates, Trees, Opt);
+		printf("Lh:\t%f\t%f\t%f\n", ILh, OLh, Rates->Landscape->NodeList[0]->Beta, Node->Length);
 		fflush(stdout);
 	}
-	 
+}
+*/
+
+/*
+void	CalclAllNodeBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	TREE *Tree;
+	int Index;
+	NODE Node;
+	double ILh, OLh, BL;
+
+	Tree = Trees->Tree[0];
+	
+	for(Index=1;Index<Tree->NoNodes;Index++)
+	{
+		Node = Tree->NodeList[Index];
+
+		BlankLandscape(Rates->Landscape);
+
+		AddLandscapeFromPart(Rates->Landscape, Node->Part, Trees, 0.0);
+
+		ILh = Likelihood(Rates, Trees, Opt);
+		
+		MLTree(Opt, Trees, Rates);
+
+		OLh = Likelihood(Rates, Trees, Opt);
+		printf("Lh:\t%f\t%f\t", ILh, OLh);
+
+		printf("%f\t%f\t", Rates->Landscape->NodeList[0]->Beta, Node->Length);
+
+		PrintPart(stdout, Trees, Node->Part);
+
+		printf("\n");
+		fflush(stdout);
+	}
+}
+*/
+
+void	PrintPartData(FILE *Str, TREES *Trees, PART *Part)
+{
+	int Index, ID;
+	TAXA *T;
+
+	fprintf(Str, "%zu\t%d\t%f\t", Part->PartID, Part->Freq, Part->Prob);
+	fprintf(Str, "\t%d\t", Part->NoTaxa);
+
+	for(Index=0;Index<Part->NoTaxa;Index++)
+	{
+		ID = Part->Taxa[Index];
+		T = Trees->Taxa[ID];
+		fprintf(Str, "%f\t", T->ConData[0]);
+	}
+}
+
+void	CalcAllNodeTransfroms(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	TREE *Tree;
+	int Index;
+	NODE Node;
+	double ILh, OLh, Height;
+	
+	Tree = Trees->Tree[0];
+	
+	for(Index=1;Index<Tree->NoNodes;Index++)
+	{
+		Node = Tree->NodeList[Index];
+
+		if(Node->Tip == FALSE)
+		{
+			Rates->LocalTransforms[0]->TagList[0]->NodeList[0] = Node;
+			Rates->LocalTransforms[0]->Scale = 1.0;
+			
+			ILh = Likelihood(Rates, Trees, Opt);
+
+			MLTree(Opt, Trees, Rates);
+
+			OLh = Likelihood(Rates, Trees, Opt);
+			fprintf(Opt->LogFile, "%s\tLh:\t%f\t%f\t", Opt->DataFN, ILh, OLh);
+
+			fprintf(Opt->LogFile, "%.12f\t%f\t", Rates->LocalTransforms[0]->Scale, Node->UserLength);
+
+			Height = GetNodeHeight(Node);
+			fprintf(Opt->LogFile, "%f\t", Height);
+							
+			PrintPart(Opt->LogFile, Trees, Node->Part);
+	//		PrintPartData(stdout, Trees, Node->Part);
+	//		RecPrintNode(Node);
+			fprintf(Opt->LogFile, "\n");
+			fflush(Opt->LogFile);
+		}
+	}
+
 	exit(0);
 }
 
-void	MLTestF(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	AddTipVal(TREE *Tree, double Scale)
 {
-	double Lh;
+	int Index;
+	NODE N;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+		if(N->Tip == TRUE)
+		{
+			N->Length = N->UserLength + (1.0 + Scale);
+			//N->Length = N->UserLength + Scale;
+//			N->UserLength = N->Length;
+		}
+	}
+}
+
+void	TestErrModel(OPTIONS *Opt, RATES *Rates, TREES *Trees)
+{
+	TREE *Tree;
+	double	Scale, Lh;
+//	return;
+	Tree = Trees->Tree[0];
 
 
-	Rates->Rates[0] = 5.0287863036920841;
-	Rates->Rates[1]	= 155.60278961982507;
-	Rates->Rates[2]	= 68.574436260179240;
-	Rates->Rates[3]	= 0.00000000000000000;
-	Rates->Rates[4]	= 200.00000000000000;
-	Rates->Rates[5]	= 0.00000000000000000;
-	Rates->Rates[6]	= 10.053324235459865;
-	Rates->Rates[7]	= 0.00000000000000000;
-	
+//	AddTipVal(Tree, 18.254);
+//	SaveTrees("sout.trees", Trees);
+//	exit(0);
 
-	Lh = Likelihood(Rates, Trees, Opt);
-	printf("%f\n", Lh);
-
-	exit(0);
-	Lh = Likelihood(Rates, Trees, Opt);
-
-	Rates->Rates[0] = 0.982582;
-	Rates->Rates[1] = 0.982582;
-	Rates->Rates[2] = 0.982582;
-	Rates->Rates[3] = 0.982582;
-	Rates->Rates[4] = 34.454587;
-	Rates->Rates[5] = 20.955104;
-	Rates->Rates[6] = 162.393268;
-	Rates->Rates[7] = 34.454587;
-	Rates->Rates[8] = 162.393268;
-	Rates->Rates[9] = 162.393268;
-	Rates->Rates[10] = 34.454587;
-	Rates->Rates[11] = 0.982582;
-	Rates->Rates[12] = 20.955104;
-	Rates->Rates[13] = 20.955104;
-	Rates->Rates[14] = 20.955104;
-	Rates->Rates[15] = 20.955104;
-	Rates->Rates[16] = 0.982582;
-	Rates->Rates[17] = 0.982582;
-	Rates->Rates[18] = 0.982582;
-	Rates->Rates[19] = 0.982582;
-
-
-	Lh = Likelihood(Rates, Trees, Opt);
+	for(Scale=0;Scale<25;Scale+=0.01)
+	{
+		AddTipVal(Tree, Scale);
+		Lh = Likelihood(Rates, Trees, Opt);
+		printf("%f\t%f\n", Scale, Lh);
+	}
 
 	exit(0);
+}
+
+void	MLTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int Index;
+	char *Str;
+	double Rand;
+
+	for(Index=0;Index<1000;Index++)
+	{
+		Rand = RandDouble(Rates->RS);
+
+		Str = DoubleToHexStr(Rand);
+
+		printf("%12.12f\t%s\t", Rand, Str);
+		
+		Rand = HexStrToDouble(Str);
+
+		printf("%12.12f\t", Rand);
+		
+
+		free(Str);
+
+		printf("\n");
+	}
+	exit(0);
+}
+
+void	PrintMLHeader()
+{
+	printf("Tree No\tLh\tLh Elapsed Seconds");
+	printf("\n");
+	fflush(stdout);
+}
+
+void PrintMLStdOutHeader(void)
+{
+	printf("Tree No\tLh\tElapsed Seconds\n");
+
+}
+
+void PrintMLTree(int TreeNo, double Lh, double Sec)
+{
+	printf("%d\t%f\t%f", TreeNo, Lh, Sec);
+	printf("\n");
+	fflush(stdout);
 }
 
 
@@ -491,20 +670,29 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 	double	TStart, TEnd;
 
 	Rates = CreatRates(Opt);
-	
-	PrintOptions(stdout, Opt);
-	PrintRatesHeadder(stdout, Opt);
 
 	PrintOptions(Opt->LogFile, Opt);
 	PrintRatesHeadder(Opt->LogFile, Opt);
+
+	PrintOptions(stdout, Opt);
+	PrintMLStdOutHeader();
+//	PrintRatesHeadder(stdout, Opt);
+
 
 	fflush(stdout);
 	fflush(Opt->LogFile);
 
 	TStart = GetSeconds();
-	
-//	MLTestF(Opt, Trees, Rates);
 
+	if(Opt->UseMLLandscape == TRUE)
+		LocalTransformMLAllNodes(Opt, Trees, Rates, TRUE, FALSE, TRUE);
+		
+
+//	CalcAllNodeTransfroms(Opt, Trees, Rates); return;
+//	MLTest(Opt, Trees, Rates);
+//	TestErrModel(Opt, Rates, Trees);
+//	TestContrastGlobalTrend(Opt, Trees, Rates);
+	
 	for(Index=0;Index<Trees->NoTrees;Index++)
 	{
 		Rates->TreeNo = Index;
@@ -512,10 +700,11 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 		if(Opt->ModelType == MT_CONTINUOUS)
 			InitContinusTree(Opt, Trees, Rates->TreeNo);
 
-//		MLTest2(Opt, Trees, Rates);
-
 		if(Opt->NodeData == TRUE || Opt->NodeBLData == TRUE)
 			SetTreeAsData(Opt, Trees, Rates->TreeNo);
+
+
+
 
 		MLTree(Opt, Trees, Rates);
 
@@ -525,9 +714,7 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 		fprintf(Opt->LogFile, "\n");
 		fflush(Opt->LogFile);
 
-		PrintRates(stdout, Rates, Opt, NULL);
-		printf("\n");
-		fflush(stdout);
+		PrintMLTree(Index, Rates->Lh, GetSeconds() - TStart);
 
 		if(Opt->SaveTrees == TRUE)
 			OutputTree(Opt, Trees, Rates, Index+1, Opt->OutTrees);
@@ -541,6 +728,8 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 
 	TEnd = GetSeconds();
 	printf("Sec:\t%f\n", TEnd - TStart);
+
+//	CaclStateSpeciationRateLh(Opt, Trees, Rates);
 
 	FreeRates(Rates, Trees);
 }

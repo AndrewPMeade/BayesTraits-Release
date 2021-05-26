@@ -41,6 +41,8 @@
 #include "RandLib.h"
 #include "Prob.h"
 #include "LocalTransform.h"
+#include "GlobalTrend.h"
+
 
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
@@ -232,7 +234,7 @@ PRIOR*		CreateNormalPrior(char *Name, double Mean, double SD)
 
 	if(SD <= 0)
 	{
-		printf("Normal distribution SD must be >0");
+		printf("prior %s, normal distribution SD must be >0", Name);
 		exit(0);
 	}
 
@@ -248,6 +250,28 @@ PRIOR*		CreateNormalPrior(char *Name, double Mean, double SD)
 	return Ret;
 }
 
+PRIOR* CreateWeibullPrior(char* Name, double Scale, double Exponent)
+{
+	int		NoP;
+	PRIOR* Ret;
+
+	if(Scale <= 0 || Exponent <= 0)
+	{
+		printf("prior %s, Weibull distribution Scale and Exponent must be >0", Name);
+		exit(0);
+	}
+
+	NoP = DISTPRAMS[PDIST_WEIBULL];
+	Ret = AllocBlankPrior(NoP);
+
+	Ret->Dist = PDIST_WEIBULL;
+	Ret->DistVals[0] = Scale;
+	Ret->DistVals[1] = Exponent;
+
+	Ret->Name = StrMake(Name);
+
+	return Ret;
+}
 
 
 void		SetHPDistParam(int Pos, PRIOR* Prior)
@@ -486,7 +510,12 @@ double	LogLogNormalP(double X, PRIOR *Prior)
 		Ret = B - A;
 	}
 
-	return log(Ret);
+	Ret = log(Ret);
+
+	if(ValidPriorLh(Ret) == FALSE)
+		return ERRLH;
+
+	return Ret;
 }
 
 
@@ -504,10 +533,30 @@ double	LogNormalP(double X, PRIOR *Prior)
 		B = gsl_cdf_gaussian_P(X + Prior->Width, Prior->DistVals[1]);
 		Ret = B - A;
 	}
+	Ret = log(Ret);
 
-	return log(Ret);
+	if(ValidPriorLh(Ret) == FALSE)
+		return ERRLH;
+
+	return Ret;
 }
 
+void	TestGammaPrior(PRIOR *Prior)
+{
+	double X, LogLh;
+
+	Prior->DistVals[0] = 9.0;
+	Prior->DistVals[1] = 1.0;
+
+	for(X=0;X<20;X+=0.01)
+	{
+		LogLh = gsl_cdf_gamma_P(X, Prior->DistVals[0], Prior->DistVals[1]);
+		LogLh = gsl_ran_gamma_pdf(X, Prior->DistVals[0], Prior->DistVals[1]);
+		printf("%f\t%f\n", X, LogLh);
+	}
+
+	exit(0);
+}
 
 double	LogGammaP(double X, PRIOR *Prior)
 {
@@ -516,6 +565,7 @@ double	LogGammaP(double X, PRIOR *Prior)
 	if(X < 0.0)
 		return ERRLH;
 
+
 	if(Prior->Discretised == FALSE)
 		Ret = gsl_ran_gamma_pdf(X, Prior->DistVals[0], Prior->DistVals[1]);
 	else
@@ -523,6 +573,25 @@ double	LogGammaP(double X, PRIOR *Prior)
 		A = gsl_cdf_gamma_P(X, Prior->DistVals[0], Prior->DistVals[1]);
 		B = gsl_cdf_gamma_P(X+Prior->Width, Prior->DistVals[0], Prior->DistVals[1]);
 		Ret = B - A;
+	}
+
+	return log(Ret);
+}
+
+double	LogWeibullP(double X, PRIOR* Prior)
+{
+	double Ret;
+
+	if(X < 0.0)
+		return ERRLH;
+ 
+	Ret = 1.0;
+	if(Prior->Discretised == FALSE)
+		Ret = gsl_ran_weibull_pdf(X, Prior->DistVals[0], Prior->DistVals[1]);
+	else
+	{
+		printf("Disceretised weiball is not supported.\n");
+		exit(1);
 	}
 
 	return log(Ret);
@@ -560,9 +629,26 @@ double LogChiSquaredP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
+void	PLhTest(PRIOR *Prior)
+{
+	double X, Lh;
+
+	for(X=0;X<=10;X+=0.001)
+	{
+		Lh  = PDFSGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
+
+		printf("%f\t%f\n", X, Lh);
+	}
+
+	exit(0);
+}
+
 double LogSGammaP(double X, PRIOR *Prior)
 {
 	double Ret;
+
+
+//	PLhTest(Prior);
 
 	if(X < 0.0)
 		return ERRLH;
@@ -611,16 +697,36 @@ double LogExpP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
+
+
 void	ChiSTest(void)
 {
 	PRIOR *Prior;
 	double X, P;
 
 	Prior = CreateExpPrior("SG", 1.0);
+	Prior = CreateChiPrior("SG", 9);
 
-	for(X=0.000001;X<100;X+=0.01)
+	for(X=0.000001;X<8;X+=0.01)
 	{
-		P = LogExpP(X, Prior);
+		P = LogChiSquaredP(X, Prior);
+		P = exp(P);
+		printf("%f\t%f\n", X, P);
+	}
+
+	exit(0);
+}
+
+void	PriorTest(void)
+{
+	PRIOR* Prior;
+	double X, P;
+
+	Prior = CreateLogNormalPrior("Prior", -0.6, 0.55);
+
+	for(X=0.00001;X<5;X+=0.01)
+	{
+		P = LogLogNormalP(X, Prior);
 		printf("%f\t%f\n", X, P);
 	}
 
@@ -630,6 +736,8 @@ void	ChiSTest(void)
 double	CalcLhPriorP(double X, PRIOR *Prior)
 {
 	double Ret;
+
+//	PriorTest();
 	
 	switch(Prior->Dist)
 	{
@@ -661,6 +769,9 @@ double	CalcLhPriorP(double X, PRIOR *Prior)
 			Ret = LogNormalP(X, Prior);
 		break;
 
+		case PDIST_WEIBULL:
+			Ret = LogWeibullP(X, Prior);
+
 	}
 
 	return Ret;
@@ -690,6 +801,9 @@ double		RandFromPrior(gsl_rng *RNG, PRIOR *Prior)
 
 		case PDIST_NORMAL:
 			return gsl_ran_gaussian_ziggurat(RNG, Prior->DistVals[1]) + Prior->DistVals[0];
+
+		case PDIST_WEIBULL:
+			return gsl_ran_weibull(RNG, Prior->DistVals[0], Prior->DistVals[1]);
 	}
 
 	printf("Prior dist not found for %s.\n", Prior->Name);
@@ -914,16 +1028,16 @@ double CaclCVPrior(OPTIONS *Opt,RATES *Rates)
 	double Ret,POnToOff;
 	PRIOR *Prior;
 
-	Prior = GetPriorFromName("CVSwichRate",Rates->Priors,Rates->NoPriors);
+	Prior = GetPriorFromName("CVSwichRate", Rates->Priors, Rates->NoPriors);
 
-	Ret = CalcLhPriorP(Rates->OffToOn,Prior);
+	Ret = CalcLhPriorP(Rates->OffToOn, Prior);
 	if(Ret == ERRLH)
 		return ERRLH;
 
 	if(Rates->OffToOn == Rates->OnToOff)
 		return Ret;
 
-	POnToOff = CalcLhPriorP(Rates->OnToOff,Prior);
+	POnToOff = CalcLhPriorP(Rates->OnToOff, Prior);
 	if(POnToOff == ERRLH)
 		return ERRLH;
 
@@ -1016,9 +1130,19 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 		Ret += PLh;
 	}
 
+	if(Opt->UseGlobalTrend == TRUE)
+	{
+		PLh = CalcGlobalTrendPrior(Rates);
+		
+		if(PLh == ERRLH)
+			return;
+
+		Ret += PLh;
+	}
+
 	if(Opt->UseCovarion == TRUE)
 	{
-		PLh = CaclCVPrior(Opt,Rates);
+		PLh = CaclCVPrior(Opt, Rates);
 
 		if(PLh == ERRLH)
 			return;
@@ -1047,7 +1171,7 @@ double	ChangePriorNorm(RATES *Rates, double Val, double Dev, double Min, double 
 	do
 	{
 		Ret = RandNormal(Rates->RS, Val, Dev);
-	} while((Ret > Max) || (Ret < Min));
+	} while(Ret > Max || Ret < Min);
 
 	return Ret;
 }
@@ -1070,7 +1194,10 @@ void	MutatePriorsNormal(RATES *Rates, PRIOR **PriosList, int NoOfPriors, double 
 			{
 				Min = Prior->HP[RIndex*2];
 				Max = Prior->HP[(RIndex*2)+1];
+
+
 				Prior->DistVals[RIndex] = ChangePriorNorm(Rates, Prior->DistVals[RIndex], Dev, Min, Max);
+			//	Prior->DistVals[RIndex] = RandUniDouble(Rates->RS, Min, Max);
 			}
 		}
 	}
@@ -1142,7 +1269,7 @@ int			CheckPriorDistVals(PRIORDIST PDist, int Tokes, char **Passed)
 
 		P = atof(Passed[Index]);
 		
-		if(!(PDist == PDIST_UNIFORM || PDist == PDIST_NORMAL))
+		if(!(PDist == PDIST_UNIFORM || PDist == PDIST_NORMAL || PDist == PDIST_LOGNORMAL))
 		{
 			if(P < 0)
 			{
@@ -1222,11 +1349,16 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 	if(PD == PDIST_NORMAL)
 		Ret = CreateNormalPrior(Name, PVal[0], PVal[1]);
 
+	if(PD == PDIST_SGAMMA)
+		Ret = CreateSGammaPrior(Name, PVal[0], PVal[1]);
+
+	if(PD == PDIST_WEIBULL)
+		Ret = CreateWeibullPrior(Name, PVal[0], PVal[1]);
+
 	free(PVal);
 
 	return Ret;
 }
-
 
 PRIOR*		CreateHyperPriorFromStr(char *Name, int Tokes, char **Passed)
 {
@@ -1275,7 +1407,7 @@ PRIOR*		GetPriorFromName(char *Name, PRIOR** PList, int NoPrior)
 	int Index;
 
 	for(Index=0;Index<NoPrior;Index++)
-		if(strcmp(Name, PList[Index]->Name) == 0)
+		if(StrICmp(Name, PList[Index]->Name) == 0)
 			return PList[Index];
 
 	return NULL;
@@ -1380,4 +1512,17 @@ double	CalcNormalHasting(double x, double SD)
 	return log(Ret);
 }
 
+void TestPrior(PRIOR *Prior, size_t NoSamples)
+{
+	gsl_rng *rng;
+	size_t Index;
+	
+	rng = gsl_rng_alloc(gsl_rng_mt19937);
+	printf("Sample form prior: %s\n", Prior->Name);
+	
+	for(Index=0;Index<NoSamples;Index++)
+		printf("%zu\t%f\n", Index, RandFromPrior(rng, Prior));	
+
+	gsl_rng_free(rng);
+}
 

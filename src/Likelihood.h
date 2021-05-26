@@ -11,6 +11,8 @@ void		FreeInvInfo(INVINFO* InvInfo);
 INVINFO*	AllocInvInfo(int NOS);
 
 int			ValidLh(double LH, MODEL_TYPE MT);
+int			ValidDouble(double LH);
+
 
 double		LhPraxis(void* PState, double *List);
 

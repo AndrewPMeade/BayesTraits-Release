@@ -24,6 +24,9 @@ CUSTOM_SCHEDULE*	AllocCustomSchedule(void);
 void				FreeCustomSchedule(CUSTOM_SCHEDULE*	CShed);
 void				PrintCustomSchedule(FILE *Str, int NoCShed, CUSTOM_SCHEDULE **ShedList);
 
-void				SetCustomSchedule(long long It, SCHEDULE* Sched);
+//void				SetCustomSchedule(long long It, SCHEDULE* Sched);
+void				SetCustomSchedule(OPTIONS *Opt, FILE *ShedFile, long long Itters, SCHEDULE* Shed);
+
+
 
 #endif

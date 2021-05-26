@@ -56,6 +56,8 @@ LOCAL_TRANSFORM*	CreateLocalTransforms(char *Name, TAG **TagList, int NoTags, TR
 
 void		FreeLocalTransforms(LOCAL_TRANSFORM* LTrans)
 {
+	if(LTrans == NULL)
+		return;
 	free(LTrans->Name);
 	free(LTrans->TagList);
 	free(LTrans);
@@ -127,7 +129,7 @@ void	ApplyLocalTransforms(RATES *Rates, TREES *Trees, OPTIONS *Opt, int Norm)
 	int TIndex, Index;
 	TREE *Tree;
 	NODE N;
-
+	
 	Tree = Trees->Tree[Rates->TreeNo];
 	
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)

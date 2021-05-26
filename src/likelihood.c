@@ -56,12 +56,17 @@
 #include "LocalTransform.h"
 #include "DistData.h"
 #include "TimeSlices.h"
+#include "Landscape.h"
+#include "GlobalTrend.h"
 
 #ifdef BTOCL
 	#include "btocl_discrete.h"
 #endif
 
-
+#ifdef CLIK_P
+	#include <cilk/cilk.h>
+	#include <cilk/cilk_api.h>
+#endif
 
 int		IsNum(double n)
 {
@@ -284,6 +289,25 @@ void	SumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 		FossilLh(N, Opt, Trees, SiteNo);
 }
 
+void	RecSumLikeMultiState(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
+{
+	int Index;
+	
+	if(N->Tip == TRUE)
+		return;
+
+
+	for(Index=0;Index<N->NoNodes-1;Index++)
+	{
+//		cilk_spawn RecSumLikeMultiState(N->NodeList[Index], Opt, Trees, SiteNo);
+	}
+
+	RecSumLikeMultiState(N->NodeList[Index], Opt, Trees, SiteNo);
+//	cilk_sync;
+
+	SumLikeMultiState(N, Opt, Trees, SiteNo);
+}
+
 void	SumLikeRModel(NODE N, TREES *Trees, int SiteNo, RATES *Rates)
 {
 	return;
@@ -459,7 +483,7 @@ void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *In
 			CreateMSAMatrixCoVar(InvInfo, Rates, Trees, RateP, Pi);
 	}
 	
-	if(Model == M_DESCDEP)
+	if(Model == M_DISC_DEP)
 	{
 		if(Trees->UseCovarion == FALSE)
 			CreateDEPAMatrix(InvInfo, Rates, Trees, RateP);
@@ -467,7 +491,7 @@ void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *In
 			CreateDEPAMatrixCoVar(InvInfo, Rates, Trees, RateP);
 	}
 
-	if(Model == M_DESCINDEP)
+	if(Model == M_DISC_INDEP)
 	{
 		if(Trees->UseCovarion == FALSE)
 			CreateInDEPAMatrix(InvInfo, Rates, Trees, RateP);
@@ -475,10 +499,10 @@ void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *In
 			CreateInDEPAMatrixCoVar(InvInfo, Rates, Trees, RateP);
 	}
 
-	if(Model == M_DESCCV)
+	if(Model == M_DISC_CV)
 		CreateDepCVAMatrix(InvInfo, Rates, Trees, RateP);
 
-	if(Model == M_DESCHET)
+	if(Model == M_DISC_HET)
 	{
 		if(Trees->UseCovarion == FALSE)
 		{
@@ -494,9 +518,7 @@ void		SetUpAMatrix(MODEL Model, RATES *Rates, TREES *Trees, int NOS, INVINFO *In
 
 int		SetInvMat(MODEL Model, RATES *Rates, int NOS, INVINFO *InvInfo)
 {
-	int Err; 
-
-	if(Model != M_DESCHET)
+	if(Model != M_DISC_HET)
 		return InvMat(InvInfo, NOS);
 
 	if(InvMat(Rates->Hetero->ModelInv[0], NOS) == ERROR)
@@ -833,7 +855,7 @@ int		SetAllPMatrix(RATES* Rates, TREES *Trees, OPTIONS *Opt, double Gamma)
 				{
 					InvInfo = Trees->InvInfo[N->PatternNo];
 
-					if(Opt->Model == M_DESCHET)
+					if(Opt->Model == M_DISC_HET)
 					{
 						PMatNo = Rates->Hetero->MList[NIndex];
 						InvInfo = Rates->Hetero->ModelInv[PMatNo];
@@ -861,7 +883,7 @@ void	RunNodeGroup(int GroupNo, RATES* Rates, TREE *Tree, TREES *Trees, OPTIONS *
 #ifdef OPENMP_THR
 	#pragma omp parallel for
 #endif
-	for(NIndex=0;NIndex<Tree->NoFNodes[GroupNo];NIndex++)
+	for(NIndex=0;NIndex<Tree->ParallelGroupSize[GroupNo];NIndex++)
 	{
 		#ifdef BIG_LH
 			LhBigLh(Tree->FNodes[GroupNo][NIndex], Opt, Trees, Opt->Precision, SiteNo);
@@ -869,7 +891,7 @@ void	RunNodeGroup(int GroupNo, RATES* Rates, TREE *Tree, TREES *Trees, OPTIONS *
 			#ifdef QUAD_DOUBLE
 				NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
 			#else
-				SumLikeMultiState(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
+				SumLikeMultiState(Tree->ParallelNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
 			#endif
 		#endif
 	}
@@ -883,8 +905,14 @@ void	SumLhLiner(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo)
 	NIndex = 0;
 
 	Tree = Trees->Tree[Rates->TreeNo];
+
+#ifdef CLIK_P
+	RecSumLikeMultiState(Tree->Root, Opt, Trees, SiteNo);
+	return;
+#endif
+
 	
-	for(GIndex=0;GIndex<Tree->NoFGroups;GIndex++)
+	for(GIndex=0;GIndex<Tree->NoParallelGroups;GIndex++)
 		RunNodeGroup(GIndex, Rates, Tree, Trees, Opt, SiteNo);
 }
 
@@ -932,7 +960,6 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		for(Index=0;Index<NOS;Index++)
 			Sum += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
 
-
 		SiteLh = 0;
 		for(Index=0;Index<NOS;Index++)
 		{
@@ -942,7 +969,6 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			SiteLh += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
 		}
 
-//		printf("site:\t%d\t%f\t%f\n", SiteNo, log(SiteLh), Rates->Rates[0]);fflush(stdout);
 		if(IsNum(log(SiteLh)) == FALSE)
 			return ERRLH;
 
@@ -958,35 +984,43 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
-	if(Opt->ModelType == MT_CONTINUOUS)
+	if(NeedToTransformTree(Opt, Rates) == FALSE)
 		return;
 	
-	if(NeedToReSetBL(Opt, Rates) == TRUE)
-	{
-		SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
+	SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
+	
+	if(	UseLandscapeBeta(Opt, Rates) == TRUE || 
+		Opt->UseGlobalTrend == TRUE)
+		RetSetConTraitData(Trees->Tree[Rates->TreeNo], Trees->NoSites);
+	
+	if(UseLandscapeBeta(Opt, Rates) == TRUE)
+		MapLandscape(Opt, Trees, Rates);
 
-		if(Rates->TimeSlices != NULL)
-			ApplyTimeSlices(Rates, Trees);
+	if(Rates->TimeSlices != NULL)
+		ApplyTimeSlices(Rates, Trees);
 
-//		PrintTreeBL(Trees->Tree[Rates->TreeNo]); exit(0);			
+	TransformTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
-		TransformTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
+	ApplyLocalTransforms(Rates, Trees, Opt, NORMALISE_TREE_CON_SCALING);
 
-		ApplyLocalTransforms(Rates, Trees, Opt, NORMALISE_TREE_CON_SCALING);
+	if(Rates->VarRates != NULL)
+		VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
 
-		if(Rates->VarRates != NULL)
-			VarRatesTree(Opt, Trees, Rates, NORMALISE_TREE_CON_SCALING);
-		
-		
-	}
-//	ScaleTrees(Trees, 0.0000000001);
-//	ScaleTrees(Trees, 0.000000001);
-//	SaveTrees("DTest.trees", Trees); exit(0);
+	if(Opt->UseGlobalTrend == TRUE)
+		SetGlobalTrend(Opt, Trees, Rates);
+}
+
+int		ValidDouble(double LH)
+{
+	if(LH == LH+1 || LH != LH || LH == ERRLH)
+		return FALSE;
+	
+	return TRUE;
 }
 
 int		ValidLh(double LH, MODEL_TYPE MT)
 {
-	if(LH == LH+1 || LH != LH || LH == ERRLH)
+	if(ValidDouble(LH) == FALSE)
 		return FALSE;
 
 	if(LH > 0 && MT == MT_DISCRETE)
@@ -1014,20 +1048,19 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	int		Err;
 	int		GammaCat;
 	double	RateMult;
-		
-
- 	if(Rates->ModelFile == NULL)
+	
+	if(Rates->ModelFile == NULL)
 		MapRates(Rates, Opt);
 	else
 		MapModelFile(Opt, Rates);
-	
-	LhTransformTree(Rates, Trees, Opt);
-	
+
 	if(Opt->NoLh == TRUE)
 		return -1.0;
 
-	if(Rates->AutoAccept == TRUE || Rates->CalcLh == FALSE)
+	if(Rates->CalcLh == FALSE)
 		return Rates->Lh;
+ 	
+	LhTransformTree(Rates, Trees, Opt);
 	
 	if(Opt->UseDistData == TRUE && Opt->ModelType != MT_FATTAIL)
 		SetTreeDistData(Rates, Opt, Trees);

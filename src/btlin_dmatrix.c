@@ -49,7 +49,7 @@ DMATRIX* btlin_allocDMATRIX(int r, int c) {
 DMATRIX* btlin_randomDMATRIX(int r, int c,int max) {
   int i;
   DMATRIX* ret = btlin_allocDMATRIX(r,c);
-  srand(time(0));
+//  srand(time(0));
   for(i = 0; i < r*c; i++) {
     ret->m[i] = (rand()%(2*max+1) - max)*1.0;
 
@@ -145,8 +145,10 @@ void btlin_copylowDMATRIX(DMATRIX* dm)
   }
 }
 
-void btlin_makeSymmetricDMATRIX(char uplo, DMATRIX* dm) {
-  int i,l,u,n,col,dim,colxnr;
+void btlin_makeSymmetricDMATRIX(char uplo, DMATRIX* dm)
+{
+//	int col;
+  int i,l,u,n,dim,colxnr;
   double *a = dm->m;
   n = dm->nrows;
   dim = n*n;

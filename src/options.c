@@ -223,7 +223,7 @@ void	PrintEstData(FILE *Str, OPTIONS *Opt)
 			for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 			{
 				if(Taxa->EstDataP[SIndex] == TRUE)
-					fprintf(Str, "%d ", SIndex+1);
+					fprintf(Str, " %d ", SIndex+1);
 			}
 			fprintf(Str, "\n");
 		}
@@ -303,31 +303,50 @@ void	PrintRecNodes(FILE* Str, OPTIONS *Opt)
 void	PrintRJLocalTrans(FILE* Str, OPTIONS *Opt)
 {
 	fprintf(Str, "Min Trans Taxa No:               %d\n", Opt->MinTransTaxaNo);
-	
+
+
+	fprintf(Str, "RJ Local Branch:                 ");
+	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
+		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_BL]);
+	else
+		fprintf(Str, "False\n");	
+
+	fprintf(Str, "RJ Local Node:                   ");
+	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
+		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_NODE]);
+	else
+		fprintf(Str, "False\n");	
 
 	fprintf(Str, "RJ Local Kappa:                  ");
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
-		fprintf(Str, "True\n");
+		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_KAPPA]);
 	else
 		fprintf(Str, "False\n");
 			
 	fprintf(Str, "RJ Local Lambda:                 ");
 	if(Opt->UseRJLocalScalar[VR_LAMBDA] == TRUE)
-		fprintf(Str, "True\n");
+		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_LAMBDA]);
 	else
 		fprintf(Str, "False\n");
 		
 	fprintf(Str, "RJ Local Delta:                  ");
 	if(Opt->UseRJLocalScalar[VR_DELTA] == TRUE)
-		fprintf(Str, "True\n");
+		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_DELTA]);
 	else
 		fprintf(Str, "False\n");
 		
 	fprintf(Str, "RJ Local OU:                     ");
 	if(Opt->UseRJLocalScalar[VR_OU] == TRUE)
-		fprintf(Str, "True\n");
+		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_OU]);
 	else
 		fprintf(Str, "False\n");	
+
+	fprintf(Str, "RJ Local LandscapeBL:           ");
+	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
+		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_LS_BL]);
+	else
+		fprintf(Str, "False\n");	
+
 }
 
 void	PrintEmpPis(FILE* Str, OPTIONS *Opt)
@@ -418,12 +437,22 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			fprintf(Str, "Use RJ MCMC:                     True\n");
 			if(Opt->CapRJRatesNo != -1)
 				fprintf(Str, "Cap RJ Rate Number:              %d\n", Opt->CapRJRatesNo);
+
+			fprintf(Str, "Zero Rates:                      ");
+			if(Opt->RJZero == TRUE)
+				fprintf(Str, "Yes\n");
+			else
+				fprintf(Str, "No\n");
 		}
 			
 		if(Opt->UseSchedule	== TRUE)
 			fprintf(Str, "Schedule File:                   %s%s\n", Opt->BaseOutputFN, OUTPUT_EXT_SCHEDULE);
 
 		fprintf(Str, "Rate Dev:                        AutoTune\n");
+
+		if(Opt->Model == M_FATTAIL)
+			fprintf(Str, "No Slice Sample Steps:           %d\n", Opt->NoSliceSampleSteps);
+
 	}
 
 	if(Opt->RJDummy == TRUE)
@@ -451,7 +480,13 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 				fprintf(Str, "Uniform\n");
 				break;
 		}
-
+		
+		fprintf(Str, "Pis used in ancestral state estimation:      ");
+		if(Opt->UsePisInAncStates == TRUE)
+			fprintf(Str, "Yes\n");
+		else
+			fprintf(Str, "No\n");
+		
 		fprintf(Str, "Character Symbols:               ");
 
 		if(Opt->Model == M_MULTISTATE)
@@ -459,15 +494,12 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			NOS = Opt->Trees->NoStates;
 			if(Opt->UseCovarion == TRUE)
 				NOS = NOS / 2;
-			for(Index=0;Index<NOS	-1;Index++)
+			for(Index=0;Index<NOS-1;Index++)
 				fprintf(Str, "%c,", Opt->Trees->SymbolList[Index]);
 			fprintf(Str, "%c\n", Opt->Trees->SymbolList[Index]);
 		}
 		else
 			fprintf(Str, "00,01,10,11\n");
-
-		
-//		fprintf(Str, "Normalisation Constant:          %20.20f\n", Opt->Trees->NormConst);
 	}
 
 	if(Opt->DataType == CONTINUOUS)
@@ -490,7 +522,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "OU:                              ");
 		PrintConPar(Str, Opt->UseOU, Opt->EstOU, Opt->FixOU);
 		
-		if(Opt->Analsis == ANALMCMC)
+		if(Opt->Analsis == ANALMCMC  && UseNonParametricMethods(Opt) == TRUE)
 			PrintRJLocalTrans(Str, Opt);
 
 		if(Opt->AlphaZero == TRUE)
@@ -502,9 +534,6 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		if(Opt->NodeBLData == TRUE)
 			fprintf(Str, "Model for Node BLS Data:         True\n");
 	
-		if(Opt->UseVarRates == TRUE)
-			fprintf(Str, "Using VarRates:                  True\n");
-
 	}
 	else
 	{
@@ -555,6 +584,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->LoadModels == TRUE)
 		fprintf(Str, "Load Model:                      %s\n", Opt->LoadModelsFN);
 
+	if(Opt->VarRatesCheckPoint != NULL)
+		fprintf(Str, "Var Rates Check Point:           %s\n", Opt->VarRatesCheckPoint);
+
 	PrintEstData(Str, Opt);
 
 	if(Opt->ScaleTrees != -1)
@@ -563,7 +595,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->AnalyticalP == TRUE)
 		fprintf(Str, "Analytical P:                    True\n");
 	
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 	{
 		fprintf(Str, "Tree 1 Partitions :			   \t");
 	//	PrintTreePart(Str, Opt->Trees, 0);
@@ -583,20 +615,18 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 			fprintf(Str, "          %s\n", Opt->Trees->RemovedTaxa[Index]);
 	}
 	
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		PrintHetMap(Str, Opt, Opt->Trees);
 	
 	if(Opt->DistData != NULL)
 		PrintDistData(Str, Opt->DistData);
-
-
 
 	if(Opt->NoCShed > 0)
 	{
 		fprintf(Str, "Custom Schedule:\n");
 		PrintCustomSchedule(Str, Opt->NoCShed, Opt->CShedList);
 	}
-
+	
 	PrintTimeSlices(Str, Opt->TimeSlices);
 	PrintPatterns(Str, Opt->NoPatterns, Opt->PatternList);
 
@@ -666,6 +696,9 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->LocalTransforms != NULL)
 		free(Opt->LocalTransforms);
+
+	if(Opt->RJLocalScalarThreshold != NULL)
+		free(Opt->RJLocalScalarThreshold);
 	
 	for(Index=0;Index<Opt->NoTags;Index++)
 		FreeTag(Opt->TagList[Index]);
@@ -690,6 +723,13 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	
 	if(Opt->PatternList != NULL)
 		free(Opt->PatternList);
+
+
+	if(Opt->RateScalars != NULL)
+		free(Opt->RateScalars);
+
+	if(Opt->VarRatesCheckPoint != NULL)
+		free(Opt->VarRatesCheckPoint);
 
 	free(Opt);
 }
@@ -859,10 +899,7 @@ char**	FatTailRateNames(OPTIONS *Opt)
 	Pos = 0;
 	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 	{
-		sprintf(Buffer, "Alpha-%d", Index+1);
-		Ret[Pos++] = StrMake(Buffer);
-
-		sprintf(Buffer, "Scale-%d", Index+1);
+		sprintf(Buffer, "Sig2-%d", Index+1);
 		Ret[Pos++] = StrMake(Buffer);
 	}
 
@@ -878,11 +915,8 @@ char**	GeoRateNames(OPTIONS *Opt)
 	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
 
-	sprintf(Buffer, "Alpha");
-	Ret[0] = StrMake(Buffer);
-
 	sprintf(Buffer, "Scale");
-	Ret[1] = StrMake(Buffer);
+	Ret[0] = StrMake(Buffer);
 
 	free(Buffer);
 	return Ret;
@@ -937,6 +971,19 @@ void	SetOptRateNamesFixed(OPTIONS *Opt, int NoRates, char *Rates[])
 		Opt->RateName[Index] = StrMake(Rates[Index]);
 }
 
+double*	AllocDefRateScalars(int NoPram)
+{
+	double *Ret;
+	int Index;
+
+	Ret = (double*)SMalloc(sizeof(double) * NoPram);
+
+	for(Index=0;Index<NoPram;Index++)
+		Ret[Index] = 1.0;
+
+	return Ret;
+}
+
 void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 {
 	int		Index, Inner, Outter;
@@ -947,16 +994,16 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 		return;
 	}
 
-	if(Opt->Model == M_DESCINDEP)
+	if(Opt->Model == M_DISC_INDEP)
 		SetOptRateNamesFixed(Opt, 4, INDEPPRAMS);
 
-	if(Opt->Model == M_DESCDEP)
+	if(Opt->Model == M_DISC_DEP)
 		SetOptRateNamesFixed(Opt, 8, DEPPRAMS);
 
-	if(Opt->Model == M_DESCCV)
+	if(Opt->Model == M_DISC_CV)
 		SetOptRateNamesFixed(Opt, 14, DEPCVPRAMS);
 	
-	if(Opt->Model == M_DESCHET)
+	if(Opt->Model == M_DISC_HET)
 		SetOptRateNamesFixed(Opt, 12, DEPHETROPRAMS);
 	
 	if(Opt->Model == M_MULTISTATE)
@@ -976,6 +1023,8 @@ void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
 			}
 		}
 	}
+
+	Opt->RateScalars = AllocDefRateScalars(Opt->NoOfRates);
 }
 
 void		AllocRestictions(OPTIONS *Opt)
@@ -1013,8 +1062,8 @@ void	SetFatTailPrior(OPTIONS *Opt)
 	
 	for(Index=0;Index<Opt->Trees->NoSites;Index++)
 	{
-		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.2, 2.0);
-		AddPriorToOpt(Opt, Prior);
+//		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.2, 2.0);
+//		AddPriorToOpt(Opt, Prior);
 
 		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.0, 100.0);
 		AddPriorToOpt(Opt, Prior);
@@ -1025,10 +1074,7 @@ void	GetGeoPriors(OPTIONS *Opt)
 {
 	PRIOR *Prior;
 
-	Prior = CreateUniformPrior(Opt->RateName[0], 0.2, 2.0);
-	AddPriorToOpt(Opt, Prior);
-
-	Prior = CreateUniformPrior(Opt->RateName[1], 0.0, 1000000.0);
+	Prior = CreateUniformPrior(Opt->RateName[0], 0.0, 1000000.0);
 	AddPriorToOpt(Opt, Prior);
 }
 
@@ -1095,16 +1141,16 @@ MODEL_TYPE	GetModelType(MODEL Model)
 	switch(Model)
 	{
 		case	M_MULTISTATE:		return MT_DISCRETE; break;
-		case	M_DESCINDEP:		return MT_DISCRETE; break;
-		case	M_DESCDEP:			return MT_DISCRETE; break;
+		case	M_DISC_INDEP:		return MT_DISCRETE; break;
+		case	M_DISC_DEP:			return MT_DISCRETE; break;
 		case	M_CONTINUOUS_RR:	return MT_CONTINUOUS; break;
 		case	M_CONTINUOUS_DIR:	return MT_CONTINUOUS; break;
 		case	M_CONTINUOUS_REG:	return MT_CONTINUOUS; break;
 		case	M_CONTRAST_CORREL:	return MT_CONTRAST; break;
 		case	M_CONTRAST_REG:		return MT_CONTRAST; break;
 		case	M_CONTRAST:			return MT_CONTRAST; break;
-		case	M_DESCCV:			return MT_DISCRETE; break;
-		case	M_DESCHET:			return MT_DISCRETE; break;
+		case	M_DISC_CV:			return MT_DISCRETE; break;
+		case	M_DISC_HET:			return MT_DISCRETE; break;
 		case	M_FATTAIL:			return MT_FATTAIL; break;
 		case	M_GEO:				return MT_FATTAIL; break;
 	}
@@ -1148,7 +1194,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->NodeData	= FALSE;
 	Ret->NodeBLData = FALSE;
 	Ret->AlphaZero	= FALSE;
-	Ret->HPDev		= 1;
+	Ret->HPDev		= 1.0;
 
 	Ret->OutTrees	= NULL;
 	Ret->VarRatesLog= NULL;
@@ -1184,6 +1230,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->DefNoRates	= -1;
 	Ret->DefRateNames= NULL;
 
+	Ret->RateScalars = NULL;
+
 	SetOptRates(Ret, NOS, SymbolList);
 
 	SetDefRates(Ret);
@@ -1208,6 +1256,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->MLTol			=	-1;
 	Ret->MLMaxEVals		=	-1;
 	Ret->MLAlg			=	NULL;
+
 
 
 	Ret->NoAllPriors	= 0;
@@ -1289,8 +1338,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->MakeUM			=	FALSE;
 
-	Ret->UseVarRates	=	FALSE; 
-
 	Ret->UseEqualTrees	=	FALSE;
 	Ret->ETreeBI		=	-1;
 
@@ -1321,8 +1368,13 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->FatTailNormal	=	FALSE;
 
+	Ret->RJLocalScalarThreshold = (double*)SMalloc(sizeof(double) * NO_RJ_LOCAL_SCALAR);
+
 	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
+	{
 		Ret->UseRJLocalScalar[Index] = FALSE;
+		Ret->RJLocalScalarThreshold[Index] = 0.0;
+	}
 
 	Ret->NoTags	= 0;
 	Ret->TagList = NULL;
@@ -1347,6 +1399,17 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->MinTransTaxaNo = MIN_NO_TAXA_RJ_LOCAL_TRANS;
 
 	Ret->NormQMat = FALSE;
+	
+	Ret->NoSliceSampleSteps = 100;
+
+	Ret->UsePisInAncStates = TRUE;
+	Ret->RJZero			   = TRUE;
+	
+	Ret->UseMLLandscape		= FALSE;
+
+	Ret->UseGlobalTrend		= FALSE;
+
+	Ret->VarRatesCheckPoint	= NULL;
 
 	free(Buffer);
 
@@ -1357,7 +1420,7 @@ void	PrintModelChoic(TREES *Trees)
 {
 	printf("Please select the model of evolution to use.\n");
 	printf("1)	MultiState\n");
-	if((Trees->NoSites == 2) && (Trees->NoStates == 2))
+	if(Trees->NoSites == 2 && Trees->NoStates == 2)
 	{
 		printf("2)\tDiscrete: Independent\n");
 		printf("3)\tDiscrete: Dependant\n");
@@ -1382,15 +1445,15 @@ void	PrintModelChoic(TREES *Trees)
 		}
 	}
 
-	if((Trees->NoSites == 2) && (Trees->NoStates == 2))
+	if(Trees->NoSites == 2 && Trees->NoStates == 2)
 	{
 		printf("10)\tDiscrete: Covarion\n");
 		if(Trees->NoTrees == 1)
 			printf("11)	Discrete: Heterogeneous \n");
 	}
 
-//	if(Trees->ValidCData == TRUE)
-//		printf("12)\tFat Tail\n");
+	if(Trees->ValidCData == TRUE)
+		printf("12)\tFat Tail\n");
 	
 	if(Trees->ValidCData == TRUE && Trees->NoSites == 2)
 		printf("13)\tGeo\n");
@@ -1403,9 +1466,7 @@ int		GetModelInt()
 
 	Ret = -1;
 
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
+	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
 	if(fgets(Buffer, BUFFERSIZE, stdin) == NULL)
 	{
@@ -1430,16 +1491,16 @@ int		ValidModelChoice(TREES *Trees, MODEL Model)
 	if(Model == M_MULTISTATE)
 		return TRUE;
 
-	if((Model == M_DESCINDEP) || (Model == M_DESCINDEP) || (Model == M_DESCCV) || (Model == M_DESCHET))
+	if(Model == M_DISC_INDEP || Model == M_DISC_DEP || Model == M_DISC_CV || Model == M_DISC_HET)
 	{
-		if((Trees->NoSites != 2) || (Trees->NoStates != 2))
+		if(Trees->NoSites != 2 || Trees->NoStates != 2)
 		{
 			printf("Discrete analisis requiers two two state characters\n");
 			printf("There are %d states and %d sites in the current data set.\n", Trees->NoStates, Trees->NoSites);
 			return FALSE;
 		}
 
-		if(Model == M_DESCHET && Trees->NoTrees != 1)
+		if(Model == M_DISC_HET && Trees->NoTrees != 1)
 		{
 			printf("Discrete: Heterogeneous requires a single tree.\n");
 			return FALSE;
@@ -1454,7 +1515,7 @@ int		ValidModelChoice(TREES *Trees, MODEL Model)
 		return FALSE;
 	}
 
-	if((Model == M_CONTINUOUS_REG) || (Model == M_CONTRAST_REG))
+	if(Model == M_CONTINUOUS_REG || Model == M_CONTRAST_REG)
 	{
 		if(Trees->NoSites < 2)
 		{
@@ -1481,10 +1542,10 @@ MODEL	IntToModel(int No)
 		return M_MULTISTATE;
 
 	if(No == 2)
-		return M_DESCINDEP;
+		return M_DISC_INDEP;
 
 	if(No == 3)
-		return M_DESCDEP;
+		return M_DISC_DEP;
 
 	if(No == 4)
 		return M_CONTINUOUS_RR;
@@ -1505,13 +1566,13 @@ MODEL	IntToModel(int No)
 		return M_CONTRAST_REG;
 
 	if(No == 10)
-		return M_DESCCV;
+		return M_DISC_CV;
 
 	if(No == 11)
-		return M_DESCHET;
+		return M_DISC_HET;
 
-//	if(No == 12)
-//		return M_FATTAIL;
+	if(No == 12)
+		return M_FATTAIL;
 
 	if(No == 13)
 		return M_GEO;
@@ -1843,7 +1904,7 @@ void	SetPriorCmd(OPTIONS *Opt, int Tokes, char **argv)
 	if(Tokes < 4)
 	{
 		printf("The prior command must take a parameter name, distribution and distribution parameters.");
-		exit(0);
+		exit(1);
 	}
 
 	Name = argv[1];
@@ -2121,7 +2182,7 @@ TAXA*	GetTaxaFromName(char *ID, TREES* Trees)
 	return NULL;
 }*/		  
 
-char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char *argv[])
+char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char **argv)
 {
 	int		Index;
 	char	**Ret;
@@ -2431,6 +2492,12 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 
 	if(Opt->DataType == CONTINUOUS)
 	{
+		if(Opt->Model != M_FATTAIL && Command == CNOSLICESAMPLESTEPS)
+			return FALSE;
+
+		if(Opt->ModelType != MT_CONTRAST && Command == C_GLOBAL_TREND)
+			return FALSE;
+
 		if(Command == CVARRATES)
 		{
 			if(Opt->ModelType == MT_CONTINUOUS)
@@ -2454,7 +2521,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 				return FALSE;
 		}
 		
-		if((Opt->Model != M_CONTRAST_REG) && (Command == CRJDUMMY))
+		if(Opt->Model != M_CONTRAST_REG && Command == CRJDUMMY)
 			return FALSE;
 
 		if(Opt->Model == M_CONTRAST_CORREL)
@@ -2466,20 +2533,21 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 		if( (Command == CNODE)		||
 			(Command == CADDTAXA)	||
 			(Command == CDELTAXA)	||
-			(Command == CCOVARION)	||
+			(Command == C_COVARION)	||
 			(Command == CRES)		||
 			(Command == CRESALL)	||
 			(Command == CGAMMA)		||
 			(Command == CRMODEL)	||
 			(Command == CREVJUMP)	||
-			(Command == CHYPERPRIOR)||
+//			(Command == CHYPERPRIOR)||
 			(Command == CHPRJ)		||
 			(Command == CHPALL)		||
 			(Command == CPIS)		||
 			(Command == CPRECISION) ||
 			(Command == CNOSPERSITE)|| 
 			(Command == CSYMMETRICAL) ||
-			(Command == CADDPATTERN)
+			(Command == CADDPATTERN) ||
+			Command == CRATESCALARS
 			)
 		{
 			printf("Command %s (%s) is not valid with the current model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2489,15 +2557,15 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 	else
 	{
 		if(
-			(Command == CDELTA)		|| 
-			(Command == CLAMBDA)	||
-			(Command == COU)		||
-			(Command == CALPHAZERO)	||
-			(Command == CNODEBLDATA)||
-			(Command == CNODEDATA)  ||
-			(Command == CRJDUMMY)	||
-			(Command == CRJLOCALTRANSFORM) ||
-			(Command == CDISTDATA)
+			Command == CDELTA		|| 
+			Command == CLAMBDA		||
+			Command == COU			||
+			Command == CALPHAZERO	||
+			Command == CNODEBLDATA	||
+			Command == CNODEDATA	||
+			Command == CRJDUMMY		||
+			Command == CRJLOCALTRANSFORM ||
+			Command == CDISTDATA
 			)
 		{
 			printf("Command %s (%s) is not valid with Discrete data\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2512,7 +2580,8 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			Command == CMLTRIES ||
 			Command == CMLEVAL ||
 			Command == CMLALG ||
-			Command == CSETMINMAXRATE
+			Command == CSETMINMAXRATE ||
+			Command == CMLLANDSCAPE
 			)
 		{
 			printf("Command %s (%s) is not valid with the MCMC model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2529,11 +2598,10 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			Command ==	CHYPERPRIOR	||
 			Command ==	CHPRJ		||
 			Command == CPRIOR		||
-			Command ==	CHPALL		||
-			Command ==	CREVJUMP	||
+			Command == CHPALL		||
+			Command == CREVJUMP	||
 			Command == CMCMCMLSTART	||
 			Command == CCAPRJRATES	||
-			Command == CVARRATES	||
 			Command == CSAVEMODELS	||
 			Command == CLOADMODELS	||
 			Command == CSHEDULE		||
@@ -2542,7 +2610,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			Command == CDISTDATA	||
 			Command == CNOLH		||
 			Command == CSTONES		||
-			Command == CCSCHED	
+			Command == CCSCHED
 			)
 		{
 			printf("Command %s (%s) is not valid with the ML model\n", COMMANDSTRINGS[Command*2], COMMANDSTRINGS[(Command*2)+1]);
@@ -2645,7 +2713,7 @@ void	SetLambda(OPTIONS *Opt, int Tokes, char **Passed)
 		Val = atof(Passed[1]);
 		if(Val < MIN_LAMBDA)
 		{
-			printf("%f is lower than the minium lambda %f", Val, MIN_LAMBDA);
+			printf("%f is lower than the minium lambda %12.12f", Val, MIN_LAMBDA);
 			exit(1);
 		}
 
@@ -2776,7 +2844,7 @@ void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed)
 	SetParts(Opt->Trees);
 }
 
-void	SetCovarion(OPTIONS *Opt,int Tokes,char **Passed)
+void	SetCovarion(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	PRIOR		*Prior;
 
@@ -2788,11 +2856,11 @@ void	SetCovarion(OPTIONS *Opt,int Tokes,char **Passed)
 	if(Opt->Analsis == ANALML)
 		return;
 
-	RemovePriorFormOpt("CVSwichRate",Opt);
+	RemovePriorFormOpt("CVSwichRate", Opt);
 
 	if(Opt->UseCovarion == TRUE)
 	{
-		Prior	= CreateUniformPrior("CVSwichRate",0,100);
+		Prior	= CreateUniformPrior("CVSwichRate", 0, 100);
 		AddPriorToOpt(Opt,Prior);
 	}
 }
@@ -3143,7 +3211,7 @@ void	SetSymmetrical(OPTIONS *Opt)
 		SetMSSymmetrical(Opt);
 	}
 
-	if(Opt->Model == M_DESCINDEP)
+	if(Opt->Model == M_DISC_INDEP)
 	{
 		/* Beta 1 = Alpha 1 */
 		ResRateNo(Opt, 1, 0);
@@ -3152,7 +3220,7 @@ void	SetSymmetrical(OPTIONS *Opt)
 		ResRateNo(Opt, 3, 2);
 	}
 
-	if(Opt->Model == M_DESCDEP)
+	if(Opt->Model == M_DISC_DEP)
 	{
 		/* q21 = q12 */
 		ResRateNo(Opt, 2, 0);
@@ -3476,12 +3544,6 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 		return FALSE;
 	}
 
-	if(Opt->Trees->NoTrees != 1)
-	{
-		printf("RJ Local Scalar is only valid with a single tree.\n");
-		return FALSE;
-	}
-
 	NameToRJLocalType(Passed[1], &Err);
 
 	if(Err == TRUE)
@@ -3539,6 +3601,14 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	{
 		RemovePriorFormOpt("VRNode", Opt);
 		Prior = CreateSGammaPrior("VRNode", VARRATES_ALPHA, VARRATES_BETA);
+		AddPriorToOpt(Opt, Prior);
+	}
+
+	if(Type == VR_LS_BL)
+	{
+		RemovePriorFormOpt("VR_LS_BL", Opt);
+//		Prior = CreateUniformPrior("VR_LS_BL", -5, 5);
+		Prior = CreateNormalPrior("VR_LS_BL", 0, 2.0);
 		AddPriorToOpt(Opt, Prior);
 	}
 }
@@ -3955,7 +4025,7 @@ void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
 	sscanf(Passed[1], "%lld", &TItter);
 	if(TItter < -1) 
 	{
-		printf("Burn In period must be 0 or greater, or -1 to run an infinite chain.\n");
+		printf("Number of itterations must be 0 or greater, or -1 to run an infinite chain.\n");
 		return;
 	}
 
@@ -3964,26 +4034,222 @@ void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
 
 void	SetVarRatesOpt(OPTIONS *Opt)
 {
-	if(Opt->Trees->NoTrees > 1)
+	if(	Opt->UseRJLocalScalar[VR_BL]	== TRUE ||
+		Opt->UseRJLocalScalar[VR_NODE]	== TRUE)
 	{
-		printf("VarRates can only be used on a single tree.\n");
+		printf("Node or branch RJ allready set.\n");
 		exit(1);
 	}
-
-	if(Opt->UseVarRates == TRUE)
-	{
-		RemovePriorFormOpt("VRNode", Opt);
-		RemovePriorFormOpt("VRBL", Opt);
-		Opt->UseVarRates = FALSE;
-		return;
-	}
-
-	Opt->UseVarRates = TRUE;
 
 	SetLocalTransformPrior(Opt, VR_BL);
 	SetLocalTransformPrior(Opt, VR_NODE);
 
+	Opt->UseRJLocalScalar[VR_BL]	= TRUE;
+	Opt->UseRJLocalScalar[VR_NODE]	= TRUE;
+	
 	Opt->SaveTrees = TRUE;
+}
+
+
+void	SetLandscape(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("Landscape Does not take any parameters.\n");
+		exit(1);
+	}
+
+	if(	Opt->UseRJLocalScalar[VR_NODE]	== TRUE ||
+		Opt->UseRJLocalScalar[VR_LS_BL]	== TRUE)
+	{
+		printf("Node or Landscape BL allready set.\n");
+		exit(1);
+	}
+
+	SetLocalTransformPrior(Opt, VR_LS_BL);
+	SetLocalTransformPrior(Opt, VR_NODE);
+
+	Opt->UseRJLocalScalar[VR_LS_BL]	= TRUE;
+	Opt->UseRJLocalScalar[VR_NODE]	= TRUE;
+
+	Opt->SaveTrees = TRUE;
+}
+
+void	SetRateScalars(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	int Index;
+	double Val;
+
+	if(Tokes == 1)
+	{
+		for(Index=0;Index<Opt->NoOfRates;Index++)
+			Opt->RateScalars[Index] = 1.0;
+		return;
+	}
+
+	if(Tokes - 1 != Opt->NoOfRates)
+	{
+		printf("RateScalars takes takes %d rate scalars.\n", Opt->NoOfRates);
+		exit(1);
+	}
+
+	for(Index=0;Index<Opt->NoOfRates;Index++)
+	{
+		if(IsValidDouble(Passed[Index+1]) == FALSE)
+		{
+			printf("Cannot convert %s to a valid rate.\n", Passed[Index+1]);
+			exit(1);
+		}
+
+		Val = atof(Passed[Index+1]);
+		if(Val < 0.0)
+		{
+			printf("Rates sclars (%s) must be > 0.\n", Passed[Index+1]);
+			exit(1);
+		}
+
+		Opt->RateScalars[Index] = Val;
+	}
+}
+
+
+void	SetMLLandScape(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("MLLandscape does not take any paramters.\n");
+		exit(1);
+	}
+
+	if(Opt->UseMLLandscape == FALSE)
+		Opt->UseMLLandscape = TRUE;
+	else
+		Opt->UseMLLandscape = FALSE;
+}
+
+void	SetGlobalTrendOpt(OPTIONS* Opt, int Tokes, char** Passed)
+{
+	PRIOR *Prior;
+
+	if(Tokes != 1)
+	{
+		printf("GlobalTrend does not take any paramters.\n");
+		exit(1);
+	}
+		
+	if(Opt->UseGlobalTrend == FALSE)
+		Opt->UseGlobalTrend = TRUE;
+	else
+		Opt->UseGlobalTrend = FALSE;
+
+	if(Opt->Analsis == ANALMCMC)
+	{
+		RemovePriorFormOpt("GlobalTrend", Opt);
+		Prior = CreateNormalPrior("GlobalTrend", 0.0, 1.0);
+		AddPriorToOpt(Opt, Prior);
+	}
+}
+
+void	SetRJThreshold(OPTIONS* Opt, int Tokes, char** Passed)
+{
+	TRANSFORM_TYPE TType;
+	int Err;
+	double TVal;
+	
+	if(Tokes != 3)
+	{
+		printf("RJThreshold takes a transform type and threshold value.\n"); 
+		exit(1);
+	}
+
+	if(IsValidDouble(Passed[2]) == FALSE)
+	{
+		printf("%s not a valid threshold value.\n", Passed[1]);
+		exit(1);
+	}
+
+	TType = NameToRJLocalType(Passed[1], &Err);
+
+	if(Err == TRUE)
+	{
+		printf("Cannot convert %s to a valid transform type", Passed[1]);
+		exit(1);
+	}
+
+	TVal = atof(Passed[2]);
+	Opt->RJLocalScalarThreshold[TType] = TVal;
+}
+
+char*	AllocRJStr(int Tokes, char **Passed)
+{
+	char *Ret;
+	size_t Size, Index;
+	
+	Size = 0;
+	for(Index=0;Index<Tokes;Index++)
+		Size += strlen(Passed[Index]);
+
+	Ret = (char*)SMalloc(sizeof(char) * Size * 3);
+
+	return Ret;
+}
+
+void	LoadRJRates(OPTIONS* Opt, int Tokes, char** Passed)
+{
+	char *Str;
+	size_t Index;
+
+
+	if(Opt->VarRatesCheckPoint != NULL)
+	{
+		free(Opt->VarRatesCheckPoint);
+		Opt->VarRatesCheckPoint = NULL;
+	}
+	
+	if(Tokes == 1)
+		return;
+
+	Str = AllocRJStr(Tokes, Passed);
+	Str[0] = '\0';
+
+	for(Index=1;Index<Tokes;Index++)
+	{
+		strcat(Str, Passed[Index]);
+		strcat(Str, " ");
+	}
+
+	Opt->VarRatesCheckPoint = Str;
+}
+
+
+void	OptTestPrior(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	size_t NoSample;
+	PRIOR *Prior;
+	double Draw;
+	gsl_rng *RNG;
+
+	if(Tokes != 3)
+	{
+		printf("TestPrior takes a prior name and number of samples.\n");
+		exit(1);
+	}
+
+	Prior = GetPriorFromName(Passed[1], Opt->AllPriors, Opt->NoAllPriors);
+	if(Prior == NULL)
+	{
+		printf("Invalid prior name %s\n", Passed[1]);
+		exit(1);
+	}
+
+	if(IsValidInt(Passed[2]) == FALSE)
+	{
+		printf("Could not convert %s to a valid number of samples.", Passed[2]);
+		exit(1);
+	}
+
+	sscanf(Passed[2], "%zu", &NoSample);
+	TestPrior(Prior, NoSample);
 }
 
 void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
@@ -4160,6 +4426,63 @@ void	SetNormQMatrix(OPTIONS *Opt, int Tokes, char **Passed)
 
 	}
 }
+
+void	SetNoSliceSampleSteps(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	int NoSteps;
+
+	if(Tokes != 2)
+	{
+		printf("NoSliceSampleSteps take a number of steps.\n");
+		exit(1);
+	}
+
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("Cannot convert %s to a valid number of steps", Passed[1]);
+		exit(1);
+	}
+
+	NoSteps = atoi(Passed[1]);
+
+	if(NoSteps < 2)
+	{
+		printf("Cannot convert %s to a valid number of steps", Passed[1]);
+		exit(1);
+	}
+
+	Opt->NoSliceSampleSteps = NoSteps;
+}
+
+void	SetPisAncStates(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("PisAncStates Does not take any parameters.\n");
+		exit(1);
+	}
+	
+	if(Opt->UsePisInAncStates == TRUE)
+		Opt->UsePisInAncStates = FALSE;
+	else
+		Opt->UsePisInAncStates = TRUE;
+}
+
+void	SetRJZero(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("RJZero Does not take any parameters.\n");
+		exit(1);
+	}
+
+	if(Opt->RJZero == TRUE)
+		Opt->RJZero = FALSE;
+	else
+		Opt->RJZero = TRUE;
+}
+
+
 
 int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 {
@@ -4380,7 +4703,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	{
 		if(Tokes > 1)
 		{
-			FreeParts(Opt->Trees);
+			FreeTreeParts(Opt->Trees);
 			FreeRecNodes(Opt, Opt->Trees->NoSites);
 			ExcludeTaxa(Opt, Tokes-1, &Passed[1]);
 			SetParts(Opt->Trees);
@@ -4399,8 +4722,8 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetTestCorrel(Opt);
 	}
 
-	if(Command == CCOVARION)
-		SetCovarion(Opt,Tokes-1,&Passed[1]);
+	if(Command == C_COVARION)
+		SetCovarion(Opt, Tokes-1, &Passed[1]);
 
 	if(Command == CREVJUMP)
 		SetRJMCMC(Opt, Tokes-1, &Passed[1]);
@@ -4410,13 +4733,10 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetRJMCMCHP(Opt, Tokes-1, &Passed[1]);
 	
 	if(Command == CEXIT)
-	{
 		exit(0);
-	}
-
+	
 	if(Command == CFOSSIL)
 		AddRecNode(Opt, FOSSIL, Tokes, Passed);
-
 
 	if(Command == CNODEDATA)
 	{
@@ -4605,6 +4925,36 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 
 	if(Command == CNORMQMAT)
 		SetNormQMatrix(Opt, Tokes, Passed);
+
+	if(Command == CNOSLICESAMPLESTEPS)
+		SetNoSliceSampleSteps(Opt, Tokes, Passed);
+
+	if(Command == CPISANCSTATES)
+		SetPisAncStates(Opt, Tokes, Passed);
+
+	if(Command == CRJZERO)
+		SetRJZero(Opt, Tokes, Passed);
+
+	if(Command == C_LANDSCAPE)
+		SetLandscape(Opt, Tokes, Passed);
+	
+	if(Command == CRATESCALARS)
+		SetRateScalars(Opt, Tokes, Passed);
+
+	if(Command == CMLLANDSCAPE)
+		SetMLLandScape(Opt, Tokes, Passed);
+
+	if(Command == C_GLOBAL_TREND)
+		SetGlobalTrendOpt(Opt, Tokes, Passed);
+
+	if(Command == C_RJ_THRESHOLD)
+		SetRJThreshold(Opt, Tokes, Passed);
+
+	if(Command == C_LOAD_RJ_RATES)
+		LoadRJRates(Opt, Tokes, Passed);
+
+	if(Command == C_TEST_PRIOR)
+		OptTestPrior(Opt, Tokes, Passed);
 
 	return FALSE;
 }

@@ -45,12 +45,11 @@ void	NormaliseTrees(double NormC, TREES *Trees);
 void	SetVisitedNode(NODE N, int Val);
 void	SetVisitedTree(TREE *Tree, int Val);
 
-double*	GetPhyChanges(TREES *Trees, TREE *Tree, double RateDev, RANDSTATES *RS);
-
 void	AddTaxaErr(TREES *Trees, int TaxaID, double Err);
 
 int		TaxaIndexToNo(TREES *Trees, int Index);
 int		TaxaNoToIndex(TREES *Trees, int ID);
+int		NoTaxa(NODE N);
 
 void	SaveUserBrachLengths(TREES *Trees);
 void	SetUserBranchLength(TREE *Tree);
@@ -60,10 +59,12 @@ void	RecSetDistToRoot(NODE N);
 
 void	RecScaleSubTree(NODE N, double Scale);
 double	SumNodeBL(NODE N);
+
+double	GetNodeHeight(NODE Node);
+
 void	ScaleSubTree(NODE N, double Scale);
 void	ScaleTrees(TREES *Trees, double Scale);
 void	ScaleUserTrees(TREES *Trees, double Scale);
-
 
 NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo);
 
@@ -71,8 +72,17 @@ void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees);
 void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Out);
 
 void	PrintTreeBL(TREE *Tree);
-
+void	PrintTreeNode(TREES *Trees, TREE *Tree);
+void	RecPrintNode(NODE N);
+void	RecPRintNodeTaxa(NODE N, char Sep);
+void	PrintTaxaFromNo(int No, TREES *Trees, char Sep);
 
 void	CheckSingleDescendent(TREES *Trees);
+
+int		GetNoInternalNodes(TREE *Tree);
+
+void	SetTreesInternalNodes(TREES *Trees);
+
+void	SetTreesRNG(TREES *Trees, long Seed);
 
 #endif

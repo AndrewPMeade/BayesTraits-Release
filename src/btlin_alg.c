@@ -50,7 +50,7 @@ int btlin_ltri_MatrixByLower(double alpha, double* pA,double* pL,int m,int n,int
 int btlin_kronecker_vectmultOne(double* vres, double* v, double* sigma, int sigma_dim,double*  mat, int mat_dim) {
 	int mat_col, mat_row;     // included for clarity - no need
 	double *pvres, *pv;
-	double sum;
+//	double sum;
 	double *pmat;
 	
 	double sigma_constant;
@@ -142,7 +142,7 @@ int btlin_kronecker_vectmult2(double* vres, double* v, double* sigma, int sigma_
 	double *pv, *pv_start;
 	int sumacc_idx, extra_idx;
 	double* sumacc, a, sum;
-	double *vstart;
+//	double *vstart;
 	
 	sumacc = (double*)malloc(sizeof(double)*sigma_dim);
 		
@@ -195,7 +195,7 @@ int btlin_kronecker_vectmult2Row(double* vres, double* v, double* sigma, int sig
 	double *pv, *pv_start;
 	int sumacc_idx, extra_idx;
 	double* sumacc, a, sum;
-	double *vstart;
+//	double *vstart;
 	
 	sumacc = (double*)malloc(sizeof(double)*sigma_dim);
 		
@@ -248,7 +248,8 @@ int btlin_kronecker_vectmult2Row(double* vres, double* v, double* sigma, int sig
 // obscure due to one-dimensional indexes
 int btlin_cholesky(double* m, int n, double* det) {
 	int i,j,k,diagidx, idx1, idx2, idx, subdiagidx;
-	double diag, a, sum;
+	double diag, a;
+//	double sum;
 	*det = 0;
 	// may want to check for squareness
 	
@@ -296,8 +297,10 @@ int btlin_cholesky(double* m, int n, double* det) {
 
 
 int btlin_invcholesky(double* m, int n, double* det) {
-	int col,row, diagidx, rowidx, colidx, k, kidx;
-	double diag, sum, *pdiag;
+	int col,row, diagidx, rowidx, colidx, k;
+//	int kidx;
+	double diag, sum;
+//	double *pdiag;
 	// assert m->nrows=m->ncols
 
 	
@@ -667,7 +670,8 @@ int btlin_ltri_LowerByMatrix(double alpha, double* pL,double* pA,int m,int n,int
 	int rowA, colA, k;
 	double *pL_start, *pL_worker;
 	double *pA_start, *pA_worker;
-	double *pA_result, pA_result_start;
+	double *pA_result;
+	//double pA_result_start;
 	double temp;
 	
 	//printf("------------ m %d n %d\n",m,n);

@@ -2,7 +2,7 @@
 #define VAR_RATES_HEADDER
 
 #include "TypeDef.h"
-
+int				UseRJLocalScalar(OPTIONS *Opt);
 int				UseNonParametricMethods(OPTIONS *Opt);
 
 TRANSFORM_TYPE	StrToVarRatesType(char *Str);
@@ -18,7 +18,7 @@ void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* She
 void	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt);
 
 
-void	VarRatesCopy(RATES *R1, RATES *R2);
+void	VarRatesCopy(TREES *Trees, RATES *R1, RATES *R2);
 void	VarRatesTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Normalise);
 
 void	InitVarRatesFiles(OPTIONS *Opt, TREES *Trees, RATES *Rates);
@@ -32,5 +32,10 @@ void	ChangeVarRatesHyperPrior(RATES *Rates, OPTIONS *Opt);
 void	SetVarRatesFromStr(RATES *Rates, OPTIONS *Opt, char *Str);
 
 double	CalcNormalHasting(double x, double SD);
+
+NODE	GetVRNode(TREES *Trees, int TreeNo, VAR_RATES_NODE *VR_Node);
+
+void	OutputVarRatesType(FILE *Out, TRANSFORM_TYPE Type);
+
 
 #endif

@@ -27,6 +27,13 @@
 	#include <mkl.h>
 #endif
 
+#ifdef BTLAPACK
+#ifndef USE_MKL
+	#include <cblas.h>
+#endif
+#endif
+
+
 #ifdef BTOCL
 	#include "btocl_runtime.h"
 #endif
@@ -62,7 +69,7 @@
 	#include <quadmath.h>
 	#define QDOUBLE	__float128
 #endif
-
+        
 #ifdef	OPENMP_THR
 	#include <omp.h>
 #endif
@@ -132,8 +139,7 @@
 // use ML paramter for indpedent contrast MCMC / Var Rates
 //#define CONTRAST_ML_PARAM
 
-// No kappa, lambda, delta, OU.
-#define	NO_RJ_LOCAL_SCALAR	4
+
 
 // Minimum number of taxa to transform a node (kappa, lamabed ect)
 //#define MIN_TAXA_VR_TRANS	5
@@ -159,7 +165,6 @@
 #define OUTPUT_EXT_STONES		".Stones.txt"
 #define OUTPUT_EXT_TREES		".Output.trees"
 
-
 #define UNKNOWNSTATE	'-'
 #define ESTDATAPOINT	"?"
 
@@ -174,7 +179,7 @@
 
 #define	LOGFILEBUFFERSIZE	65536
 
-#define DISPLAY_INFO	printf("BayesTraits V3.0.4 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
+#define DISPLAY_INFO	printf("BayesTraits V3.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
 
 #define MIN_DELTA	1E-07
 #define MAX_DELTA	3
@@ -191,8 +196,13 @@
 #define MIN_GAMMA	1E-07
 #define MAX_GAMMA	100
 
+#define MIN_GLOBAL_TREND -10
+#define MAX_GLOBAL_TREND 10
+
 #define MIN_LOCAL_RATE 1E-07
 #define MAX_LOCAL_RATE 100
+
+#define	ML_LAND_BETA_SIZE 25
 
 #define	NORM_MEAN_BL	0.1
 
@@ -210,13 +220,21 @@
 
 #define MIN_NO_TAXA_RJ_LOCAL_TRANS 10
 
-//
+// Number of local scalars
+#define	NO_RJ_LOCAL_SCALAR	7
+
+// How many iterations between updates to the MCMC scheduler
+#define	MCMC_SCHEDULE_UPDATE	1000
+
 static char    *RJ_LOCAL_SCALAR_NAMES[] =
 {
 	"kappa",
 	"lambda",
 	"delta",
-	"ou"
+	"ou",
+	"node",
+	"branch",
+	"LandscapeBL"
 };
 
 typedef enum
@@ -227,6 +245,7 @@ typedef enum
 	VR_OU,
 	VR_NODE,
 	VR_BL,
+	VR_LS_BL
 } TRANSFORM_TYPE;
 
 typedef enum
@@ -264,7 +283,7 @@ typedef enum
 	CSAVEINITIALTREES,
 	CTESTCORREL,
 	CSURFACE,
-	CCOVARION,
+	C_COVARION,
 	CREVJUMP,
 	CEXIT,
 	CFOSSIL,
@@ -309,6 +328,16 @@ typedef enum
 	CSETMINTAXATRANS,
 	CSETMINMAXRATE,
 	CNORMQMAT,
+	CNOSLICESAMPLESTEPS,
+	CPISANCSTATES,
+	CRJZERO,
+	C_LANDSCAPE,
+	CRATESCALARS,
+	CMLLANDSCAPE,
+	C_GLOBAL_TREND,
+	C_RJ_THRESHOLD,
+	C_LOAD_RJ_RATES,
+	C_TEST_PRIOR,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -392,6 +421,16 @@ static char    *COMMANDSTRINGS[] =
 	"SetMinTransTaxaNo", "smttn",
 	"SetMinMaxRate", "smmr",
 	"NormaliseQMatrix", "nqm",
+	"NoSliceSampleSteps", "nsss",
+	"PisAncStates",		"pas",
+	"RJZero",			"rjz",
+	"Landscape",		"LS",
+	"RateScalars",		"rs",
+	"MLLandscape",		"lls",
+	"GlobalTrend",		"gt",
+	"RJThreshold",		"rjt",
+	"LoadVarRates",		"lvr",
+	"TestPrior",		"TestPrior",
 	""
 };
 
@@ -470,7 +509,7 @@ static char    *DEPHETROPRAMS[] =
 	""
 };
 
-#define NO_PRIOR_DIST 7
+#define NO_PRIOR_DIST 8
 
 static char    *DISTNAMES[] =
 {
@@ -480,7 +519,8 @@ static char    *DISTNAMES[] =
 	"exp",
 	"sgamma",
 	"lognormal",
-	"normal"
+	"normal",
+	"weibull"
 };
 
 static int	DISTPRAMS[] =
@@ -491,11 +531,9 @@ static int	DISTPRAMS[] =
 	1,
 	2,
 	2,
+	2,
 	2
 };
-
-
-
 
 typedef enum
 {
@@ -505,7 +543,8 @@ typedef enum
 	PDIST_EXP,
 	PDIST_SGAMMA,
 	PDIST_LOGNORMAL,
-	PDIST_NORMAL
+	PDIST_NORMAL,
+	PDIST_WEIBULL
 } PRIORDIST;
 
 typedef enum
@@ -517,16 +556,16 @@ typedef enum
 typedef enum
 {
 	M_MULTISTATE,
-	M_DESCINDEP,
-	M_DESCDEP,
+	M_DISC_INDEP,
+	M_DISC_DEP,
 	M_CONTINUOUS_RR,
 	M_CONTINUOUS_DIR,
 	M_CONTINUOUS_REG,
 	M_CONTRAST,
 	M_CONTRAST_CORREL,
 	M_CONTRAST_REG,
-	M_DESCCV,
-	M_DESCHET,
+	M_DISC_CV,
+	M_DISC_HET,
 	M_FATTAIL,
 	M_GEO
 } MODEL;
@@ -572,6 +611,12 @@ typedef enum
 	FOSSIL,
 } NODETYPE;
 
+typedef enum
+{
+	SB_NONE,
+	SB_RJ
+} STOCHASTIC_BETA_TYPE;
+
 
 typedef struct
 {
@@ -591,6 +636,26 @@ typedef struct
 	TIME_SLICE	**TimeSlices;
 
 } TIME_SLICES;
+
+
+typedef struct
+{
+	int		NoRates;
+	double	Rate;
+	int		*PramList;
+} RATE_GROUP;
+
+typedef struct
+{
+	int NoRates;
+	int	NoGroups;
+	int	*RateList;
+
+	RATE_GROUP	**RateGroupList;
+
+	double	Sig;
+	int		FixedNoGroups;
+} LAND_RATE_GROUPS;
 
 typedef struct
 {
@@ -642,10 +707,14 @@ typedef struct
 {
 	double	*Data;
 	double	*Cont;
-	double	*Var;
-	double	*Err;
+//	double	*Var;
+//	double	*Err;
 
-	double	*v;
+	double	Var;
+	double	Err;
+
+
+//	double	*v;
 } CONTRAST;
 
 typedef struct
@@ -669,6 +738,10 @@ typedef struct
 {
 	int NoTaxa;
 	int *Taxa;
+
+	int		Freq;
+	double	Prob;
+	size_t	PartID;
 } PART;
 
 struct INODE
@@ -714,6 +787,10 @@ struct INODE
 
 	CONDATA		*ConData;
 	FATTAILNODE	*FatTailNode;
+
+	double		LandscapeBeta;
+
+	gsl_rng			*RNG;
 };
 
 typedef struct INODE*	NODE;
@@ -751,6 +828,10 @@ typedef struct
 typedef struct
 {
 	double	*AnsVect;
+
+	NODE	**ParallelNodeList;
+	int		*ParallelNodeListLength;
+	int		NoParallelGroups;
 
 } FATTAILTREE;
 
@@ -802,12 +883,19 @@ typedef	struct
 	NODE			*NodeList;
 	NODE			Root;
 
-	NODE			**FNodes;
-	int				*NoFNodes;
-	int				NoFGroups;
 
+	// Group of nodes that can be calulated in parallel.
+	NODE			**ParallelNodes;
+	int				*ParallelGroupSize;
+	int				NoParallelGroups;
+
+	//	Devide the tree up into sub trees that are indpedent. 
 	int				NoPNodes;
 	NODE			*PNodes;
+
+	// Number and list of internal nodes only, good for OpenMP
+	int				NoInternalNodes;
+	NODE			*InternalNodesList;
 
 	int				NoContrast;
 
@@ -816,6 +904,9 @@ typedef	struct
 	FATTAILTREE*	FatTailTree;
 
 	double			AveBL;
+
+	// cash the taxa ID to map to nodes quick. 
+	NODE			*TaxaIDNodeMap;
 
 // information needed to traverse the tree and accumulate partial results
 #ifdef BTOCL
@@ -961,17 +1052,23 @@ typedef struct
 	int max_nchildren;
 #endif
 
+	PART	**PartList;
+	size_t	NoParts;
 } TREES;
 
 typedef struct
 {
-	NODE			Node;
+//	NODE			Node;
 	double			Scale;
 	TRANSFORM_TYPE	Type;
 	long long		NodeID;
 
 	int				Fixed;
 	int				UserSupplied;
+
+	PART			*Part;
+	NODE			*NodeList;
+
 } VAR_RATES_NODE;
 
 typedef struct
@@ -1175,7 +1272,7 @@ typedef struct
 	long		Seed;
 	int			MakeUM;
 
-	int			UseVarRates;
+//	int			UseVarRates;
 
 	int			UseEqualTrees;
 	int			ETreeBI;
@@ -1199,6 +1296,9 @@ typedef struct
 	double		ScaleTrees;
 
 	int			UseRJLocalScalar[NO_RJ_LOCAL_SCALAR];
+	double		*RJLocalScalarThreshold;
+
+
 	int			FatTailNormal;
 
 	int			EstData;
@@ -1230,6 +1330,21 @@ typedef struct
 	double		RateMin, RateMax;
 
 	int			NormQMat;
+
+	int			NoSliceSampleSteps;
+
+	int			UsePisInAncStates;
+
+	int			RJZero;
+
+	double		*RateScalars;
+
+	int			NoLandscapeRateGroup;
+	int			UseMLLandscape;
+
+	int			UseGlobalTrend;
+
+	char		*VarRatesCheckPoint;
 
 } OPTIONS;
 
@@ -1297,10 +1412,12 @@ typedef struct
 	double		*SiteMax;
 	double		*SiteSD;
 
-	SLICESAMPLER*	SliceSampler;
+	SLICESAMPLER	**SliceSamplers;
 
 	int				NoSD;
 	STABLEDIST**	SDList;
+
+	double		*PartialLh;
 
 } FATTAILRATES;
 
@@ -1382,6 +1499,8 @@ typedef struct
 	RANDSTATES		*RS;
 	RANDSTATES		**RSList;
 	gsl_rng			*RNG;
+	
+
 
 	VARRATES		*VarRates;
 	CONTRASTR		*Contrast;
@@ -1404,6 +1523,13 @@ typedef struct
 
 	double			GlobablRate;
 	double			NormConst;
+
+	LAND_RATE_GROUPS	*LandscapeRateGroups;
+
+	int			UseMLLandscape;
+
+	double		GlobalTrend;
+
 } RATES;
 
 typedef struct
@@ -1420,7 +1546,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NO_SCHEDULE_OPT	26
+#define NO_SCHEDULE_OPT	29
 
 static char    *SHEDOP[] =
 {
@@ -1444,12 +1570,15 @@ static char    *SHEDOP[] =
 	"RJ Dummy Add / Remove",
 	"RJ Dummy Move Node",
 	"RJ Dummy Change Beta",
+	"Fat Tail Ans All",
 	"Fat Tail Ans",
+	"Geo Move All",
 	"Local Rates",
 	"Data Dist",
 	"Time Slice - Time",
 	"Time Slice - Scale",
-	"Global Rate"
+	"Global Rate",
+	"GlobalTrend-Change"
 };
 
 typedef enum
@@ -1474,12 +1603,15 @@ typedef enum
 	S_RJ_DUMMY,
 	S_RJ_DUMMY_MOVE,
 	S_RJ_DUMMY_CHANG_EBETA,
-	S_FAT_TAILANS,
+	S_FAT_TAIL_ANS_ALL,
+	S_FAT_TAIL_ANS,
+	S_GEO_MOVE_ALL,
 	S_LOCAL_RATES,
 	S_DATA_DIST,
 	S_TIME_SLICE_TIME,
 	S_TIME_SLICE_SCALE,
-	S_GLOBAL_RATE
+	S_GLOBAL_RATE,
+	S_GLOBAL_TREND
 } OPERATORS;
 
 typedef struct
@@ -1527,6 +1659,14 @@ typedef struct
 	AUTOTUNE	*CurrentAT;
 
 	AUTOTUNE	*GlobalRateAT;
+	AUTOTUNE	*GlobalTrendAT;
+
+
+	AUTOTUNE	*LandscapeRateChangeAT;
+
+	AUTOTUNE	*StochasticBeta;
+	AUTOTUNE	*StochasticBetaPrior;
+
 
 
 	int				NoCShed;

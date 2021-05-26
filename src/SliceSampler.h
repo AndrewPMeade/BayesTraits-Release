@@ -8,6 +8,6 @@ void			FreeSliceSampler(SLICESAMPLER* SS);
 
 void			SSSetXPosVect(SLICESAMPLER* SS, double Min, double Max);
 
-double			SSGetNewPoint(SLICESAMPLER *SS, RANDSTATES *RS, double POld);
+double			SSGetNewPoint(SLICESAMPLER *SS, gsl_rng *RNG, double POld);
 
 #endif

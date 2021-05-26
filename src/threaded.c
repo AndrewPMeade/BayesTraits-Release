@@ -38,8 +38,13 @@
 
 #include "TypeDef.h"
 #include "Threaded.h"
+#include "GenLib.h"
 
 
+#ifdef USE_MKL
+	#include <mkl.h>
+	extern void mkl_set_num_threads(int);
+#endif
 
 int		GetThreadNo(void)
 {

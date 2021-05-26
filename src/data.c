@@ -14,12 +14,12 @@
 * it under the terms of the GNU General Public License as published by
 * the Free Software Foundation, either version 3 of the License, or
 * (at your option) any later version.
-* 
+*
 * This program is distributed in the hope that it will be useful,
 * but WITHOUT ANY WARRANTY; without even the implied warranty of
 * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 * GNU General Public License for more details.
-* 
+*
 * You should have received a copy of the GNU General Public License
 * along with this program.  If not, see <http://www.gnu.org/licenses/>
 *
@@ -39,7 +39,7 @@
 #include "Options.h"
 #include "Geo.h"
 #include "FatTail.h"
-
+#include "Rates.h"
 
 void	PrintTaxaData(OPTIONS *Opt, TREES* Trees)
 {
@@ -144,8 +144,18 @@ TAXA*	FindTaxaFromName(char *Name, TREES* Trees)
 	return NULL;
 }
 
-int		ValidDouble(char *Str)
+int		ValidDoubleStr(char *Str)
 {
+	double Val;
+	char *End;
+
+	Val = strtod(Str, &End);
+
+	if(Val == 0 && End == Str)
+		return FALSE;
+
+	return TRUE;
+/*
 	int	Point=FALSE;
 	int	Len,Index;
 
@@ -166,6 +176,7 @@ int		ValidDouble(char *Str)
 	}
 
 	return TRUE;
+*/
 }
 
 void	AllocEstDataInfo(TAXA *Taxa, int NoSites)
@@ -245,6 +256,7 @@ int		EstData(TREES *Trees)
 	return FALSE;
 }
 
+
 void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 {
 	TAXA	*Taxa;
@@ -259,7 +271,7 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 		fflush(stdout);
 	}
 
-	Taxa->ConData		= (double*)SMalloc(sizeof(double)*Trees->NoSites);
+	Taxa->ConData = (double*)SMalloc(sizeof(double)*Trees->NoSites);
 
 	Taxa->Exclude = FALSE;
 
@@ -267,7 +279,7 @@ void	AddContinuousTaxaData(int Tokes, char** Passed, TREES* Trees)
 	{
 		Taxa->ConData[Index-1] = atof(Passed[Index]);
 
-		if((Taxa->ConData[Index-1] == 0.0) && (ValidDouble(Passed[Index])== FALSE))
+		if((Taxa->ConData[Index-1] == 0.0) && (ValidDoubleStr(Passed[Index]) == FALSE))
 		{
 			if((strcmp(Passed[Index], "*") == 0) || (strcmp(Passed[Index], "-") == 0))
 				Taxa->Exclude = TRUE;
@@ -317,6 +329,7 @@ void	LoadTaxaData(char* FileName, TREES* Trees)
 			if(Tokes - 1  != Trees->NoSites)
 			{
 				printf("Line %d has %d sites but was expecting %d\n", Line, Tokes - 1, Trees->NoSites);
+				printf("Error occurred on line.\n%s", DataFile->Data[Line]);
 				exit(0);
 			}
 
@@ -489,12 +502,12 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 		if(strlen(Trees->SymbolList) == 1)
 		{
 			printf("There has to be more then one state in file %s\n", FileName);
-			exit(0);
+			exit(1);
 		}
 	}
 	else
 	{
-		if(Model == M_DESCDEP || Model == M_DESCINDEP)
+		if(Model == M_DISC_DEP || Model == M_DISC_INDEP)
 			CheckDescData(Trees);
 	}
 
@@ -510,8 +523,7 @@ void	CheckDataWithModel(char* FileName, TREES *Trees, MODEL Model)
 
 void	PreProcessDataWithModel(TREES *Trees, MODEL Model)
 {
-
-	if(Model == M_DESCDEP || Model == M_DESCINDEP || Model == M_DESCCV || Model == M_DESCHET)
+	if(ModelDep(Model) == TRUE)
 		SquashDep(Trees);
 
 	if(GetModelType(Model) == MT_CONTINUOUS || GetModelType(Model) == MT_CONTRAST || GetModelType(Model) == MT_FATTAIL)
@@ -744,7 +756,8 @@ void	SquashDep(TREES	*Trees)
 			Seen = TRUE;
 		}
 
-		if((Taxa->DesDataChar[0][0] == UNKNOWNSTATE) || (Taxa->DesDataChar[1][0] == UNKNOWNSTATE))
+		if(		(Taxa->DesDataChar[0][0] == UNKNOWNSTATE)
+			||	(Taxa->DesDataChar[1][0] == UNKNOWNSTATE))
 		{
 			TempS = SetDescUnknownStates(Taxa->DesDataChar[0][0], Taxa->DesDataChar[1][0]);
 
@@ -755,10 +768,7 @@ void	SquashDep(TREES	*Trees)
 
 		free(Taxa->DesDataChar[1]);
 		Taxa->DesDataChar[1] = NULL;
-
-/*		printf("%s\t%c\n", Taxa->Name, Taxa->DesDataChar[0][0]); */
 	}
-
 	Trees->NoStates = 4;
 	Trees->NoSites = 1;
 	free(Trees->SymbolList);
@@ -771,7 +781,7 @@ void	RemoveConMissingData(TREES* Trees)
 {
 	int		Index;
 
-	FreeParts(Trees);
+	FreeTreeParts(Trees);
 
 	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
@@ -984,7 +994,7 @@ void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
 		AddNewRecNode(Trees, RNode);
 	}
 
-	FreeParts(Trees);
+	FreeTreeParts(Trees);
 	SetParts(Trees);
 
 	SetTreesDistToRoot(Trees);

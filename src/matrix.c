@@ -65,6 +65,32 @@ double** AllocMatMem(int NoOfRows, int NoOfCols)
 	return Ret;
 }
 
+void	FreeIntMatMem(int** Mat)
+{
+	free(Mat[0]);
+	free(Mat);
+}
+
+int** AllocIntMatMem(int NoOfRows, int NoOfCols)
+{
+	int**	Ret=NULL;
+	int		RIndex=0;
+	int		CIndex=0;
+
+	Ret = (int**)malloc(NoOfRows * sizeof(int*));
+	if(Ret==NULL)
+		MallocErr();
+
+	Ret[0] = (int*)malloc(NoOfRows * NoOfCols * sizeof(int));
+	if(Ret[0]==NULL)
+		MallocErr();
+
+	for(RIndex=1;RIndex<NoOfRows;RIndex++)
+		Ret[RIndex] = Ret[0] + RIndex * NoOfCols;
+
+	return Ret;
+}
+
 MATRIX*	AllocMatrix(int NoOfRows, int NoOfCols)
 {
 	MATRIX* Ret=NULL;
@@ -339,7 +365,8 @@ int kronecker_vectmultColumn(double* vres, double* v, double* sigma, int sigma_d
 }
 
 // Simpler version (column major) for sigma_dim = 1
-int kronecker_vectmultColumnOne(double* vres, double* v, double* sigma, int sigma_dim,double*  mat, int mat_dim) {
+int kronecker_vectmultColumnOne(double* vres, double* v, double* sigma, int sigma_dim, double*  mat, int mat_dim) 
+{
 	int mat_col, mat_row;     // included for clarity - no need
 	double *pvres, *pv;
 //	double sum;

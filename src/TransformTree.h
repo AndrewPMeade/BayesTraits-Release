@@ -11,7 +11,7 @@ void	TransformTreeKappa(NODE N, double Kappa, int Norm);
 void	TransformTreeOU(TREES *Trees, NODE N, double OU, int Norm);
 void	TransformTreeLambda(NODE N, double Lambda, int Norm);
 
-int		NeedToReSetBL(OPTIONS *Opt, RATES *Rates);
+int		NeedToTransformTree(OPTIONS *Opt, RATES *Rates);
 
 double	GetTransformDefValue(TRANSFORM_TYPE TranType);
 

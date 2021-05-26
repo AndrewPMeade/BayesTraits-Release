@@ -30,4 +30,16 @@ typedef struct
 void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 double	LikelihoodML(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates);
 void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates);
+
+
+ML_MAP*	AllocMLMap(void);
+void	FreeMLMap(ML_MAP *MLMap);
+
+void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates);
+ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates, ML_MAP *Init);
+
+
+void Opt1D(ML_MAP* Map, OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void CopyMLMap(ML_MAP *A, ML_MAP *B);
+
 #endif

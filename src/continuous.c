@@ -47,7 +47,8 @@
 #include "RandLib.h"
 #include "RandDists.h"
 #include "Part.h"
-
+#include "CBlasWrapper.h"
+#include "VarRates.h"
 
 #ifdef BTOCL
 	#include "btocl_continuous.h"
@@ -56,6 +57,7 @@
 #ifdef BTLAPACK
 	#include "btlapack_interface.h"
 #endif
+
 
 double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree);
 
@@ -136,11 +138,11 @@ void	RemoveDependantData(OPTIONS *Opt, TREES *Trees)
 		Taxa = Trees->Taxa[TIndex];
 
 		if(Taxa->EstDataP[DepNo] == TRUE)
-		{
 			Taxa->EstDepData = TRUE;
-			for(Index=DepNo+1;Index<Trees->NoSites;Index++)
-				Taxa->EstDataP[Index-1] = Taxa->EstDataP[Index];
-		}
+		
+		for(Index=DepNo+1;Index<Trees->NoSites;Index++)
+			Taxa->EstDataP[Index-1] = Taxa->EstDataP[Index];
+		
 
 		Taxa->Dependant = Taxa->ConData[DepNo];
 
@@ -331,6 +333,8 @@ void	CaclPVarCoVarRec(TREES* Trees, TREE *Tree, MATRIX *V)
 	N = Tree->Root;
 	for(Index=0;Index<N->NoNodes;Index++)
 		RecCalcV(Trees, V->me, N->NodeList[Index], CPart);
+
+//	PrintMatrix(V, "V=", stdout); exit(0);
 
 	FreePart(CPart);
 }
@@ -687,19 +691,12 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 	Ret->Beta	=	NULL;
 
 	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_RR))
-		Ret->Alpha	=	(double*)malloc(sizeof(double) * Trees->NoSites);
+		Ret->Alpha	=	(double*)SMalloc(sizeof(double) * Trees->NoSites);
 	else
-		Ret->Alpha	=	(double*)malloc(sizeof(double) * 1);
-
-	if(Ret->Alpha == NULL)
-		MallocErr();
+		Ret->Alpha	=	(double*)SMalloc(sizeof(double) * 1);
 
 	if((Opt->Model == M_CONTINUOUS_DIR) || (Opt->Model == M_CONTINUOUS_REG))
-	{
-		Ret->Beta = (double*)malloc(sizeof(double) * Trees->NoSites);
-		if(Ret->Beta == NULL)
-			MallocErr();
-	}
+		Ret->Beta = (double*)SMalloc(sizeof(double) * Trees->NoSites);
 
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
@@ -1088,8 +1085,8 @@ double	MLFindAlphaMean(TREES* Trees, TREE *Tree, int Site)
 		ColTemp = 0;
 		for(x=0;x<Trees->NoTaxa;x++)
 			ColTemp = ColTemp + Tree->ConVars->InvV->me[x][y];
+
 		P2 += ColTemp * Trees->Taxa[y]->ConData[Site];
-	//	P2 += ColTemp * Trees->Taxa[y]->Dependant;
 	}
 
 	return P1 * P2;
@@ -1127,6 +1124,32 @@ double	MLFindAlphaMeanRegTC(TREES* Trees, TREE *Tree)
 }
 
 
+
+double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
+{
+	double	Ret;
+	CONVAR	*CV;
+
+	CV = Tree->ConVars;
+
+	MatrixVectProduct(CV->InvV->me[0], CV->TVect1, CV->TVect2, Trees->NoTaxa);
+
+
+
+	Ret  = VectVectDotProduct(CV->TVect2, CV->TVect3, Trees->NoTaxa);
+
+
+	// Use sum of least squares, should not be used.
+//	if(SLS == TRUE)
+//		return Ret * (1.0/(Trees->NoTaxa - (Trees->NoOfSites+1)));
+
+	Ret = Ret * (1.0/Trees->NoTaxa);
+
+	return Ret;
+}
+
+
+/*
 double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 {
 	double	Ret;
@@ -1136,7 +1159,7 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 	CV = Tree->ConVars;
 
 #ifdef OPENMP_THR
-	#pragma omp parallel for private(x, Ret) num_threads(4)
+#pragma omp parallel for private(x, Ret) num_threads(4)
 #endif
 	for(y=0;y<Trees->NoTaxa;y++)
 	{
@@ -1152,13 +1175,14 @@ double	FindMLVarMatic(TREES* Trees, TREE *Tree, int SLS)
 		Ret = Ret + (CV->TVect2[x] * CV->TVect3[x]);
 
 	// Use sum of least squares, should not be used.
-//	if(SLS == TRUE)
-//		return Ret * (1.0/(Trees->NoTaxa - (Trees->NoOfSites+1)));
+	//	if(SLS == TRUE)
+	//		return Ret * (1.0/(Trees->NoTaxa - (Trees->NoOfSites+1)));
 
 	Ret = Ret * (1.0/Trees->NoTaxa);
 
 	return Ret;
 }
+*/
 
 double	FindMLVar(TREES* Trees, TREE *Tree, int Site1, double Alpha1, double Beta1, int Site2, double Alpha2, double Beta2)
 {
@@ -1244,8 +1268,11 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 		}
 	}
 
+	if(Opt->LoadModels == TRUE)
+		return;
+
 	if(Opt->Model == M_CONTINUOUS_REG)
-	{
+	{		
 		Tree->ConVars->Sigma->me[0][0] = FindMLRegVar(Trees, Tree);
 		return;
 	}
@@ -1833,6 +1860,12 @@ int	CalcInvV(TREES *Trees, TREE *Tree)
 	return FindInvV(Trees, Tree);
 }
 
+void	SetConRegSigma(CONVAR *CV)
+{
+	CV->InvSigma->me[0][0] = 1.0 / CV->Sigma->me[0][0];
+	CV->LogDetOfSigma = log(CV->Sigma->me[0][0]);
+}
+
 double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
 	double	Val;
@@ -1880,8 +1913,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 			MakeKappaV(Trees, Tree, Rates->Kappa);
 		else
 			CopyMatrix(Tree->ConVars->V, Tree->ConVars->TrueV);
-
-
+		
 		if(Opt->EstOU == TRUE)
 			CalcOU(Trees, Tree, Tree->ConVars->V, Rates->OU);
 
@@ -1914,8 +1946,6 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	CalcSigma(Opt, Trees, Tree, Rates->Means, Rates->Beta);
 
-//	CV->Sigma->me[0][0]  = CV->Sigma->me[0][0]  / (2.0 * Rates->OU);
-
 
 #ifdef MATHMAT
 	PrintMathematicaMatrix(Tree->ConVars->Sigma, "Sigma = ", stdout);
@@ -1923,10 +1953,7 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 	if(Opt->Model == M_CONTINUOUS_REG)
 	{
-		CV->InvSigma->me[0][0] = 1.0 / CV->Sigma->me[0][0];
-
-		CV->LogDetOfSigma = log(CV->Sigma->me[0][0]);
-
+		SetConRegSigma(CV);
 	}
 	else
 	{
@@ -1959,6 +1986,9 @@ double	LHRandWalk(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 #else
 	VectByKroneckerMult(Tree->ConVars->ZA, Tree->ConVars->InvSigma, Tree->ConVars->InvV,Tree->ConVars->ZATemp);
 #endif
+
+	
+
 //	btdebug_exit("kronecker");
 
 	if(Opt->Model == M_CONTINUOUS_REG)
@@ -2213,13 +2243,13 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 
 	CheckZeroTaxaBL(Trees);
 	SetTreesDistToRoot(Trees);
-
 	if(Opt->Model == M_CONTINUOUS_REG)
 		RemoveDependantData(Opt, Trees);
-
+	
 	AddRecNodes(Opt, Trees);
 
 	Trees->TempConVars = AllocTempConVars(Opt, Trees);
+
 
 	InitEstData(Opt, Trees);
 
@@ -2228,7 +2258,7 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 		Opt->EstKappa == TRUE ||
 		Opt->EstLambda== TRUE ||
 		Opt->EstOU == TRUE ||
-		Opt->UseVarRates == TRUE)
+		UseNonParametricMethods(Opt) == TRUE)
 		Opt->InvertV = TRUE;
 
 	if(Opt->Analsis == ANALMCMC)
