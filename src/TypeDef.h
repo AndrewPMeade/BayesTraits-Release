@@ -1293,9 +1293,6 @@ typedef struct
 	double		ScaleTrees;
 
 	int			UseRJLocalScalar[NO_RJ_LOCAL_SCALAR];
-	double		*RJLocalScalarThreshold;
-
-
 	int			FatTailNormal;
 
 	int			EstData;
@@ -1340,6 +1337,8 @@ typedef struct
 	int			UseMLLandscape;
 
 	int			UseGlobalTrend;
+
+	double		RJThreshold;
 
 	char		*VarRatesCheckPoint;
 

@@ -303,47 +303,47 @@ void	PrintRecNodes(FILE* Str, OPTIONS *Opt)
 void	PrintRJLocalTrans(FILE* Str, OPTIONS *Opt)
 {
 	fprintf(Str, "Min Trans Taxa No:               %d\n", Opt->MinTransTaxaNo);
-
+	fprintf(Str, "RJ Threshold:                    %f\n", Opt->RJThreshold);
 
 	fprintf(Str, "RJ Local Branch:                 ");
 	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
-		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_BL]);
+		fprintf(Str, "True\n");
 	else
 		fprintf(Str, "False\n");	
 
 	fprintf(Str, "RJ Local Node:                   ");
 	if(Opt->UseRJLocalScalar[VR_NODE] == TRUE)
-		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_NODE]);
+		fprintf(Str, "True\n");
 	else
 		fprintf(Str, "False\n");	
 
 	fprintf(Str, "RJ Local Kappa:                  ");
 	if(Opt->UseRJLocalScalar[VR_KAPPA] == TRUE)
-		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_KAPPA]);
+		fprintf(Str, "True\n");
 	else
 		fprintf(Str, "False\n");
 			
 	fprintf(Str, "RJ Local Lambda:                 ");
 	if(Opt->UseRJLocalScalar[VR_LAMBDA] == TRUE)
-		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_LAMBDA]);
+		fprintf(Str, "True\n");
 	else
 		fprintf(Str, "False\n");
 		
 	fprintf(Str, "RJ Local Delta:                  ");
 	if(Opt->UseRJLocalScalar[VR_DELTA] == TRUE)
-		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_DELTA]);
+		fprintf(Str, "True\n");
 	else
 		fprintf(Str, "False\n");
 		
 	fprintf(Str, "RJ Local OU:                     ");
 	if(Opt->UseRJLocalScalar[VR_OU] == TRUE)
-		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_OU]);
+		fprintf(Str, "True\n");
 	else
 		fprintf(Str, "False\n");	
 
-	fprintf(Str, "RJ Local LandscapeBL:           ");
+	fprintf(Str, "RJ Local Landscape BL:           ");
 	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
-		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_LS_BL]);
+		fprintf(Str, "True\n");
 	else
 		fprintf(Str, "False\n");	
 
@@ -696,9 +696,6 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->LocalTransforms != NULL)
 		free(Opt->LocalTransforms);
-
-	if(Opt->RJLocalScalarThreshold != NULL)
-		free(Opt->RJLocalScalarThreshold);
 	
 	for(Index=0;Index<Opt->NoTags;Index++)
 		FreeTag(Opt->TagList[Index]);
@@ -1369,13 +1366,8 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->FatTailNormal	=	FALSE;
 
-	Ret->RJLocalScalarThreshold = (double*)SMalloc(sizeof(double) * NO_RJ_LOCAL_SCALAR);
-
 	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
-	{
 		Ret->UseRJLocalScalar[Index] = FALSE;
-		Ret->RJLocalScalarThreshold[Index] = 0.0;
-	}
 
 	Ret->NoTags	= 0;
 	Ret->TagList = NULL;
@@ -4153,32 +4145,19 @@ void	SetGlobalTrendOpt(OPTIONS* Opt, int Tokes, char** Passed)
 
 void	SetRJThreshold(OPTIONS* Opt, int Tokes, char** Passed)
 {
-	TRANSFORM_TYPE TType;
-	int Err;
-	double TVal;
-	
-	if(Tokes != 3)
+	if(Tokes != 2)
 	{
-		printf("RJThreshold takes a transform type and threshold value.\n"); 
+		printf("RJThreshold takes a threshold value.\n"); 
 		exit(1);
 	}
 
-	if(IsValidDouble(Passed[2]) == FALSE)
+	if(IsValidDouble(Passed[1]) == FALSE)
 	{
 		printf("%s not a valid threshold value.\n", Passed[1]);
 		exit(1);
 	}
 
-	TType = NameToRJLocalType(Passed[1], &Err);
-
-	if(Err == TRUE)
-	{
-		printf("Cannot convert %s to a valid transform type", Passed[1]);
-		exit(1);
-	}
-
-	TVal = atof(Passed[2]);
-	Opt->RJLocalScalarThreshold[TType] = TVal;
+	Opt->RJThreshold = atof(Passed[1]);
 }
 
 char*	AllocRJStr(int Tokes, char **Passed)
