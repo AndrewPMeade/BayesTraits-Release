@@ -4,10 +4,10 @@
 #ifdef BTOCL
 #include "btocl_runtime.h"
 #include "btocl_kernels_bayestraits.h"
-#include "typedef.h"
+#include "TypeDef.h"
 
 void btocl_AllocPMatrixInfo(TREES* Trees);
-int	 btocl_SetAllPMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, double Kappa);
+int	 btocl_SetAllPMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult);
 void btocl_FreePMatrixInfo(TREES* Trees);
 
 void btocl_AllocLhInfo(TREES* Trees);

@@ -1,7 +1,7 @@
 #ifndef CONTRASTOLDH
 #define CONTRASTOLDH
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 double	CaclStdContrastLh(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 		

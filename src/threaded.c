@@ -1,3 +1,30 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -9,13 +36,14 @@
 	#include <cilk/cilk_api.h>
 #endif
 
-#include "typedef.h"
-#include "threaded.h"
+#include "TypeDef.h"
+#include "Threaded.h"
+
 
 
 int		GetThreadNo(void)
 {
-#ifdef THREADED
+#ifdef OPENMP_THR
 	return omp_get_thread_num();
 #endif	
 	return 0;
@@ -23,7 +51,7 @@ int		GetThreadNo(void)
 
 int		GetMaxThreads(void)
 {
-#ifdef THREADED
+#ifdef OPENMP_THR
 	return omp_get_num_procs();
 #endif
 	
@@ -32,7 +60,11 @@ int		GetMaxThreads(void)
 
 void	SetNoOfThreads(int No)
 {
-#ifdef THREADED
+#ifdef USE_MKL
+	mkl_set_num_threads(No);
+#endif
+
+#ifdef OPENMP_THR
 	omp_set_num_threads(No);
 	return; 
 #endif	
@@ -40,7 +72,7 @@ void	SetNoOfThreads(int No)
 #ifdef CLIK_P
 	char *TStr;
 
-	TStr = (char*)malloc(sizeof(char) * 64);
+	TStr = (char*)SMalloc(sizeof(char) * 64);
 	sprintf(TStr, "%d", No);
 
 	if (0 != __cilkrts_set_param("nworkers",TStr))
@@ -59,7 +91,7 @@ void	SetNoOfThreads(int No)
 
 double	GetSeconds(void)
 {
-#ifndef THREADED
+#ifndef OPENMP_THR
 	return  (double)time(NULL);
 #else
 	return omp_get_wtime();

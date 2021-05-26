@@ -1,11 +1,40 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#include "genlib.h"
-#include "matrix.h"
-#include "linalg.h"
+#include "GenLib.h"
+#include "Matrix.h"
+#include "LinAlg.h"
 
 /* Some matrix manipulasion rotueses */
 /* The representatin of me is Row By Coloum*/
@@ -504,7 +533,7 @@ void	Transpose(MATRIX *T, MATRIX *TransT)
 {
 	int x,y;
 
-	if((TransT->NoOfCols != T->NoOfRows) || (TransT->NoOfRows != T->NoOfCols))
+	if(TransT->NoOfCols != T->NoOfRows || TransT->NoOfRows != T->NoOfCols)
 	{
 		printf("Cannot Transpose matrix, as the destinastion matrix is of the order\n");
 		exit(0);
@@ -545,10 +574,8 @@ double*	FlattenMatix(MATRIX *M)
 
 	i = 0;
 
-	Ret = (double*)malloc(sizeof(double) * (M->NoOfRows * M->NoOfCols));
-	if(Ret == NULL)
-		MallocErr();
-
+	Ret = (double*)SMalloc(sizeof(double) * (M->NoOfRows * M->NoOfCols));
+	
 	for(x=0;x<M->NoOfRows;x++)
 	{
 		for(y=0;y<M->NoOfCols;y++)
@@ -572,9 +599,7 @@ MATRIX_INVERT*	CreatMatInvertInfo(int N)
 {
 	MATRIX_INVERT*	Ret;
 
-	Ret = (MATRIX_INVERT*)malloc(sizeof(MATRIX_INVERT));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (MATRIX_INVERT*)SMalloc(sizeof(MATRIX_INVERT));
 
 	Ret->Inv = AllocMatrix(N, N);
 	Ret->TempD = (double*)malloc(sizeof(double) * N);
@@ -588,6 +613,7 @@ void			FreeMatInvertInfo(MATRIX_INVERT *M)
 	FreeMatrix(M->Inv);
 	free(M->TempD);
 	free(M->TempI);
+	free(M);
 }
 
 int				Matrix_Invert(MATRIX *Mat, MATRIX_INVERT *Info)

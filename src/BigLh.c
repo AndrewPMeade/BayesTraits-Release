@@ -1,12 +1,41 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "GenLib.h"
 #include "BigLh.h"
-#include "likelihood.h"
+#include "Likelihood.h"
 
 #ifndef BIG_LH
 void	InitTreeBigLh(OPTIONS *Opt, TREES *Trees) { }
@@ -15,26 +44,26 @@ void	FreeTreeBigLh(OPTIONS *Opt, TREES *Trees) { }
 void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo) { }
 double	CombineBigLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS) {return 0.0;}
 
-void	SetBigLhNodeRec(NODE N, int NOS, int NoOfSites, RATES *Rates, OPTIONS *Opt) { }
+void	SetBigLhNodeRec(NODE N, int NOS, int NoSites, RATES *Rates, OPTIONS *Opt) { }
 
-void	FossilLhBig(NODE N, TREES *Trees, int SiteNo) { }
-void	FossilDepLhBig(NODE N, int SiteNo, int s00, int s01, int s10, int s11) { }
+void	FossilLhBig(NODE N, TREES *Trees, int *Mask, int SiteNo) { }
+
 #else
 
 void	AllocNodeMemBigLh(NODE N, OPTIONS *Opt, TREES *Trees)
 {
 	int i,j;
 
-	N->BigPartial = (mpfr_t**)malloc(sizeof(mpfr_t*) * Trees->NoOfSites);
+	N->BigPartial = (mpfr_t**)malloc(sizeof(mpfr_t*) * Trees->NoSites);
 	if(N->BigPartial == NULL)
 		MallocErr();
 
-	for(i=0;i<Trees->NoOfSites;i++)
+	for(i=0;i<Trees->NoSites;i++)
 	{
-		N->BigPartial[i] = (mpfr_t*)malloc(sizeof(mpfr_t) * Trees->NoOfStates);
+		N->BigPartial[i] = (mpfr_t*)malloc(sizeof(mpfr_t) * Trees->NoStates);
 		if(N->BigPartial[i] == NULL)
 			MallocErr();
-		for(j=0;j<Trees->NoOfStates;j++)
+		for(j=0;j<Trees->NoStates;j++)
 		{
 			mpfr_init2(N->BigPartial[i][j], Opt->Precision);
 			mpfr_set_d(N->BigPartial[i][j], 0.0, DEF_ROUND);
@@ -61,7 +90,7 @@ void	AllocMemory(OPTIONS *Opt, TREES *Trees)
 	NODE N;
 	TREE *T;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		T = Trees->Tree[TIndex];
 		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
@@ -76,9 +105,9 @@ void	SetTipDataNodeBigLh(NODE N, OPTIONS *Opt, TREES *Trees)
 {
 	int i,j;
 
-	for(i=0;i<Trees->NoOfSites;i++)
+	for(i=0;i<Trees->NoSites;i++)
 	{
-		for(j=0;j<Trees->NoOfStates;j++)
+		for(j=0;j<Trees->NoStates;j++)
 			mpfr_set_d(N->BigPartial[i][j], N->Partial[i][j], DEF_ROUND);
 	}
 }
@@ -91,7 +120,7 @@ void	SetTipDataBigLh(OPTIONS *Opt, TREES *Trees)
 	NODE N;
 	TREE *T;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		T = Trees->Tree[TIndex];
 		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
@@ -104,7 +133,7 @@ void	SetTipDataBigLh(OPTIONS *Opt, TREES *Trees)
 }
 
 void	InitTreeBigLh(OPTIONS *Opt, TREES *Trees)
-{ 
+{
 	AllocMemory(Opt, Trees);
 
 	SetTipDataBigLh(Opt, Trees);
@@ -114,9 +143,9 @@ void	FreeNodeMemBigLh(NODE N, OPTIONS *Opt, TREES *Trees)
 {
 	int i,j;
 
-	for(i=0;i<Trees->NoOfSites;i++)
+	for(i=0;i<Trees->NoSites;i++)
 	{
-		for(j=0;j<Trees->NoOfStates;j++)
+		for(j=0;j<Trees->NoStates;j++)
 			mpfr_clear(N->BigPartial[i][j]);
 		free(N->BigPartial[i]);
 	}
@@ -132,7 +161,7 @@ void	FreeTreeBigLh(OPTIONS *Opt, TREES *Trees)
 	NODE N;
 	TREE *T;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		T = Trees->Tree[TIndex];
 		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
@@ -143,48 +172,26 @@ void	FreeTreeBigLh(OPTIONS *Opt, TREES *Trees)
 	}
 }
 
-void SetBigLHZero(mpfr_t State)
-{
-	mpfr_set_d(State, 0.0, DEF_ROUND);
-}
-
-void	FossilLhBig(NODE N, TREES *Trees, int SiteNo)
+void	FossilLhBig(NODE N, TREES *Trees, int *Mask, int SiteNo)
 {
 	int Index;
-	
-	for(Index=0;Index<Trees->NoOfStates;Index++)
+
+	for(Index=0;Index<Trees->NoStates;Index++)
 	{
-		if(Index != N->FossilState)
-			SetBigLHZero(N->BigPartial[SiteNo][Index]);
+		if(Mask[Index] == 0)
+			mpfr_set_d(State, 0.0, DEF_ROUND);
 	}
 }
 
-void	FossilDepLhBig(NODE N, int SiteNo, int s00, int s01, int s10, int s11)
-{
-	if(s00 == 0)
-		SetBigLHZero(N->BigPartial[SiteNo][0]);
-
-	if(s01 == 0)
-		SetBigLHZero(N->BigPartial[SiteNo][1]);
-
-	if(s10 == 0)
-		SetBigLHZero(N->BigPartial[SiteNo][2]);
-
-	if(s11 == 0)
-		SetBigLHZero(N->BigPartial[SiteNo][3]);
-}
-
-
-
 void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo)
-{ 
+{
 	int Inner, Outter, NIndex;
 	double Lh;
 	double **Mat;
 	mpfr_t **Partail;
 
 	// Set N->BigPartial to know value
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
+	for(Outter=0;Outter<Trees->NoStates;Outter++)
 	{
 		mpfr_set_d(N->BigPartial[SiteNo][Outter], 1.0, DEF_ROUND);
 		for(NIndex=0;NIndex<N->NoNodes;NIndex++)
@@ -193,7 +200,7 @@ void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo)
 			Partail = N->NodeList[NIndex]->BigPartial;
 
 			mpfr_set_d(N->t1, 0.0, DEF_ROUND);
-			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
+			for(Inner=0;Inner<Trees->NoStates;Inner++)
 			{
 				mpfr_mul_d(N->t2, Partail[SiteNo][Inner], Mat[Outter][Inner], DEF_ROUND);
 				mpfr_add(N->t3, N->t1, N->t2, DEF_ROUND);
@@ -205,7 +212,7 @@ void	LhBigLh(NODE N, TREES *Trees, int Pre, int SiteNo)
 		}
 	}
 
-	if(N->FossilState != -1)
+	if(N->FossilMask != NULL)
 		FossilLh(N, Trees, SiteNo);
 }
 
@@ -244,11 +251,11 @@ double CombineBigLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NO
 	return Ret;
 }
 
-void	SetBigLhNodeRec(NODE N, int NOS, int NoOfSites, RATES *Rates, OPTIONS *Opt)
+void	SetBigLhNodeRec(NODE N, int NOS, int NoSites, RATES *Rates, OPTIONS *Opt)
 {
 	int SIndex, Index;
 
-	for(SIndex=0;SIndex<NoOfSites;SIndex++)
+	for(SIndex=0;SIndex<NoSites;SIndex++)
 	{
 		mpfr_set_d(N->t1, 0.0, DEF_ROUND);
 		for(Index=0;Index<NOS;Index++)

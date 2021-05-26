@@ -1,7 +1,7 @@
-#if !defined (RANDDISTH)
+#ifndef RANDDISTH
 #define RANDDISTH
 
-#include "matrix.h"
+#include "Matrix.h"
 
 	MATRIX*	MultivariateNormal(int No, MATRIX *CoVar);
 
@@ -37,5 +37,5 @@
 	extern double sexpo(void);
 	extern double sgamma(double a);
 	extern double snorm(void);
-
+	extern double gamma(double a);
 #endif

@@ -1,18 +1,47 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <stdio.h>
 
-#include "typedef.h"
+#include "TypeDef.h"
 #include "QuadDouble.h"
-#include "genlib.h"
+#include "GenLib.h"
 
 
 #ifndef QUAD_DOUBLE
 void	InitQuadDoubleLh(OPTIONS *Opt, TREES *Trees) {}
 void	FreeQuadLh(OPTIONS *Opt, TREES *Trees) {}
 
-void	NodeLhQuadDouble(NODE N, TREES *Trees, int SiteNo) {}
-		
+void	NodeLhQuadDouble(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo) {}
+
 
 double	CombineQuadDoubleLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS) {return -1;}
 
@@ -30,11 +59,11 @@ void	AllocNodeQuadMem(NODE N, OPTIONS *Opt, TREES *Trees)
 
 	for(SIndex=0;SIndex<Trees->NoOfSites;SIndex++)
 	{
-		N->BigPartial[SIndex] = (QDOUBLE*)malloc(sizeof(QDOUBLE) * Trees->NoOfStates);
+		N->BigPartial[SIndex] = (QDOUBLE*)malloc(sizeof(QDOUBLE) * Trees->NoStates);
 		if(N->BigPartial[SIndex] == NULL)
 			MallocErr();
 
-		for(Index=0;Index<Trees->NoOfStates;Index++)
+		for(Index=0;Index<Trees->NoStates;Index++)
 			N->BigPartial[SIndex][Index] = N->Partial[SIndex][Index];
 	}
 }
@@ -45,7 +74,7 @@ void	InitQuadDoubleLh(OPTIONS *Opt, TREES *Trees)
 	TREE *Tree;
 	NODE N;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		Tree = Trees->Tree[TIndex];
 		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
@@ -61,8 +90,8 @@ void	FreeQuadLh(OPTIONS *Opt, TREES *Trees)
 	int TIndex, NIndex, Index;
 	NODE N;
 	TREE *T;
-	
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		T = Trees->Tree[TIndex];
 		for(NIndex=0;NIndex<T->NoNodes;NIndex++)
@@ -75,77 +104,14 @@ void	FreeQuadLh(OPTIONS *Opt, TREES *Trees)
 	}
 }
 
-void	FossiQuadlLh(NODE N, TREES *Trees, int SiteNo)
-{
-	int	Index;
-
-	/* Are we using the expanded discite fossil states? */
-	if(N->FossilState < Trees->NoOfStates)
-	{
-
-		for(Index=0;Index<Trees->NoOfStates;Index++)
-		{
-			if(Index != N->FossilState)
-				N->BigPartial[SiteNo][Index] = 0;
-		}
-	}
-	else
-	{
-		switch(N->FossilState)
-		{
-			case 10:
-				SetFossilStates(N, SiteNo, 1, 1, 0, 0);
-			break;
-
-			case 11:
-				SetFossilStates(N, SiteNo, 1, 0, 1, 0);
-			break;
-
-			case 12:
-				SetFossilStates(N, SiteNo, 1, 0, 0, 1);
-			break;
-
-			case 13:
-				SetFossilStates(N, SiteNo, 0, 1, 1, 0);
-			break;
-
-			case 14:
-				SetFossilStates(N, SiteNo, 0, 1, 0, 1);
-			break;
-
-			case 15:
-				SetFossilStates(N, SiteNo, 0, 0, 1, 1);
-			break;
-
-			case 20:
-				SetFossilStates(N, SiteNo, 1, 1, 1, 0);
-			break;
-
-			case 21:
-				SetFossilStates(N, SiteNo, 1, 1, 0, 1);
-			break;
-
-			case 22:
-				SetFossilStates(N, SiteNo, 1, 0, 1, 1);
-			break;
-
-			case 23:
-				SetFossilStates(N, SiteNo, 0, 1, 1, 1);
-			break;
-		}
-	}
-
-}
-
-
-void	NodeLhQuadDouble(NODE N, TREES *Trees, int SiteNo)
+void	NodeLhQuadDouble(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 {
 	int		Inner, Outter, NIndex;
 	QDOUBLE	Lh;
 	QDOUBLE **TBigLh;
 	double **Mat;
 
-	for(Outter=0;Outter<Trees->NoOfStates;Outter++)
+	for(Outter=0;Outter<Trees->NoStates;Outter++)
 	{
 		N->BigPartial[SiteNo][Outter] = 1.0;
 
@@ -153,18 +119,17 @@ void	NodeLhQuadDouble(NODE N, TREES *Trees, int SiteNo)
 		{
 			Mat = Trees->PList[N->NodeList[NIndex]->ID]->me;
 			TBigLh = N->NodeList[NIndex]->BigPartial;
-			
+
 			Lh = 0;
-			for(Inner=0;Inner<Trees->NoOfStates;Inner++)
+			for(Inner=0;Inner<Trees->NoStates;Inner++)
 				Lh += TBigLh[SiteNo][Inner] * (QDOUBLE)Mat[Outter][Inner];
 
 			N->BigPartial[SiteNo][Outter] *= Lh;
 		}
 	}
-	
-	if(N->FossilState != -1)
-		FossiQuadlLh(N, Trees, SiteNo);
-	
+
+	if(N->FossilMask != NULL)
+		FossilLh(N, Opt, Trees, SiteNo);
 }
 
 double	CombineQuadDoubleLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo, int NOS)
@@ -187,7 +152,7 @@ double	CombineQuadDoubleLh(RATES* Rates, TREES *Trees, OPTIONS *Opt, int SiteNo,
 	}
 
 	Ret = (double)logq(Sum);
-	
+
 
 	return Ret;
 }

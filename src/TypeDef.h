@@ -1,32 +1,54 @@
-#if !defined (TYPEDEFS)
-#define TYPEDEFS
+#ifndef TYPEDEFS_H
+#define TYPEDEFS_H
 
-#pragma warning(disable : 4996)
+
+//#pragma warning(disable : 4996)
 #include <stdio.h>
 #include <assert.h>
+#include <gsl/gsl_randist.h>
 
-#include "matrix.h"
+#include "Matrix.h"
 #include "RandLib.h"
+#include "StableDist.h"
+#include "AutoTune.h"
 
-//#define	JNIRUN
-//#define THREADED
+//#define JNIRUN
+//#define OPENMP_THR
 //#define BIG_LH
 
-// define BTOCL
+// #define BTOCL
 //#define BTLAPACK
+
+// use the intel MLK lib
+//#define USE_MKL
+
+#ifdef USE_MKL
+	#define MKL_INT int
+	#include <mkl.h>
+#endif
 
 #ifdef BTOCL
 	#include "btocl_runtime.h"
 #endif
 
 //#define	CLIK_P
-#define	PUBLIC_BUILD
+//#define	PUBLIC_BUILD
 
 // Information for the phomem cog est runs
 // #define	PHONEIM_RUN
 
-//#define NLOPT_BT
-//#define QUAD_DOBULE
+//#define QUAD_DOUBLE
+
+// use nlopt libray for ML esitmates, much better than praxis if available 
+#define NLOPT
+#ifdef NLOPT
+	#include <nlopt.h>
+#else
+	// maximum number of states 
+	#define MAX_NUMBER 50	
+	#define MAX_NUM_PARAMS (((MAX_NUMBER) * (MAX_NUMBER)) - (MAX_NUMBER) + 1)
+	#define MAX_N (MAX_NUMBER * (MAX_NUMBER)) - 1
+#endif
 
 #ifdef BIG_LH
 	#include <gmp.h>
@@ -41,7 +63,7 @@
 	#define QDOUBLE	__float128
 #endif
 
-#ifdef	THREADED
+#ifdef	OPENMP_THR
 	#include <omp.h>
 #endif
 
@@ -61,86 +83,98 @@
 */
 #endif
 
+
 /* Program Control */
-//	#define	RATE_CHANGE_UNI
+#define	RATE_CHANGE_UNI
 #define RATE_CHANGE_NORM
 
-// #define RATE_CHANGE_ONE
+// #define NO_GSL
 
-// Used to test if tree transforms are normalised, so there is no cahnge in tree lenght.
-#define		NORM_TRANSFORMS		TRUE
+//#define LH_UNDER_FLOW 9.9296E-153
+#define LH_UNDER_FLOW 1.3839E-87
+
+// Change only one rate at a time
+//#define RATE_CHANGE_ONE
+
+// Used to test if tree transforms are normalised, so there is no cahnge in tree lenght. 
+#define		NORMALISE_TREE_CON_SCALING FALSE
 
 /* If defined Sigma for "Independent Contrast: Full" usning MCMC is restricted to a value. */
 //#define RES_SIGMA	0.1
 //#define RES_ALPHA	0
 
-/* Cost of Uniform prior */
-#define PPUNICOST		2.302585093
-#define PPJACOBIAN		1
-
-/* Max uniform vlaue */
-#define PPMAXSCALE	10
-#define	PPSCALEDEV	100
-
-/* Only scale the branch lengths */
-//#define	PPBLO
-#define PPPRIORSCALE 1
-
-/* Value of the PP alpha gamma */
-#define	PPALPHA		1.1
-#define PPBETA		1
-
-#define PPALPHASCLAE 0.1
-
-// use ML paramter for indpedent contrast MCMC / Var Rates
-//#define CONTRAST_ML_PARAM
 
 /* Use uniform or gamma value priors*/
 //#define PPUNIFORM
 #define PPGAMMA
 
-#define MINRATE 1.0e-16
-#define MAXRATE	1000
+/* Cost of Uniform prior */
+#define PPUNICOST		2.302585093
+#define PPJACOBIAN		1
+
+
+/* Max uniform vlaue */
+#define PPMAXSCALE	10
+#define	PPSCALEDEV	100
+
+/*	Modify the prior cost adding a VarRates scalar */
+#define VAR_RATES_PRIOR_SCALE 1
+
+/* Value of the VarRates alpha beta*/
+#define	VARRATES_ALPHA		1.1
+#define VARRATES_BETA		1
+
+#define VARRATES_HP_ALPHA_SCLAE 0.1
+
+// Only allow one type (Node, BL, Kappa ect) of variables rates operator per node 
+//#define VARRATES_ONE_OP_PER_NODE
+
+// use ML paramter for indpedent contrast MCMC / Var Rates
+//#define CONTRAST_ML_PARAM
+
+// No kappa, lambda, delta, OU. 
+#define	NO_RJ_LOCAL_SCALAR	4
+
+// Minimum number of taxa to transform a node (kappa, lamabed ect)
+//#define MIN_TAXA_VR_TRANS	5
+
+// Minimum number of taxa to Var Rate a ndoe
+#define MIN_TAXA_VR_NODE	0
+
+// def min and max rates, min rate is enforced with user overrides 
+#define RATE_MIN 1.0e-8
+#define RATE_MAX 100
+
 /*	#define MAXRATE	100 */
-#define MINBL	0.0000001
+// Minium barnch legnth
+#define MIN_BL	0.0000001
 
-#define MAX_NUMBER 50	/* maximum number of states */
-#define MAX_NUM_PARAMS (((MAX_NUMBER) * (MAX_NUMBER)) - (MAX_NUMBER) + 1)
-#define MAX_N (MAX_NUMBER * (MAX_NUMBER)) - 1
+// Output File Extensions 
+#define OUTPUT_EXT_LOG			".Log.txt"
+#define OUTPUT_EXT_SCHEDULE		".Schedule.txt"
+#define OUTPUT_EXT_ANC			".AncStates.txt"
+#define OUTPUT_EXT_DUMMY_CODE	".DummyCode.txt"
+#define OUTPUT_EXT_SIM			".Sim.txt"
+#define OUTPUT_EXT_VAR_RATES	".VarRates.txt"
+#define OUTPUT_EXT_STONES		".Stones.txt"
+#define OUTPUT_EXT_TREES		".Output.trees"
 
-#define LOGFILEEXT		"log.txt"
+
 #define UNKNOWNSTATE	'-'
-#define SUMMARYFILEEXT	"sum.txt"
 #define ESTDATAPOINT	"?"
 
 #define ERRLH -999999
 
-#define ZERORATENO		-1
+#define ZERO_RATE_NO		-1
 
 /* Use to set V to idenity for testing */
-//#define IDMATRIX
+//#define ID_MATRIX
 
 //extern double LhPraxis(LhPraxisdouble *);
 
-#define GAMMAMAX	10000
-#define GAMMAMIN	0.05
-
 #define	LOGFILEBUFFERSIZE	65536
 
-#define DISPLAY_INFO	printf("BayesTraits V2.0.2 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
-/*
-#define MIN_DELTA	1E-07
-#define MAX_DELTA	3
-
-#define MIN_LAMBDA	1E-07
-#define MAX_LAMBDA	1
-
-#define MIN_KAPPA	1E-07
-#define MAX_KAPPA	3
-
-#define MIN_OU		1E-07
-#define MAX_OU		100
-*/
+#define DISPLAY_INFO	printf("BayesTraits V3.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
 
 #define MIN_DELTA	1E-07
 #define MAX_DELTA	3
@@ -152,9 +186,48 @@
 #define MAX_KAPPA	3
 
 #define MIN_OU		1E-07
-#define MAX_OU		200
+#define MAX_OU		50
+
+#define MIN_GAMMA	1E-07
+#define MAX_GAMMA	100
+
+#define MIN_LOCAL_RATE 1E-07
+#define MAX_LOCAL_RATE 100
 
 #define	NORM_MEAN_BL	0.1
+
+#define	MAX_VR_KAPPA	25
+#define MAX_VR_DELTA	25
+#define MAX_VR_LAMBDA	1
+#define MAX_VR_OU		100
+
+// Value for a normal distribution for a fat tail model
+#define FAT_TAIL_NORMAL_VAL 2.0
+
+// Minimum and maximum acceptance rates, set for Auto tuning  
+#define MIN_VALID_ACC 0.2
+#define MAX_VALID_ACC 0.4
+
+#define MIN_NO_TAXA_RJ_LOCAL_TRANS 10
+
+// 
+static char    *RJ_LOCAL_SCALAR_NAMES[] =
+{
+	"kappa",
+	"lambda",
+	"delta", 
+	"ou"
+};
+
+typedef enum 
+{
+	VR_KAPPA,
+	VR_LAMBDA, 
+	VR_DELTA,
+	VR_OU,
+	VR_NODE,
+	VR_BL,
+} TRANSFORM_TYPE;
 
 typedef enum
 {
@@ -168,18 +241,18 @@ typedef enum
 	CSAMPLE,
 	CPRIORCAT,
 	CMLTRIES,
+	CMLTOL, 
+	CMLEVAL,
+	CMLALG,
 	CINFO,
 	CPRIORALL,
 	CHELP,
 	CNODE,
 	CMRCA,
-	CDELNODE,
 	CADDTAXA,
 	CDELTAXA,
 	CEVENROOT,
 	CLOGFILE,
-	CMODEL,
-	CRATEDEV,
 	CPRESET,
 	CSUMMARY,
 	CBURNIN,
@@ -188,8 +261,7 @@ typedef enum
 	CDELTA,
 	CLAMBDA,
 	CEXTTAXA,
-	CTAXAINFO,
-	CSAVETREES,
+	CSAVEINITIALTREES,
 	CTESTCORREL,
 	CSURFACE,
 	CCOVARION,
@@ -204,12 +276,7 @@ typedef enum
 	CNODEBLDATA,
 	CGAMMA,
 	CCI,
-	CDEPSITE,
-	CHEADERS,
-/*	CPREVAR, */
-	CVARDATA,
 	CRMODEL,
-	CDATADEV,
 	CCOMMENT,
 	CNOSPERSITE,
 	CSETSEED,
@@ -226,7 +293,21 @@ typedef enum
 	CVARRATES,
 	CSTONES,
 	CADDERR,
-	CSHEDULE,
+	CSHEDULE, 
+	CRJDUMMY,
+	CSCALETREES,
+	CRJLOCALTRANSFORM,
+	CFATTAILNORMAL,
+	CADDTAG,
+	CLOCALTRANSFORM,
+	CDISTDATA,
+	CNOLH,
+	CSAVETREES,
+	CCSCHED, 
+	CADDPATTERN,
+	CSETMINTAXATRANS,
+	CSETMINMAXRATE, 
+	CNORMQMAT, 
 	CUNKNOWN,
 } COMMANDS;
 
@@ -242,28 +323,27 @@ static char    *COMMANDSTRINGS[] =
 	"sample",		"sa",
 	"priorcats",	"pcat",
 	"mltries",		"mlt",
+	"mltol",		"mlto",
+	"mlmaxeval",	"mlme",
+	"mlalg",		"mla",
 	"info",			"in",
 	"priorall",		"pa",
 	"help",			"he",
 	"addnode",		"addn",
 	"addmrca",		"mrca",
-	"delnode",		"deln",
 	"addtaxa",		"addtaxa",
 	"deltaxa",		"deltaxa",
 	"evenroot",		"er",
 	"logfile",		"lf",
-	"hiddenstate",	"hs",
-	"ratedev",		"rd",
 	"preset",		"ps",
 	"summary",		"sum",
 	"burnin",		"bi",
 	"pis",			"pi",
 	"kappa",		"ka",
 	"delta",		"dl",
-	"lambda",		"la",
+	"lambda",		"la", 
 	"excludetaxa",	"et",
-	"taxainfo",		"ti",
-	"savetrees",	"st",
+	"saveinitialtrees", "sit",
 	"testcorrel",	"tc",
 	"surface",		"su",
 	"covarion",		"cv",
@@ -278,12 +358,7 @@ static char    *COMMANDSTRINGS[] =
 	"nodebldata",   "nbd",
 	"gamma",		"ga",
 	"confint",		"cf",
-	"depsite",		"ds",
-	"headers",		"hd",
-/*	"prevar",		"pv", */
-	"vardata",		"vd",
 	"rmodel",		"rm",
-	"datadev",		"dd",
 	"#",			"//",
 	"fitnospersite","nps",
 	"seed",			"se",
@@ -291,16 +366,30 @@ static char    *COMMANDSTRINGS[] =
 	"equaltrees",	"eqt",
 	"precision",	"pre",
 	"cores",		"cor",
-	"symmetrical",	"sym",
+	"symmetrical",	"sym", 
 	"mcmcmlstart",	"mls",
-	"caprjrates",	"cap",
-	"savemodels",	"sm",
-	"loadmodels",	"lm",
-	"ou",			"ou",
-	"varrates",		"vr",
-	"stones",		"st",
-	"adderr",		"er",
-	"schedule",		"sh",
+	"CapRJRates",	"cap", 
+	"SaveModels",	"sm",
+	"LoadModels",	"lm", 
+	"OU",			"ou",
+	"VarRates",		"vr",
+	"Stones",		"ss",
+	"AddErr",		"er",
+	"Schedule",		"sh", 
+	"RJDummy",		"rjd",
+	"ScaleTrees",	"sct", 
+	"RJLocaltransform", "rjlt", 
+	"FatTailNormal", "ftn",
+	"AddTag",		"at",
+	"LocalTransform",	"lt",
+	"DistData",			"dd",
+	"NoLh",			"nl",
+	"SaveTrees",	"savetree",
+	"CustomSchedule", "csched", 
+	"AddPattern", "ap",
+	"SetMinTransTaxaNo", "smttn",
+	"SetMinMaxRate", "smmr",
+	"NormaliseQMatrix", "nqm",
 	""
 };
 
@@ -315,8 +404,10 @@ static char		*MODELNAMES[] =
 	"Independent Contrasts",
 	"Independent Contrasts: Correlation",
 	"Independent Contrasts: Regression",
-	"Discrete: Covarion",
-	"Discrete: Heterogeneous"
+	"Discrete: Covarion", 
+	"Discrete: Heterogeneous",
+	"Fat Tail",
+	"Geo"
 };
 
 static char    *DEPPRAMS[] =
@@ -356,7 +447,7 @@ static char    *DEPCVPRAMS[] =
 	"q42",
 	"q43",
 	"qDI",
-	"qID",
+	"qID"
 	""
 };
 
@@ -377,35 +468,39 @@ static char    *DEPHETROPRAMS[] =
 	""
 };
 
+#define NO_PRIOR_DIST 7
 
 static char    *DISTNAMES[] =
 {
-	"beta",
 	"gamma",
 	"uniform",
 	"chi",
 	"exp",
-	""
+	"sgamma",
+	"lognormal",
+	"normal"
 };
-
 
 static int	DISTPRAMS[] =
 {
 	2,
 	2,
+	1,
+	1,
 	2,
 	2,
-	1
+	2
 };
-
 
 typedef enum
 {
-	BETA=0,
-	GAMMA=1,
-	UNIFORM=2,
-	CHI=3,
-	EXP=4
+	PDIST_GAMMA,
+	PDIST_UNIFORM,
+	PDIST_CHI,
+	PDIST_EXP,
+	PDIST_SGAMMA,
+	PDIST_LOGNORMAL,
+	PDIST_NORMAL
 } PRIORDIST;
 
 typedef enum
@@ -413,7 +508,6 @@ typedef enum
 	DISCRETE,
 	CONTINUOUS
 } DATATYPE;
-
 
 typedef enum
 {
@@ -427,14 +521,17 @@ typedef enum
 	M_CONTRAST_CORREL,
 	M_CONTRAST_REG,
 	M_DESCCV,
-	M_DESCHET
+	M_DESCHET,
+	M_FATTAIL,
+	M_GEO
 } MODEL;
 
 typedef enum
 {
 	MT_DISCRETE,
 	MT_CONTINUOUS,
-	MT_CONTRAST
+	MT_CONTRAST,
+	MT_FATTAIL
 } MODEL_TYPE;
 
 typedef enum
@@ -452,24 +549,30 @@ typedef enum
 
 typedef enum
 {
-	PIUNI,
-	PIEMP,
-	PINONE,
+	PI_UNI,
+	PI_EMP,
+	PI_NONE,
 } PITYPES;
 
 typedef enum
 {
-	PPNODE,
-	PPBRANCH
-} PLASTYTYPE;
+	 RJDUMMY_INTER,
+	 RJDUMMY_INTER_SLOPE
+} RJDUMMY_TYPE;
+
+typedef enum
+{
+	NODEREC,
+	MRCA,
+	FOSSIL,
+} NODETYPE;
+
 
 typedef struct
 {
-	// User supplied taxa number, may not be continues
+	// User supplied taxa number, may not be continues  
 	int		No;
 
-	// Index giving the position in the taxa array
-	int		Index;
 
 	char*	Name;
 	char**	DesDataChar;
@@ -480,8 +583,36 @@ typedef struct
 	int		EstData;
 	char	*EstDataP;
 	int		EstDepData;
-	char	*RealData;
+	char	*RealData;	
 } TAXA;
+
+typedef struct
+{
+	TAXA *Taxa;
+
+	int		*NoSites;
+	double	**Data;
+
+	int		Linked;
+} DIST_DATA_TAXA;
+
+typedef struct
+{
+	char *FName;
+
+	int		NoSites;
+	int		NoTaxa;
+	DIST_DATA_TAXA	**DistDataTaxa;
+
+} DIST_DATA;
+
+typedef struct
+{
+	int NoTaxa;
+	int NoSites;
+
+	int **SiteMap;
+} DIST_DATE_RATES;
 
 typedef struct
 {
@@ -504,10 +635,17 @@ typedef struct
 
 typedef struct
 {
+	double	*Ans;
+
+	double	Data, Cont, Err, Var, v;
+	
+} FATTAILNODE;
+
+typedef struct
+{
 	int NoTaxa;
 	int *Taxa;
 } PART;
-
 
 struct INODE
 {
@@ -517,8 +655,8 @@ struct INODE
 
 	double		Length;
 	double		DistToRoot;
-
 	double		UserLength;
+	double		ScaleFactor;
 
 	int			VPosX, VPosY;
 
@@ -531,7 +669,8 @@ struct INODE
 	double		**Partial;
 	double		**GammaPartial;
 	char		*Tag;
-
+	int			NoUnderFlow;
+	
 #ifdef BIG_LH
 	mpfr_t		**BigPartial;
 	mpfr_t		t1, t2, t3;
@@ -541,54 +680,55 @@ struct INODE
 	QDOUBLE		**BigPartial;
 #endif
 
-
 	TAXA		*Taxa;
-
-//	int			*Part;
-//	int			PSize;
-
+	
 	PART		*Part;
+	
+	int			*FossilMask;
 
-	int			FossilState;
+	int			PatternNo;
 
 	CONDATA		*ConData;
+	FATTAILNODE	*FatTailNode;
 };
 
 typedef struct INODE*	NODE;
 
-typedef enum
+
+typedef struct
 {
-	NODEREC,
-	MRCA,
-	FOSSIL,
-} NODETYPE;
+	char	*Name;
 
+	int		NoTaxa;
+	char	**Taxa;
 
-struct RNODE
+	NODE	*NodeList;
+
+	PART	*Part;
+} TAG;
+
+typedef struct
 {
 	NODETYPE	NodeType;
-	char*		Name;
+	char		*Name;
 
-	int			PresInTrees;
-	int			FossilState;
-
-//	int			*TaxaID;
-//	int			NoOfTaxa;
-
-	PART		*Part;
-
-	TAXA		**Taxa;
-
+	int			*FossilStates;
+	int			NoFossilStates;
+		
 	int			Hits;
-	NODE*		TreeNodes;
+	
+	char		**ConData;
 
-	char**		ConData;
+	TAG			*Tag;
 
-	struct		RNODE *Next;
-};
+} RECNODE;
 
-typedef struct RNODE*	RECNODE;
 
+typedef struct 
+{
+	double	*AnsVect;
+
+} FATTAILTREE;
 
 typedef struct
 {
@@ -597,13 +737,12 @@ typedef struct
 	MATRIX		*InvV;
 	MATRIX		*Sigma;
 	MATRIX		*InvSigma;
-//	MATRIX		*KProd;
-//	MATRIX		*InvKProd;
+
 #ifdef BTOCL   // continuous: V matrix and Z,ZA for Kronecker product
 	cl_mem      buffer_invV;
 	cl_mem		buffer_invSigma;
 	cl_mem		buffer_ZA;
-	cl_mem		buffer_ZATemp;
+	cl_mem		buffer_ZATemp;	
 #endif
 
 	MATRIX		*TVT;
@@ -623,8 +762,6 @@ typedef struct
 	double		*TVect3;
 	double		*SVect;
 
-//	TAXADIST	*TaxaDist;
-
 	double		LogDetOfV;
 	double		LogDetOfSigma;
 
@@ -632,26 +769,30 @@ typedef struct
 
 	double		*MultiVarNormState;
 	double		*MultiVarNormTemp;
-
+	
 } CONVAR;
 
 typedef	struct
 {
-	int			NoNodes;
-	NODE		*NodeList;
-	NODE		Root;
+	int				NoNodes;
+	NODE			*NodeList;
+	NODE			Root;
 
-	NODE		**FNodes;
-	int			*NoFNodes;
-	int			NoFGroups;
+	NODE			**FNodes;
+	int				*NoFNodes;
+	int				NoFGroups;
 
-	int			NoPNodes;
-	NODE		*PNodes;
+	int				NoPNodes;
+	NODE			*PNodes;
 
-	int			NoContrast;
+	int				NoContrast;
 
-	CONVAR*		ConVars;
+	CONVAR*			ConVars;
+	
+	FATTAILTREE*	FatTailTree;
 
+	double			AveBL;
+	
 // information needed to traverse the tree and accumulate partial results
 #ifdef BTOCL
     int* groups;
@@ -663,20 +804,22 @@ typedef	struct
 	int* parentInfo;
 	int* isTip;
 #endif
-
+	
 } TREE;
 
 typedef struct
 {
+	char		*Name;
 	PRIORDIST	Dist;
-	int			RateNo;
 	double		*DistVals;
+	
 	double		*HP;
-	double		OffSet;
 	int			UseHP;
-	int			NoOfCats;
-	char		*RateName;
-} PRIORS;
+	
+	int			Discretised;
+	double		Width;
+
+} PRIOR;
 
 typedef	struct
 {
@@ -687,7 +830,7 @@ typedef	struct
 	MATRIX		*Q;
 	MATRIX		*A;
 #ifdef BTOCL    // discrete: Set PMatrix related
-	// may want to separate InvInfo and PMatrix related
+	// may want to separate InvInfo and PMatrix related 
 	double*     vect_t;
 	int*        vect_id;
 	double*     vect_test;
@@ -733,12 +876,13 @@ typedef struct
 
 typedef struct
 {
-	int			NoOfTrees;
-	int			NoOfTaxa;
-	int			NoOfSites;
-	int			NoOfStates;
+	int			NoTrees;
+	int			NoTaxa;
+	int			NoSites;
+	int			NoUserSites;
+	int			NoStates;
 
-	INVINFO*	InvInfo;
+	INVINFO**	InvInfo;
 
 	double		*PMem;
 	MATRIX		**PList;
@@ -763,11 +907,13 @@ typedef struct
 	char		**SiteSymbols;
 	TEMPCONVAR	*TempConVars;
 
-	double		NormConst;
-
 	int			JStop;
+
+	double		*PMean;
+	double		*PSD;
+
 #ifdef BTOCL
-	// discrete: SetPMatrix related
+	// discrete: SetPMatrix related 
 	cl_mem 		buffer_pmatrix; // MaxNodes*NOS*NOS  write-only NO read/write!
 	cl_mem      buffer_exp_eigen;  // MaxNodes*NOS Read/Write
 	cl_mem      buffer_error;
@@ -790,42 +936,30 @@ typedef struct
 	cl_mem      buffer_isTip;
 	int max_nchildren;
 #endif
-
+	
 } TREES;
 
 typedef struct
 {
-	double	**Data;
-	char	**TaxaNames;
-	int		Site;
-	int		NoPoints;
-} VARDATA;
+	NODE			Node;
+	double			Scale;
+	TRANSFORM_TYPE	Type;
+	long long		NodeID;
+
+	int				Fixed;
+	int				UserSupplied;
+} VAR_RATES_NODE;
 
 typedef struct
 {
-	NODE		Node;
-	double		Scale;
-	PLASTYTYPE	Type;
-	int			NodeID;
-} PLASTYNODE;
-
-typedef struct
-{
-	int			NoNodes;
-	PLASTYNODE **NodeList;
-
-	int			NoTrees;
-	double		**TrueBL;
-	double		*ScaleBL;
-
-	int			NoValidNode;
-	NODE		*ValidNode;
+	int				NoNodes;
+	VAR_RATES_NODE **NodeList;
 
 	NODE		*TempList;
 	int			NoTempList;
 
 	double		Alpha;
-} PLASTY;
+} VARRATES;
 
 typedef struct
 {
@@ -833,7 +967,7 @@ typedef struct
 	MATRIX *Prod1, *Prod2, *Prod3;
 	double	*TempDVect;
 	int		*TempIVect;
-
+	
 } REG_BETA_SPACE;
 
 typedef struct
@@ -842,18 +976,16 @@ typedef struct
 	double* Sigma;
 
 	MATRIX_INVERT	*SigmaInvInfo;
-	MATRIX	*SigmaMat;
-	double	*SigmaInvVec;
-//	MATRIX*	EstSigma;
-
-//	double*	EstAlpha;
-//	double*	EstSigma;
-//	double*	AlphaErr;
-
+	MATRIX			*SigmaMat;
+	double			*SigmaInvVec;
+	
 	double	RegSigma;
 	double	RegAlpha;
 	double	*RegBeta;
 
+	double	GlobalVar;
+
+	int		NoSites;
 
 	REG_BETA_SPACE	*RegSapce;
 } CONTRASTR;
@@ -869,14 +1001,39 @@ typedef struct
 
 	int		NoStones;
 	double	Alpha, Beta;
-
-	int		ItPerStone;
-	int		ItStart;
+	
+	int			ItPerStone;
+	long long	ItStart;
 
 	int		SampleFreq;
 	int		Started;
 	int		N;
 } STONES;
+
+typedef struct
+{
+	char			*Name;
+	TRANSFORM_TYPE	Type;
+	double			Scale;
+	int				Est;
+	TAG				**TagList;
+	int				NoTags;
+} LOCAL_TRANSFORM;
+
+
+typedef struct
+{
+	long long	Iteration;
+	double		*Frequencies;
+	int			Default;
+} CUSTOM_SCHEDULE;
+
+typedef struct
+{
+	char	*Name;
+	TAG		**TagList;
+	int		NoTags;
+} PATTERN;
 
 typedef struct
 {
@@ -887,53 +1044,39 @@ typedef struct
 	int			NoOfRates;
 	char		**RateName;
 
+	int			DefNoRates;
+	char		**DefRateNames;
+
 	RESTYPES	*ResTypes;
 	int			*ResNo;
 	double		*ResConst;
-
-	double		RateDev;
-	double		*RateDevList;
-	int			AutoTuneRD;
-	int			RateDevPerParm;
-
-
-	double		RateDevKappa;
-	double		RateDevLambda;
-	double		RateDevDelta;
-	double		RateDevOU;
-
-	double		EstDataDev;
-	int			AutoTuneDD;
-
-
-	double		VarRatesScaleDev;
-	int			AutoTuneVarRates;
-
-	//	PPSCALEDEV
-
-	PRIORS		**Priors;
-
+	
+	
 	int			PriorCats;
 
-	int			Itters;
+	long long	Itters;
 	int			Sample;
-	int			BurnIn;
+	long long	BurnIn;
+	
 	int			MLTries;
+	int			MLMaxEVals;
+	double		MLTol;
+	char		*MLAlg;
 
 	int			NoOfRecNodes;
-
-	RECNODE		RecNode;
-	RECNODE		*RecNodeList;
+	RECNODE		**RecNodeList;
 
 	TREES		*Trees;
 
-	char		*LogFN;
+//	char		*LogFN;
+	char		*BaseOutputFN;
 	char		*TreeFN;
 	char		*DataFN;
 	FILE		*LogFile;
 	FILE		*LogFileRead;
-	FILE		*PPTree;
-	FILE		*PPLog;
+	FILE		*OutTrees;
+	FILE		*VarRatesLog;
+	FILE		*LogFatTail;
 	char		*LogFileBuffer;
 	char		**PassedOut;
 
@@ -963,13 +1106,10 @@ typedef struct
 
 	int			InvertV;
 
-	PRIORS		*PriorKappa;
-	PRIORS		*PriorDelta;
-	PRIORS		*PriorLambda;
-	PRIORS		*PriorGamma;
-	PRIORS		*PriorOU;
+	PRIOR		**AllPriors;
+	int			NoAllPriors;
 
-	char		*SaveTrees;
+	char		*SaveInitialTrees;
 
 	int			GammaCats;
 
@@ -984,9 +1124,7 @@ typedef struct
 	int			UseRJMCMC;
 	int			CapRJRatesNo;
 	int			MCMCMLStart;
-
-	PRIORS		*RJPrior;
-
+	
 	int			NodeData;
 	int			NodeBLData;
 	int			AlphaZero;
@@ -996,16 +1134,7 @@ typedef struct
 	int			FindCF;
 	char*		CFRate;
 
-//	int			DependantSite;
-	int			Headers;
-
-//	char*		ModelFile;
-//	int			UseModelFile;
-
-	int			UseVarData;
-	char		*VarDataFile;
-	VARDATA*	VarData;
-
+	
 	int			UseRModel;
 	double		RModelP;
 
@@ -1018,12 +1147,10 @@ typedef struct
 	int			NOSPerSite;
 
 	int			UseSchedule;
-//	char		*ScheduleFile;
 
 	long		Seed;
 	int			MakeUM;
 
-//	int			UsePhyloPlasty;
 	int			UseVarRates;
 
 	int			UseEqualTrees;
@@ -1039,13 +1166,53 @@ typedef struct
 	char		*LoadModelsFN;
 
 	STONES		*Stones;
+
+	int			RJDummy;
+	FILE		*RJDummyLog;
+
+	double		RJDummyBetaDev;
+
+	double		ScaleTrees;
+
+	int			UseRJLocalScalar[NO_RJ_LOCAL_SCALAR];
+	int			FatTailNormal;
+
+	int			EstData;
+
+	int			NoTags;
+	TAG			**TagList;
+
+	int				NoLocalTransforms;
+	LOCAL_TRANSFORM	**LocalTransforms;
+
+	DIST_DATA	*DistData;
+	int			UseDistData;
+
+	int			NoLh;
+
+	int			SaveTrees;
+
+
+	int				NoCShed;
+	CUSTOM_SCHEDULE	**CShedList;
+
+
+	PATTERN		**PatternList;
+	int			NoPatterns;
+
+	int			MinTransTaxaNo;
+	
+	double		RateMin, RateMax;
+
+	int			NormQMat;
+
 } OPTIONS;
 
 typedef struct
 {
 	int			NoModels;
 	INVINFO**	ModelInv;
-
+	
 	int			MListSize;
 	int			*MList;
 } HETERO;
@@ -1056,36 +1223,88 @@ typedef struct
 	int		NoParam;
 	char	*FName;
 	double	**ModelP;
-
 } MODELFILE;
 
 typedef struct
 {
-	// Number of rate to esimate, or max num if RJ is used.
+	RJDUMMY_TYPE	Type;
+	NODE			Node;
+	double			*Beta;
+	long long		Iteration;
+} DUMMYCODE;
+
+typedef struct
+{
+	DUMMYCODE	**DummyList;
+	int			NoDummyCode;
+	int			NoMaxDummy;
+	double		*DummyBeta;
+} RJDUMMY;
+
+typedef struct
+{
+	// Total number of steps to use
+	int			NoSteps;
+
+	// Current number of horistoal slices
+	int			NoSlices;
+
+	// X,Y posititions of slice
+	double		*SliceX;
+	double		*SliceY;
+
+	// start / end paires of 
+	double		*SliceMin;
+	double		*SliceMax;
+
+} SLICESAMPLER;
+
+typedef struct
+{
+	double		*Alpha;
+	double		*Scale;
+
+	double		*AnsVect;
+
+	double		*SiteLh;
+
+	double		*SiteMin;
+	double		*SiteMax;
+	double		*SiteSD;
+
+	SLICESAMPLER*	SliceSampler;
+	
+	int				NoSD;
+	STABLEDIST**	SDList;
+
+} FATTAILRATES;
+
+typedef struct
+{
+	// Number of rate to esimate, or max num if RJ is used. 
 	int		NoOfRates;
 
-	// Total number of rates to use, inc, including resections and constatns.
+	// Total number of rates to use, inc, including resections and constatns. 
 	int		NoOfFullRates;
 
 	// RJ number of rates used currently
 	int		NoOfRJRates;
-
-	// Number of Priors.
-//	int		NoOfRatePriors;
-	int		NoOfPriors;
-
-	// Values for the rates being estimated.
+	
+	// Values for the rates being estimated. 
 	double	*Rates;
 
-	// Values for the all rates, inc constants and resections.
-	double	*FullRates;
+	// The names of the paramters being estmated
+	char	**RateNames;
 
+	// Values for the all rates, inc constants and resections.  
+	double	*FullRates;
+	
 	// Base frequencies , can all be set to 1 for back capability
 	double	*Pis;
 
 	// The current tree being evaluated
 	int		TreeNo;
-
+	
 	// Lh of the rates
 	double	Lh;
 
@@ -1093,16 +1312,14 @@ typedef struct
 	double	LnHastings;
 	double	LnJacobion;
 
-	PRIORS		**Prios;
-	PRIORS		*PriorKappa;
-	PRIORS		*PriorDelta;
-	PRIORS		*PriorLambda;
-	PRIORS		*PriorGamma;
-	PRIORS		*PriorOU;
+	int			NoPatterns;
 
-	double	*Means;
+	PRIOR		**Priors;
+	int			NoPriors;	
 
-	double	*Beta;
+	double		*Means;
+
+	double		*Beta;
 
 	double	Delta;
 	double	Lambda;
@@ -1119,8 +1336,7 @@ typedef struct
 	double	*GammaMults;
 	int		GammaCats;
 	double	Gamma;
-	double	LastGamma;
-
+		
 	int		HMeanCount;
 
 #ifndef BIG_LH
@@ -1132,18 +1348,35 @@ typedef struct
 	int		UseEstData;
 	int		*EstDescData;
 	double	*EstData;
+	int		*EstDataSiteNo;
 	int		NoEstData;
 
 	MODELFILE		*ModelFile;
 	int				ModelNo;
 
-	int				VarDataSite;
-
 	RANDSTATES		*RS;
+	RANDSTATES		**RSList;
+	gsl_rng			*RNG;
 
-	PLASTY			*Plasty;
+	VARRATES		*VarRates;
 	CONTRASTR		*Contrast;
 	HETERO			*Hetero;
+	RJDUMMY			*RJDummy;
+	FATTAILRATES	*FatTailRates;
+
+	int				UseLocalTransforms;
+	int				EstLocalTransforms;
+	
+	int				NoLocalTransforms;
+	LOCAL_TRANSFORM	**LocalTransforms;
+
+	DIST_DATE_RATES	*DistDataRates;
+
+	int				AutoAccept;
+	int				CalcLh;
+
+	double			GlobablRate;
+	double			NormConst;
 } RATES;
 
 typedef struct
@@ -1160,7 +1393,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NOOFOPERATORS	18
+#define NO_SCHEDULE_OPT	26
 
 static char    *SHEDOP[] =
 {
@@ -1169,53 +1402,58 @@ static char    *SHEDOP[] =
 	"Kappa",
 	"Delta",
 	"Labda",
-	"Jump",
+	"Rev Jump",
 	"Prior Change",
 	"Est Data",
-	"Var Data",
 	"Solo Tree Move",
-	"PP Add / Remove",
-	"PP Move",
-	"PP Change Scale",
-	"PP Hyper Prior",
+	"RJ Local Transform Add / Remove",
+	"Local Transform Move",
+	"Local Transform Change Scale",
+	"Local Transform Hyper Prior",
 	"Change Hetero",
 	"Tree Move",
 	"OU",
-	"Gamma"
+	"Gamma",
+	"RJ Dummy Add / Remove",
+	"RJ Dummy Move Node",
+	"RJ Dummy Change Beta",
+	"Fat Tail Ans",
+	"Local Rates",
+	"Data Dist",
+	"Time Slice - Time",
+	"Time Slice - Scale",
+	"Global Rate"
 };
 
 typedef enum
 {
-	SRATES,
-	SCV,
-	SKAPPA,
-	SDELTA,
-	SLABDA,
-	SJUMP,
-	SPPROR,
-	SESTDATA,
-	SVARDATA,
-	SSOLOTREEMOVE,
-	SPPADDREMOVE,
-	SPPMOVE,
-	SPPCHANGESCALE,
-	SPPHYPERPRIOR,
-	SHETERO,
-	STREEMOVE,
-	SOU,
-	SGAMMA
+	S_RATES,
+	S_CV,
+	S_KAPPA,
+	S_DELTA,
+	S_LABDA,
+	S_JUMP,
+	S_PPROR,
+	S_EST_DATA,
+	S_SOLO_TREE_MOVE,
+	S_VARRATES_ADD_REMOVE,
+	S_VARRATES_MOVE,
+	S_VARRATES_CHANGE_SCALE,
+	S_VARRATES_HYPER_PRIOR,
+	S_HETERO, 
+	S_TREE_MOVE,
+	S_OU,
+	S_GAMMA_MOVE,
+	S_RJ_DUMMY, 
+	S_RJ_DUMMY_MOVE,
+	S_RJ_DUMMY_CHANG_EBETA,
+	S_FAT_TAILANS,
+	S_LOCAL_RATES,
+	S_DATA_DIST,
+	S_TIME_SLICE_TIME,
+	S_TIME_SLICE_SCALE,
+	S_GLOBAL_RATE
 } OPERATORS;
-
-typedef struct
-{
-	int No;
-
-	double	Min, Max, Target;
-	double	Last;
-
-	double	*RateAcc;
-	double	*RateDev;
-} AUTOTUNE;
 
 typedef struct
 {
@@ -1224,30 +1462,49 @@ typedef struct
 
 	int		GNoAcc, GNoTried;
 	int		SNoAcc, SNoTried;
-
-//	double	OptFreq[NOOFOPERATORS];
-//	int		Tryed[NOOFOPERATORS];
-//	int		Accepted[NOOFOPERATORS];
-
+	
 	double		*OptFreq;
 	int			*Tryed;
 	int			*Accepted;
-//	AUTOTUNE	*RateDevAT;
 	AUTOTUNE	*DataDevAT;
 	AUTOTUNE	*VarRateAT;
 
-	int			RateDevPerParm;
 	int			NoParm;
 	AUTOTUNE	**RateDevATList;
 	int			*PTried;
 	int			*PAcc;
 	int			PNo;
 
+	int			NoVarRatesOp;
+	double		*FreqVarRatesOp;
+	TRANSFORM_TYPE	*VarRatesOp;
+
+
 	AUTOTUNE	*KappaAT;
 	AUTOTUNE	*DeltaAT;
 	AUTOTUNE	*LambdaAT;
 	AUTOTUNE	*OUAT;
 
+	AUTOTUNE	*GammaAT;
+
+	AUTOTUNE	*RJDummyBetaAT;
+
+	AUTOTUNE	**FullATList;
+	int			NoFullATList;
+
+	AUTOTUNE	*LocalRatesAT;
+
+	AUTOTUNE	*TimeSliceTimeAT;
+	AUTOTUNE	*TimeSliceScaleAT;
+
+	AUTOTUNE	*CurrentAT;
+
+	AUTOTUNE	*GlobalRateAT;
+
+
+	int				NoCShed;
+	CUSTOM_SCHEDULE	**CShedList;
+	double			*DefShed;
 
 } SCHEDULE;
 
@@ -1261,6 +1518,5 @@ typedef struct
 	int	NoInZero;
 	int	*ZeroPos;
 } MAPINFO;
-
 
 #endif

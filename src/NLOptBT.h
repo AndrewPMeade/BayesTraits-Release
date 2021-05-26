@@ -1,9 +1,13 @@
-#ifndef BLOptBT_H
-#define BLOptBT_H
+#ifndef NLOPTBT_H
+#define NLOPTBT_H
 
-#include "typedef.h"
-#include "praxis.h"
+#include "TypeDef.h"
+#include "Praxis.h"
+#include "ML.h"
 
-double NLOptBT(double *X, PRAXSTATE *PState);
+int		ValidMLAlgName(char *Name);
+void	PrintAlgNames(void);
+
+double NLOptBT(RATES *Rates, OPTIONS *Opt, TREES *Trees, ML_MAP *MLMap);
 
 #endif

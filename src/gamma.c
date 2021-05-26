@@ -5,7 +5,7 @@
 #include <string.h>
 #include <time.h>
 
-#include "gamma.h"
+#include "Gamma.h"
 
 #define MAINCAT 4
 
@@ -329,7 +329,6 @@ double PointChi2 (double prob, double v)
 |                                                                               |
 -------------------------------------------------------------------------------*/   
 int DiscreteGamma (double *freqK, double *rK, double alfa, double beta, int K, int median)
-
 {
 
 	int 			i;
@@ -592,7 +591,9 @@ double Vha (double h, double k)
 		if (h == 0.0) 
 			sign = (k >= 0.0 ? 1.0 : -1.0);
 		else      
-			sign = ((k >= 0.0 && h > 0.0 || k < 0.0 && h < 0.0) ? 1.0 : -1.0);
+	//		Keep CLang happy
+	//		sign = ((k >= 0.0 && h > 0.0 || k < 0.0 && h < 0.0) ? 1.0 : -1.0);
+			sign = (((k >= 0.0 && h > 0.0) || (k < 0.0 && h < 0.0)) ? 1.0 : -1.0);
 		t = 0.25*sign;
 		}
 	else 

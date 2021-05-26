@@ -1,10 +1,39 @@
-#include "randdists.h"
-#include "matrix.h"
-#include "genlib.h"
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
 
 #include <stdio.h>
 #include <math.h>
 #include <stdlib.h>
+
+#include "RandDists.h"
+#include "Matrix.h"
+#include "GenLib.h"
+
+
 #define ABS(x) ((x) >= 0 ? (x) : -(x))
 
 #ifndef min
@@ -960,7 +989,7 @@ S30:
      TRIANGULAR REGION
 */
     if(u > p1) goto S40;
-    ix = xm-p1*v+u;
+    ix = (long)(xm-p1*v+u);
     goto S170;
 S40:
 /*
@@ -977,7 +1006,7 @@ S50:
      LEFT TAIL
 */
     if(u > p3) goto S60;
-    ix = xl+log(v)/xll;
+    ix = (long)(xl+log(v)/xll);
     if(ix < 0) goto S30;
     v *= ((u-p2)*xll);
     goto S70;
@@ -985,7 +1014,7 @@ S60:
 /*
      RIGHT TAIL
 */
-    ix = xr-log(v)/xlr;
+    ix = (long)(xr-log(v)/xlr);
     if(ix > n) goto S30;
     v *= ((u-p3)*xlr);
 S70:
@@ -1186,7 +1215,7 @@ static double a5 =  0.1428833286;
 static double a6 = -0.1241963125;
 static double a7 =  0.1101687109;
 static double a8 = -0.1142650302;
-static double a9 =  0.1055093006;
+//static double a9 =  0.1055093006;
 /* JJV changed the initial values of MUPREV and MUOLD */
 static double muold = -1.0E37;
 static double muprev = -1.0E37;
@@ -1548,20 +1577,22 @@ void phrtsd(char* phrase,long *seed1,long *seed2)
 **********************************************************************
 */
 {
-
+/*
 static char table[] =
 "abcdefghijklmnopqrstuvwxyz\
 ABCDEFGHIJKLMNOPQRSTUVWXYZ\
 0123456789\
-!@#$%^&*()_+[];:'\\\"<>?,./ ";  /* WGR added space, 5/19/1999 */
+!@#$%^&*()_+[];:'\\\"<>?,./ ";  */
+/* WGR added space, 5/19/1999 */
 
 // long ix;
 
 static long twop30 = 1073741824L;
+/*
 static long shift[5] = {
     1L,64L,4096L,262144L,16777216L
 };
-
+*/
 #ifdef PHRTSD_ORIG
  /*----------------------------- Original phrtsd */
 static long i,ichr,j,lphr,values[5];

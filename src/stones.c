@@ -1,19 +1,50 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
-#include <gsl/gsl_randist.h>
-#include <gsl/gsl_cdf.h>
 
-#include "typedef.h"
-#include "genlib.h"
-#include "stones.h"
-#include "options.h"
+#ifndef NO_GSL
+	#include <gsl/gsl_randist.h>
+	#include <gsl/gsl_cdf.h>
+#endif
+
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "Stones.h"
+#include "Options.h"
 
 void	PrintStones(FILE *Str, STONES *Stones)
 {
 	fprintf(Str, "Steppingstone sampler:\n");
 	fprintf(Str, "        No Stones:                  %d\n", Stones->NoStones);
-	fprintf(Str, "        Start It:                   %d\n", Stones->ItStart);
+	fprintf(Str, "        Start It:                   %llu\n", Stones->ItStart);
 	fprintf(Str, "        It Per Stone:               %d\n", Stones->ItPerStone);
 	fprintf(Str, "        Sample Freq:                %d\n", Stones->SampleFreq);
 	fprintf(Str, "        Dist:                       Beta(%f,%f)\n", Stones->Alpha, Stones->Beta);
@@ -29,21 +60,24 @@ void	OutputStoneHeadder(FILE *Out, STONES *Stones)
 	fflush(Out);
 }
 
-double	GetStoneHeat(STONES *Stones, int Itter, double Heat)
+double	GetStoneHeat(STONES *Stones, long long Itter, double Heat)
 {
-	int StoneIt, CStone;
+	long long StoneIt;
+	int CStone;
 
 	if(Itter < Stones->ItStart)
 		return Heat;
 	
 	StoneIt = Itter - Stones->ItStart;
-	CStone = StoneIt / Stones->ItPerStone;
+	CStone = (int) StoneIt / Stones->ItPerStone;
 
 	return Heat * Stones->Power[CStone];
 }
 
-int		StonesStarted(STONES *Stones, int Itter)
+int		StonesStarted(STONES *Stones, long long Itter)
 {
+	
+
 	if(Stones == NULL)
 		return FALSE;
 
@@ -79,8 +113,12 @@ void	SetStonesP(STONES *Stones)
 	for(Index=0;Index<Stones->NoStones;Index++)
 	{
 		X = (Index+1) / (double)Stones->NoStones;
+
+#ifndef NO_GSL
 		Stones->Power[Index] = gsl_cdf_beta_Qinv(X, Stones->Alpha, Stones->Beta);
-//		Stones->Power[Index] = 0.0;
+#else
+		Stones->Power[Index] = 1.0 - X;
+#endif
 	}
 }
 
@@ -89,16 +127,12 @@ STONES*	CratesStones(int NoS, int Sample, double Alpha, double Beta)
 	STONES *Ret;
 	int Index;
 
-	Ret = (STONES*)malloc(sizeof(STONES));
-	if(Ret == NULL)
-		MallocErr();
+	Ret = (STONES*)SMalloc(sizeof(STONES));
 
 	Ret->NoStones = NoS;
 
-	Ret->MLh = (double*)malloc(sizeof(double) * Ret->NoStones);
-	Ret->Power = (double*)malloc(sizeof(double) * Ret->NoStones);
-	if((Ret->MLh == NULL) || (Ret->Power == NULL))
-		MallocErr();
+	Ret->MLh = (double*)SMalloc(sizeof(double) * Ret->NoStones);
+	Ret->Power = (double*)SMalloc(sizeof(double) * Ret->NoStones);
 
 	for(Index=0;Index<Ret->NoStones;Index++)
 		Ret->MLh[Index] = 0.0;
@@ -129,7 +163,7 @@ double	GetMLhStoneSum(STONES *Stones, int Pos)
 	return Ret;
 }
 
-void	NewStone(STONES *Stones, int Itter, double Lh, int CStone, FILE *Out)
+void	NewStone(STONES *Stones, long long Itter, double Lh, int CStone, FILE *Out)
 {
 	if(CStone != 0)
 	{
@@ -156,9 +190,9 @@ void	NewStone(STONES *Stones, int Itter, double Lh, int CStone, FILE *Out)
 	fflush(Out);
 }
 
-int		SampleStone(STONES *Stones, int StoneIt, int CStone)
+int		SampleStone(STONES *Stones, long long StoneIt, int CStone)
 {
-	int CIt;
+	long long CIt;
 
 	if(StoneIt % Stones->SampleFreq != 0)
 		return FALSE;
@@ -172,15 +206,16 @@ int		SampleStone(STONES *Stones, int StoneIt, int CStone)
 	return TRUE;
 }
 
-void	StoneItter(STONES *Stones, int Itter, double Lh, FILE *Out)
+void	StoneItter(STONES *Stones, long long Itter, double Lh, FILE *Out)
 {
-	int StoneIt, CStone;
+	long long StoneIt;
+	int CStone;
 
 	if(Itter < Stones->ItStart)
 		return;
 	
 	StoneIt = Itter - Stones->ItStart;
-	CStone = StoneIt / Stones->ItPerStone;
+	CStone = (int)StoneIt / Stones->ItPerStone;
 
 	if(StoneIt % Stones->ItPerStone == 0)
 	{
@@ -195,7 +230,7 @@ void	StoneItter(STONES *Stones, int Itter, double Lh, FILE *Out)
 
 }
 
-int		StoneExit(STONES *Stones, int Itters)
+int		StoneExit(STONES *Stones, long long Itters)
 {
 	if(Stones == NULL)
 		return FALSE;

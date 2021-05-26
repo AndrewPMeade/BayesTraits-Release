@@ -1,15 +1,42 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "genlib.h"
-#include "typedef.h"
-#include "trees.h"
-#include "data.h"
-#include "options.h"
-#include "initialise.h"
-#include "mcmc.h"
-#include "ml.h"
+#include "GenLib.h"
+#include "TypeDef.h"
+#include "Trees.h"
+#include "Data.h"
+#include "Options.h"
+#include "Initialise.h"
+#include "MCMC.h"
+#include "ML.h"
 
 #ifdef BTOCL
 #include "btocl_runtime.h"
@@ -20,8 +47,8 @@ char**	MakeCommands(char *Command, int *NoC)
 {
 	char **Ret;
 	int Len;
-	
-	Len = strlen(Command);
+
+	Len = (int)strlen(Command);
 	*NoC = 0;
 
 	Ret = (char**)malloc(sizeof(char*) * (Len + 1));
@@ -51,7 +78,7 @@ MODEL	GetBatchModel(TREES *Trees, char *MLine)
 	{
 		printf("%s is not a valid model\n", MLine);
 		exit(0);
-	}	
+	}
 
 	return Ret;
 }
@@ -76,14 +103,12 @@ void	SetLogFName(OPTIONS *Opt, int BNo)
 {
 	char *Buffer;
 
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
+	Buffer = (char*)SMalloc(sizeof(char) * 64);
 
 	sprintf(Buffer, "BTBatchLog-%06d.txt", BNo);
-	free(Opt->LogFN);
+	free(Opt->BaseOutputFN);
 
-	Opt->LogFN = StrMake(Buffer);
+	Opt->BaseOutputFN = StrMake(Buffer);
 	free(Buffer);
 }
 
@@ -91,7 +116,7 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 {
 	int			NoSites;
 	TREES*		Trees;
-	OPTIONS*	Opt; 
+	OPTIONS*	Opt;
 	MODEL		Model;
 	ANALSIS		Analsis;
 
@@ -99,25 +124,26 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	LoadData(DataFN, Trees);
 
 	Model = GetBatchModel(Trees, Coms[0]);
-	
+
 	Analsis = GetBatchAnalsis(Coms[1]);
-	
+
 	CheckDataWithModel(DataFN, Trees, Model);
 
-	Opt = CreatOptions(Model, Analsis, Trees->NoOfStates, TreeFN, DataFN, Trees->SymbolList, Trees);
+	PreProcessDataWithModel(Trees, Model);
+
+	Opt = CreatOptions(Model, Analsis, Trees->NoStates, TreeFN, DataFN, Trees->SymbolList, Trees);
 	SetLogFName(Opt, BNo);
-//	Opt->LogFN = StrMake(LogFN);
 
 	GetOptionsArry(Opt, NoComs-2, &Coms[2]);
 
 	PrintOptions(stdout, Opt);
 
 	CheckOptions(Opt);
-	
+
 	#ifdef BTOCL
 	//printf("Loading kernels\n");
-	if (btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE,
-			Trees->NoOfStates, Trees->NoOfSites) != 0) {
+	if (btocl_load_all(Opt->ModelType == MT_CONTINUOUS,	Opt->ModelType == MT_DISCRETE, Trees->NoStates, Trees->NoSites) != 0)
+	{
 		printf("Error: Couldn't load OpenCL kernels\n");
 		exit(0);
 	}
@@ -131,10 +157,10 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	if(Opt->Analsis == ANALML)
 		FindML(Opt, Trees);
 
-	NoSites = Trees->NoOfSites;
+	NoSites = Trees->NoSites;
 	FreeTrees(Trees, Opt);
 	FreeOptions(Opt, NoSites);
-	
+
 	#ifdef BTOCL
 	//printf("Removing kernels\n");
 	btocl_clear_kernels(btocl_getruntime());
@@ -156,9 +182,7 @@ int		PassBatchLine(char *Line, char **TreeFN, char **DataFN, char **ComList)
 		return FALSE;
 	}
 
-	Buffer = (char*)malloc(sizeof(char) * BUFFERSIZE);
-	if(Buffer == NULL)
-		MallocErr();
+	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
 
 	*TreeFN = Line;
@@ -200,7 +224,7 @@ void	BatchRun(char *BatchFN)
 	for(Index=0;Index<TF->NoOfLines;Index++)
 	{
 
-		PassBatchLine(TF->Data[Index], 
+		PassBatchLine(TF->Data[Index],
 		Tokes = MakeArgvChar(TF->Data[Index], Buffer, TF->MaxLine, '\t');
 		if(Tokes == 3)
 		{
@@ -227,9 +251,7 @@ void	BatchRun(char *BatchFN)
 
 	TF = LoadTextFile(BatchFN, FALSE);
 
-	Buffer = (char**)malloc(sizeof(char*) * TF->MaxLine);
-	if(Buffer == NULL)
-		MallocErr();
+	Buffer = (char**)SMalloc(sizeof(char*) * TF->MaxLine);
 	BNo = 1;
 	for(Index=0;Index<TF->NoOfLines;Index++)
 	{

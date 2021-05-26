@@ -1,12 +1,41 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "genlib.h"
-#include "ptrees.h"
-#include "trees.h"
-#include "part.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "PTrees.h"
+#include "Trees.h"
+#include "Part.h"
 
 typedef struct
 {
@@ -29,7 +58,7 @@ void	SetPTrees(OPTIONS *Opt, TREES *Trees)
 	int TIndex;
 	TREE *Tree;
 
-	 for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	 for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	 {
 		 Tree = Trees->Tree[TIndex];
 	 	 SetFlatternedNodes(Trees, Tree);
@@ -359,7 +388,7 @@ void	PrintPPartInfo(TREES *Trees, TREE *Tree)
 		printf("\n");
 	}
 
-	Pct = (double)PTaxa / Trees->NoOfTaxa;
+	Pct = (double)PTaxa / Trees->NoTaxa;
 	Pct = Pct * 100;
 
 	printf("No P Taxa\t%f\n", Pct);
@@ -376,7 +405,7 @@ void	FindParallelPoints(TREES *Trees, TREE *Tree, int Cores)
 
 //	Cores = 4;
 //	Cores = 1;
-	OptNSize = Trees->NoOfTaxa / Cores;
+	OptNSize = Trees->NoTaxa / Cores;
 
 	PTInfo = AllocPTInfo(Tree);
 

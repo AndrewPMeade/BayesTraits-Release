@@ -1,3 +1,32 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -9,7 +38,7 @@
 void printPlatformsInfo(cl_platform_id* platforms, cl_uint num_platforms);
 void printDeviceInfo(cl_device_id device);
 void printDeviceInfoAll(cl_device_id device);
-cl_uint getFirstDevice(cl_platform_id* platforms, cl_uint num_platforms, 
+cl_uint getFirstDevice(cl_platform_id* platforms, cl_uint num_platforms,
 						cl_device_type dt, cl_device_id *device);
 cl_bool deviceSupportsFP64(cl_device_id *device);
 cl_int deviceIsLittleEndian(cl_device_id *device, cl_bool *littleEndian);
@@ -73,7 +102,7 @@ const char *ocl_emsgs[] = {
 	"INVALID_BUFFER_SIZE",				// #define CL_INVALID_BUFFER_SIZE                      -61
 	"INVALID_MIP_LEVEL",				// #define CL_INVALID_MIP_LEVEL                        -62
 	"INVALID_GLOBAL_WORK_SIZE",			// #define CL_INVALID_GLOBAL_WORK_SIZE                 -63
-	"INVALID_PROPERTY",					// #define CL_INVALID_PROPERTY                         -64		
+	"INVALID_PROPERTY",					// #define CL_INVALID_PROPERTY                         -64
 	 };
 
 
@@ -88,7 +117,7 @@ cl_int btocl_init_runtime(cl_device_type device_type) {
   size_t log_size;
   char* program_log;
   int i;
-  
+
   if (device_type == CL_DEVICE_TYPE_CPU) {
 	printf("Initializing OpenCL for CPU\n");
   } else if (device_type == CL_DEVICE_TYPE_GPU) {
@@ -97,13 +126,13 @@ cl_int btocl_init_runtime(cl_device_type device_type) {
 	printf("Incorrect device type\n");
 	return 1;
   }
-  
+
   if (rt != NULL) {
     return CL_SUCCESS;
   }
 
   rt = (BTOCL_RUNTIME*)malloc(sizeof(BTOCL_RUNTIME));
-  
+
   //rt->kernel_dir = NULL;
   //rt->kernel_dir = getenv("BTOCL_KERNEL_DIR");
 
@@ -117,13 +146,13 @@ cl_int btocl_init_runtime(cl_device_type device_type) {
    }
    rt->platforms = (cl_platform_id*)malloc(sizeof(cl_platform_id) * rt->num_platforms);
    clGetPlatformIDs(rt->num_platforms, rt->platforms, NULL);
-   
+
    // Only prin when debuggung
    //printPlatformsInfo(rt->platforms,rt->num_platforms);
-	
+
    //rt->gpuPlatform = getFirstDevice(rt->platforms,rt->num_platforms,device_type,&rt->device);
    rt->platform = getFirstDevice(rt->platforms,rt->num_platforms,device_type,&rt->device);
-	
+
    if (rt->platform >= rt->num_platforms) {
      printf("Couldn't find device of indicated type\n");
      //return 1;
@@ -132,13 +161,13 @@ cl_int btocl_init_runtime(cl_device_type device_type) {
      printf("Found device type in Platform %d\n",rt->platform);
      printDeviceInfoAll(rt->device);
    }
-	
+
    rt->context = clCreateContext(NULL,1,&rt->device,NULL,NULL,&err);
    if (err != CL_SUCCESS) {
 	   printf("Couldn't create OpenCL context\n");
 	   exit(0);
    }
-	
+
    // Create queue
    //printf("Creating queue\n");
    rt->queue = clCreateCommandQueue(rt->context,rt->device,0,&err);
@@ -148,10 +177,10 @@ cl_int btocl_init_runtime(cl_device_type device_type) {
 	 exit(0);
    }
    //printf("queue created\n");
-   
+
    // Prepares kernel structures
    initialise_kernel_info();
-   
+
    return CL_SUCCESS;
 }
 
@@ -167,7 +196,7 @@ void btocl_free_runtime () {
 
 	if (rt->queue != NULL) clReleaseCommandQueue(rt->queue);
 	if(rt->context != NULL) clReleaseContext(rt->context);
-	if (rt->platforms != NULL) (rt->platforms);
+	//if (rt->platforms != NULL) (rt->platforms);
 	rt = NULL;
 }
 
@@ -205,10 +234,10 @@ void printPlatformsInfo(cl_platform_id* platforms, cl_uint num_platforms) {
 
 		free(plat_name);
 		free(plat_vendor);
- 
+
 		num_devices=0;
 		err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, 0, NULL, &num_devices);
-		
+
 		if(err < 0) {
 			printf("error: ");
 			switch (err) {
@@ -226,7 +255,7 @@ void printPlatformsInfo(cl_platform_id* platforms, cl_uint num_platforms) {
 		} else {
 			printf("Number of devices: %d\n",num_devices);
 		}
-		
+
 		devices = (cl_device_id*)malloc(sizeof(cl_device_id)*num_devices);
 		err = clGetDeviceIDs(platforms[i], CL_DEVICE_TYPE_ALL, num_devices, devices, NULL);
 
@@ -235,9 +264,9 @@ void printPlatformsInfo(cl_platform_id* platforms, cl_uint num_platforms) {
 			printDeviceInfoAll(devices[j]);
 		}
 
-		
+
 		free(devices);
-		
+
 	}
 
 }
@@ -311,9 +340,9 @@ void printDeviceInfoAll(cl_device_id device) {
 		printf("* Device is Little Endian\n");
 	else
 		printf("* Device is Big Endian: %d\n",isLittleEndian);
-	
+
 	printDeviceVectorWidths(&device);
-	
+
 	printf("-------------------------------------------\n");
 
 }
@@ -346,13 +375,13 @@ cl_bool deviceSupportsFP64(cl_device_id *device) {
 	if (err != CL_SUCCESS) {
 		printf("Error while getting extensions\n");
 		return CL_FALSE;
-	} 
-	
+	}
+
 	clGetDeviceInfo(*device,CL_DEVICE_EXTENSIONS,sizeof(extensions),extensions,NULL);
-	
+
 	printf("Extensions: %s\n",extensions);
 	fp64 = strstr(extensions,"fp64");
-	
+
 	return (fp64 != NULL);
 }
 
@@ -388,7 +417,7 @@ cl_command_queue btocl_getCommandQueue() {
 }
 
 cl_kernel btocl_getKernel(cl_ushort index) {
-  if (index >= NUM_KERNELS) {   
+  if (index >= NUM_KERNELS) {
     rt->err = CL_INVALID_ARG_INDEX;
     return NULL;
   } else {
@@ -420,7 +449,7 @@ void btocl_printBufferInfo(cl_mem buffer) {
 	clGetMemObjectInfo(buffer, CL_MEM_SIZE,sizeof(buffer_size),&buffer_size,NULL);
 	printf("Buffer Size: %lu\n",buffer_size);
 	// add your favourite stats here
-	
+
 	return;
 }
 
@@ -448,7 +477,7 @@ void btocl_checkErrorCode(cl_int error_code, const char* operation, const char* 
 		if (rt==NULL) {
 			btocl_clear_kernels(rt);
 			btocl_free_runtime();
-		}		
+		}
 		exit(0);
 	}
 

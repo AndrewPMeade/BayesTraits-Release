@@ -1,6 +1,7 @@
 #ifndef MINFIT
 #define MINFIT
-#include "praxis.h"
+
+#include "Praxis.h"
 
 /*
 #define EPSILON 1.0e-8

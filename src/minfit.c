@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "minfit.h"
+#include "MinFit.h"
 
 #ifdef MSDOS
 static double e[N];	

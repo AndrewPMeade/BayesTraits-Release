@@ -1,10 +1,38 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 
-#include "genlib.h"
-#include "typedef.h"
-#include "treepasser.h"
+#include "GenLib.h"
+#include "TypeDef.h"
+#include "TreePasser.h"
 
 #define	NEXUSTAG	"#NEXUS"
 #define	TREESTAG	"TREES"
@@ -21,7 +49,7 @@ int		FindNexusStart(char** TreeFile, int NoOfLines, int MaxLine)
 {
 	char	*Buffer;
 	int		Index;
-	
+
 	Buffer = (char*)malloc(sizeof(char) * (MaxLine+1));
 	if(Buffer == NULL)
 		MallocErr();
@@ -33,7 +61,7 @@ int		FindNexusStart(char** TreeFile, int NoOfLines, int MaxLine)
 		RemoveChar(';', Buffer);
 		RemoveChar(' ', Buffer);
 		RemoveChar('\t', Buffer);
-		
+
 		MakeUpper(Buffer);
 
 		if(strcmp(Buffer, NEXUSTAG) == 0)
@@ -106,7 +134,7 @@ char*	CopyStr(char* Str)
 	strcpy(Ret, Str);
 
 	return Ret;
-}	
+}
 
 void	AddTaxa(NTREES* Trees, int TaxaNo, int Tokes, char **Passed, int LineSize)
 {
@@ -130,14 +158,14 @@ void	AddTaxa(NTREES* Trees, int TaxaNo, int Tokes, char **Passed, int LineSize)
 		strcat(Buffer, Passed[Index]);
 	}
 
-	Index = strlen(Buffer);
+	Index = (int)strlen(Buffer);
 	if((Buffer[Index-1] == ';') || (Buffer[Index-1] == ','))
 		Buffer[Index-1] = '\0';
 
 	Taxa->Name = (char*)malloc(sizeof(char) * (strlen(Buffer) + 1));
 	if(Taxa->Name == NULL)
 		MallocErr();
-	
+
 	strcpy(Taxa->Name, Buffer);
 
 	free(Buffer);
@@ -202,20 +230,20 @@ int		ProcessTaxa(NTREES* Trees, char** TreeFile, int NoOfLines, int MaxLine, int
 
 void	GetTaxa(NTREES* Trees, char** TreeFile, int NoOfLines, int MaxLine, int TransStart, int *TreeStart)
 {
-	Trees->NoOfTaxa = ProcessTaxa(NULL, TreeFile, NoOfLines, MaxLine, TransStart, TreeStart);
+	Trees->NoTaxa = ProcessTaxa(NULL, TreeFile, NoOfLines, MaxLine, TransStart, TreeStart);
 
-	Trees->Taxa = (NTAXA*)malloc(sizeof(NTAXA) * Trees->NoOfTaxa);
+	Trees->Taxa = (NTAXA*)malloc(sizeof(NTAXA) * Trees->NoTaxa);
 	if(Trees->Taxa == NULL)
 		MallocErr();
 
-	Trees->NoOfTaxa = ProcessTaxa(Trees, TreeFile, NoOfLines, MaxLine, TransStart, TreeStart);	
+	Trees->NoTaxa = ProcessTaxa(Trees, TreeFile, NoOfLines, MaxLine, TransStart, TreeStart);
 }
 
 char*	GetTaxaName(NTREES* Trees, int No)
 {
 	int	Index;
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		if(Trees->Taxa[No].No == No)
 			return Trees->Taxa[No].Name;
@@ -228,7 +256,7 @@ int		GetTaxaNo(NTREES* Trees, char* Name)
 {
 	int	Index;
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		if(strcmp(Trees->Taxa[Index].Name, Name) == 0)
 			return Trees->Taxa[Index].No;
@@ -241,17 +269,17 @@ int		GetTaxaNo(NTREES* Trees, char* Name)
 int		TaxaOK(NTREES* Trees, char** Err)
 {
 	int		x,y;
-	
-	if(Trees->NoOfTaxa < 2)
+
+	if(Trees->NoTaxa < 2)
 	{
-		
+
 		*Err = CopyStr("Must have more than 1 taxa");
 		return FALSE;
 	}
 
-	for(x=0;x<Trees->NoOfTaxa;x++)
+	for(x=0;x<Trees->NoTaxa;x++)
 	{
-		for(y=x+1;y<Trees->NoOfTaxa;y++)
+		for(y=x+1;y<Trees->NoTaxa;y++)
 		{
 			if(Trees->Taxa[x].No == Trees->Taxa[y].No)
 			{
@@ -265,7 +293,7 @@ int		TaxaOK(NTREES* Trees, char** Err)
 		}
 	}
 
-	for(x=0;x<Trees->NoOfTaxa;x++)
+	for(x=0;x<Trees->NoTaxa;x++)
 	{
 		if(Trees->Taxa[x].No < 0)
 		{
@@ -286,13 +314,13 @@ int	IsValidTreeTag(char* TreeTag)
 	int	Index=0;
 
 	MakeLower(TreeTag);
-	
+
 	while(strlen(TREETAGS[Index]) != 0)
 	{
 		if(strcmp(TreeTag, TREETAGS[Index]) == 0)
 			return TRUE;
 		Index++;
-	}	
+	}
 
 	return FALSE;
 }
@@ -302,7 +330,7 @@ void	GetTreeName(NTREE *Tree, char** Passed)
 	int	Index;
 
 	Index = 1;
-	
+
 	if(strcmp(Passed[Index], "*") == 0)
 		Index++;
 
@@ -316,7 +344,7 @@ void	GetTreeName(NTREE *Tree, char** Passed)
 NNODE	AllocNodeI()
 {
 	NNODE	Ret;
-	
+
 	Ret = (NNODE) malloc(sizeof(struct NINODE));
 	if(Ret == NULL)
 		MallocErr();
@@ -363,7 +391,7 @@ NNODE	AddDescendant(NNODE N)
 
 	for(Index=0;Index<N->NoOfNodes;Index++)
 		NewList[Index] = N->NodeList[Index];
-	
+
 	NewList[Index] = Ret;
 	free(N->NodeList);
 	N->NodeList = NewList;
@@ -376,7 +404,7 @@ double	GetLength(char *TreeString, int *Pos, char* Buffer)
 {
 	int		Index;
 	double	Ret;
-	
+
 	Index=0;
 	do
 	{
@@ -384,7 +412,7 @@ double	GetLength(char *TreeString, int *Pos, char* Buffer)
 		(*Pos)++;
 		Index++;
 	} while((TreeString[*Pos] != ',') &&
-			(TreeString[*Pos] != ')') && 
+			(TreeString[*Pos] != ')') &&
 			(TreeString[*Pos] != ';'));
 
 	Buffer[Index] = '\0';
@@ -425,12 +453,12 @@ void	PassTree(NNODE CNode, char *TreeString, int* Pos, char *Buffer)
 {
 	NNODE	NNode;
 
-	do 
+	do
 	{
 		(*Pos)++;
 
 		NNode = AddDescendant(CNode);
-		
+
 		if(TreeString[(*Pos)] == '(')
 		{
 			PassTree(NNode, TreeString, Pos, Buffer);
@@ -459,7 +487,7 @@ void	CheckBrackets(char* TreeString, int TreeNo)
 	Open = 0;
 	Close = 0;
 
-	Len = strlen(TreeString);
+	Len = (int)strlen(TreeString);
 	for(Index=0;Index<Len;Index++)
 	{
 		if(TreeString[Index] == '(')
@@ -483,11 +511,11 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 	char	*Buffer, *PBuffer;
 	char**	Passed;
 	int		Tokes;
-	int		NoOfTrees;
+	int		NoTrees;
 	int		Pos;
 
 
-	NoOfTrees = 0;
+	NoTrees = 0;
 
 	Buffer = (char*)malloc(sizeof(char) * (MaxLine+1));
 	Passed = (char**)malloc(sizeof(char*) * (MaxLine));
@@ -498,7 +526,7 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 
 
 	for(Index=TreeStart;Index<NoOfLines;Index++)
-	{		
+	{
 		strcpy(Buffer, TreeFile[Index]);
 		Tokes = MakeArgv(Buffer, Passed, MaxLine);
 
@@ -508,20 +536,20 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 			{
 				if(Trees != NULL)
 				{
-					GetTreeName(&Trees->Trees[NoOfTrees], Passed);
+					GetTreeName(&Trees->Trees[NoTrees], Passed);
 
 					Pos = 0;
 
-					Trees->Trees[NoOfTrees].Root = AllocNodeI();
+					Trees->Trees[NoTrees].Root = AllocNodeI();
 
-					CheckBrackets(Passed[Tokes-1], NoOfTrees);
-					PassTree(Trees->Trees[NoOfTrees].Root, Passed[Tokes-1], &Pos, PBuffer);
+					CheckBrackets(Passed[Tokes-1], NoTrees);
+					PassTree(Trees->Trees[NoTrees].Root, Passed[Tokes-1], &Pos, PBuffer);
 
-					Trees->Trees[NoOfTrees].NoOfNodes = 0;
-					FindNoOfNodes(Trees->Trees[NoOfTrees].Root, &Trees->Trees[NoOfTrees].NoOfNodes);
+					Trees->Trees[NoTrees].NoOfNodes = 0;
+					FindNoOfNodes(Trees->Trees[NoTrees].Root, &Trees->Trees[NoTrees].NoOfNodes);
 				}
 
-				NoOfTrees++;
+				NoTrees++;
 			}
 		}
 	}
@@ -530,7 +558,7 @@ int	GetTrees(NTREES *Trees, char** TreeFile, int NoOfLines, int MaxLine, int Tre
 	free(Passed);
 	free(PBuffer);
 
-	return NoOfTrees;
+	return NoTrees;
 }
 
 
@@ -544,8 +572,8 @@ NTREES*	AllocTrees()
 
 	Ret->NoOfParts	= 0;
 	Ret->PartList	= NULL;
-	
-	Ret->NoOfTrees	= 0;
+
+	Ret->NoTrees	= 0;
 	Ret->Taxa		= NULL;
 	Ret->Trees		= NULL;
 
@@ -556,7 +584,7 @@ NTAXA*	GetTaxaPtr(NTREES* Trees, int TaxaID)
 {
 	int	TIndex;
 
-	for(TIndex=0;TIndex<Trees->NoOfTaxa;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
 		if(Trees->Taxa[TIndex].No == TaxaID)
 			return &Trees->Taxa[TIndex];
 
@@ -570,7 +598,7 @@ void	SetTaxaPtr(NTREES*	Trees)
 	NTREE	*Tree;
 	NNODE	N;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		Tree = &Trees->Trees[TIndex];
 		for(NIndex=0;NIndex<Tree->NoOfNodes;NIndex++)
@@ -591,7 +619,7 @@ NTREES*	LoadNTrees(char* FileName, char** Err)
 	int			NexusStart;
 	int			TreeBlockStart;
 	int			TranslateStart;
-	int			TreeStart;	
+	int			TreeStart;
 	int			Index;
 	NTREE*		Tree;
 
@@ -600,7 +628,7 @@ NTREES*	LoadNTrees(char* FileName, char** Err)
 	MaxLine = TreeFile->MaxLine;
 
 	NexusStart = FindNexusStart(TreeFile->Data, TreeFile->NoOfLines, MaxLine);
-	if(NexusStart == -1)		
+	if(NexusStart == -1)
 	{
 		FreeTextFile(TreeFile);
 		*Err = CopyStr("Tree file does not have a valid nexus tag.\n");
@@ -638,16 +666,16 @@ NTREES*	LoadNTrees(char* FileName, char** Err)
 		return NULL;
 	}
 
-	Ret->NoOfTrees = GetTrees(NULL, TreeFile->Data, TreeFile->NoOfLines, MaxLine, TreeStart);
+	Ret->NoTrees = GetTrees(NULL, TreeFile->Data, TreeFile->NoOfLines, MaxLine, TreeStart);
 
-	Ret->Trees = (NTREE*) malloc(sizeof(NTREE) * Ret->NoOfTrees);
+	Ret->Trees = (NTREE*) malloc(sizeof(NTREE) * Ret->NoTrees);
 	if(Ret->Trees == NULL)
 		MallocErr();
 
-	for(Index=0;Index<Ret->NoOfTrees;Index++)
+	for(Index=0;Index<Ret->NoTrees;Index++)
 	{
 		Tree = &Ret->Trees[Index];
-		
+
 		Tree->Binary	= FALSE;
 		Tree->NodeList	= NULL;
 		Tree->NoOfNodes	= 0;
@@ -657,10 +685,10 @@ NTREES*	LoadNTrees(char* FileName, char** Err)
 
 	GetTrees(Ret, TreeFile->Data, TreeFile->NoOfLines, MaxLine, TreeStart);
 
-	for(Index=0;Index<Ret->NoOfTrees;Index++)
+	for(Index=0;Index<Ret->NoTrees;Index++)
 		FlattenNodes(&Ret->Trees[Index]);
 
-	for(Index=0;Index<Ret->NoOfTrees;Index++)
+	for(Index=0;Index<Ret->NoTrees;Index++)
 	{
 		Ret->Trees[Index].Binary = BinaryTree(&Ret->Trees[Index]);
 		if(Ret->Trees[Index].Binary == TRUE)
@@ -670,8 +698,8 @@ NTREES*	LoadNTrees(char* FileName, char** Err)
 	SetTaxaPtr(Ret);
 
 	FreeTextFile(TreeFile);
-/*	
-	for(Index=0;Index<Ret->NoOfTrees;Index++)
+/*
+	for(Index=0;Index<Ret->NoTrees;Index++)
 	{
 		printf(" tree %s = ", Ret->Trees[Index].Tag);
 		PrintTree(stdout, Ret->Trees[Index].Root);
@@ -685,7 +713,7 @@ NTREES*	LoadNTrees(char* FileName, char** Err)
 void	FreeNTree(NTREE* Tree)
 {
 	int	Index;
-	
+
 	for(Index=0;Index<Tree->NoOfNodes;Index++)
 	{
 		if(Tree->NodeList[Index]->NodeList != NULL)
@@ -705,10 +733,10 @@ void	FreeNTrees(NTREES* Trees)
 
 	FreePartitons(Trees);
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 		free(Trees->Taxa[Index].Name);
 
-	for(Index=0;Index<Trees->NoOfTrees;Index++)
+	for(Index=0;Index<Trees->NoTrees;Index++)
 	{
 		free(Trees->Trees[Index].Tag);
 		FreeNTree(&Trees->Trees[Index]);
@@ -716,7 +744,7 @@ void	FreeNTrees(NTREES* Trees)
 
 	free(Trees->Trees);
 	free(Trees->Taxa);
-	
+
 	free(Trees);
 }
 
@@ -766,18 +794,18 @@ void	FlattenNodes(NTREE*Tree)
 	SetFlatNodes(Tree->Root, Tree->NodeList, &Index);
 }
 
-int	FindNoOfTaxa(NNODE N)
+int	FindNoTaxa(NNODE N)
 {
 	int	Index;
 	int	Ret;
 
 	if(N->Tip == TRUE)
 		return 1;
-	
+
 	Ret = 0;
 	for(Index=0;Index<N->NoOfNodes;Index++)
-		Ret += FindNoOfTaxa(N->NodeList[Index]);
-	
+		Ret += FindNoTaxa(N->NodeList[Index]);
+
 	return Ret;
 }
 
@@ -818,7 +846,7 @@ void	PrintPartition(NTREES* Trees, PARTITION *Part)
 
 	printf("%d\t%f\t%d\t", Part->Freq, Part->Prob, Part->No);
 	for(Index=0;Index<Part->No;Index++)
-		printf("\t%s", GetTaxaName(Trees, Part->TaxaNo[Index])); 
+		printf("\t%s", GetTaxaName(Trees, Part->TaxaNo[Index]));
 	printf("\n");
 
 	fflush(stdout);
@@ -838,7 +866,7 @@ PARTITION* GetPartition(NNODE N)
 {
 	PARTITION*	Ret;
 	int			No;
-	
+
 	Ret = (PARTITION*)malloc(sizeof(PARTITION));
 	if(Ret == NULL)
 		MallocErr();
@@ -846,7 +874,7 @@ PARTITION* GetPartition(NNODE N)
 	Ret->Freq	= 0;
 	Ret->Prob	= 0;
 
-	Ret->No		= FindNoOfTaxa(N);
+	Ret->No		= FindNoTaxa(N);
 
 	Ret->TaxaNo	= (int*)malloc(sizeof(int) * Ret->No);
 	if(Ret->TaxaNo == NULL)
@@ -942,10 +970,10 @@ void	GetPartitons(NTREES *Trees)
 	PARTITION**	TempList;
 	int			PIndex;
 	int			Index;
-	
+
 
 	MaxParts = 0;
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		GetTreePartitions(&Trees->Trees[TIndex]);
 		MaxParts += Trees->Trees[TIndex].NoOfParts;
@@ -956,7 +984,7 @@ void	GetPartitons(NTREES *Trees)
 		MallocErr();
 
 	PIndex = 0;
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		for(Index=0;Index<Trees->Trees[TIndex].NoOfParts;Index++)
 			AddPartitonsToList(TempList, &PIndex, Trees->Trees[TIndex].PartList[Index]);
@@ -971,7 +999,7 @@ void	GetPartitons(NTREES *Trees)
 	for(PIndex=0;PIndex<Trees->NoOfParts;PIndex++)
 	{
 		Trees->PartList[PIndex] = TempList[PIndex];
-		Trees->PartList[PIndex]->Prob = (double)Trees->PartList[PIndex]->Freq / (double)Trees->NoOfTrees;
+		Trees->PartList[PIndex]->Prob = (double)Trees->PartList[PIndex]->Freq / (double)Trees->NoTrees;
 	}
 
 	qsort(Trees->PartList, Trees->NoOfParts, sizeof(PARTITION*), CompPartFreq);
@@ -990,7 +1018,7 @@ void	FreePartitons(NTREES* Trees)
 		free(Trees->PartList);
 	Trees->PartList = NULL;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		Tree = &Trees->Trees[TIndex];
 
@@ -1079,9 +1107,9 @@ void	ResolveTreeDet(NNODE N, double Len)
 
 void	ResolveTreesDet(NTREES *Trees, double Len)
 {
-	int TIndex;	
+	int TIndex;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		ResolveTreeDet(Trees->Trees[TIndex].Root, Len);
 		FlattenNodes(&Trees->Trees[TIndex]);
@@ -1131,7 +1159,7 @@ void	AddNewPartNode(NNODE Node, NNODE New)
 	free(Node->NodeList);
 	Node->NodeList = NewList;
 
-	
+
 	Node->NoOfNodes++;
 }
 
@@ -1144,7 +1172,7 @@ int		IsTaxaInPartition(PARTITION *Part, int TaxaID)
 		if(Part->TaxaNo[Index] == TaxaID)
 			return TRUE;
 	}
-	
+
 	return FALSE;
 }
 
@@ -1234,7 +1262,7 @@ void	PrintNTreeHeadder(FILE* Str, NTREES *Trees)
 	fprintf(Str, "begin trees;\n");
 	fprintf(Str, "\ttranslate\n");
 
-	for(Index=0;Index<Trees->NoOfTaxa-1;Index++)
+	for(Index=0;Index<Trees->NoTaxa-1;Index++)
 		fprintf(Str, "\t\t%d %s,\n", Trees->Taxa[Index].No, Trees->Taxa[Index].Name);
 	fprintf(Str, "\t\t%d %s;\n", Trees->Taxa[Index].No, Trees->Taxa[Index].Name);
 }
@@ -1250,13 +1278,13 @@ void	PrintNTrees(FILE* Str, NTREES *Trees)
 	if(Buffer == NULL)
 		MallocErr();
 
-	sprintf(Buffer, "%d", Trees->NoOfTrees);
-	MaxDig = strlen(Buffer);
+	sprintf(Buffer, "%d", Trees->NoTrees);
+	MaxDig = (int)strlen(Buffer);
 	free(Buffer);
 
 	PrintNTreeHeadder(Str, Trees);
 
-	for(Index=0;Index<Trees->NoOfTrees;Index++)
+	for(Index=0;Index<Trees->NoTrees;Index++)
 	{
 		if(Trees->Trees[Index].Tag != NULL)
 			fprintf(Str, "\t\ttree %s = ", Trees->Trees[Index].Tag);
@@ -1291,7 +1319,7 @@ void	SetBinaryTree(NTREE *Tree)
 
 	for(Index=0;Index<Tree->NoOfNodes;Index++)
 	{
-		N = Tree->NodeList[Index]; 
+		N = Tree->NodeList[Index];
 		if(N->Tip == FALSE)
 		{
 			N->Right = N->NodeList[0];
@@ -1335,7 +1363,7 @@ int		GetTaxaID(NTREES* Trees, char *TaxaName)
 {
 	int	Index;
 
-	for(Index=0;Index<Trees->NoOfTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
 		if(strcmp(Trees->Taxa[Index].Name, TaxaName) == 0)
 			return Trees->Taxa[Index].No;
@@ -1410,7 +1438,7 @@ double	AveBL(NTREE* Tree)
 	Sum = 0;
 	for(Index=0;Index<Tree->NoOfNodes;Index++)
 		Sum += Tree->NodeList[Index]->Length;
-	
+
 	Sum = Sum / Tree->NoOfNodes;
 
 	return Sum;

@@ -1,7 +1,7 @@
-#if !defined (MCMCHEADDER)
-#define MCMCHEADDER
+#ifndef MCMC_H
+#define MCMC_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
 #ifdef	 JNIRUN
 	void	MCMC(OPTIONS *Opt, TREES *Trees, JNIEnv *Env, jobject Obj);
@@ -9,5 +9,5 @@
 	void	MCMC(OPTIONS *Opt, TREES *Trees);
 #endif
 
-	void	LhOverAllModels(OPTIONS *Opt, TREES *Trees);
+	double	ValidMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 #endif

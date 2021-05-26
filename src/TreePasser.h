@@ -1,4 +1,4 @@
-#if !defined (TRESSPASSER_HEADDER)
+#ifndef TRESSPASSER_HEADDER
 #define TRESSPASSER_HEADDER
 
 static char    *TREETAGS[] =
@@ -62,8 +62,8 @@ typedef struct
 
 typedef struct
 {
-	int		NoOfTrees;
-	int		NoOfTaxa;
+	int		NoTrees;
+	int		NoTaxa;
 	NTAXA*	Taxa;
 	NTREE*	Trees;
 

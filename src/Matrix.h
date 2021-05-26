@@ -1,5 +1,5 @@
-#if !defined (MATRIXHEADDER)
-#define MATRIXHEADDER
+#ifndef MATRIX_H
+#define MATRIX_H
 
 #include <stdio.h>
 

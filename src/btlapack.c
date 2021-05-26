@@ -1,4 +1,34 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #include "btlapack.h"
+#include "TypeDef.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
@@ -37,6 +67,7 @@ int btlapack_invcholesky(double* a, int n, double *det) {
   //btdebug_enter("btlapackchfact");
   
   uplo = 'L';
+//  dpotrf_(&uplo, &n, a, &n, &info);
   dpotrf_(&uplo, &n, a, &n, &info);
   
   //btdebug_exit("btlapackchfact");
@@ -392,28 +423,26 @@ int btlapack_ltri_inv(double* a, int n, int lda, double* det) {
 	
 }
 
-
+#endif  // if BTLAPACK defined
 
 // computes the log of the determinant of a lower triangular matrix
-double btlapack_ltri_det(double* a, int n, int lda) {
+double btlapack_ltri_det(double* a, int n, int lda) 
+{
 	double  det, *pdiag;
 	int i;
 
 	det = 0.0;
 	pdiag = a;
-	//printf("Diag elements: ");
-	for(i=0; i<n; i++) {
-		//printf("%lf ",*pdiag);
+	for(i=0; i<n; i++) 
+	{
 		if (*pdiag < 0)
 			det += log(-*pdiag);
 		else
 			det += log(*pdiag);
 		pdiag += (lda+1);
 	}
-	//printf("-- total %lf\n",det);
 
 	return det;
 }
 
 
-#endif  // if BTLAPACK defined

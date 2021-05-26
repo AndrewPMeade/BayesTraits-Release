@@ -1,3 +1,32 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #ifdef BTOCL
 
 #include <stdio.h>
@@ -5,11 +34,11 @@
 #include <math.h>
 #include <string.h>
 
-#include "typedef.h"
-#include "trees.h"
-#include "continuous.h"
-#include "genlib.h"
-#include "matrix.h"
+#include "TypeDef.h"
+#include "Trees.h"
+#include "Continuous.h"
+#include "GenLib.h"
+#include "Matrix.h"
 // OpenCL headers
 
 
@@ -40,7 +69,7 @@ typedef struct {
 
 /* Set PMatrix functions */
 void btocl_AllocInvInfo(cl_context context, INVINFO* InvInfo, int NOS, int MaxNodes);
-int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, double Kappa, cl_ushort kernel_type);
+int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, cl_ushort kernel_type);
 void btocl_loadInvInfoBuffers(cl_command_queue queue, INVINFO *InvInfo, int NOS, int NoNodes, KernelInfo k);
 void printTreeTraversal(TREE* Tree);
 int btocl_computeExpComponent(TREES *Trees, TREE* Tree);
@@ -52,24 +81,24 @@ void btocl_AllocPMatrixInfo(TREES* Trees) {
 	cl_int err;
 
 	context = btocl_getContext();
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 	max_nnodes = Trees->MaxNodes;
 
 	//printf("**********************************\n");
 	//printf("NOS %d max_nnodes %d\n",NOS,max_nnodes);
 
-	// cl_mem buffer_pmatrix  --  NoNodes*NOS*NOS 
-	Trees->buffer_pmatrix  = btocl_clCreateBuffer("Pmatrix buffer",context, CL_MEM_READ_WRITE, 
-		sizeof(double)*max_nnodes*NOS*NOS, NULL, &err);	
-	
-	Trees->buffer_exp_eigen  = btocl_clCreateBuffer("Eigenvalue matrix buffer",context, CL_MEM_READ_WRITE, 
-		sizeof(double)*max_nnodes*NOS, NULL, &err);		
-	
+	// cl_mem buffer_pmatrix  --  NoNodes*NOS*NOS
+	Trees->buffer_pmatrix  = btocl_clCreateBuffer("Pmatrix buffer",context, CL_MEM_READ_WRITE,
+		sizeof(double)*max_nnodes*NOS*NOS, NULL, &err);
 
-	Trees->buffer_error  = btocl_clCreateBuffer("Pmatrix error buffer",context, CL_MEM_WRITE_ONLY, 
-		sizeof(int), NULL, &err);		
-	
-	btocl_AllocInvInfo(context, Trees->InvInfo, NOS, max_nnodes);
+	Trees->buffer_exp_eigen  = btocl_clCreateBuffer("Eigenvalue matrix buffer",context, CL_MEM_READ_WRITE,
+		sizeof(double)*max_nnodes*NOS, NULL, &err);
+
+
+	Trees->buffer_error  = btocl_clCreateBuffer("Pmatrix error buffer",context, CL_MEM_WRITE_ONLY,
+		sizeof(int), NULL, &err);
+
+	btocl_AllocInvInfo(context, Trees->InvInfo[0], NOS, max_nnodes);
 
 	// host
 	Trees->check_pmatrix = (double*)malloc(sizeof(double)*max_nnodes*NOS*NOS);  // used for debugging and error checking
@@ -80,7 +109,7 @@ void btocl_AllocPMatrixInfo(TREES* Trees) {
 
 
 void btocl_FreePMatrixInfo(TREES* Trees) {
-	INVINFO* InvInfo = Trees->InvInfo;
+	INVINFO* InvInfo = Trees->InvInfo[0];
 
 	// host
 	free(Trees->perror);
@@ -88,7 +117,7 @@ void btocl_FreePMatrixInfo(TREES* Trees) {
 
 	free(InvInfo->vect_t);
 	free(InvInfo->vect_id);
-	free(InvInfo->vect_test);	
+	free(InvInfo->vect_test);
 
 	// opencl
 	clReleaseMemObject(InvInfo->buffer_vec);
@@ -100,7 +129,7 @@ void btocl_FreePMatrixInfo(TREES* Trees) {
 
 	clReleaseMemObject(Trees->buffer_error);
 	clReleaseMemObject(Trees->buffer_exp_eigen);
-	clReleaseMemObject(Trees->buffer_pmatrix);	
+	clReleaseMemObject(Trees->buffer_pmatrix);
 
 }
 
@@ -108,49 +137,49 @@ void btocl_FreePMatrixInfo(TREES* Trees) {
 
 void btocl_AllocInvInfo(cl_context context, INVINFO* InvInfo, int NOS, int MaxNodes) {
 	int err;
-	
+
 	// Host arrays for intermediate information
 		// these two could be part of InvInfo, to avoid malloc and frees
-	InvInfo->vect_t = (double*)malloc(sizeof(double) * MaxNodes);		
+	InvInfo->vect_t = (double*)malloc(sizeof(double) * MaxNodes);
 	if(InvInfo->vect_t == NULL)
 		MallocErr();
 	InvInfo->vect_id = (int*)malloc(sizeof(int) * MaxNodes);
 	if(InvInfo->vect_id == NULL)
-		MallocErr();	
+		MallocErr();
 
 	// ONLY for TESTING
 	InvInfo->vect_test = (double*)malloc(sizeof(double) * MaxNodes* NOS * NOS);
 	if(InvInfo->vect_test == NULL)
 		MallocErr();
-		
+
 	// The OpenCL buffers
-	
+
 	// cl_mem vec_buffer  -  NOS*NOS  read-only
-	InvInfo->buffer_vec  = btocl_clCreateBuffer("EigenVector Matrix buffer",context, CL_MEM_READ_ONLY, 
-		sizeof(double)*NOS*NOS, NULL, &err);		
-	
+	InvInfo->buffer_vec  = btocl_clCreateBuffer("EigenVector Matrix buffer",context, CL_MEM_READ_ONLY,
+		sizeof(double)*NOS*NOS, NULL, &err);
+
 	// cl_mem buffer_inv_vec  -  NOS*NOS  read-only
-	InvInfo->buffer_inv_vec  = btocl_clCreateBuffer("Eigenvector inverse matrix buffer",context, CL_MEM_READ_ONLY, 
-		sizeof(double)*NOS*NOS, NULL, &err);		
-	
+	InvInfo->buffer_inv_vec  = btocl_clCreateBuffer("Eigenvector inverse matrix buffer",context, CL_MEM_READ_ONLY,
+		sizeof(double)*NOS*NOS, NULL, &err);
+
 	// 	cl_mem buffer_val  -  NOS vector read-only
-	InvInfo->buffer_val  = btocl_clCreateBuffer("Eigenvalues vector buffer",context, CL_MEM_READ_ONLY, 
-		sizeof(double)*NOS, NULL, &err);		
-	
+	InvInfo->buffer_val  = btocl_clCreateBuffer("Eigenvalues vector buffer",context, CL_MEM_READ_ONLY,
+		sizeof(double)*NOS, NULL, &err);
+
 	// 	cl_mem buffer_t  --  NoNodes vector  read-only  -- current tree
 	// allocate upper bound MaxNodes
-	InvInfo->buffer_t  = btocl_clCreateBuffer("(Discrete) t-len vector buffer",context, CL_MEM_READ_ONLY, 
-		sizeof(double)*MaxNodes, NULL, &err);		
-	
+	InvInfo->buffer_t  = btocl_clCreateBuffer("(Discrete) t-len vector buffer",context, CL_MEM_READ_ONLY,
+		sizeof(double)*MaxNodes, NULL, &err);
+
 	// cl_mem buffer_i  -- NoNodes read only
 	// allocate upper bound MaxNodes
-	InvInfo->buffer_id  = btocl_clCreateBuffer("Node id vector matrix",context, CL_MEM_READ_ONLY, 
+	InvInfo->buffer_id  = btocl_clCreateBuffer("Node id vector matrix",context, CL_MEM_READ_ONLY,
 		sizeof(int)*MaxNodes, NULL, &err);
-	
+
 	// cl_mem buffer_temp -- NoNodes*NOS*NOS read-write
-	InvInfo->buffer_temp  = btocl_clCreateBuffer("Temporary matrix buffer", context, CL_MEM_READ_WRITE, 
-		sizeof(double)*MaxNodes*NOS*NOS, NULL, &err);		
-	
+	InvInfo->buffer_temp  = btocl_clCreateBuffer("Temporary matrix buffer", context, CL_MEM_READ_WRITE,
+		sizeof(double)*MaxNodes*NOS*NOS, NULL, &err);
+
 }
 
 
@@ -169,7 +198,7 @@ void btocl_loadInvInfoBuffers(cl_command_queue queue, INVINFO *InvInfo, int NOS,
 			transpose[0] = invV[0];  transpose[1] = invV[4];  transpose[2] = invV[8];   transpose[3] = invV[12];
 			transpose[4] = invV[1];  transpose[5] = invV[5];  transpose[6] = invV[9];   transpose[7] = invV[13];
 			transpose[8] = invV[2];  transpose[9] = invV[6];  transpose[10] = invV[10]; transpose[11] = invV[14];
-			transpose[12] = invV[3]; transpose[13] = invV[7]; transpose[14] = invV[11]; transpose[15] = invV[15];			
+			transpose[12] = invV[3]; transpose[13] = invV[7]; transpose[14] = invV[11]; transpose[15] = invV[15];
 		} else {
 			btlin_transpose(transpose,invV,NOS);
 		}
@@ -177,7 +206,7 @@ void btocl_loadInvInfoBuffers(cl_command_queue queue, INVINFO *InvInfo, int NOS,
 		clEnqueueWriteBuffer(queue,InvInfo->buffer_inv_vec,CL_TRUE,0,NOS*NOS*sizeof(double),&transpose[0],0,0,NULL);
 	} else { // inv_vec --> buffer_inv_vec
 		clEnqueueWriteBuffer(queue,InvInfo->buffer_inv_vec,CL_TRUE,0,NOS*NOS*sizeof(double),InvInfo->inv_vec->me[0],0,0,NULL);
-	}		 
+	}
 	// val   --> buffer_val
 	clEnqueueWriteBuffer(queue,InvInfo->buffer_val,CL_TRUE,0,NOS*sizeof(double),InvInfo->val,0,0,NULL);
 	// vect_t -> buffer_t;    // NoNodes  read-only - copy NoNodes only
@@ -190,38 +219,38 @@ void btocl_loadInvInfoBuffers(cl_command_queue queue, INVINFO *InvInfo, int NOS,
 
 // Assumption: result to test is in I->vect_Test
 // unless we only need to check pmatrix
-void printSetPMatrixResults(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, double Kappa) {
-	double* pmatrix;	
+void printSetPMatrixResults(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult) {
+	double* pmatrix;
 	INVINFO* I;
 	TREE* Tree;
 	int NOS;
 
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	Tree = Trees->Tree[Rates->TreeNo];
 	pmatrix = Trees->PList[0]->me[0];
-	NOS = Trees->NoOfStates;
-	
+	NOS = Trees->NoStates;
+
 	//printf("Result=\n");
 	//btlin_printR(I->vect_test+1*NOS*NOS,NOS,NOS);
 
 	printf("Real Value**=\n");
 	btlin_printR(pmatrix+1*NOS*NOS,NOS,NOS);
-	
+
 
 }
 
 // Prints Pmatrix Node
-void printPMatrixNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, double Kappa,int node) {
-	double* pmatrix;	
+void printPMatrixNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult,int node) {
+	double* pmatrix;
 	INVINFO* I;
 	TREE* Tree;
 	int NOS;
-	
-	I = Trees->InvInfo;
+
+	I = Trees->InvInfo[0];
 	Tree = Trees->Tree[Rates->TreeNo];
 	pmatrix = Trees->PList[0]->me[0];
-	NOS = Trees->NoOfStates;
-	
+	NOS = Trees->NoStates;
+
 	//printf("Result=\n");
 	//btlin_printR(I->vect_test+1*NOS*NOS,NOS,NOS);
 
@@ -235,11 +264,11 @@ void printPMatrixNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult,
 	printf("Lambda=\n");
 	btlin_printR(I->val,1,NOS);
 	printf("t = %lf\n",I->vect_t[node]);
-	
+
 }
 
 void printPMatrixCell(TREES *Trees, TREE* Tree,int node,int row,int col) {
-	double* pmatrix;	
+	double* pmatrix;
 	INVINFO* I;
 
 	int NOS,i;
@@ -249,10 +278,10 @@ void printPMatrixCell(TREES *Trees, TREE* Tree,int node,int row,int col) {
 	double temp, temp2;
 	double *ptemp;
 
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	pmatrix = Trees->PList[0]->me[0];
-	NOS = Trees->NoOfStates;
-	
+	NOS = Trees->NoStates;
+
 	//printf("Result=\n");
 	//btlin_printR(I->vect_test+1*NOS*NOS,NOS,NOS);
 	printf("****** printing info ****\n");
@@ -262,7 +291,7 @@ void printPMatrixCell(TREES *Trees, TREE* Tree,int node,int row,int col) {
 
 	printf("V=\n");
 	btlin_printR(I->vec->me[0]+NOS*row,1,NOS);
-	
+
 	printf("invV=\n");
 	//btlin_printR(I->inv_vec->me[0],NOS,NOS);
 	p = I->inv_vec->me[0]+col;
@@ -274,7 +303,7 @@ void printPMatrixCell(TREES *Trees, TREE* Tree,int node,int row,int col) {
 	printf("Lambda=\n");
 	btlin_printR(I->val,1,NOS);
 	printf("t = %lf\n",I->vect_t[node]);
-	
+
 	printf("Computing on-the-fly...\n");
 
 	accum = 0.0;
@@ -309,31 +338,27 @@ void printPMatrixCell(TREES *Trees, TREE* Tree,int node,int row,int col) {
 	}
 	printf("Value2 = %lf\n",accum);
 	free(ptemp);
-	
+
 }
 
 
-void	GenTIDVectors(TREE *Tree, INVINFO* InvInfo, double RateMult, double Kappa)
+void	GenTIDVectors(TREE *Tree, INVINFO* InvInfo, double RateMult)
 {
 
 	double Len;
 	int Index;
-	NODE N;	
+	NODE N;
 	double* t;
 	int* id;
-	
+
 	t = InvInfo->vect_t;
 	id = InvInfo->vect_id;
-	
+
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		N = Tree->NodeList[Index];
-		
-		Len = N->Length;
-		if(Kappa != -1)
-			Len = pow(Len, Kappa);
 
-		Len = Len * RateMult;
+		Len = N->Length * RateMult;
 
 		t[Index] = Len;
 		id[Index] = N->ID;
@@ -351,7 +376,7 @@ double	CreatPMatrix(double t, INVINFO *InvInfo, double **P, int NOS, double** Te
 	Val		= InvInfo->val;
 	Vec		= InvInfo->vec->me;
 	InvVec	= InvInfo->inv_vec->me;
-	
+
 	//printf("t=<%lf>\n",t);
 	// If using temp, use a single call to update Temp with exp result.
 	for(i=0;i<NOS;i++)
@@ -362,7 +387,7 @@ double	CreatPMatrix(double t, INVINFO *InvInfo, double **P, int NOS, double** Te
 	}
 
 	E1 = 0.0;
-	
+
 	for(i=0;i<NOS;i++)
 	{
 		E2 = 0;
@@ -384,7 +409,7 @@ double	CreatPMatrix(double t, INVINFO *InvInfo, double **P, int NOS, double** Te
 		E2 = E2 - 1.0;
 		E1 += E2 * E2;
 	}
-	
+
 	return E1;
 }
 
@@ -399,13 +424,13 @@ int setExpqtArgs(cl_kernel kernel, TREES* Trees, TREE* Tree, KernelInfo k, cl_us
 	int NOS, NoNodes;
 	int argnum, local_memSize, num_cells;
 
-	I = Trees->InvInfo;
-	NOS = Trees->NoOfStates;
+	I = Trees->InvInfo[0];
+	NOS = Trees->NoStates;
 	NoNodes =  Tree->NoNodes;
 
 	argnum = 0;
 	if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_vec))) < 0)
-		return argnum;	
+		return argnum;
 	if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_val))) < 0)
 		return argnum;
 	if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_inv_vec))) < 0)
@@ -419,33 +444,33 @@ int setExpqtArgs(cl_kernel kernel, TREES* Trees, TREE* Tree, KernelInfo k, cl_us
 
 	if (kernel_type == BTOCL_EXPQT_NOTEMP) {
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(NOS), &NOS)) < 0)
-			return argnum;	
+			return argnum;
 		num_cells = NOS*NOS*NoNodes;
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(num_cells), &num_cells)) < 0)
-			return argnum;	
-	} else if ((kernel_type == BTOCL_EXPQT3) || (kernel_type == BTOCL_EXPQT3_NOS4)) {	
+			return argnum;
+	} else if ((kernel_type == BTOCL_EXPQT3) || (kernel_type == BTOCL_EXPQT3_NOS4)) {
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(Trees->buffer_error))) < 0)
 			return argnum;
 		num_cells = NOS*NOS*(NoNodes-1); // skipping root
 		//printf("num cells = %d\n", num_cells);
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(num_cells), &num_cells)) < 0)
-			return argnum;	
-	} else if ((kernel_type == BTOCL_EXPQT3_LOCAL) || (kernel_type == BTOCL_EXPQT3_LOCALERR) ) {	
+			return argnum;
+	} else if ((kernel_type == BTOCL_EXPQT3_LOCAL) || (kernel_type == BTOCL_EXPQT3_LOCALERR) ) {
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(Trees->buffer_error))) < 0)
 			return argnum;
 		num_cells = NOS*NOS*(NoNodes-1); // skipping root
 		//printf("num cells = %d\n", num_cells);
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(num_cells), &num_cells)) < 0)
-			return argnum;		
+			return argnum;
 		local_memSize = sizeof(double)*NOS*(k.num_rows_wg);
 		if ((*err = clSetKernelArg(kernel,argnum++,local_memSize, NULL)) < 0)  // local_invV
 			return argnum;
 	} else if (kernel_type == BTOCL_EXPQT) {
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(NOS), &NOS)) < 0)
 			return argnum;
-		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_temp))) < 0) 
-			return argnum;		
-	} else if ((kernel_type == BTOCL_EXPQT_ROWNOS2) || (kernel_type == BTOCL_EXPQT_ROWNOS4)) {		
+		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_temp))) < 0)
+			return argnum;
+	} else if ((kernel_type == BTOCL_EXPQT_ROWNOS2) || (kernel_type == BTOCL_EXPQT_ROWNOS4)) {
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(NoNodes), &NoNodes)) < 0) {
 			return argnum;
 		}
@@ -453,43 +478,43 @@ int setExpqtArgs(cl_kernel kernel, TREES* Trees, TREE* Tree, KernelInfo k, cl_us
 			return argnum;
 		}
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(Trees->buffer_error))) < 0)
-			return argnum;		
+			return argnum;
 	} else if (kernel_type == BTOCL_EXPQT_LOCAL) {
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(NOS), &NOS)) < 0)
 			return argnum;
 		// int nonodes, int num_nodes_wg,  __local double* local_invV, __local double* local_V
-		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_temp))) < 0)	
+		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_temp))) < 0)
 			return argnum;
-		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(NoNodes), &NoNodes)) < 0)	
+		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(NoNodes), &NoNodes)) < 0)
 			return argnum;
-		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(k.num_nodes_wg), &k.num_nodes_wg)) < 0) 
+		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(k.num_nodes_wg), &k.num_nodes_wg)) < 0)
 			return argnum;
 
 		local_memSize = sizeof(double)*NOS*NOS;
 		if ((*err = clSetKernelArg(kernel,argnum++,local_memSize, NULL)) < 0)  // local_invV
 			return argnum;
-	
+
 		if ((*err = clSetKernelArg(kernel,argnum++,local_memSize, NULL)) < 0)  // local_V
 			return argnum;
 	} else if (kernel_type == BTOCL_EXPQT_LOCALERR) {
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(NOS), &NOS)) < 0)
 			return argnum;
 		// int nonodes, int num_nodes_wg,  __local double* local_invV, __local double* local_V
-		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_temp))) < 0)	
+		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_temp))) < 0)
 			return argnum;
 		printf("Args - NoNodes = %d\n",NoNodes);
-		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(NoNodes), &NoNodes)) < 0)	
+		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(NoNodes), &NoNodes)) < 0)
 			return argnum;
-		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(k.num_nodes_wg), &k.num_nodes_wg)) < 0) 
+		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(k.num_nodes_wg), &k.num_nodes_wg)) < 0)
 			return argnum;
 
 		local_memSize = sizeof(double)*NOS*NOS;
 		if ((*err = clSetKernelArg(kernel,argnum++,local_memSize, NULL)) < 0)  // local_invV
 			return argnum;
-	
+
 		if ((*err = clSetKernelArg(kernel,argnum++,local_memSize, NULL)) < 0)  // local_V
 			return argnum;
-			
+
 		if ((*err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(Trees->buffer_error))) < 0)
 			return argnum;
 	}
@@ -500,16 +525,16 @@ int setExpqtArgs(cl_kernel kernel, TREES* Trees, TREE* Tree, KernelInfo k, cl_us
 void setExpqtKernelInfo(TREES* Trees,TREE* Tree,cl_ushort kernel_type,KernelInfo* k) {
 	int NOS,NoNodes;
 	int wg_size;
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 	NoNodes =  Tree->NoNodes;
 	// IMPORTANT - check before compiling
-	
+
 	k->dim = 1;
 	k->check_error = 0; // default. Kernel does not check for pmatrix error
 	k->transpose_inv = 0;  // default: do not use transpose
 
 	k->kernel_type = kernel_type;
-	
+
 	if (kernel_type == BTOCL_EXPQT) {
 		//case BTOCL_EXPQT_NOTEMP:  -- no workgroup version
 		k->usewg = FALSE;
@@ -554,7 +579,7 @@ void setExpqtKernelInfo(TREES* Trees,TREE* Tree,cl_ushort kernel_type,KernelInfo
 		k->transpose_inv = 1;
 		wg_size = 32;  // multiple of 2 or 4
 		k->num_nodes_wg = wg_size / NOS;  // should be an exact integer divivsion
-		// k->num_nodes_wg =40;  // change this to optimise "warp"		
+		// k->num_nodes_wg =40;  // change this to optimise "warp"
 		k->num_wg = NoNodes / k->num_nodes_wg;
 		if (NoNodes % k->num_nodes_wg != 0)
 			k->num_wg++;
@@ -587,7 +612,7 @@ void setExpqtKernelInfo(TREES* Trees,TREE* Tree,cl_ushort kernel_type,KernelInfo
 		exit(0);
 	}
 
-	
+
 }
 
 // Used for debugging
@@ -596,14 +621,14 @@ void copy_pmatrix(TREES* Trees) {
 	int n,row,col;
 	int nos, max_nnodes;
 	double *pmatrix,*p;
-	
-	nos = Trees->NoOfStates;
+
+	nos = Trees->NoStates;
 	pmatrix = Trees->PList[0]->me[0];
 	p = Trees->check_pmatrix;
 	max_nnodes = Trees->MaxNodes;
-	
+
 	//printf("Copying Pmatrix to check_pmatrix\n");
-	
+
 	// All nodes: max_nnodes
 	for(n=0; n < max_nnodes; n++) {
 		//printf("n=%d\n",n);
@@ -615,7 +640,7 @@ void copy_pmatrix(TREES* Trees) {
 				p++; pmatrix++;
 			}
 		}
-		
+
 	}
 	printf("\n");
 }
@@ -627,14 +652,14 @@ void compare_pmatrix(TREES* Trees, TREE* Tree) {
 	int nos, max_nnodes;
 	double* pmatrix,*p;
 	int* IVect;
-	
-	IVect = Trees->InvInfo->vect_id;
-	
-	nos = Trees->NoOfStates;
+
+	IVect = Trees->InvInfo[0]->vect_id;
+
+	nos = Trees->NoStates;
 	pmatrix = Trees->PList[0]->me[0];
 	p = Trees->check_pmatrix;
 	max_nnodes = Trees->MaxNodes;
-		
+
 	// Skip root
 	pmatrix += nos*nos;
 	p += nos*nos;
@@ -653,7 +678,7 @@ void compare_pmatrix(TREES* Trees, TREE* Tree) {
 					for(col=0; col < nos; col++) {
 						printf("%lf (%lf) ",*pmatrix++, *p++);
 					}
-					
+
 					exit(0);
 				}
 				p++; pmatrix++;
@@ -666,11 +691,11 @@ int checkPMatrixError(double* pmatrix, INVINFO* InvInfo, int NoNodes, int NOS) {
 	double E1, E2;
 	int* IVect;
 	int pmatrix_idx;
-	
+
 	//printf("here!\n");
 
 	IVect = InvInfo->vect_id;
-	
+
 	//printf("NoNodes=%d\n",NoNodes);
 	for(i = 1; i < NoNodes; i++) {
 		//printf("i=%d - ",i);
@@ -714,7 +739,7 @@ int checkPMatrixError(double* pmatrix, INVINFO* InvInfo, int NoNodes, int NOS) {
 }
 
 // Sequential version
-int	btocl_SetAllPMatriCPU(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, double Kappa)
+int	btocl_SetAllPMatriCPU(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult)
 {
 	double *TVect;
 	int *IVect;
@@ -722,21 +747,21 @@ int	btocl_SetAllPMatriCPU(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateM
 	int Index, NOS;
 	double Err;
 	double **TempM;
-	
+
 	//btdebug_enter("pmatrix");
-	NOS = Trees->NoOfStates;
-	
+	NOS = Trees->NoStates;
+
 	TempM = AllocMatMem(NOS, NOS);
-	
+
 	Tree = Trees->Tree[Rates->TreeNo];
-	GenTIDVectors(Tree, Trees->InvInfo, RateMult, Kappa);
-	TVect = Trees->InvInfo->vect_t;
-	IVect = Trees->InvInfo->vect_id;
-			
+	GenTIDVectors(Tree, Trees->InvInfo[0], RateMult);
+	TVect = Trees->InvInfo[0]->vect_t;
+	IVect = Trees->InvInfo[0]->vect_id;
+
 	for(Index=1;Index<Tree->NoNodes;Index++)
 	{
 		//N = Tree->NodeList[Index];
-		Err = CreatPMatrix(TVect[Index], Trees->InvInfo, Trees->PList[IVect[Index]]->me , NOS, TempM);
+		Err = CreatPMatrix(TVect[Index], Trees->InvInfo[0], Trees->PList[IVect[Index]]->me , NOS, TempM);
 		if(Err > 0.001)
 		{
 			printf("quitting pmatrix calculation due to error\n");
@@ -744,31 +769,31 @@ int	btocl_SetAllPMatriCPU(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateM
 		}
 		//	PrintMatrix(Trees->PList[N->ID], "p=", stdout);
 	}
-	
+
 	FreeMatMem(TempM);
 	//btdebug_exit("pmatrix");
 	//printf("NoNodes %d MaxNoNodes %d NOS %d\n",Tree->NoNodes, Trees->MaxNodes,NOS);
 	//exit(0);
-	
 
-	
+
+
 	return FALSE;
 }
 
 // Entry Point for GPU version
-int	btocl_SetAllPMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, double Kappa) {
+int	btocl_SetAllPMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult) {
 	int NOS;
-	cl_ushort kernel_type;	
+	cl_ushort kernel_type;
 	int err;
 	double* pmatrix;
 	TREE* Tree;
 	//int standard_err;
 
-	NOS = Trees->NoOfStates;
+	NOS = Trees->NoStates;
 
 	switch(NOS) {
 		case 2:
-			kernel_type = BTOCL_EXPQT_ROWNOS2; 
+			kernel_type = BTOCL_EXPQT_ROWNOS2;
 			//kernel_type = BTOCL_EXPQT_NOTEMP;
 			//kernel_type = BTOCL_EXPQT3_LOCALERR;
 			//kernel_type = BTOCL_EXPQT3_LOCALERR;
@@ -794,27 +819,27 @@ int	btocl_SetAllPMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMul
 
 
 	// removed feb 2014
-	//standard_err = btocl_SetAllPMatriCPU(Rates, Trees, Opt, RateMult, Kappa);
+	//standard_err = btocl_SetAllPMatriCPU(Rates, Trees, Opt, RateMult);
 
 	pmatrix = Trees->PList[0]->me[0];
 	Tree = Trees->Tree[Rates->TreeNo];
 	//standard_err = checkPMatrixError(pmatrix, Trees->InvInfo, Tree->NoNodes, NOS);
 	//if (standard_err == TRUE) { printf("-->Standard version: error\n"); }
-	
-	// copy result to check_pmatrix	
+
+	// copy result to check_pmatrix
 	//copy_pmatrix(Trees);
-	
+
 	//printf("start setpmatrix %d --\n",Trees->count++);
 	//printf("start setpmatrix  --");
 	//printf("Kernel %s\n",btocl_getKernelName(kernel_type));
-	err = btocl_SetAllPMatrixKernel(Rates,Trees,Opt,RateMult,Kappa,kernel_type);
-	
+	err = btocl_SetAllPMatrixKernel(Rates,Trees,Opt,RateMult,kernel_type);
+
 	//if (((standard_err != FALSE) && (err == FALSE)) ||
 	//	((standard_err == FALSE) && (err != FALSE))) {
 	//	printf("STOP!!\n");
 	//	exit(0);
 	//}
-	
+
 	// removed feb 2014
 	//printf("Comparing......\n");
 	//if ((standard_err == FALSE) && (err == FALSE)) {
@@ -822,25 +847,25 @@ int	btocl_SetAllPMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMul
 	//	compare_pmatrix(Trees,Tree);
 	//}
 	//printf("Comparison OK!!\n");
-		
+
 	//printf(" end setpmatrix  --\n");
-	
+
 	//exit(0);
-	
-	
+
+
 	return err;
-	
+
 }
 
 
 // General function that sets up kernel arguments and properties for OpenCL version of SetAllPMatrix.
-int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, double Kappa, cl_ushort kernel_type) {
+int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double RateMult, cl_ushort kernel_type) {
 	TREE *Tree;
 	int NOS, MaxNodes, NoNodes;
 	INVINFO* I;
 	double* pmatrix;
-	
-	cl_command_queue queue;	
+
+	cl_command_queue queue;
 	cl_kernel kernel;
 	cl_context context;
 
@@ -851,18 +876,18 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 	int argnum;
 
 	//btdebug_enter("pmatrix");
-	I = Trees->InvInfo;
-	NOS = Trees->NoOfStates;
+	I = Trees->InvInfo[0];
+	NOS = Trees->NoStates;
 	MaxNodes = Trees->MaxNodes;
-	
+
 	Tree = Trees->Tree[Rates->TreeNo];
 	NoNodes =  Tree->NoNodes;
-	GenTIDVectors(Tree, Trees->InvInfo, RateMult, Kappa);
-	
+	GenTIDVectors(Tree, Trees->InvInfo[0], RateMult);
+
 	queue =  btocl_getCommandQueue();
 	context = btocl_getContext();
 
-	kernel = btocl_getKernel(kernel_type);	
+	kernel = btocl_getKernel(kernel_type);
 	if (kernel == NULL) {
 		printf("Error: Couldn't load kernel %s\n",btocl_getKernelName(kernel_type));
 		exit(1);
@@ -874,11 +899,11 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 	//printf("NOS %d MaxNodes %d\n",NOS,MaxNodes);
 
 	// decide on workgroups and workitems
-	// Update k	
+	// Update k
 	setExpqtKernelInfo(Trees,Tree,kernel_type,&k);
-	
+
 	// the rest
-	btocl_loadInvInfoBuffers(queue,Trees->InvInfo, NOS, Tree->NoNodes,k);
+	btocl_loadInvInfoBuffers(queue,Trees->InvInfo[0], NOS, Tree->NoNodes,k);
 
 	// testing
 	//btdebug_enter("expeigen");
@@ -891,17 +916,17 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 	if (k.check_error) {
 		clEnqueueWriteBuffer(queue,Trees->buffer_error,CL_TRUE,0,sizeof(int),(Trees->perror),0,0,NULL);
 	}
-	
+
 	argnum = setExpqtArgs(kernel,Trees,Tree,k,kernel_type,&err);
 	if (err < 0) {
 		printf("Error. Couldn't set argument: %d\n",argnum-1);
 	}
-	
+
 	//printf("NOS %d Nodes %d\n",NOS,NoNodes);
 	//printf("usewg %d dim %d numnodeswg %d numwg %d  local %d global %d\n",k.usewg,k.dim,
 	//k.num_nodes_wg,k.num_wg,k.localws[0], k.globalws[0]);
 
-	
+
 	//printf("launched kernel...");
 	if (k.usewg == FALSE) {
 		err = clEnqueueNDRangeKernel(queue,kernel,k.dim,NULL,k.globalws,NULL,0,NULL,NULL);
@@ -913,16 +938,16 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 		printf("Error kernel execution ExppQt\n");
 		exit(0);
 	}
-	
+
 	pmatrix = Trees->PList[0]->me[0];
 
 	// Read pMatrix buffer
-	// Trees->PList	
+	// Trees->PList
 	//clEnqueueReadBuffer(queue,I->buffer_pmatrix,CL_TRUE,0,
 	//			sizeof(double)*MaxNodes*NOS*NOS, I->vect_test,0,0,NULL);
 	clEnqueueReadBuffer(queue,Trees->buffer_pmatrix,CL_TRUE,0,
 				sizeof(double)*MaxNodes*NOS*NOS, pmatrix,0,0,NULL);
-	
+
 
 	if (k.check_error) {
 		// read the error back
@@ -932,9 +957,9 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 	} else {
 		err = checkPMatrixError(pmatrix, I,NoNodes,NOS);
 	}
-	
-	if (err != FALSE) { 
-		//printf("-->btocl version: error\n"); 
+
+	if (err != FALSE) {
+		//printf("-->btocl version: error\n");
 
 
 		//printf("Checking with CPU error function\n");
@@ -944,28 +969,28 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 		//	exit(0);
 		//}
 	}
-	
+
 	//printf("ERROR=%d\n", err);
 	// or call check error function
-	
-	//printSetPMatrixResults(Rates, Trees, Opt, RateMult, Kappa);
-	// exit(0);
-	
 
-	
-	//return 
-	
+	//printSetPMatrixResults(Rates, Trees, Opt, RateMult);
+	// exit(0);
+
+
+
+	//return
+
 	//printf("Node 1\n");
-	//printPMatrixNode(Rates, Trees, Opt, RateMult, Kappa,1);
-	
+	//printPMatrixNode(Rates, Trees, Opt, RateMult, 1);
+
 	//errCorrect = checkPMatrixError(pmatrix, I,NoNodes,NOS);
 	//printf("Correct error = %d\n",errCorrect);
-	
+
 	//printf("finished error checking %d\n",scounter++);
-	
+
 	//int i, pidx,local_idx;
 	//if (err != FALSE) {
-	//	//printf("extra ERROR in pmatrix\n");	
+	//	//printf("extra ERROR in pmatrix\n");
 	//	printf("err with type = %d\n",err);
 	//	err = err/10;
 	//	pidx = err;
@@ -978,19 +1003,19 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 	//		err++;
 	//	}
 	//	printf("\n");
-	//	local_idx = pidx % (NOS*NOS); 
+	//	local_idx = pidx % (NOS*NOS);
 	//	printPMatrixCell(Trees, Tree,pidx/(NOS*NOS), local_idx/NOS,local_idx%NOS);
-		
+
 	//	exit(0);
 	//}
-	
+
 	//printf("Rate TreeNo %d\n",Rates->TreeNo);
-	
+
 	if (err != FALSE) {
 		err = TRUE;
 	}
-	
-	
+
+
 	return err;
 	//return FALSE;
 }
@@ -999,12 +1024,12 @@ int	btocl_SetAllPMatrixKernel(RATES *Rates, TREES *Trees, OPTIONS *Opt, double R
 // Trees: Number of states, Eigenvalues
 // Tree: Number of Nodes
 int btocl_computeExpComponent(TREES *Trees, TREE *Tree) {
-	
+
 	int NOS, MaxNodes, NoNodes;
 	INVINFO* I;
 	cl_ushort kernel_type;
-	
-	cl_command_queue queue;	
+
+	cl_command_queue queue;
 	cl_kernel kernel;
 	cl_context context;
 
@@ -1015,25 +1040,25 @@ int btocl_computeExpComponent(TREES *Trees, TREE *Tree) {
 	double *expeigen,*p;
 
 	// ** end variable declaration
-	
-	NOS = Trees->NoOfStates;
+
+	NOS = Trees->NoStates;
 	NoNodes =  Tree->NoNodes;
-	I = Trees->InvInfo;
+	I = Trees->InvInfo[0];
 	MaxNodes = Trees->MaxNodes;  // real size of pmatrix
-	
-		
+
+
 	queue =  btocl_getCommandQueue();
 	context = btocl_getContext();
 
 	kernel_type = BTOCL_EXP_EIGEN;
-	kernel = btocl_getKernel(kernel_type);	
+	kernel = btocl_getKernel(kernel_type);
 	if (kernel == NULL) {
 		printf("Error: Couldn't load kernel %s\n",btocl_getKernelName(kernel_type));
 		exit(1);
 	}
 
 	// Kernel Arguments
-	argnum = 0;	
+	argnum = 0;
 	if ((err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_val))) < 0)
 		return err;
 	if ((err = clSetKernelArg(kernel,argnum++,sizeof(cl_mem), &(I->buffer_t))) < 0)
@@ -1070,7 +1095,7 @@ int btocl_computeExpComponent(TREES *Trees, TREE *Tree) {
 	//}
 	//printf("\n");
 
-	
+
 
 
 	//btocl_free_runtime();
@@ -1079,7 +1104,7 @@ int btocl_computeExpComponent(TREES *Trees, TREE *Tree) {
 	//free(expeigen);
 	//printf("done\n");
 
-	
+
 
 	return 0; // success
 }

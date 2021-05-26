@@ -1,10 +1,12 @@
+/* copyright David Swofford */
+
+
 #include <stdio.h>
 #include <math.h>
 #include <float.h>
-#include "linalg.h"
-#include "genlib.h"
 
-/*#include "jph.h" */
+#include "LinAlg.h"
+#include "GenLib.h"
 
 
 static void     LUBackSubst (double **a, int n, int *indx, double *b);
@@ -14,7 +16,7 @@ static void     Exchange (int j, int k, int l, int m, int n, double **a, double 
 static void     ElmHes (int n, int low, int high, double **a, int *intchg);
 static void     ElTran (int n, int low, int high, double **a, int *intchg, double **z);
 static int      Hqr2 (int n, int low, int high, double **h, double *wr, double *wi, double **z);
-static void     BalBak (int n, int low, int high, double *scale, int m, double **z);
+static int		BalBak (int n, int low, int high, double *scale, int m, double **z);
 static void     CDiv (double ar, double ai, double br, double bi, double *cr, double *ci);
 static double   D_sign (double a, double b);
 
@@ -379,10 +381,10 @@ int EigenRG (int n, double **a, double *wr, double *wi, double **z, int *iv1, do
 	ElmHes (n, is1, is2, a, iv1);
 	ElTran (n, is1, is2, a, iv1, z);
 	ierr = Hqr2 (n, is1, is2, a, wr, wi, z);
-	if (ierr == 0)
-		BalBak (n, is1, is2, fv1, n, z);
+	if (ierr != 0)
+		return ERROR;
 
-	return ierr;
+	return BalBak (n, is1, is2, fv1, n, z);
 }
 
 /*--------------------------------------------------------------------------------------------------
@@ -1295,7 +1297,7 @@ int Hqr2 (int n, int low, int high, double **h, double *wr, double *wi, double *
 |		columns.
 */
 
-void BalBak (int n, int low, int high, double *scale, int m, double **z)
+int BalBak (int n, int low, int high, double *scale, int m, double **z)
 
 {
 	int			i, j, k, ii;
@@ -1326,6 +1328,8 @@ void BalBak (int n, int low, int high, double *scale, int m, double **z)
 					for (j = 0; j < m; j++)
 						{
 						s = z[i][j];
+						if(j >= n || k >= n)
+							return ERROR;
 						z[i][j] = z[k][j];
 						z[k][j] = s;
 						}
@@ -1333,6 +1337,8 @@ void BalBak (int n, int low, int high, double *scale, int m, double **z)
 				}
 			}
 		}
+
+	return NO_ERROR;
 }
 
 /*--------------------------------------------------------------------------------------------------
@@ -1373,52 +1379,6 @@ double D_sign (double a, double b)
 	return (b >= 0 ? x : -x);
 }
 
-
-/* Stuff taken form MrBays 2. */
-
-void CalcCijk (double *c_ijk, int n, double **u, double **v)
-{
-
-	register int 	i, j, k;
-	double 			*pc;
-
-		/* precalculate values for faster matrix mult in GTRChangeMatrix and GTRDerivatives */
-		pc = c_ijk;
-		for (i=0; i<n; i++)
-			for (j=0; j<n; j++)
-				for (k=0; k<n; k++)
-				 	*pc++ = u[i][k] * v[k][j];	/* (note: pc = &c[i][j][k]) */
-
-}
-
-/* Stuff taken form MrBays 2. */
-/*
-void CalcPij (double *c_ijk, int n, double *eigenValues, double v, double r, double **p)
-
-{
-
-	register int		i, j, k;
-	double				vr, *ptr, *g, sum;
-
-	vr = v * r;
-	g = EigValexp;
-	for (k=0; k<n; k++)
-		*g++ = exp(*eigenValues++ * vr);
-
-	ptr = c_ijk;
-	for(i=0; i<n; i++)
-		{
-		for(j=0; j<n; j++)
-			{
-			g = EigValexp;
-			sum = 0.0;
-			for(k=0; k<n; k++)
-				sum += (*ptr++) * (*g++);
-			p[i][j] = (sum < 0.0) ? 0.0 : sum;
-			}
-		}
-}
-*/
 
 int MatrixDeterminant(double **a, int n, double *vv, int *indx, double *Det)
 {

@@ -1,3 +1,31 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -78,6 +106,21 @@ RANDSTATES*	CreateSeededRandStates(long Seed)
 	for(Index=0;Index<Ret->Size;Index++)
 		Ret->States[Index] = RandomLong(Ret);
 
+	return Ret;
+}
+
+RANDSTATES**	CreateRandStatesList(RANDSTATES* RS, int No)
+{
+	RANDSTATES** Ret;
+	int Index;
+
+	Ret = (RANDSTATES**)malloc(sizeof(RANDSTATES*) * No);
+	if(Ret == NULL)
+		RSMallocErr();
+	
+	for(Index=0;Index<No;Index++)
+		Ret[Index] = CreateSeededRandStates(RandomLong(RS));
+	
 	return Ret;
 }
 
@@ -196,7 +239,11 @@ double RandDouble(RANDSTATES* RS)
 
 	y = RandUSLong(RS);
 
-	return( (double) y / (unsigned long) 0xffffffff);
+//	0 - 1 Exclusive
+	return (((unsigned)y + 1.0)/0x100000002);
+
+	//	0 - 1 Inclusive
+//	return( (double) y / (unsigned long) 0xffffffff);
 }
 
 
@@ -477,7 +524,7 @@ double RndGamma (RANDSTATES* RS, double s)
 	else if (s > 1.0)
 		r = RndGamma2 (RS, s);
 	else
-		r =- log(RandDouble(RS));
+		r = -log(RandDouble(RS));
 	return (r);
 }
 
@@ -495,9 +542,7 @@ void DirichletRandomVariable (RANDSTATES* RS, double *alp, double *z, int n)
 		}
 	for(i=0; i<n; i++)
 		z[i] /= sum;
-
 }
-
 
 /* Generate an integer in proprtion to values in List */
 int RandInProportion(RANDSTATES* RS, double *List, int No)
@@ -540,4 +585,16 @@ double			RandUniDouble(RANDSTATES* RS, double Min, double Max)
 	Ret = RandDouble(RS) * (Max - Min);
 	Ret += Min;
 	return Ret;
+}
+
+double			RandExp(RANDSTATES* RS, double Mean)
+{
+	double Ret;
+
+	Mean = 1.0 / Mean;
+
+	Ret = log(1.0-RandDouble(RS));
+	Ret = Ret / (-Mean);
+
+	return Ret;	
 }

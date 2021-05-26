@@ -1,22 +1,25 @@
 #ifndef PMATRIX_H
 #define PMATRIX_H
 
-#include "typedef.h"
+#include "TypeDef.h"
 
-int	CreateMSAMatrix(INVINFO *InvInfo, RATES* Rates, TREES* Trees);
-int	CreateMSAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees);
-
-int	CreateDEPAMatrix(INVINFO* InvInfo, double *R, RATES* Rates, TREES* Trees);
-int	CreateDEPAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees);
-
-int	CreateInDEPAMatrix(INVINFO* InvInfo, double *R, RATES* Rates, TREES* Trees);
-int	CreateInDEPAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees);
-
-int	CreateDepCVAMatrix(INVINFO *InvInfo, double *R, RATES* Rates, TREES* Trees);
+void	CreateMSAMatrix(INVINFO *InvInfo, int NOS, double *Rates, double *Pis);
+void	CreateMSAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *RateP, double *Pi);
 
 
-double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et);
-double	Create4SPMat(double t, INVINFO *InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et);
-double	Create2SPMat(double t, INVINFO *InvInfo, MATRIX *Mat, TREES* Trees, MATRIX *A, double *Et);
+void	CreateDEPAMatrix(INVINFO* InvInfo, RATES* Rates, TREES* Trees, double *RateP);
+void	CreateDEPAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *RateP);
+
+void	CreateInDEPAMatrix(INVINFO* InvInfo, RATES* Rates, TREES* Trees, double *RateP);
+void	CreateInDEPAMatrixCoVar(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *RateP);
+
+void	CreateDepCVAMatrix(INVINFO *InvInfo, RATES* Rates, TREES* Trees, double *R);
+
+
+double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, int NOS, int ThrNo);
+double	Create4SPMat(double t, INVINFO *InvInfo, MATRIX *Mat, int ThrNo);
+double	Create2SPMat(double t, INVINFO *InvInfo, MATRIX *Mat, int ThrNo);
+
+int		InvMat(INVINFO	*InvInfo, int NoStates);
 
 #endif

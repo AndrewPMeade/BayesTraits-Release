@@ -14,7 +14,12 @@
 
 #define	BUFFERSIZE	1048576
 
+
 #define	MallocErr() MallocErrFull(__FILE__, __LINE__)
+
+void*	smalloc(size_t n, char* FName, unsigned long LineNo);
+
+#define SMalloc(N) smalloc(N, __FILE__, __LINE__)
 
 typedef struct
 {
@@ -38,6 +43,8 @@ typedef struct
 	int		NoOfLines;
 	int		*NoPerLine;
 } NUMFILE;
+
+void*		CloneMem(size_t Size, void *Mem);
 
 TEXTFILE*	LoadTextFile(char* Name, char DelComments);
 void		FreeTextFile(TEXTFILE* TextFile);
@@ -88,6 +95,13 @@ void		PrintDoubleHex(FILE *Str, double D);
 int			CountChar(char *Str, char C);
 
 void		CalcRSqr(double *x, double *y, int Size, double *R2, double *Slope, double *Intercept);
+
+
+int			StrICmp(char const *a, char const *b);
+
+void	NormaliseVector(double *Vect, int Size);
+
+FILE*		OpenWriteWithExt(char *Base, char *Ext);
 
 
 #endif

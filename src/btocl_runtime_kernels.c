@@ -1,8 +1,39 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #ifdef BTOCL
 
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+
+#pragma warning(disable : 4996)
 
 
 #include "btocl_runtime.h"
@@ -198,6 +229,8 @@ int load_aux_file(char* aux_file, BTOCL_RUNTIME* rt) {
 	return 0; // success
 }
 
+
+/* this looks like its got a bug in, psize not set
 int load_aux_string(const char* aux_string, BTOCL_RUNTIME* rt) {
 	FILE* program_handle;
 	cl_ushort idx;
@@ -205,6 +238,29 @@ int load_aux_string(const char* aux_string, BTOCL_RUNTIME* rt) {
 	char* pbuffer;
 
 	pbuffer = (char*)malloc(strlen(aux_string)+1);
+	strcpy(pbuffer,aux_string);
+
+	idx = rt->kernel_num_used;  
+	rt->program_buffer[idx] = pbuffer;
+	rt->program_size[idx] = psize;
+	rt->kernel_use[idx] = 0;  // this is not a kernel
+	rt->kernel_num_used++;  
+
+	return 0; // success
+}
+*/
+
+
+int load_aux_string(const char* aux_string, BTOCL_RUNTIME* rt)
+{
+	FILE* program_handle;
+	cl_ushort idx;
+	size_t psize;
+	char* pbuffer;
+
+	psize = strlen(aux_string)+1;
+	
+	pbuffer = (char*)malloc(psize);
 	strcpy(pbuffer,aux_string);
 
 	idx = rt->kernel_num_used;  

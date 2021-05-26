@@ -1,10 +1,41 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 #include <ctype.h>
 #include <time.h>
-#include "genlib.h"
+#include <stdint.h>
+
+#include "GenLib.h"
 
 
 void		MallocErrFull(char* FileName, int LineNo)
@@ -15,14 +46,24 @@ void		MallocErrFull(char* FileName, int LineNo)
 	exit(1);
 }
 
+void*	smalloc(size_t n, char* FName, unsigned long LineNo)
+{
+	void *Ret;
+
+	Ret = malloc(n);
+
+	if(Ret == NULL)
+		MallocErrFull(FName, LineNo);
+	
+	return Ret;
+}
+
 char*		StrMake(const char* Str)
 {
 	char*	Ret;
 
-	Ret = (char*)malloc(sizeof(char) * (strlen(Str) + 1));
-	if(Ret == NULL)
-		MallocErr();
-
+	Ret = (char*)SMalloc(sizeof(char) * (strlen(Str) + 1));
+	
 	strcpy(Ret, Str);
 
 	return Ret;
@@ -52,6 +93,22 @@ FILE*		OpenWrite(char *FileName)
 		fprintf(stderr, "Could not open file %s for writting\n", FileName);
 		exit(1);
 	}
+
+	return Ret;
+}
+
+FILE*		OpenWriteWithExt(char *Base, char *Ext)
+{
+	char *Buffer;
+	FILE *Ret;
+
+	Buffer = (char*)SMalloc(strlen(Base) + strlen(Ext) + 2);
+
+	sprintf(Buffer, "%s%s", Base, Ext);
+
+	Ret = OpenWrite(Buffer);
+
+	free(Buffer);
 
 	return Ret;
 }
@@ -230,10 +287,10 @@ void		FindTextFileMaxLine(TEXTFILE* TextFile)
 		return;
 	}
 
-	TextFile->MaxLine = strlen(TextFile->Data[0]);
+	TextFile->MaxLine = (int)strlen(TextFile->Data[0]);
 	for(Index=1;Index<TextFile->NoOfLines;Index++)
 	{
-		Len = strlen(TextFile->Data[Index]);
+		Len = (int)strlen(TextFile->Data[Index]);
 		if(Len > TextFile->MaxLine)
 			TextFile->MaxLine = Len;
 	}
@@ -271,7 +328,7 @@ TEXTFILE*	LoadTextFile(char* Name, char DelComments)
 
 	do
 	{
-		NoRead = fread(&Buffer[0], sizeof(char), BUFFERSIZE, InFile);
+		NoRead = (int)fread(&Buffer[0], sizeof(char), BUFFERSIZE, InFile);
 		Ret->Size += NoRead;
 	} while(NoRead == BUFFERSIZE);
 
@@ -441,7 +498,7 @@ void		MakeUpper(char* Str)
 	int Size;
 	int	Index;
 
-	Size = strlen(Str);
+	Size = (int)strlen(Str);
 	for(Index=0;Index<Size;Index++)
 		Str[Index] = toupper(Str[Index]);
 }
@@ -451,9 +508,17 @@ void		MakeLower(char* Str)
 	int Size;
 	int	Index;
 
-	Size = strlen(Str);
+	Size = (int)strlen(Str);
 	for(Index=0;Index<Size;Index++)
 		Str[Index] = tolower(Str[Index]);
+}
+
+int	IsSapce(char C)
+{
+	if(C == ' ' || C == '\t')
+		return 1;
+
+	return 0;
 }
 
 int	MakeArgv(char*	string, char *argv[], int argvsize)
@@ -465,7 +530,7 @@ int	MakeArgv(char*	string, char *argv[], int argvsize)
 	for(i=0; i<argvsize; i++)
 	{
 		/* Skip Leading whitespace */
-		while(isspace(*p)) p++;
+		while(IsSapce(*p)) p++;
 
 		if(*p != '\0')
 			argv[argc++] = p;
@@ -476,13 +541,12 @@ int	MakeArgv(char*	string, char *argv[], int argvsize)
 		}
 
 		/* Scan over arg */
-		while(*p != '\0' && !isspace(*p))
+		while(*p != '\0' && !IsSapce(*p))
 			p++;
 
 		/* Terminate argv */
 		if(*p != '\0' && i < argvsize - 1)
 			*p++ = '\0';
-
 	}
 
 	return argc;
@@ -530,10 +594,15 @@ int			MakeArgvChar(char*	string, char *argv[], int argvsize, char Break)
 
 int		IsValidDouble(char* Str)
 {
-	int	Point=FALSE;
+	int	Point;
+
+	if(atof(Str) != 0.0)
+		return TRUE;
 
 	/* Skip Leading whitespace */
 	while(isspace(*Str)) Str++;
+
+	Point = FALSE;
 
 	if(*Str == '-')
 		Str++;
@@ -561,7 +630,13 @@ int		IsValidDouble(char* Str)
 
 int		IsValidInt(char* Str)
 {
+	if(atoi(Str) != 0)
+		return TRUE;
+
 	if(*Str == '-')
+		Str++;
+
+	if(*Str == '+')
 		Str++;
 
 	while(*Str)
@@ -624,7 +699,7 @@ void	ReplaceChar(char Rep, char With, char* String)
 	int	Index;
 	int	Size;
 
-	Size = strlen(String);
+	Size = (int)strlen(String);
 
 	for(Index=0;Index<Size;Index++)
 	{
@@ -640,7 +715,7 @@ void	RemoveChar(char c, char* String)
 	int	Index;
 	int	SIndex;
 
-	Size = strlen(String);
+	Size = (int)strlen(String);
 
 	for(Index=0;Index<Size;Index++)
 	{
@@ -679,7 +754,7 @@ char*	FormatInt(int No, int Size)
 	if(Ret == NULL)
 		MallocErr();
 
-	Len = strlen(Buffer);
+	Len = (int)strlen(Buffer);
 	for(Index=0;Index<Size - Len;Index++)
 		Ret[Index] = '0';
 	Ret[Index] = '\0';
@@ -742,7 +817,7 @@ void    revstr(char * String)
     char    *End;
     int     Size;
 
-    Size = strlen(String);
+    Size = (int)strlen(String);
 
     Start = String;
     End   = String + (Size - 1);
@@ -878,7 +953,7 @@ void	PrintFixSize(char *String, int Size, FILE* Str)
 	int		Index;
 	int		StrSize;
 
-	StrSize = strlen(String);
+	StrSize = (int)strlen(String);
 
 	fprintf(Str, "%s", String);
 
@@ -1049,4 +1124,41 @@ int			CountChar(char *Str, char C)
 	}
 
 	return Ret;
+}
+
+void*		CloneMem(size_t Size, void *Mem)
+{
+	void* Ret;
+
+	Ret = SMalloc(Size);
+	memcpy(Ret, Mem, Size);
+
+	return Ret;
+}
+
+int StrICmp(char const *a, char const *b)
+{
+	int d;
+
+	for (;; a++, b++) {
+		d = tolower(*a) - tolower(*b);
+		if (d != 0 || !*a)
+			return d;
+	}
+}
+
+
+void	NormaliseVector(double *Vect, int Size)
+{
+	double	SF;
+	int		Index;
+
+	SF = 0;
+	for(Index=0;Index<Size;Index++)
+		SF += Vect[Index];
+
+	SF = 1 / SF;
+
+	for(Index=0;Index<Size;Index++)
+		Vect[Index] *= SF;
 }

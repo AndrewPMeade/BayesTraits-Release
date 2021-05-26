@@ -1,15 +1,43 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include <math.h>
 
-#include "typedef.h"
-#include "rates.h"
-#include "genlib.h"
+#include "TypeDef.h"
+#include "Rates.h"
+#include "GenLib.h"
 #include "RandLib.h"
-#include "trees.h"
-#include "continuous.h"
-#include "revjump.h"
+#include "Trees.h"
+#include "Continuous.h"
+#include "RevJump.h"
 
 void	RJSplitPropRatio(RATES* Rates, OPTIONS* Opt, MAPINFO *MapInfo, int G0Size, int G1Size, double Rate, int OGroup);
 
@@ -58,7 +86,7 @@ void	MapRJRates(OPTIONS *Opt, RATES *Rates)
 	{
 		if(Opt->ResTypes[Index] == RESNONE)
 		{
-			if(Rates->MappingVect[MIndex] == ZERORATENO)
+			if(Rates->MappingVect[MIndex] == ZERO_RATE_NO)
 				Rates->FullRates[Index] = 0.000000000000000000001;
 			else
 				Rates->FullRates[Index] = Rates->Rates[Rates->MappingVect[MIndex]];
@@ -108,7 +136,7 @@ int		NoOfPramGroups(RATES* Rates, int *GroupID, int *GroupSize)
 		}
 
 		/* If we are in the zero bin don't count us */
-		if(Rates->MappingVect[Index] == ZERORATENO)
+		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
 			InPast = TRUE;
 
 		if((NoOfMappings(Rates,Rates->MappingVect[Index]) >= 1) && (InPast == FALSE))
@@ -175,22 +203,18 @@ void	FindZeroBin(RATES* Rates, MAPINFO* MapInfo)
 	MapInfo->NoInZero = 0;
 
 	for(Index=0;Index<Rates->NoOfRates;Index++)
-		if(Rates->MappingVect[Index] == ZERORATENO)
+		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
 			MapInfo->NoInZero++;
 
 	if(MapInfo->NoInZero > 0)
-	{
-		MapInfo->ZeroPos = (int*)malloc(sizeof(int) * MapInfo->NoInZero);
-		if(MapInfo->ZeroPos == NULL)
-			MallocErr();
-	}
+		MapInfo->ZeroPos = (int*)SMalloc(sizeof(int) * MapInfo->NoInZero);
 	else
 		MapInfo->ZeroPos = NULL;
 
 	ZVectIndex = 0;
 	for(Index=0;Index<Rates->NoOfRates;Index++)
 	{
-		if(Rates->MappingVect[Index] == ZERORATENO)
+		if(Rates->MappingVect[Index] == ZERO_RATE_NO)
 		{
 			MapInfo->ZeroPos[ZVectIndex] = Index;
 			ZVectIndex++;
@@ -653,7 +677,7 @@ int		RJReduce(RATES* Rates, OPTIONS* Opt)
 
 	Pos = MapInfo->GroupPos[Group][TheOne];
 
-	Rates->MappingVect[Pos] = ZERORATENO;
+	Rates->MappingVect[Pos] = ZERO_RATE_NO;
 
 	Top = 0.5;
 	Top = Top * (1.0 / ((double)MapInfo->NoInZero + 1.0));

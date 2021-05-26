@@ -1,11 +1,41 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
-#include "part.h"
-#include "typedef.h"
-#include "genlib.h"
-#include "continuous.h"
+#include "Part.h"
+#include "TypeDef.h"
+#include "GenLib.h"
+#include "Continuous.h"
+#include "Trees.h"
 
 void	FreePart(PART *Part)
 {
@@ -20,14 +50,10 @@ PART*	CreatPart(int NoTaxa)
 {
 	PART *Part;
 
-	Part = (PART*)malloc(sizeof(PART));
-	if(Part == NULL)
-		MallocErr();
+	Part = (PART*)SMalloc(sizeof(PART));
 
 	Part->NoTaxa = NoTaxa;
-	Part->Taxa = (int*)malloc(sizeof(int) * NoTaxa);
-	if(Part->Taxa == NULL)
-		MallocErr();
+	Part->Taxa = (int*)SMalloc(sizeof(int) * NoTaxa);
 	
 	return Part;
 }
@@ -51,8 +77,6 @@ int		TaxaInPart(int TaxaIndex, PART *P)
 
 	return FALSE;
 }
-
-
 
 int		PartEqual(PART *A, PART *B)
 {
@@ -135,7 +159,6 @@ void	SetIntPart(NODE N)
 	}
 
 	qsort(Part->Taxa, Part->NoTaxa, sizeof(int), PartCompID);
-	
 }
 
 void	SetTreePart(NODE N)
@@ -145,7 +168,7 @@ void	SetTreePart(NODE N)
 	if(N->Tip == TRUE)
 	{
 		N->Part = CreatPart(1);
-		N->Part->Taxa[0] = N->Taxa->Index;
+		N->Part->Taxa[0] = N->Taxa->No;
 		return;
 	}
 
@@ -158,7 +181,6 @@ void	SetTreePart(NODE N)
 
 	N->Part = CreatPart(NoTaxa);
 	SetIntPart(N);
-//	PrintPart(N->Part);
 }
 
 void	FreeParts(TREES *Trees)
@@ -166,7 +188,7 @@ void	FreeParts(TREES *Trees)
 	int TIndex, NIndex;
 	TREE *T;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 	{
 		T = Trees->Tree[TIndex];
 
@@ -183,93 +205,11 @@ void	SetParts(TREES *Trees)
 {
 	int TIndex;
 
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 		SetTreePart(Trees->Tree[TIndex]->Root);
 }
 
-void	SetRecNodePart(RECNODE RNode)
-{
-	int Index;
-	PART *Part;
 
-	Part = RNode->Part;
-
-	for(Index=0;Index<RNode->Part->NoTaxa;Index++)
-		Part->Taxa[Index] = RNode->Taxa[Index]->Index;
-
-	qsort(Part->Taxa, Part->NoTaxa, sizeof(int), PartCompID);
-}
-
-void	SetRecNodes(RECNODE RNode, TREES *Trees)
-{
-	NODE	N;
-	int		TIndex, Depth;
-	TREE	*Tree;
-
-	SetRecNodePart(RNode);
-
-	RNode->Hits = 0;
-	for(TIndex=0;TIndex<Trees->NoOfTrees;TIndex++)
-	{
-		Depth = 0;
-		Tree = Trees->Tree[TIndex];
-		N = FindNode(RNode, Tree, &Depth);
-
-		RNode->TreeNodes[TIndex] = N;
-		if(N != NULL)
-		{
-			if((RNode->NodeType == MRCA) ||(RNode->NodeType == FOSSIL))
-				RNode->Hits += Depth;
-
-			if(RNode->NodeType == NODEREC)
-				RNode->Hits++;
-		}
-	}	
-}
-
-NODE	FindNode(RECNODE RNode, TREE *Tree, int *Depth)
-{
-	NODE Ret;
-	int NIndex;
-	NODE TNode;
-
-	Ret = NULL;
-	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
-	{
-		TNode = Tree->NodeList[NIndex];
-		
-		if(TNode->Part != NULL)
-		{
-
-			if(PartEqual(TNode->Part, RNode->Part) == TRUE)
-			{
-				*Depth = TNode->Part->NoTaxa;
-				return TNode;
-			}
-
-			if(RNode->NodeType != NODEREC)
-			{
-				if(PartSubSet(TNode->Part, RNode->Part) == TRUE)
-				{
-					if(Ret == NULL)
-						Ret = TNode;
-					else
-					{
-						if(Ret->Part->NoTaxa > TNode->Part->NoTaxa)
-							Ret = TNode;
-					}
-				}
-			}
-		}
-	}
-
-	if(Ret != NULL)
-		*Depth = Ret->Part->NoTaxa;
-	else
-		*Depth = 0;
-
-	return Ret;
-}
 
 void	GetPartDiff(PART *Ans, PART *Cur, PART *Diff)
 {
@@ -293,9 +233,77 @@ void	PrintPart(FILE *Str, TREES *Trees, PART *Part)
 	fprintf(Str, "Part:\t%d\t", Part->NoTaxa);
 	for(Index=0;Index<Part->NoTaxa;Index++)
 	{
-//		ID = GetMapID(Trees, Part->Taxa[Index]);
 		ID = Part->Taxa[Index];
 		T = Trees->Taxa[ID];
 		fprintf(Str, "%s\t", T->Name);
 	}
+}
+
+void	PrintPartTaxaOnly(FILE *Str, TREES *Trees, PART *Part)
+{
+	int Index, ID;
+	TAXA *T;
+
+	for(Index=0;Index<Part->NoTaxa;Index++)
+	{
+		ID = Part->Taxa[Index];
+		T = Trees->Taxa[ID];
+		fprintf(Str, "%s\t", T->Name);
+	}
+}
+
+
+PART*	CreatePart(TREES *Trees, int NoTaxa, char **TaxaList)
+{
+	PART	*Ret;
+	TAXA	*Taxa;
+	int		Index;
+
+	Ret = CreatPart(NoTaxa);
+
+	for(Index=0;Index<NoTaxa;Index++)
+	{
+		Taxa = GetTaxaFromName(TaxaList[Index], Trees->Taxa, Trees->NoTaxa);
+
+		if(Taxa == NULL)
+		{
+			printf("Invalid taxa name:\t%s\n", TaxaList[Index]); 
+			exit(0);
+		}
+		
+		Ret->Taxa[Index] = Taxa->No;
+	}
+
+	qsort(Ret->Taxa, Ret->NoTaxa, sizeof(int), PartCompID);
+
+	for(Index=0;Index<NoTaxa-1;Index++)
+	{
+		if(Ret->Taxa[Index] == Ret->Taxa[Index+1])
+		{
+			printf("Taxa %s included multiple times.\n", Trees->Taxa[Ret->Taxa[Index]]->Name);
+			exit(0);
+		}
+	}
+
+	return Ret;
+}
+
+NODE	PartGetMRCA(TREE *Tree, PART *Part)
+{
+	NODE Ret, N;
+	int Index;
+
+	Ret = Tree->Root;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+		if(PartSubSet(N->Part, Part) == TRUE)
+		{
+			if(N->Part->NoTaxa < Ret->Part->NoTaxa)
+				Ret = N;
+		}
+	}
+
+	return Ret;
 }

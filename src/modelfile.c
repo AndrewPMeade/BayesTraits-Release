@@ -1,13 +1,42 @@
+/*
+*  BayesTriats 3.0
+*
+*  copyright 2017
+*
+*  Andrew Meade
+*  School of Biological Sciences
+*  University of Reading
+*  Reading
+*  Berkshire
+*  RG6 6BX
+*
+* BayesTriats is free software: you can redistribute it and/or modify
+* it under the terms of the GNU General Public License as published by
+* the Free Software Foundation, either version 3 of the License, or
+* (at your option) any later version.
+* 
+* This program is distributed in the hope that it will be useful,
+* but WITHOUT ANY WARRANTY; without even the implied warranty of
+* MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+* GNU General Public License for more details.
+* 
+* You should have received a copy of the GNU General Public License
+* along with this program.  If not, see <http://www.gnu.org/licenses/>
+*
+*/
+
+
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
 #include <string.h>
 
-#include "genlib.h"
-#include "typedef.h"
-#include "modelfile.h"
-#include "likelihood.h"
-#include "rates.h"
+#include "GenLib.h"
+#include "TypeDef.h"
+#include "ModelFile.h"
+#include "Likelihood.h"
+#include "Rates.h"
 
 int		GetParamPerModel(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
@@ -36,7 +65,7 @@ int		GetParamPerModel(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	else
 	{
 		Ret += Rates->NoOfFullRates;
-		Ret += Trees->NoOfStates;
+		Ret += Trees->NoStates;
 		if(Opt->UseCovarion == TRUE)
 			Ret += 2;
 
@@ -109,7 +138,7 @@ void	SaveModelFile(FILE *MFile, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	else
 	{
 		MFWriteDoubleArr(Rates->FullRates, Rates->NoOfFullRates, MFile);
-		MFWriteDoubleArr(Rates->Pis, Trees->NoOfStates, MFile);
+		MFWriteDoubleArr(Rates->Pis, Trees->NoStates, MFile);
 
 		if(Opt->UseCovarion == TRUE)
 		{
@@ -140,8 +169,8 @@ void		MapDescModelFile(OPTIONS *Opt, RATES *Rates)
 
 	memcpy((void*)Rates->FullRates, (void*)Data, sizeof(double) * Rates->NoOfFullRates);
 	Pos = Rates->NoOfFullRates;
-	memcpy((void*)Rates->Pis, (void*)&Data[Pos], sizeof(double) * Trees->NoOfStates);
-	Pos += Trees->NoOfStates;
+	memcpy((void*)Rates->Pis, (void*)&Data[Pos], sizeof(double) * Trees->NoStates);
+	Pos += Trees->NoStates;
 
 	if(Opt->UseCovarion == TRUE)
 	{
@@ -258,7 +287,7 @@ void	InitModelFile(MODELFILE* MF)
 		exit(0);
 	}
 
-	MF->NoModels = No / (MF->NoParam * sizeof(double));
+	MF->NoModels = (int)No / (MF->NoParam * sizeof(double));
 	
 	fclose(In);	
 }
