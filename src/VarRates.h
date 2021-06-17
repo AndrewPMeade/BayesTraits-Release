@@ -36,6 +36,6 @@ double	CalcNormalHasting(double x, double SD);
 NODE	GetVRNode(TREES *Trees, int TreeNo, VAR_RATES_NODE *VR_Node);
 
 void	OutputVarRatesType(FILE *Out, TRANSFORM_TYPE Type);
-
+void	DumpVarRates(FILE *Out, TREES *Trees, VARRATES* VarRates);
 
 #endif

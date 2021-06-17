@@ -609,9 +609,21 @@ void	MakeTNodeList(OPTIONS *Opt, int TreeNo, VARRATES *Plasty, TRANSFORM_TYPE Ty
 
 }
 
-int		CompVarRatesNodeSize(int S1, int S2)
+int		CompVarRatesNodeSameType(VAR_RATES_NODE *VR1, VAR_RATES_NODE *VR2)
 {
-	return S2 - S1;
+/*
+// sort only by number of taxa, 
+// Linux and windows give different orders when there is a tie. 
+// runs with the same random seed will give different results. 
+// return VR2->Part->NoTaxa - VR1->Part->NoTaxa;
+*/
+	if(VR2->Part->NoTaxa != VR1->Part->NoTaxa)
+		return VR2->Part->NoTaxa - VR1->Part->NoTaxa;
+
+	if(VR1->Scale > VR2->Scale)
+		return -1;
+
+	return 1;
 }
 
 int		CompVarRatesNodeType(VAR_RATES_NODE *VR1, VAR_RATES_NODE *VR2)
@@ -622,7 +634,7 @@ int		CompVarRatesNodeType(VAR_RATES_NODE *VR1, VAR_RATES_NODE *VR2)
 	Size2 = VR2->Part->NoTaxa;
 
 	if((VR1->Type == VR_BL || VR1->Type == VR_NODE) && (VR2->Type == VR_BL || VR2->Type == VR_NODE))
-		return CompVarRatesNodeSize(Size1, Size2);
+		return CompVarRatesNodeSameType(VR1, VR2);
 
 	if(VR1->Type == VR_BL || VR1->Type == VR_NODE)
 		return -1;
@@ -630,7 +642,7 @@ int		CompVarRatesNodeType(VAR_RATES_NODE *VR1, VAR_RATES_NODE *VR2)
 	if(VR2->Type == VR_BL || VR2->Type == VR_NODE)
 		return 1;
 	
-	return CompVarRatesNodeSize(Size1, Size2);
+	return CompVarRatesNodeSameType(VR1, VR2);
 }
 
 int		CompVarRatesNode(const void *Vr1, const void *Vr2)
@@ -643,7 +655,7 @@ int		CompVarRatesNode(const void *Vr1, const void *Vr2)
 	if((*VR1)->Type != (*VR2)->Type)
 		return CompVarRatesNodeType((*VR1), (*VR2));
 
-	return CompVarRatesNodeSize((*VR1)->Part->NoTaxa, (*VR2)->Part->NoTaxa);
+	return CompVarRatesNodeSameType((*VR1), (*VR2));
 }
 
 void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
@@ -659,6 +671,7 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	TreeNo = Rates->TreeNo;
 
 	No = RandUSLong(Rates->RS) % VarRates->NoNodes;
+
 	PNode = VarRates->NodeList[No];
 
 
@@ -685,14 +698,14 @@ void 	VarRatesMoveNode(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	PNode->NodeList[TreeNo] = VarRates->TempList[No];
 	
 	qsort(VarRates->NodeList, VarRates->NoNodes, sizeof(VAR_RATES_NODE*), CompVarRatesNode);
-	
+
 	if(N->Tip == TRUE)
 		Rates->LnHastings = log(1.0 / 3.0);
 
 	if(N->Ans != NULL)
 		if(N->Ans->Ans == NULL)
 			Rates->LnHastings = log(2.0 / 3.0);
-	
+
 	return;
 }
 
@@ -1704,4 +1717,27 @@ void	SetVarRatesFromStr(RATES *Rates, OPTIONS *Opt, char *Str)
 
 	free(S);
 	free(Passed);
+}
+
+
+void	DumpVarRates(FILE *Out, TREES *Trees, VARRATES* VarRates)
+{
+	int Index;
+	VAR_RATES_NODE *VRNode;
+
+
+	fprintf(Out, "DumpVarRates:\t%d\t|\n", VarRates->NoNodes);
+
+	for(Index=0;Index<VarRates->NoNodes;Index++)
+	{
+		VRNode = VarRates->NodeList[Index];
+		
+		OutputVarRatesType(Out, VRNode->Type);
+
+		fprintf(Out, "\t%llu\t%f\t%d\t%zu\t", VRNode->NodeID, VRNode->Scale, VRNode->Part->NoTaxa, VRNode->Part->PartID);
+		PrintPartTaxaOnly(Out, Trees, VRNode->Part);
+		fprintf(Out, "\t|\n");
+	}
+
+	fprintf(Out, "\n");
 }
