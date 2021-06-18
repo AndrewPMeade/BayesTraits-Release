@@ -43,7 +43,7 @@
 #include "Part.h"
 #include "StableDist.h"
 #include "VarRates.h"
-
+#include "Rates.h"
 
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_sf_gamma.h>
@@ -471,7 +471,7 @@ double	ChangePlastyRate(RANDSTATES	*RS, double Scale, double SD)
 	return Ret;
 }
 
-double	ChangePlastyRateLambda(RANDSTATES	*RS, double Scale, double SD)
+double	ChangePlastyRateLambda(RANDSTATES *RS, double Scale, double SD)
 {
 	double Ret;
 
@@ -519,8 +519,7 @@ void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* She
 //	TestNormHasting();
 
 
-	Rates->LnHastings = CalcNormalHasting(Node->Scale, Dev);
-//	Rates->LnHastings = 0;
+	Rates->LnHastings = 0;
 
 	if(Node->Type == VR_LAMBDA)
 	{
@@ -530,11 +529,13 @@ void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* She
 
 	if(Node->Type == VR_LS_BL )
 	{
+//		Rates->LnHastings = CalcNormalHasting(Node->Scale, Dev);
 		Node->Scale = RandNormal(Rates->RS, Node->Scale, Dev);
 		return;
 	}
 	
-	Node->Scale = ChangePlastyRate(Rates->RS, Node->Scale, Dev);
+//	Node->Scale = ChangePlastyRate(Rates->RS, Node->Scale, Dev);
+	Node->Scale = ChangeRateExp(Node->Scale, Dev, Rates->RS, &Rates->LnHastings);
 }
 
 int		IsVarRateTypeRate(TRANSFORM_TYPE Type)
