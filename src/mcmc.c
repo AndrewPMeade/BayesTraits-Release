@@ -484,6 +484,8 @@ void	ReSetAccFlags(RATES *Rates)
 int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RATES *CRates, RATES *NRates)
 {
 	double Heat;
+		
+//	printf("ItterOP:\t%llu\t%s\t%f\t%f\t%f\n", Itters, SHEDOP[Shed->Op], CRates->Lh - NRates->Lh, CRates->Lh, NRates->Lh);
 
 	if(NRates->AutoAccept == TRUE)
 	{
@@ -504,7 +506,7 @@ int		MCMCAccept(long long Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RA
 	Heat += NRates->LhPrior - CRates->LhPrior;
 	Heat += NRates->LnHastings;
 
-	if(log(RandDouble(CRates->RS)) <= Heat)
+	if(log(gsl_rng_uniform_pos(CRates->RNG)) <= Heat)
 		return TRUE;
 
 	return FALSE;
@@ -701,10 +703,11 @@ void 	MCMCTest(OPTIONS *Opt, TREES *Trees, RATES*	Rates, SCHEDULE* Shed)
 		BurntIn = TRUE;
 
 //	MCMCTest(Opt, Trees, CRates, Shed);
-
 	StartT = GetSeconds();
+
 	for(Itters=0;;Itters++)
 	{
+
 		SetCustomSchedule(Opt, ShedFile, Itters, Shed);
 
  		CopyRates(NRates, CRates, Opt);

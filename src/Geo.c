@@ -39,6 +39,7 @@
 #include "FatTail.h"
 #include "Likelihood.h"
 #include "Rates.h"
+#include "DistData.h"
 
 
 #ifndef M_PI
@@ -308,6 +309,16 @@ void	GeoUpDateNode(NODE N, RATES *Rates)
 	Rates->Lh = Rates->Lh + (NLh - CLh);
 }
 
+void PrintGeoNodeInfo(NODE N, double Lh)
+{
+	double X,Y,Z;
+
+	NodeToXYZ(N, &X, &Y, &Z);
+
+
+	printf("%f\t%f\t%f\t%f\t|\t", Lh, X, Y, Z);
+}
+
 
 void	GeoForceUpDateNode(NODE N, RATES *Rates)
 {
@@ -316,13 +327,13 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates)
 	STABLEDIST *SD;
 	int Changed, Tried;
 
-
 	FTR = Rates->FatTailRates;
 	SD = FTR->SDList[0];
 
 	NodeToXYZ(N, &X, &Y, &Z);
 
 	CLh = GeoCalcAnsStateLh(X, Y, Z, N, SD);
+
 	Changed = FALSE;
 	Tried = 0;
 	do
@@ -330,30 +341,49 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates)
 		GetRandXYZPoint(N->RNG, X, Y, Z, &RX, &RY, &RZ, 2000);
 
 		NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
-
-		if(log(gsl_rng_uniform(N->RNG)) < (NLh - CLh))
+		
+		if(log(gsl_rng_uniform_pos(N->RNG)) < (NLh - CLh))
 			Changed = TRUE;
 		else
 			Tried++;
 
 	} while(Changed == FALSE && Tried < 1);
 
+	
 	if(Changed == TRUE)
 		XYZToNode(N, RX, RY, RZ);
 
 //	Rates->Lh = Rates->Lh + (NLh - CLh);
 }
 
+void	PrintGeoData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	int Index;
+	TREE *Tree;
+	NODE N;
+	double X,Y,Z;
+
+	Tree = Trees->Tree[0];
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		N = Tree->NodeList[Index];
+
+		NodeToXYZ(N, &X, &Y, &Z);
+		printf("%d\t%d\t%f\t%f\t%f\t%f\n", Index, N->Part->NoTaxa, N->Length, X, Y, Z);
+	}
+
+}
+
 void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-//	int NIndex, GIndex, Group;
 	int NIndex, GIndex;
 	FATTAILTREE *FTT;
 	size_t	GroupSize;
 	NODE	*NodeList;
 	TREE *Tree;
 	FATTAILRATES *FTR;
-			
+
 	LhTransformTree(Rates, Trees, Opt);
 
 	Tree = Trees->Tree[Rates->TreeNo];
@@ -367,6 +397,8 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
 
+	if(Opt->UseDistData == TRUE)
+		SetTreeDistData(Rates, Opt, Trees);
 
 	for(GIndex=0;GIndex<FTT->NoParallelGroups;GIndex++)
 	{
@@ -383,8 +415,6 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	}
 
 	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
-
-	Rates->Lh = Likelihood(Rates, Trees, Opt);
 
 	Rates->AutoAccept = TRUE;
 }
