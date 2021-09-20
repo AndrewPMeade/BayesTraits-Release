@@ -35,7 +35,7 @@
 #include "VarRates.h"
 #include "GenLib.h"
 #include "Trees.h"
-
+#include "Rates.h"
 
 LOCAL_TRANSFORM*	CreateLocalTransforms(char *Name, TAG **TagList, int NoTags, TRANSFORM_TYPE Type, int Est, double Scale)
 {
@@ -179,12 +179,20 @@ void		ChangeLocalTransform(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *S
 	
 	LRate = GetEstRate(Rates); 
 
-	NRate = ChangeLocalScale(Rates->RS, LRate->Scale, Dev);
 
-	Rates->LnHastings = CalcNormalHasting(LRate->Scale, Dev);
+	if(LRate->Type != VR_LS_BL)
+	{
+		NRate = ChangeRateExp(LRate->Scale, Dev, Rates->RS, &Rates->LnHastings);
 
-	if(NRate > MAX_LOCAL_RATE || NRate < MIN_LOCAL_RATE)
-		NRate = LRate->Scale;
+		if(NRate > MAX_LOCAL_RATE || NRate < MIN_LOCAL_RATE)
+			NRate = LRate->Scale;
+	}
+	else
+		NRate = RandNormal(Rates->RS, LRate->Scale, Dev);
+
+//	NRate = ChangeLocalScale(Rates->RS, LRate->Scale, Dev);
+//	Rates->LnHastings = CalcNormalHasting(LRate->Scale, Dev);
+
 
 	LRate->Scale = NRate;
 }
