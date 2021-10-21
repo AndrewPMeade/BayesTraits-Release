@@ -35,6 +35,7 @@
 #include "TypeDef.h"
 #include "GenLib.h"
 #include "Likelihood.h"
+void		PrintContrast(RATES *Rates, TREES *Trees);
 
 
 double	CaclStdContrastLhMLSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, int SiteNo)
@@ -48,6 +49,8 @@ double	CaclStdContrastLhMLSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, int Sit
 	double		SumLogVar;
 	double		T1, Ret;
 	int			NoCon;
+
+//	PrintContrast(Rates, Trees);exit(0);
 
 	ConRates = Rates->Contrast;
 	T = Trees->Tree[Rates->TreeNo];
@@ -117,7 +120,6 @@ double	CaclAlphaErr(NODE N, double EstAlpha, int SiteNo)
 	return Ret;
 }
 
-void		PrintContrast(RATES *Rates, TREES *Trees);
 
 double CaclStdContrastLhMCMC(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 {
