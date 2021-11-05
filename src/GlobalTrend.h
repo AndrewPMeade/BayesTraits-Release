@@ -10,4 +10,5 @@ void SetGlobalTrend(OPTIONS* Opt, TREES* Trees, RATES* Rates);
 void	ChangeGlobalTrend(RATES* Rates, SCHEDULE* Shed);
 double	CalcGlobalTrendPrior(RATES *Rates);
 
+
 #endif
