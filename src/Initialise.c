@@ -56,6 +56,7 @@
 #include "FatTail.h"
 #include "Fossil.h"
 #include "Pattern.h"
+#include "RestrictionMap.h"
 
 #ifdef BTOCL
 #include "btocl_discrete.h"
@@ -89,6 +90,8 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 void	PreProcess(OPTIONS *Opt, TREES* Trees)
 {
 	int		Index, ID;
+
+	SetTreesDistToRoot(Trees);
 	
 	CheckSingleDescendent(Trees);
 
@@ -195,7 +198,8 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		InitialiseOutputTrees(Opt, Trees);
 	
 	SaveUserBrachLengths(Trees);
-
+	
+	MapResMaps(Trees, Opt->RestrictionMaps, Opt->NoRestrictionMaps);
 }
 
 

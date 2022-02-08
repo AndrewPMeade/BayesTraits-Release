@@ -51,6 +51,7 @@
 #include "TimeSlices.h"
 #include "NLOptBT.h"
 #include "Pattern.h"
+#include "RestrictionMap.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHT_INDENT	4
@@ -366,6 +367,32 @@ void	PrintEmpPis(FILE* Str, OPTIONS *Opt)
 	free(Pis);
 }
 
+void	PrintRestrictionMaps(FILE *Str, OPTIONS *Opt)
+{
+	int Index;
+	RESTRICTION_MAP* ResMap;
+
+	if(Opt->NoRestrictionMaps == 0)
+		return;
+
+	fprintf(Str, "Restrictions maps (%d).\n", Opt->NoRestrictionMaps);
+
+	for(Index=0;Index<Opt->NoRestrictionMaps;Index++)
+	{
+		ResMap = Opt->RestrictionMaps[Index];
+
+		fprintf(Str, "\t%s\t%zu\t", ResMap->FileName, ResMap->NoResPoint);
+
+		if(ResMap->AgeMax == -1)
+			fprintf(Str, "Global");
+		else
+			fprintf(Str, "Min (>=) %f Max (<) %f", ResMap->AgeMin, ResMap->AgeMax);
+
+		fprintf(Str, "\n");
+	}
+}
+
+
 void	PrintOptions(FILE* Str, OPTIONS *Opt)
 {
 	int		Index, NOS;
@@ -627,10 +654,15 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		PrintCustomSchedule(Str, Opt->NoCShed, Opt->CShedList);
 	}
 	
+	PrintRestrictionMaps(Str, Opt);
+
 	PrintTimeSlices(Str, Opt->TimeSlices);
 	PrintPatterns(Str, Opt->NoPatterns, Opt->PatternList);
 
 	PrintTreesInfo(Str, Opt->Trees, Opt->DataType);
+
+	
+
 	fflush(Str);
 }
 
@@ -730,6 +762,15 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->VarRatesCheckPoint != NULL)
 		free(Opt->VarRatesCheckPoint);
+
+	if(Opt->NoRestrictionMaps > 0)
+	{
+
+		for(Index=0;Index<Opt->NoRestrictionMaps;Index++)
+			FreeResMap(Opt->RestrictionMaps[Index]);
+
+		free(Opt->RestrictionMaps);
+	}
 
 	free(Opt);
 }
@@ -1410,6 +1451,9 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->UseGlobalTrend		= FALSE;
 
 	Ret->VarRatesCheckPoint	= NULL;
+
+	Ret->RestrictionMaps = NULL;
+	Ret->NoRestrictionMaps = 0;
 
 	free(Buffer);
 
@@ -2356,9 +2400,14 @@ void	AddConAnsStatePrior(OPTIONS *Opt, int SiteNo)
 	else
 		sprintf(Buffer, "AncState-%d", SiteNo);
 
-	RemovePriorFormOpt(Buffer, Opt);
-	Prior = CreateUniformPrior(Buffer, -100, 100);
-	AddPriorToOpt(Opt, Prior);
+	Prior = GetPriorFromName(Buffer, Opt->AllPriors, Opt->NoAllPriors);
+
+	if(Prior == NULL)
+	{
+		RemovePriorFormOpt(Buffer, Opt);
+		Prior = CreateUniformPrior(Buffer, -100, 100);
+		AddPriorToOpt(Opt, Prior);
+	}
 	
 	free(Buffer);
 }
@@ -3600,7 +3649,8 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	if(Type == VR_NODE)
 	{
 		RemovePriorFormOpt("VRNode", Opt);
-		Prior = CreateSGammaPrior("VRNode", VARRATES_ALPHA, VARRATES_BETA);
+		//Prior = CreateSGammaPrior("VRNode", VARRATES_ALPHA, VARRATES_BETA);
+		Prior = CreateGammaPrior("VRNode", 2.0, 0.7);
 		AddPriorToOpt(Opt, Prior);
 	}
 
@@ -3608,7 +3658,10 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	{
 		RemovePriorFormOpt("VR_LS_BL", Opt);
 //		Prior = CreateUniformPrior("VR_LS_BL", -5, 5);
-		Prior = CreateNormalPrior("VR_LS_BL", 0, 2.0);
+//		Prior = CreateNormalPrior("VR_LS_BL", 0, 2.0);
+
+		Prior = CreateWeibullPrior("VR_LS_BL", 1.1, 1.5);
+
 		AddPriorToOpt(Opt, Prior);
 	}
 }
@@ -4250,6 +4303,49 @@ void	OptTestPrior(OPTIONS *Opt, int Tokes, char **Passed)
 	sscanf(Passed[2], "%zu", &NoSample);
 	TestPrior(Prior, NoSample);
 }
+
+void 		OptAddRestrictionMap(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	char *FName;
+	double Min, Max;
+	RESTRICTION_MAP* ResMap;
+
+
+	if(!(Tokes == 2 || Tokes == 4))
+	{
+		printf("RestrictionMap takes a CSV file of Longitude, Latitude and 0 for an invalid location or 1 for a valid.\n");
+		printf("An optional (min,max) age range can be supplied.\n");
+		exit(1);
+	}
+
+	FName = Passed[1];
+
+	Min = Max = -1;
+
+	if(Tokes == 4)
+	{
+		if(IsValidDouble(Passed[2]) == FALSE || IsValidDouble(Passed[3]) == FALSE)
+		{
+			printf("Invalid parameters for age range %s or %s\n", Passed[2], Passed[3]);
+			exit(1);
+		}
+
+		Min = atof(Passed[2]);
+		Max = atof(Passed[3]);
+
+		if(Min > Max)
+		{
+			printf("RestrictionMap: min age range is greater than max age range.\n");
+			exit(1);
+		}
+	}
+
+	ResMap = LoadResMap(FName, Min, Max);
+
+	Opt->RestrictionMaps = (RESTRICTION_MAP**)AddToList(&Opt->NoRestrictionMaps, (void**)Opt->RestrictionMaps, ResMap);
+
+}
+
 
 void	SaveInitialTrees(OPTIONS *Opt, int Tokes, char **Passed)
 {
@@ -4955,6 +5051,10 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == C_TEST_PRIOR)
 		OptTestPrior(Opt, Tokes, Passed);
 
+	if(Command == C_RES_MAP)
+		OptAddRestrictionMap(Opt, Tokes, Passed);
+
+
 	return FALSE;
 }
 
@@ -4998,7 +5098,7 @@ void	CheckOptions(OPTIONS *Opt)
 		if(Opt->UseRJMCMC == TRUE)
 		{
 			printf("RJ MCMC and the use of a model file are mutuality exclusive.\n");
-			exit(0);
+			exit(1);
 		}
 	}
 
@@ -5010,13 +5110,15 @@ void	CheckOptions(OPTIONS *Opt)
 		{
 			printf("Too many free parameter to estimate (%d), try reducing the model or using RJ MCMC\n", NoFreeP);
 			printf("If you believe you data can support this number of free parameter please contact the developers to have this limitation removed.\n");
-			exit(0);
+			exit(1);
 		}	
 	}
 
 	if(Opt->Stones != NULL && Opt->Itters == -1)
 	{
 		printf("Stepping stone sampler is not valid with an infinite number of iterations.\n");
-		exit(0);
+		exit(1);
 	}
+
+	CheckResMaps(Opt->RestrictionMaps, Opt->NoRestrictionMaps);
 } 

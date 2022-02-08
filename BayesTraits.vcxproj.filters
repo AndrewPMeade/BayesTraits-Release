@@ -252,6 +252,9 @@
     <ClCompile Include="src\StableDist.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\RestrictionMap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="src\LocalTransform.h">
@@ -486,6 +489,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\LinAlg.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RestrictionMap.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

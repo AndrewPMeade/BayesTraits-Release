@@ -153,6 +153,17 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 	fgets(&Line[0], 64, stdin);
 	exit(0);
 }
+/*
+PRIOR*		CreateWeibullPrior(char *Name, double Scale, double Exponent);
+PRIOR*		CreateLogNormalPrior(char *Name, double Location, double Scale);
+PRIOR*		CreateGammaPrior(char *Name, double Shape, double Scale);
+PRIOR*		CreateUniformPrior(char *Name, double Min, double Max);
+PRIOR*		CreateChiPrior(char *Name, double Mean);
+PRIOR*		CreateExpPrior(char *Name, double Alpha);
+PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta);
+
+PRIOR*		CreateNormalPrior(char *Name, double Mean, double SD);
+*/
 
 // Full optermisation
 //	cl /Ox /Oi /Ob2 /Ot /Oy /GL /w *.c ./MathLib/*.c

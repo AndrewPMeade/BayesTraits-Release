@@ -156,7 +156,7 @@ TIME_SLICE*		GetTimeSlice(TIME_SLICES *TSlices, char *Name)
 	return NULL;
 }
 
-void			PrintTimeSlices(FILE *Str, TIME_SLICES *TSlices)
+void	PrintTimeSlices(FILE *Str, TIME_SLICES *TSlices)
 {
 	int Index;
 	TIME_SLICE *TS;

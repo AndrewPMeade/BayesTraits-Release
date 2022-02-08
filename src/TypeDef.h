@@ -12,6 +12,7 @@
 #include "StableDist.h"
 #include "AutoTune.h"
 
+
 //#define JNIRUN
 //#define OPENMP_THR
 //#define BIG_LH
@@ -338,6 +339,7 @@ typedef enum
 	C_RJ_THRESHOLD,
 	C_LOAD_RJ_RATES,
 	C_TEST_PRIOR,
+	C_RES_MAP,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -431,6 +433,7 @@ static char    *COMMANDSTRINGS[] =
 	"RJThreshold",		"rjt",
 	"LoadVarRates",		"lvr",
 	"TestPrior",		"TestPrior",
+	"RestrictionMap",	"ResMap",
 	""
 };
 
@@ -744,6 +747,41 @@ typedef struct
 	size_t	PartID;
 } PART;
 
+
+typedef struct
+{
+	double	Long;
+	double	Lat;
+	int		Value;
+} RESTRICTION_POINT;
+
+typedef struct
+{
+	RESTRICTION_POINT **PointList;
+	size_t NoResPoints;
+	size_t No0, No1;
+	
+} RESTRICTION_BOX;
+
+
+typedef struct
+{
+	RESTRICTION_POINT **GeoPointList;
+	RESTRICTION_POINT *GeoPointListConMem;
+	size_t NoResPoint;
+
+	char *FileName;
+
+	RESTRICTION_BOX ***Grid;
+
+	size_t NoGridLat;
+	size_t NoGridLong;
+
+	double AgeMin;
+	double AgeMax;
+} RESTRICTION_MAP;
+
+
 struct INODE
 {
 	int		Tip;
@@ -752,6 +790,7 @@ struct INODE
 
 	double		Length;
 	double		DistToRoot;
+	double		Height;
 	double		UserLength;
 	double		ScaleFactor;
 
@@ -791,6 +830,8 @@ struct INODE
 	double		LandscapeBeta;
 
 	gsl_rng			*RNG;
+
+	RESTRICTION_MAP	*ResMap;
 };
 
 typedef struct INODE*	NODE;
@@ -1156,6 +1197,8 @@ typedef struct
 	int		NoTags;
 } PATTERN;
 
+
+
 typedef struct
 {
 	MODEL		Model;
@@ -1346,6 +1389,10 @@ typedef struct
 
 	char		*VarRatesCheckPoint;
 
+	RESTRICTION_MAP**	RestrictionMaps;
+
+	int					NoRestrictionMaps;
+
 } OPTIONS;
 
 typedef struct
@@ -1423,6 +1470,9 @@ typedef struct
 
 typedef struct
 {
+	// The model of evoltuion
+	MODEL	Model;
+
 	// Number of rate to esimate, or max num if RJ is used.
 	int		NoOfRates;
 

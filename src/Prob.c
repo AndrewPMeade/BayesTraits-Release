@@ -83,10 +83,10 @@ double	PDFSGamma(double x, double Alpha, double Beta)
 {
 	double Ret, s, T1, T2;
 
-	s = 1 / ((Alpha - 1) * Beta);
+	s = 1.0 / ((Alpha - 1.0) * Beta);
 
 	T1 = exp(-(x/s) / Beta);
-	T2 = pow(x/s, -1 + Alpha);
+	T2 = pow(x/s, -1.0 + Alpha);
 	T2 = T1 * T2 * pow(Beta, -Alpha);
 	Ret = T2 / tgamma(Alpha);
 

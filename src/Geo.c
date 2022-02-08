@@ -40,6 +40,7 @@
 #include "Likelihood.h"
 #include "Rates.h"
 #include "DistData.h"
+#include "RestrictionMap.h"
 
 
 #ifndef M_PI
@@ -50,6 +51,26 @@
 //#define EARTH_KM 1.0
 
 #define EARTH_KM_EARTH_KM 40589641
+
+int		ValidGeoNodeXYZ(NODE Node, double RX, double RY, double RZ)
+{
+	double Long, Lat;
+
+	if(Node->ResMap == NULL)
+		return TRUE;
+
+	XYZToLongLat(RX, RY, RZ, &Long, &Lat);
+
+	return ValidResPoint(Node->ResMap, Long, Lat);
+}
+
+int		ValidGeoNodeLongLat(NODE Node, double Long, double Lat)
+{
+	if(Node->ResMap == NULL)
+		return TRUE;
+
+	return ValidResPoint(Node->ResMap, Long, Lat);
+}
 
 void	ValidGeoData(TREES *Trees)
 {
@@ -179,13 +200,21 @@ void	GetRandLongLat(gsl_rng *RNG, double Long, double Lat, double *RLong, double
 		*RLong = *RLong * (180.0 / M_PI);
 }
 
-void	GetRandXYZPoint(gsl_rng *RNG, double SX, double SY, double SZ, double *RX, double *RY, double *RZ, double Radius)
+void	GetRandXYZPoint(NODE Node, double SX, double SY, double SZ, double *RX, double *RY, double *RZ, double Radius)
 {
 	double Long, Lat, RLong, RLat;
+	int Tried;
 
 	XYZToLongLat(SX, SY, SZ, &Long, &Lat);
 	
-	GetRandLongLat(RNG, Long, Lat, &RLong, &RLat, Radius);
+	Tried = 0;
+	do
+	{
+		GetRandLongLat(Node->RNG, Long, Lat, &RLong, &RLat, Radius);
+		Tried++;
+	} while(ValidGeoNodeLongLat(Node, RLong, RLat) == FALSE);
+
+//	printf("Tried:\t%d\n", Tried);
 	
 	LongLatToXYZ(RLong, RLat, RX, RY, RZ);
 }
@@ -286,6 +315,9 @@ void	GeoUpDateNode(NODE N, RATES *Rates, RANDSTATES *RS)
 }
 */
 
+
+
+
 void	GeoUpDateNode(NODE N, RATES *Rates)
 {
 	FATTAILRATES *FTR;
@@ -300,7 +332,10 @@ void	GeoUpDateNode(NODE N, RATES *Rates)
 	
 	CLh = GeoCalcAnsStateLh(X, Y, Z, N, SD);
 
-	GetRandXYZPoint(N->RNG, X, Y, Z, &RX, &RY, &RZ, 2000);
+	do
+	{
+		GetRandXYZPoint(N, X, Y, Z, &RX, &RY, &RZ, 2000);
+	} while(ValidGeoNodeXYZ(N, RX, RY, RZ) == FALSE);
 		
 	NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
 	
@@ -338,7 +373,7 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates)
 	Tried = 0;
 	do
 	{
-		GetRandXYZPoint(N->RNG, X, Y, Z, &RX, &RY, &RZ, 2000);
+		GetRandXYZPoint(N, X, Y, Z, &RX, &RY, &RZ, 2000);
 
 		NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
 		
@@ -513,11 +548,35 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 }
 */
 
+void	SetValidNode(NODE Node)
+{
+	double			X,Y,Z, Long, Lat;
+	double			RX, RY, RZ;
+
+	NodeToXYZ(Node, &X, &Y, &Z);
+	XYZToLongLat(X, Y, Z, &Long, &Lat);
+	
+	while(ValidResPoint(Node->ResMap, Long, Lat) == FALSE)
+	{
+		GetRandXYZPoint(Node, X, Y, Z, &RX, &RY, &RZ, 2000);
+		XYZToLongLat(RX, RY, RZ, &Long, &Lat);
+	}
+
+	XYZToNode(Node, X, Y, Z);
+/*
+	Valid = ValidResPoint(Node->ResMap, Long, Lat);
+	printf("%d\t%f\t%f\t%f\t", Valid, Long, Lat, Node->Height);
+//	PrintPartTaxaOnly(stdout, Trees, Tree->NodeList[NIndex]->Part);
+	printf("\n");
+*/
+}
+
 void	CorrectIntGeoNodes(TREE *Tree)
 {
 	NODE			N;
 	int				NIndex;
 	double			X,Y,Z, Long, Lat;
+
 	
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 	{
@@ -530,6 +589,9 @@ void	CorrectIntGeoNodes(TREE *Tree)
 			LongLatToXYZ(Long, Lat, &X, &Y, &Z);
 
 			XYZToNode(N, X, Y, Z);
+
+			SetValidNode(N);
+
 		}
 
 	}

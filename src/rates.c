@@ -764,6 +764,7 @@ RATES*	CreatRates(OPTIONS *Opt)
 	if(Opt->UseRModel == TRUE)
 		Ret->NoOfFullRates = 1;
 
+	Ret->Model			= Opt->Model;
 	Ret->NoOfRates		= FindNoOfRates(Opt);
 	Ret->RateNames		= GetRateNames(Opt);
 	Ret->NoOfRJRates	= -1;
@@ -3104,7 +3105,7 @@ void	SetEstDataFromPrior(RATES *Rates)
 	{
 		SiteNo = Rates->EstDataSiteNo[Index];
 
-		Prior = GetAnsStatePrior(SiteNo, Rates->Priors, Rates->NoPriors);
+		Prior = GetAnsStatePrior(Rates->Model, SiteNo, Rates->Priors, Rates->NoPriors);
 
 		Rates->EstData[Index] = RandFromPrior(Rates->RNG, Prior);
 	}

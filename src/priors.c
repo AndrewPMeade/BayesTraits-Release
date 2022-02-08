@@ -999,7 +999,7 @@ double	CaclAnsStatePriors(RATES *Rates, OPTIONS *Opt)
 	for(Index=0;Index<Rates->NoEstData;Index++)
 	{
 		SiteNo = Rates->EstDataSiteNo[Index];
-		Prior = GetAnsStatePrior(SiteNo, Rates->Priors, Rates->NoPriors);
+		Prior = GetAnsStatePrior(Opt->Model, SiteNo, Rates->Priors, Rates->NoPriors);
 		
 		PLh = CalcLhPriorP(Rates->EstData[Index], Prior);
 		
@@ -1413,13 +1413,13 @@ PRIOR*		GetPriorFromName(char *Name, PRIOR** PList, int NoPrior)
 	return NULL;
 }
 
-PRIOR*		GetAnsStatePrior(int SiteNo, PRIOR** PList, int NoPrior)
+PRIOR*		GetAnsStatePrior(MODEL Model, int SiteNo, PRIOR** PList, int NoPrior)
 {
 	char *Buffer;
 	PRIOR *Ret;
 
 	Buffer = (char*)SMalloc(sizeof(char) * 128);
-	if(SiteNo == -1)
+	if(Model == M_CONTINUOUS_REG && SiteNo == 0)
 		sprintf(Buffer, "AncState-Dep");
 	else
 		sprintf(Buffer, "AncState-%d", SiteNo+1);
