@@ -100,6 +100,7 @@ NODE	AllocNode(void)
 	Ret->TipID			=	-1;
 	Ret->Length			=	-1;
 	Ret->DistToRoot		=	-1;
+	Ret->Height			=	-1;
 	Ret->ScaleFactor	=	1.0;
 	Ret->Taxa			=	NULL;
 	Ret->Partial		=	NULL;
@@ -543,7 +544,7 @@ void	MakeNewTree(TREE *Tree, NTREE *PTree)
 		Node->Tip			= NNode->Tip;
 		Node->ConData		= NULL;
 		Node->FatTailNode	= NULL;
-	
+		Node->ResMap		= NULL;	
 
 		Node->Part = NULL;
 	//	Node->PSize= 0;
@@ -1906,10 +1907,49 @@ void	RecSetDistToRoot(NODE N)
 		RecSetDistToRoot(N->NodeList[Index]);	
 }
 
+
+
+double GetMaxDistToRoot(TREE *Tree)
+{
+	double Ret;
+	int Index;
+
+	Ret = -1;
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		if(Tree->NodeList[Index]->DistToRoot > Ret)
+			Ret = Tree->NodeList[Index]->DistToRoot;
+	}
+
+	return Ret;
+}
+
+
+void	RecSetHeight(NODE Node, double MaxDistToRoot)
+{
+	int Index;
+
+	Node->Height = MaxDistToRoot - Node->DistToRoot;
+
+	if(Node->Tip == TRUE)
+		return;
+
+	for(Index=0;Index<Node->NoNodes;Index++)
+		RecSetHeight(Node->NodeList[Index], MaxDistToRoot);
+}
+
 void	SetTreeDistToRoot(TREE *Tree)
 {
+	double MaxDistToRoot;
 	RecSetDistToRoot(Tree->Root);
+
+	MaxDistToRoot = GetMaxDistToRoot(Tree);
+
+	RecSetHeight(Tree->Root, MaxDistToRoot);
 }
+
+
 
 void	SetTreesDistToRoot(TREES *Trees)
 {
