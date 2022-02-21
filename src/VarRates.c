@@ -1,7 +1,7 @@
 /*
-*  BayesTriats 3.0
+*  BayesTriats 4.0
 *
-*  copyright 2017
+*  copyright 2022
 *
 *  Andrew Meade
 *  School of Biological Sciences
@@ -198,7 +198,7 @@ VARRATES*	CreatVarRates(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 #ifdef PPUNIFORM
 	Ret->Alpha = -1;
 #else
-	Ret->Alpha = VARRATES_ALPHA;
+	Ret->Alpha = VAR_RATES_ALPHA;
 #endif
 
 	return Ret;
@@ -286,7 +286,7 @@ void	SetVRNodeBLRates(VAR_RATES_NODE *PNode, RANDSTATES *RS)
 #ifdef PPUNIFORM
 	PNode->Scale = RandDouble(RS) * PPMAXSCALE;
 #else
-	PNode->Scale = RandGamma(VARRATES_ALPHA, VARRATES_BETA);
+	PNode->Scale = RandGamma(VAR_RATES_ALPHA, VAR_RATES_BETA);
 #endif
 }
 

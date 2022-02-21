@@ -129,8 +129,12 @@
 #define VAR_RATES_PRIOR_SCALE 1
 
 /* Value of the VarRates alpha beta*/
-#define	VARRATES_ALPHA		1.1
-#define VARRATES_BETA		1
+#define	VAR_RATES_ALPHA		1.1
+#define VAR_RATES_BETA		1
+#define VAR_RATES_SHAPE 2.0
+#define VAR_RATES_SCALE 0.7
+
+
 
 #define VARRATES_HP_ALPHA_SCLAE 0.1
 
@@ -178,9 +182,7 @@
 
 //extern double LhPraxis(LhPraxisdouble *);
 
-#define	LOGFILEBUFFERSIZE	65536
-
-#define DISPLAY_INFO	printf("BayesTraits V3.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
+#define DISPLAY_INFO	printf("BayesTraits V4.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
 
 #define MIN_DELTA	1E-07
 #define MAX_DELTA	3
@@ -426,7 +428,7 @@ static char    *COMMANDSTRINGS[] =
 	"NoSliceSampleSteps", "nsss",
 	"PisAncStates",		"pas",
 	"RJZero",			"rjz",
-	"Landscape",		"LS",
+	"Fabric",		"Landscape",
 	"RateScalars",		"rs",
 	"MLLandscape",		"lls",
 	"GlobalTrend",		"gt",

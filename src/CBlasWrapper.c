@@ -1,7 +1,9 @@
 #include "TypeDef.h"
 #ifdef BTLAPACK
 
-#include <cblas.h>
+
+//Needed for OSX
+//#include <cblas.h>
 
 /* Multiple Matrix by Vector, can be change for non squar matrixes*/
 void MatrixVectProduct(double* M, double* V, double* U, int N)

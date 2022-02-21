@@ -1,7 +1,7 @@
 /*
-*  BayesTriats 3.0
+*  BayesTriats 4.0
 *
-*  copyright 2017
+*  copyright 2022
 *
 *  Andrew Meade
 *  School of Biological Sciences
@@ -342,7 +342,7 @@ void	PrintRJLocalTrans(FILE* Str, OPTIONS *Opt)
 	else
 		fprintf(Str, "False\n");	
 
-	fprintf(Str, "RJ Local LandscapeBL:           ");
+	fprintf(Str, "RJ Local LandscapeBL:            ");
 	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
 		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_LS_BL]);
 	else
@@ -3583,7 +3583,7 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 
 	if(Tokes != 2)
 	{
-		printf("RJ Local Scalar take a scalar names (kappa, lambda, delta, OU).\n");
+		printf("RJ Local Scalar take a scalar names (kappa, lambda, delta, OU, Node, Branch, LandscapeBL).\n");
 		return FALSE;
 	}
 
@@ -3597,7 +3597,7 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 
 	if(Err == TRUE)
 	{
-		printf("invalid transform name, valid scalars are (kappa, lambda, delta, OU).\n");
+		printf("invalid transform name, valid scalars are (kappa, lambda, delta, OU, Node, Branch, LandscapeBL).\n");
 		return FALSE;
 	}
 
@@ -3642,7 +3642,7 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	if(Type == VR_BL)
 	{
 		RemovePriorFormOpt("VRBL", Opt);
-		Prior = CreateSGammaPrior("VRBL", VARRATES_ALPHA, VARRATES_BETA);
+		Prior = CreateSGammaPrior("VRBL", VAR_RATES_ALPHA, VAR_RATES_BETA);
 		AddPriorToOpt(Opt, Prior);
 	}
 
@@ -3650,7 +3650,8 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	{
 		RemovePriorFormOpt("VRNode", Opt);
 		//Prior = CreateSGammaPrior("VRNode", VARRATES_ALPHA, VARRATES_BETA);
-		Prior = CreateGammaPrior("VRNode", 2.0, 0.7);
+		
+		Prior = CreateGammaPrior("VRNode", VAR_RATES_SHAPE, VAR_RATES_SCALE);
 		AddPriorToOpt(Opt, Prior);
 	}
 
@@ -3658,7 +3659,7 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	{
 		RemovePriorFormOpt("VR_LS_BL", Opt);
 //		Prior = CreateUniformPrior("VR_LS_BL", -5, 5);
-//		Prior = CreateNormalPrior("VR_LS_BL", 0, 2.0);
+//		Prior = CreateNormalPrior("VR_LS_BL", 0, 2.0);	
 
 		Prior = CreateWeibullPrior("VR_LS_BL", 1.1, 1.5);
 
@@ -3718,6 +3719,12 @@ double	ValidLocalRateScalar(char *Str)
 	return Ret;
 }
 
+void	PrintLocalcTranfomErr(void)
+{
+	printf("LocalTransform takes a name, a list of tags, A transform type (node, bl, kappa, lambda, delta, OU, LandscapeBL) and an optional fixed scalar");
+	exit(1);
+}
+
 TAG**	GetTagListFromNames(OPTIONS *Opt, char **NList, int Tokes, int *NoTags)
 {
 	TAG **Ret;
@@ -3740,8 +3747,7 @@ TAG**	GetTagListFromNames(OPTIONS *Opt, char **NList, int Tokes, int *NoTags)
 			return Ret;
 	}
 
-	printf("LocalTransform takes a name, a list of tags, A transform type (node, bl, kappa, lambda, delta, OU) and an optional fixed scalar");
-	exit(0);
+	PrintLocalcTranfomErr();
 
 	return NULL;
 }
@@ -3756,10 +3762,7 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 	LOCAL_TRANSFORM		*UVR;
 
 	if(Tokes < 4)
-	{
-		printf("LocalTransform takes a name, a list of tags, A transform type (node, branch, kappa, lambda, delta, OU) and an optional fixed scalar");
-		exit(1);
-	}
+		PrintLocalcTranfomErr();
 
 	Name = Passed[1];
 
@@ -3839,7 +3842,7 @@ void	AddTimeSlicePriors(TIME_SLICE *TS, OPTIONS *Opt)
 	if(TS->FixedScale == FALSE)
 	{
 		RemovePriorFormOpt("TimeSlice-Scale", Opt);
-		Prior = CreateSGammaPrior("TimeSlice-Scale", VARRATES_ALPHA, VARRATES_BETA);
+		Prior = CreateSGammaPrior("TimeSlice-Scale", VAR_RATES_ALPHA, VAR_RATES_BETA);
 		AddPriorToOpt(Opt, Prior);
 	}
 
@@ -4124,6 +4127,9 @@ void	SetLandscape(OPTIONS *Opt, int Tokes, char **Passed)
 
 	Opt->UseRJLocalScalar[VR_LS_BL]	= TRUE;
 	Opt->UseRJLocalScalar[VR_NODE]	= TRUE;
+	
+	
+	Opt->RJLocalScalarThreshold[VR_LS_BL] = -2;
 
 	Opt->SaveTrees = TRUE;
 }

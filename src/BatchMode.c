@@ -1,7 +1,7 @@
 /*
-*  BayesTriats 3.0
+*  BayesTriats 4.0
 *
-*  copyright 2017
+*  copyright 2022
 *
 *  Andrew Meade
 *  School of Biological Sciences
@@ -270,16 +270,21 @@ void	BatchRun(char *BatchFN)
 	Buffer = (char**)SMalloc(sizeof(char*) * TF->MaxLine);
 	BNo = 1;
 
+// this will not always work. Models which have dependencies, such as save / load models. 
 #ifdef PBATCH
 	#pragma omp parallel for private(TLine)
 #endif
 	for(Index=0;Index<TF->NoOfLines;Index++)
 	{
 		TLine = StrMake(TF->Data[Index]);
+		printf("Running Line: %d\t%s\n", Index, TLine);
 		RunLine(TLine, Index);
 		free(TLine);
 	}
 
 	free(Buffer);
 	FreeTextFile(TF);
+
+
+	printf("Batch run complete.\n");
 }
