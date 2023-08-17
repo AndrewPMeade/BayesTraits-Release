@@ -31,4 +31,6 @@ void		PrintContrast(RATES *Rates, TREES *Trees);
 
 void		RetSetConTraitData(TREE *Tree, int NoSites);
 
+void		CalcNodeContrast(NODE N, int NoSites);
+
 #endif

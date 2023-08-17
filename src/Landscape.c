@@ -11,6 +11,7 @@
 #include "Likelihood.h"
 #include "ML.h"
 #include "NLOptBT.h"
+#include "Contrasts.h"
 
 int			UseLandscapeBeta(OPTIONS* Opt, RATES *Rates)
 {
@@ -168,4 +169,75 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	MapRJLandscape(Opt, Trees, Rates);
 
 	PropLandscapeBeta(Trees, Tree->Root, 0.0);
+}
+
+
+
+void	AncRecCalcContrast(NODE Node, int NoSites, double *TempAnc, double GlobalBeta)
+{
+	int		Index;
+	CONDATA *Con;
+
+	if(Node->Tip == TRUE)
+		return;
+
+	for(Index=0;Index<Node->NoNodes;Index++)
+		AncRecCalcContrast(Node->NodeList[Index], NoSites, TempAnc, GlobalBeta);
+
+	CalcNodeContrast(Node, NoSites);
+
+	Con = Node->ConData;
+	TempAnc[Node->ID] = Con->Contrast[0]->Data[0];
+	Con->Contrast[0]->Data[0] = Con->Contrast[0]->Data[0] - Node->LandscapeBeta - (Node->Length * GlobalBeta);
+}
+
+void	SetFabricAncStatesTipData(OPTIONS *Opt, TREE *Tree, RATES *Rates)
+{
+	int Index;
+	NODE Node;
+
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		Node = Tree->NodeList[Index];
+		if(Node->Tip == TRUE)
+			Node->ConData->Contrast[0]->Data[0] = Node->ConData->Contrast[0]->Data[0] - Node->LandscapeBeta - (Node->Length * Rates->GlobalTrend);
+	}
+
+}
+
+// use this to test for it. 
+// 	if(UseLandscapeBeta(Opt, Rates) == TRUE)
+void	SetFabricAncStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	TREE *Tree;
+	int Index;
+	NODE Node;
+	double *TempAnc;
+
+//	return;
+
+	Tree = Trees->Tree[Rates->TreeNo];
+
+	TempAnc = (double*)SMalloc(sizeof(double) * Tree->NoNodes);
+
+	LhTransformTree(Rates, Trees, Opt);
+
+	RetSetConTraitData(Trees->Tree[Rates->TreeNo], Trees->NoSites);
+
+	SetFabricAncStatesTipData(Opt, Tree, Rates);
+
+	AncRecCalcContrast(Tree->Root, Trees->NoSites, TempAnc, Rates->GlobalTrend);
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		Node = Tree->NodeList[Index];
+		if(Node->Tip == FALSE)
+			Node->ConData->Contrast[0]->Data[0] = TempAnc[Node->ID];
+	}
+
+	free(TempAnc);
+
+//	This will need to be done, but not at this point. 
+//	Likelihood(Rates, Trees, Opt);
 }

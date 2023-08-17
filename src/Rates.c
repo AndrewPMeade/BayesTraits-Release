@@ -831,6 +831,8 @@ RATES*	CreatRates(OPTIONS *Opt)
 
 	Ret->NormConst		=	-1;
 	Ret->GlobablRate	=	1.0;
+	Ret->GlobalTrend	=	0.0;
+
 
 	SetRatesLocalRates(Ret, Opt);
 
@@ -1591,6 +1593,9 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 	if(Opt->ModelType == MT_CONTINUOUS)
 		return;
 
+	if(UseLandscapeBeta(Opt, Rates) == TRUE || Opt->UseGlobalTrend == TRUE)
+		SetFabricAncStates(Opt, Opt->Trees, Rates);
+
 	for(Index=0;Index<Opt->NoOfRecNodes;Index++)
 	{
 		RNode = Opt->RecNodeList[Index];
@@ -1613,6 +1618,9 @@ void	PrintConRecNodes(FILE *Str, RATES* Rates, OPTIONS *Opt)
 			}
 		}
 	}
+
+	if(UseLandscapeBeta(Opt, Rates) == TRUE || Opt->UseGlobalTrend == TRUE)
+		Likelihood(Rates, Opt->Trees, Opt);
 }
 
 void	PrintLocalTransformNo(FILE* Str, RATES* Rates, OPTIONS *Opt)
