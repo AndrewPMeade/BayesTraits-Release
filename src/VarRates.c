@@ -1242,6 +1242,9 @@ double	CaclVRPrior(double X, TRANSFORM_TYPE Type, RATES *Rates)
 	if(Type == VR_OU && X >= MAX_VR_OU)
 		return ERRLH;
 
+	if(Type == VR_LS_BL)
+		X = fabs(X);
+
 	Prior = GetVRPrior(Type, Rates);
 	Ret = CalcLhPriorP(X, Prior);
 
