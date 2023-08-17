@@ -1,7 +1,7 @@
 /*
-*  BayesTriats 4.0
+*  BayesTriats 3.0
 *
-*  copyright 2022
+*  copyright 2017
 *
 *  Andrew Meade
 *  School of Biological Sciences
