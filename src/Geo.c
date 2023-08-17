@@ -173,7 +173,7 @@ void	XYZToLongLat(double X, double Y, double Z, double *Long, double *Lat)
 	*Long = *Long * (180.0 / M_PI);
 }
 
-void	GetRandLongLat(gsl_rng *RNG, double Long, double Lat, double *RLong, double *RLat, double Radius)
+void	GetRandLongLatCore(gsl_rng *RNG, double Long, double Lat, double *RLong, double *RLat, double Radius)
 {
 	double Dist, Bearing;
 
@@ -197,7 +197,35 @@ void	GetRandLongLat(gsl_rng *RNG, double Long, double Lat, double *RLong, double
 	if(*RLong * (180.0 / M_PI) > 180)
 		*RLong = *RLong * (180.0 / M_PI) - 360.0;
 	else
+	{
 		*RLong = *RLong * (180.0 / M_PI);
+		if (*RLong < -180)
+			*RLong = *RLong + 360;
+	}
+}
+
+int		CheckLongLatCoord(double Long, double Lat)
+{
+	if(Long >= 180 || Long <= -180)
+		return FALSE;
+
+	if (Lat >= 90 || Lat <= -90)
+		return FALSE;
+
+	return TRUE;
+}
+
+void	GetRandLongLat(gsl_rng* RNG, double Long, double Lat, double* RLong, double* RLat, double Radius)
+{
+	do
+		GetRandLongLatCore(RNG, Long, Lat, RLong, RLat, Radius);
+	while(CheckLongLatCoord(*RLong, *RLat) == FALSE);
+}
+
+void	GetGloablRandLongLat(gsl_rng *RNG, double *RLong, double *RLat)
+{
+	*RLong = gsl_ran_flat(RNG, -179.999999, 180.0);
+	*RLat = gsl_ran_flat(RNG, -89.999999, 90.0);
 }
 
 void	GetRandXYZPoint(NODE Node, double SX, double SY, double SZ, double *RX, double *RY, double *RZ, double Radius)
@@ -210,12 +238,15 @@ void	GetRandXYZPoint(NODE Node, double SX, double SY, double SZ, double *RX, dou
 	Tried = 0;
 	do
 	{
-		GetRandLongLat(Node->RNG, Long, Lat, &RLong, &RLat, Radius);
+		if(Tried < 100)
+			GetRandLongLat(Node->RNG, Long, Lat, &RLong, &RLat, Radius);
+		else
+			GetGloablRandLongLat(Node->RNG, &RLong, &RLat);
+
 		Tried++;
 	} while(ValidGeoNodeLongLat(Node, RLong, RLat) == FALSE);
 
-//	printf("Tried:\t%d\n", Tried);
-	
+
 	LongLatToXYZ(RLong, RLat, RX, RY, RZ);
 }
 
