@@ -182,7 +182,7 @@
 
 //extern double LhPraxis(LhPraxisdouble *);
 
-#define DISPLAY_INFO	printf("BayesTraits V4.0.1 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
+#define DISPLAY_INFO	printf("BayesTraits V4.1.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
 
 #define MIN_DELTA	1E-07
 #define MAX_DELTA	3
