@@ -529,7 +529,7 @@ void	ChangeVarRatesScale(RATES *Rates, TREES *Trees, OPTIONS *Opt, SCHEDULE* She
 
 	if(Node->Type == VR_LS_BL )
 	{
-//		Rates->LnHastings = CalcNormalHasting(Node->Scale, Dev);
+		Rates->LnHastings = CalcNormalHasting(Node->Scale, Dev);
 		Node->Scale = RandNormal(Rates->RS, Node->Scale, Dev);
 		return;
 	}

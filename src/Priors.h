@@ -35,6 +35,7 @@ PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta);
 PRIOR*		CreateLogNormalPrior(char *Name, double Location, double Scale);
 PRIOR*		CreateNormalPrior(char *Name, double Mean, double SD);
 PRIOR*		CreateWeibullPrior(char *Name, double Scale, double Exponent);
+PRIOR*		CrateUndefinedPrior(char *Name);
 
 
 PRIOR*		CreatePrior(char *Name, PRIORDIST PDist, double *PVal);

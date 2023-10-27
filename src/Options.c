@@ -3649,9 +3649,8 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	if(Type == VR_NODE)
 	{
 		RemovePriorFormOpt("VRNode", Opt);
-		//Prior = CreateSGammaPrior("VRNode", VARRATES_ALPHA, VARRATES_BETA);
-		
-		Prior = CreateGammaPrior("VRNode", VAR_RATES_SHAPE, VAR_RATES_SCALE);
+		Prior = CreateSGammaPrior("VRNode", VAR_RATES_ALPHA, VAR_RATES_BETA);
+		//Prior = CreateGammaPrior("VRNode", VAR_RATES_SHAPE, VAR_RATES_SCALE);
 		AddPriorToOpt(Opt, Prior);
 	}
 
@@ -3660,9 +3659,9 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 		RemovePriorFormOpt("VR_LS_BL", Opt);
 //		Prior = CreateUniformPrior("VR_LS_BL", -5, 5);
 //		Prior = CreateNormalPrior("VR_LS_BL", 0, 2.0);	
+//		Prior = CreateWeibullPrior("VR_LS_BL", 1.1, 1.5);
 
-		Prior = CreateWeibullPrior("VR_LS_BL", 1.1, 1.5);
-
+		Prior = CrateUndefinedPrior("VR_LS_BL");
 		AddPriorToOpt(Opt, Prior);
 	}
 }
@@ -5094,6 +5093,28 @@ void	GetOptions(OPTIONS *Opt)
 	free(Passed);
 }
 
+void	CheckUndefinedPrior(OPTIONS *Opt)
+{
+	int Index;
+	PRIOR *Prior;
+
+	for(Index=0;Index<Opt->NoAllPriors;Index++)
+	{
+		Prior = Opt->AllPriors[Index];
+		if(Prior->Dist == PDIST_UNDEFINED)
+		{
+			if(strcmp("VR_LS_BL", Prior->Name) == 0)
+			{
+				printf("The priors on the betas x branch (VR_LS_BL) are undefined.\nThis prior is specific to the data under analysis, currently there is no generic prior that can be used.\nPlease see the manual section \"Some guidelines for developing prior distributions for directional effects\" and the paper \"General statistical model shows that macroevolutionary patterns and processes are consistent with Darwinian gradualism\" for more information.\n");
+				exit(1);
+			}
+
+			printf("prior on %s is undefined.\n", Prior->Name);
+			exit(1);
+		}
+	}
+}
+
 void	CheckOptions(OPTIONS *Opt)
 {
 	int NoFreeP;
@@ -5127,4 +5148,6 @@ void	CheckOptions(OPTIONS *Opt)
 	}
 
 	CheckResMaps(Opt->RestrictionMaps, Opt->NoRestrictionMaps);
+
+	CheckUndefinedPrior(Opt);
 } 

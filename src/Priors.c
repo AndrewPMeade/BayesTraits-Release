@@ -72,7 +72,8 @@ int		ValidPriorLh(double LH)
 
 void	FreePrior(PRIOR* P)
 {
-	free(P->DistVals);
+	if(P->DistVals != NULL)
+		free(P->DistVals);
 
 	if(P->HP != NULL)
 		free(P->HP);
@@ -105,7 +106,9 @@ PRIOR*	AllocBlankPrior(int NoP)
 
 	Ret = (PRIOR*)SMalloc(sizeof(PRIOR));
 
-	Ret->DistVals = (double*)SMalloc(sizeof(double) * NoP);
+	Ret->DistVals = NULL;
+	if(NoP > 0)
+		Ret->DistVals = (double*)SMalloc(sizeof(double) * NoP);
 	
 	Ret->HP			= NULL;
 	Ret->UseHP		= FALSE;
@@ -273,6 +276,17 @@ PRIOR* CreateWeibullPrior(char* Name, double Scale, double Exponent)
 	return Ret;
 }
 
+
+PRIOR*		CrateUndefinedPrior(char *Name)
+{
+	PRIOR* Ret;
+
+	Ret = AllocBlankPrior(0);
+	Ret->Dist = PDIST_UNDEFINED;
+	Ret->Name = StrMake(Name);
+
+	return Ret;
+}
 
 void		SetHPDistParam(int Pos, PRIOR* Prior)
 {

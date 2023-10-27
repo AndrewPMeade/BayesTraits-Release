@@ -182,7 +182,7 @@
 
 //extern double LhPraxis(LhPraxisdouble *);
 
-#define DISPLAY_INFO	printf("BayesTraits V4.1.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
+#define DISPLAY_INFO	printf("BayesTraits V4.1.1 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
 
 #define MIN_DELTA	1E-07
 #define MAX_DELTA	3
@@ -525,7 +525,8 @@ static char    *DISTNAMES[] =
 	"sgamma",
 	"lognormal",
 	"normal",
-	"weibull"
+	"weibull",
+	"undefined"
 };
 
 static int	DISTPRAMS[] =
@@ -537,7 +538,8 @@ static int	DISTPRAMS[] =
 	2,
 	2,
 	2,
-	2
+	2,
+	0
 };
 
 typedef enum
@@ -549,7 +551,8 @@ typedef enum
 	PDIST_SGAMMA,
 	PDIST_LOGNORMAL,
 	PDIST_NORMAL,
-	PDIST_WEIBULL
+	PDIST_WEIBULL,
+	PDIST_UNDEFINED
 } PRIORDIST;
 
 typedef enum
