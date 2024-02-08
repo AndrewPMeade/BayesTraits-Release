@@ -1433,7 +1433,7 @@ PRIOR*		GetAnsStatePrior(MODEL Model, int SiteNo, PRIOR** PList, int NoPrior)
 	PRIOR *Ret;
 
 	Buffer = (char*)SMalloc(sizeof(char) * 128);
-	if(Model == M_CONTINUOUS_REG && SiteNo == 0)
+	if(Model == M_CONTINUOUS_REG && SiteNo == -1)
 		sprintf(Buffer, "AncState-Dep");
 	else
 		sprintf(Buffer, "AncState-%d", SiteNo+1);
