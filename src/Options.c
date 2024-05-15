@@ -5115,6 +5115,36 @@ void	CheckUndefinedPrior(OPTIONS *Opt)
 	}
 }
 
+void CheckRegOpt(OPTIONS *Opt)
+{
+	int TaxaIndex,SiteIndex;
+	TAXA	*Taxa;
+
+
+	if(Opt->Model != M_CONTINUOUS_REG)
+		return;
+
+	if(Opt->NoOfRecNodes > 0)
+	{
+		printf("Ancestral states cannot be estimated for GLM regression models, are it requires the estimation of independent data. To estimate the dependent value, add a dummy node to the tree and include a independent variables in the data file, using ? for the dependent values.\n");
+		exit(1);
+	}
+
+	for(TaxaIndex=0;TaxaIndex<Opt->Trees->NoTaxa;TaxaIndex++)
+	{
+		Taxa = Opt->Trees->Taxa[TaxaIndex];
+
+		for(SiteIndex=1;SiteIndex<Opt->Trees->NoSites;SiteIndex++)
+		{
+			if(Taxa->EstDataP[SiteIndex] == TRUE)
+			{
+				printf("Independent sites %d (for taxa %s) cannot be estimated under a GLM regression. If a value is needed, try estimating under a non-regression GLM. Dependent sites can be estimated.\n", SiteIndex+1, Taxa->Name);
+				exit(1);
+			}
+		}
+	}
+}
+
 void	CheckOptions(OPTIONS *Opt)
 {
 	int NoFreeP;
@@ -5150,4 +5180,6 @@ void	CheckOptions(OPTIONS *Opt)
 	CheckResMaps(Opt->RestrictionMaps, Opt->NoRestrictionMaps);
 
 	CheckUndefinedPrior(Opt);
+
+	CheckRegOpt(Opt);
 } 
