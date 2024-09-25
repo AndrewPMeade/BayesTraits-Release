@@ -711,6 +711,8 @@ void	SetDiscEstDataTaxa(TAXA *Taxa, char S1, char S2)
 		Taxa->DesDataChar[0] = SetDescUnknownStates(S1, S2);
 		return;
 	}
+	
+	Taxa->DesDataChar[0][1] = '\0';
 
 	if((S1 == '0') && (S2 == '0'))
 		Taxa->DesDataChar[0][0] = '0';
