@@ -4594,6 +4594,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	ReplaceChar(';', ' ', Buffer);
 	ReplaceChar('=', ' ', Buffer);
 	ReplaceChar(',', ' ', Buffer);
+	ReplaceChar('\r','\n', Buffer);
 	RemoveChar('\n', Buffer);
 
 	
