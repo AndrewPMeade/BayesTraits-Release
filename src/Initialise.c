@@ -30,6 +30,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <math.h>
+#include <string.h>
 
 #include "TypeDef.h"
 #include "Initialise.h"
@@ -51,12 +52,12 @@
 #include "BigLh.h"
 #include "PTrees.h"
 #include "Threaded.h"
-#include "QuadDouble.h"
 #include "Contrasts.h"
 #include "FatTail.h"
 #include "Fossil.h"
 #include "Pattern.h"
 #include "RestrictionMap.h"
+#include "Part.h"
 
 #ifdef BTOCL
 #include "btocl_discrete.h"
@@ -72,7 +73,7 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 	Model	= GetModel(Trees);
 	Analsis = GetAnalsis(Trees);
 
-	if(GetModelType(Model) == MT_FATTAIL && Analsis == ANALML)
+	if(GetModelType(Model) == MT_FATTAIL && Analsis == ANALYSIS_ML)
 	{
 		printf("Fat Tail models require MCMC analysis.\n");
 		exit(1);
@@ -87,9 +88,175 @@ OPTIONS*	SetUpOptions(TREES* Trees, char	*TreeFN, char *DataFN)
 	return Opt;
 }
 
+void	CheckFabricGlobalRates(OPTIONS *Opt, TREES *Trees)
+{
+	if(!(Opt->Model == M_CONTRAST || Opt->Model == M_CONTRAST_CORREL))
+		return;
+
+	if(Trees->NoSites == 1)
+		return;
+
+	if(DataModifiedOptions(Opt) == FALSE)
+		return;
+
+	printf("The model cannot be use with multiple sites and either the directional betas or a global trend.\n");
+	exit(1);
+}
+
+void	CheckMissingDataAndNonParametricMethods(OPTIONS *Opt, TREES *Trees)
+{
+	if(UseNonParametricMethods(Opt) == TRUE && Trees->NoOfRemovedTaxa > 0)
+	{
+		printf("\n\nNon-parametric methods, Variable rates, fabric model ect cannot be used with missing data.\nAs it effects the post processing. Delete the missing data from the tree.\n");
+
+		printf("To quickly delete taxa with missing data, run a basic ML Brownian model and use the save trees (SaveTrees) command output the tree with missing data remove. For example\n\n");
+		printf("7\n1\nSaveTrees\nRun\n\n");
+
+		printf("this will produce and outtput file with the extension .Output.trees\n");
+		exit(1);
+	}
+}
+
+void CheckRegOpt(OPTIONS *Opt, TREES *Trees)
+{
+	int TaxaIndex,SiteIndex;
+	TAXA	*Taxa;
+
+
+	if(Opt->Model != M_CONTINUOUS_REG)
+		return;
+
+	if(Opt->NoOfRecNodes > 0)
+	{
+		printf("Ancestral states cannot be estimated for GLM regression models, are it requires the estimation of independent data. To estimate the dependent value, add a dummy node to the tree and include a independent variables in the data file, using ? for the dependent values.\n");
+		exit(1);
+	}
+
+	for(TaxaIndex=0;TaxaIndex<Trees->NoTaxa;TaxaIndex++)
+	{
+		Taxa = Trees->Taxa[TaxaIndex];
+
+		for(SiteIndex=1;SiteIndex<Trees->NoSites;SiteIndex++)
+		{
+			if(Taxa->EstDataP[SiteIndex] == TRUE)
+			{
+				printf("Independent sites %d (for taxa %s) cannot be estimated under a GLM regression. If a value is needed, try estimating under a non-regression GLM. Dependent sites can be estimated.\n", SiteIndex+1, Taxa->Name);
+				exit(1);
+			}
+		}
+	}
+}
+
+void	CheckOptions(OPTIONS *Opt, TREES *Trees)
+{
+	int NoFreeP;
+
+	CheckMissingDataAndNonParametricMethods(Opt, Trees);
+	
+	if(Opt->LoadModels == TRUE)
+	{
+		if(Opt->UseRJMCMC == TRUE)
+		{
+			printf("RJ MCMC and the use of a model file are mutuality exclusive.\n");
+			exit(1);
+		}
+	}
+
+	NoFreeP = FindNoOfRates(Opt);
+
+	if(Opt->UseRJMCMC == FALSE && Opt->DataType == DISCRETE)
+	{
+		if(FindNoOfRates(Opt) > 25)
+		{
+			printf("Too many free parameter to estimate (%d), try reducing the model or using RJ MCMC\n", NoFreeP);
+			printf("If you believe you data can support this number of free parameter please contact the developers to have this limitation removed.\n");
+			exit(1);
+		}	
+	}
+
+	if(Opt->StoneOptions != NULL && Opt->Itters == -1)
+	{
+		printf("Stepping stone sampler is not valid with an infinite number of iterations.\n");
+		exit(1);
+	}
+
+	if(Opt->RJLockModel == TRUE && Opt->StoneOptions == NULL)
+	{
+		printf("RJLockModel is only valid with Stepping Stones.\n");
+		exit(1);
+	}
+
+
+	CheckFabricGlobalRates(Opt, Trees);
+
+	CheckResMaps(Opt->RestrictionMaps, Opt->NoRestrictionMaps);
+
+
+	CheckRegOpt(Opt, Trees);
+} 
+
+
+void	CheckUndefinedPrior(OPTIONS *Opt)
+{
+	int Index;
+	PRIOR *Prior;
+
+	for(Index=0;Index<Opt->NoAllPriors;Index++)
+	{
+		Prior = Opt->AllPriors[Index];
+		if(Prior->Dist == PDIST_UNDEFINED)
+		{
+			if(strcmp("FabricBeta", Prior->Name) == 0)
+			{
+				printf("The priors on the betas x branch (FabricBeta) are undefined.\nThis prior is specific to the data under analysis, currently there is no generic prior that can be used.\nPlease see the manual section \"Some guidelines for developing prior distributions for directional effects\" and the paper \"General statistical model shows that macroevolutionary patterns and processes are consistent with Darwinian gradualism\" for more information.\n");
+				exit(1);
+			}
+
+			printf("prior on %s is undefined.\n", Prior->Name);
+			exit(1);
+		}
+	}
+}
+
+void	SetLockRJBranch(OPTIONS* Opt, TREES* Trees)
+{
+	TREE *Tree;
+	NODE Node;
+	TAG *Tag;
+	int TagIndex, TIndex, NIndex;
+
+
+	if(Opt->NoLockedRJBL == 0)
+		return;
+
+	for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
+	{
+		Tree = Trees->Tree[TIndex];
+		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
+			Tree->NodeList[NIndex]->RJLockNode = FALSE;
+	}
+
+	for(TagIndex=0;TagIndex<Opt->NoLockedRJBL;TagIndex++)
+	{
+		Tag = Opt->LockedRJBL[TagIndex];
+
+		for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
+		{
+			Tree = Trees->Tree[TIndex];
+			Node = PartGetMRCA(Tree, Tag->Part); 
+			Node->RJLockNode = TRUE;
+		}
+	}
+}
+
+
 void	PreProcess(OPTIONS *Opt, TREES* Trees)
 {
 	int		Index, ID;
+
+
+	// Some other checks. 
+	CheckOptions(Opt, Trees);
 
 	SetTreesDistToRoot(Trees);
 	
@@ -103,7 +270,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	if(Opt->Model == M_CONTRAST_REG)
 	{
 		if(Opt->TestCorrel == FALSE)
-			SetDataRegTC(Opt);
+			SetDataRegTC(Opt, Trees);
 	}
 
 	if(Opt->NormQMat == TRUE && Opt->NoPatterns > 0)
@@ -114,8 +281,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 	
 	SetNoOfThreads(Opt->Cores);
 
-	if(Opt->Stones != NULL)
-		Opt->Stones->ItStart = Opt->Itters + 1;
+//	Test for stones here. 
 	
 	for(Index=0;Index<Trees->NoTrees;Index++)
 	{
@@ -123,14 +289,7 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		SetNodeIDs(Trees->Tree[Index]);
 	}
 
-	Opt->LogFile		= OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_LOG);
-
-	#ifdef JNIRUN
-		Opt->LogFileRead = OpenRead(Opt->LogFN);
-		Opt->LogFileBuffer = (char*)SMalloc(sizeof(char) * LOGFILEBUFFERSIZE);
-		Opt->PassedOut = (char**)SMalloc(sizeof(char*) * LOGFILEBUFFERSIZE);
-	#endif
-
+		
 	Trees->UseCovarion	= Opt->UseCovarion;
 
 	SetPTrees(Opt, Trees);
@@ -171,13 +330,9 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 
 		SetFossils(Trees, Opt);
 		
-		SetNOSPerSite(Opt);
+		SetNOSPerSite(Opt, Trees);
 
 		InitTreeBigLh(Opt, Trees);
-
-#ifdef QUAD_DOUBLE
-		InitQuadDoubleLh(Opt, Trees);
-#endif
 
 #ifdef BTOCL
 		btocl_AllocPMatrixInfo(Trees);
@@ -192,21 +347,23 @@ void	PreProcess(OPTIONS *Opt, TREES* Trees)
 		Opt->EstData = FALSE;
 		
 	if(Opt->SaveInitialTrees != NULL)
-		SaveTrees(Opt->SaveInitialTrees, Opt->Trees);
-
-	if(Opt->SaveTrees == TRUE)
-		InitialiseOutputTrees(Opt, Trees);
+		SaveTrees(Opt->SaveInitialTrees, Trees);
 	
 	SaveUserBrachLengths(Trees);
 	
-	MapResMaps(Trees, Opt->RestrictionMaps, Opt->NoRestrictionMaps);
+	MapResMaps(Opt, Trees, Opt->RestrictionMaps, Opt->NoRestrictionMaps);
+
+	CheckUndefinedPrior(Opt);
+
+	SetLockRJBranch(Opt, Trees);
+
 }
 
 
 
 void Finalise(OPTIONS *Opt, TREES* Trees)
 {
-	if(Opt->SaveTrees == TRUE)
+	if(Opt->OutTrees != NULL)
 	{
 		fprintf(Opt->OutTrees, "end;");
 		fclose(Opt->OutTrees);

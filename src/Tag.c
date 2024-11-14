@@ -35,15 +35,20 @@
 #include "Part.h"
 #include "Tag.h"
 
-TAG*	GetTagFromName(OPTIONS *Opt, char *Name)
+TAG*	GetTagFromNameList(char *Name, TAG **TagList, int NoTags)
 {
 	int Index;
 
-	for(Index=0;Index<Opt->NoTags;Index++)
-		if(strcmp(Name, Opt->TagList[Index]->Name) == 0)
-			return Opt->TagList[Index];
+	for(Index=0;Index<NoTags;Index++)
+		if(strcmp(Name, TagList[Index]->Name) == 0)
+			return TagList[Index];
 
 	return NULL;
+}
+
+TAG*	GetTagFromName(OPTIONS *Opt, char *Name)
+{
+	return GetTagFromNameList(Name, Opt->TagList, Opt->NoTags);
 }
 
 
@@ -87,13 +92,11 @@ TAG*	CreateTag(TREES *Trees, char *Name, int NoTaxa, char **TaxaNames)
 	return Ret;
 }
 
-void	AddTag(OPTIONS *Opt, int Tokes, char **Passed)
+void	AddTag(OPTIONS *Opt, int Tokes, char **Passed, TREES* Trees)
 {
 	TAG*	Tag;
-	TREES*	Trees;
 	char*	Name;
 	
-	Trees = Opt->Trees;
 
 	if(Tokes < 3)
 	{

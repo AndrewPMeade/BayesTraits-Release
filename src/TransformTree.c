@@ -400,6 +400,9 @@ int		NeedToTransformTree(OPTIONS *Opt, RATES *Rates)
 	if(Opt->UseGlobalTrend == TRUE)
 		return TRUE;
 
+	if(Rates->SitePowers != NULL)
+		return TRUE;
+
 	return FALSE;
 }
 
@@ -478,12 +481,3 @@ void	TransformToMinMax(TRANSFORM_TYPE Type, double *Min, double *Max)
 		*Max = MAX_OU;
 }
 
-//double	CalcTreeToTreeDist(
-/*
-double	FitTransformToTree(TREES *Trees, long long It, TRANSFORM_TYPE Type)
-{
-	double Min, Max;
-
-	TransformToMinMax(Type, &Min, &Max);
-}
-*/

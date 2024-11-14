@@ -659,7 +659,7 @@ CONVAR*	AllocConVar(OPTIONS *Opt, TREES* Trees)
 			Ret->TVTTemp=	AllocMatrix(Trees->NoTaxa, Trees->NoSites);
 		}
 
-		if(Opt->Analsis == ANALML)
+		if(Opt->Analsis == ANALYSIS_ML)
 			Ret->InvXVX	= AllocMatrix(Trees->NoSites+1, Trees->NoSites+1);
 		else
 			Ret->InvXVX = NULL;
@@ -1235,15 +1235,15 @@ void	CalcSigma(OPTIONS *Opt, TREES* Trees, TREE *Tree, double* Means, double* Be
 	int		x,y;
 	double	Val;
 
-	if((Opt->Analsis == ANALML) && (Opt->Model == M_CONTINUOUS_DIR))
+	if((Opt->Analsis == ANALYSIS_ML) && (Opt->Model == M_CONTINUOUS_DIR))
 		FindTVT(Trees, Tree, Opt->AlphaZero);
 
-	if((Opt->Analsis == ANALML) && (Opt->Model == M_CONTINUOUS_REG))
+	if((Opt->Analsis == ANALYSIS_ML) && (Opt->Model == M_CONTINUOUS_REG))
 		FindMLRagVals(Trees, Tree, Opt);
 
 	for(x=0;x<Trees->NoSites;x++)
 	{
-		if(Opt->Analsis == ANALML)
+		if(Opt->Analsis == ANALYSIS_ML)
 		{
 			if(Opt->Model == M_CONTINUOUS_DIR)
 				MLFindAlphaBeta(Trees, Tree, x, Opt->AlphaZero);
@@ -2261,7 +2261,7 @@ void	InitContinus(OPTIONS *Opt, TREES* Trees)
 		UseNonParametricMethods(Opt) == TRUE)
 		Opt->InvertV = TRUE;
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 	{
 		for(TIndex=0;TIndex<Trees->NoTrees;TIndex++)
 			InitContinusTree(Opt, Trees, TIndex);

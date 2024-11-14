@@ -13,5 +13,8 @@
 	void	MCMC(OPTIONS *Opt, TREES *Trees);
 #endif
 
-	double	ValidMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+double	ValidMCMCParameters(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void	InitMCMC(OPTIONS *Opt, TREES *Trees, RATES *Rates);
+int		MCMCAccept(size_t Itters, OPTIONS *Opt, TREES *Trees, SCHEDULE* Shed, RATES *CRates, RATES *NRates, STONES *Stones, double Temperature);
+
 #endif

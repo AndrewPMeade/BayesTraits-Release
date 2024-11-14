@@ -15,6 +15,8 @@ PRIOR*		GetAnsStatePrior(MODEL Model, int SiteNo, PRIOR** PList, int NoPrior);
 
 
 double		RandFromPrior(gsl_rng *RNG, PRIOR *Prior);
+double		RandNonNegFromPrior(gsl_rng *RNG, PRIOR *Prior);
+
 
 double		CalcLhPriorP(double X, PRIOR *Prior);
 void		CalcPriors(RATES* Rates, OPTIONS* Opt);
@@ -53,6 +55,5 @@ double		CalcNormalHasting(double x, double SD);
 int		ValidPriorLh(double LH);
 
 void	TestPrior(PRIOR *Prior, size_t NoSamples);
-
 
 #endif

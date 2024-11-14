@@ -181,20 +181,6 @@ void	PrintTimeSlices(FILE *Str, TIME_SLICES *TSlices)
 	}
 }
 
-double			RandScale(RANDSTATES *RS)
-{
-	double Ret;
-
-	if(RandDouble(RS) < 0.5)
-		return RandDouble(RS);
-
-	do
-	{
-		Ret = 1.0 / RandDouble(RS);
-	}while(Ret > 100);
-
-	return Ret;
-}
 
 TIME_SLICES*	CreateRatesTimeSlices(RATES *Rates, TIME_SLICES *TSlices)
 {
@@ -210,10 +196,10 @@ TIME_SLICES*	CreateRatesTimeSlices(RATES *Rates, TIME_SLICES *TSlices)
 		T = Ret->TimeSlices[Index];
 
 		if(T->FixedTime == FALSE)
-			T->Time = RandDouble(Rates->RS);
+			T->Time = gsl_rng_uniform_pos(Rates->RNG);
 
 		if(T->FixedScale == FALSE)
-			T->Scale = RandScale(Rates->RS);
+			T->Scale = gsl_rng_uniform_pos(Rates->RNG);
 	}
 
 	return Ret;
@@ -463,13 +449,14 @@ int				TimeSliceEstScale(TIME_SLICES *TS)
 	return FALSE;
 }
 
-TIME_SLICE*	GetTimeSliceEstTime(RANDSTATES *RS, TIME_SLICES *TS)
+TIME_SLICE*	GetTimeSliceEstTime(gsl_rng *RNG, TIME_SLICES *TS)
 {
 	int Pos;
 
 	while(TRUE)
 	{
-		Pos = RandUSInt(RS) % TS->NoTimeSlices;
+//		Pos = RandUSInt(RS) % TS->NoTimeSlices;
+		Pos = (int)gsl_rng_uniform_int(RNG, TS->NoTimeSlices);
 
 		if(TS->TimeSlices[Pos]->FixedTime == FALSE)
 			return TS->TimeSlices[Pos];
@@ -487,11 +474,11 @@ void	ChangeTimeSliceTime(RATES *Rates, SCHEDULE *Shed)
 	Dev = Shed->CurrentAT->CDev;
 
 
-	TS = GetTimeSliceEstTime(Rates->RS, Rates->TimeSlices);
+	TS = GetTimeSliceEstTime(Rates->RNG, Rates->TimeSlices);
 
 	do
 	{
-		NTime = RandNormal(Rates->RS, TS->Time, Dev);
+		NTime = gsl_ran_gaussian(Rates->RNG, Dev) + TS->Time;
 
 		if(NTime >= 0 && NTime <= 1.0)
 		{
@@ -502,13 +489,14 @@ void	ChangeTimeSliceTime(RATES *Rates, SCHEDULE *Shed)
 }
 
 
-TIME_SLICE*	GetTimeSliceEstScale(RANDSTATES *RS, TIME_SLICES *TS)
+TIME_SLICE*	GetTimeSliceEstScale(gsl_rng *RNG, TIME_SLICES *TS)
 {
 	int Pos;
 
 	while(TRUE)
 	{
-		Pos = RandUSInt(RS) % TS->NoTimeSlices;
+//		Pos = RandUSInt(RS) % TS->NoTimeSlices;
+		Pos = (int)gsl_rng_uniform_int(RNG, TS->NoTimeSlices);
 
 		if(TS->TimeSlices[Pos]->FixedScale == FALSE)
 			return TS->TimeSlices[Pos];
@@ -526,9 +514,9 @@ void	ChangeTimeSliceScale(RATES *Rates, SCHEDULE *Shed)
 	Shed->CurrentAT = Shed->TimeSliceScaleAT;
 	Dev = Shed->CurrentAT->CDev;
 
-	TS = GetTimeSliceEstScale(Rates->RS, Rates->TimeSlices);
+	TS = GetTimeSliceEstScale(Rates->RNG, Rates->TimeSlices);
 
-	NScale = ChangeLocalScale(Rates->RS, TS->Scale, Dev);
+	NScale = ChangeLocalScale(Rates->RNG, TS->Scale, Dev);
 
 	Rates->LnHastings = CalcNormalHasting(TS->Scale, Dev);
 
@@ -537,3 +525,4 @@ void	ChangeTimeSliceScale(RATES *Rates, SCHEDULE *Shed)
 
 	TS->Scale = NScale;
 }
+

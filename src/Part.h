@@ -28,5 +28,7 @@ int		PartSubSet(PART *A, PART *B);
 void	PrintPart(FILE *Str, TREES *Trees, PART *Part);
 void	PrintParts(FILE *Str, TREES *Trees);
 
+PART*	GetPartFromID(size_t ID, TREES *Trees);
+
 
 #endif

@@ -1,0 +1,342 @@
+Artiodactyl.trees	Artiodactyl.txt	1;1;run
+Artiodactyl.trees	Artiodactyl.txt	1;1;ResAll qDG;run
+Artiodactyl.trees	Artiodactyl.txt	1;1;AddTag Node-01 Cow Buffalo Pronghorn;AddNode Node-01 Node-01;AddTag Node-02 Sheep Goat Cow Buffalo Pronghorn;AddNode Node-02 Node-02;AddTag Node-03 Sheep Goat;AddNode Node-03 Node-03;AddTag Node-04 Giraffe Sheep Goat Cow Buffalo Pronghorn;AddNode Node-04 Node-04;AddTag Node-05 Chevrotain RoeDeer HogDeer Giraffe Sheep Goat Cow Buffalo Pronghorn;AddNode Node-05 Node-05;AddTag Node-06 Hippopo Porpoise Dolphin FKWhale Whale Chevrotain RoeDeer HogDeer Giraffe Sheep Goat Cow Buffalo Pronghorn;AddNode Node-06 Node-06;AddTag Node-07 Pig Hippopo Porpoise Dolphin FKWhale Whale Chevrotain RoeDeer HogDeer Giraffe Sheep Goat Cow Buffalo Pronghorn;AddNode Node-07 Node-07;AddTag Node-08 Hippopo Porpoise Dolphin FKWhale Whale;AddNode Node-08 Node-08;run;
+Artiodactyl.trees	Artiodactyl.txt	1;1;cv;run
+Artiodactyl.trees	Artiodactyl.txt	1;1;kappa;run
+Artiodactyl.trees	Artiodactyl.txt	1;1;kappa 0.25;run
+Artiodactyl.trees	Artiodactyl.txt	1;1;AddTag Node-01 Cow Buffalo Pronghorn;Fossil Node-01 Node-01 D;AddTag Node-02 Sheep Goat Cow Buffalo Pronghorn;Fossil Node-02 Node-02 G;AddTag Node-03 Sheep Goat;Fossil Node-03 Node-03 D;AddTag Node-04 Giraffe Sheep Goat Cow Buffalo Pronghorn;Fossil Node-04 Node-04 D;AddTag Node-05 Chevrotain RoeDeer HogDeer Giraffe Sheep Goat Cow Buffalo Pronghorn;Fossil Node-05 Node-05 G;AddTag Node-06 Hippopo Porpoise Dolphin FKWhale Whale Chevrotain RoeDeer HogDeer Giraffe Sheep Goat Cow Buffalo Pronghorn;Fossil Node-06 Node-06 G;AddTag Node-07 Pig Hippopo Porpoise Dolphin FKWhale Whale Chevrotain RoeDeer HogDeer Giraffe Sheep Goat Cow Buffalo Pronghorn;Fossil Node-07 Node-07 G;AddTag Node-08 Hippopo Porpoise Dolphin FKWhale Whale;Fossil Node-08 Node-08 D;run;
+Artiodactyl.trees	Artiodactyl.txt	1;2;Run
+Artiodactyl.trees	Artiodactyl.txt	1;2;Sa 20000;It 200000;Run
+Artiodactyl.trees	Artiodactyl.txt	1;2;CV;Run
+Artiodactyl.trees	Artiodactyl.txt	1;2;kappa;run
+Artiodactyl.trees	Artiodactyl.txt	1;2;kappa 0.5;run
+Artiodactyl.trees	Artiodactyl.txt	1;2;rj exp 10;run
+Artiodactyl.trees	Artiodactyl.txt	1;2;rjhp exp 0 100;run
+Artiodactyl.trees	Artiodactyl.txt	1;2;CV; rj exp 10;Run
+Artiodactyl.trees	Artiodactyl.txt	1;2;rjhp gamma 0 10 0 10;run
+Primates.trees	Primates.txt	2;1;run
+Primates.trees	Primates.txt	2;1;PreSet M1P;run
+Primates.trees	Primates.txt	2;1;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;AddMRCA Node-01 Node-01;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;AddMRCA Node-02 Node-02;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;AddMRCA Node-03 Node-03;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;AddMRCA Node-04 Node-04;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;AddMRCA Node-05 Node-05;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddMRCA Node-06 Node-06;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddMRCA Node-07 Node-07;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;AddMRCA Node-08 Node-08;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;AddMRCA Node-09 Node-09;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;AddMRCA Node-10 Node-10;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;AddMRCA Node-11 Node-11; run;
+Primates.trees	Primates.txt	2;1;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;Fossil Node-01 Node-01 0;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;Fossil Node-02 Node-02 1;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;Fossil Node-03 Node-03 2;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;Fossil Node-04 Node-04 3;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;Fossil Node-05 Node-05 10;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;Fossil Node-06 Node-06 12;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;Fossil Node-07 Node-07 13;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;Fossil Node-08 Node-08 14;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;Fossil Node-09 Node-09 20;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;Fossil Node-10 Node-10 22;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;Fossil Node-11 Node-11 23;run
+Primates.trees	Primates.txt	2;1;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;AddNode Node-01 Node-01;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;AddNode Node-02 Node-02;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;AddNode Node-03 Node-03;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;AddNode Node-04 Node-04;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;AddNode Node-05 Node-05;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddNode Node-06 Node-06;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddNode Node-07 Node-07;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;AddNode Node-08 Node-08;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;AddNode Node-09 Node-09;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;AddNode Node-10 Node-10;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;AddNode Node-11 Node-11; run;
+Primates.trees	Primates.txt	2;1;cv;run
+Primates.trees	Primates.txt	3;1;run
+Primates.trees	Primates.txt	3;1;PreSet M1P;run
+Primates.trees	Primates.txt	3;1;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;AddMRCA Node-01 Node-01;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;AddMRCA Node-02 Node-02;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;AddMRCA Node-03 Node-03;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;AddMRCA Node-04 Node-04;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;AddMRCA Node-05 Node-05;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddMRCA Node-06 Node-06;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddMRCA Node-07 Node-07;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;AddMRCA Node-08 Node-08;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;AddMRCA Node-09 Node-09;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;AddMRCA Node-10 Node-10;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;AddMRCA Node-11 Node-11; run;
+Primates.trees	Primates.txt	3;1;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;Fossil Node-01 Node-01 0;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;Fossil Node-02 Node-02 1;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;Fossil Node-03 Node-03 2;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;Fossil Node-04 Node-04 3;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;Fossil Node-05 Node-05 10;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;Fossil Node-06 Node-06 12;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;Fossil Node-07 Node-07 13;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;Fossil Node-08 Node-08 14;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;Fossil Node-09 Node-09 20;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;Fossil Node-10 Node-10 22;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;Fossil Node-11 Node-11 23;run
+Primates.trees	Primates.txt	3;1;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;AddNode Node-01 Node-01;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;AddNode Node-02 Node-02;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;AddNode Node-03 Node-03;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;AddNode Node-04 Node-04;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;AddNode Node-05 Node-05;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddNode Node-06 Node-06;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddNode Node-07 Node-07;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;AddNode Node-08 Node-08;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;AddNode Node-09 Node-09;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;AddNode Node-10 Node-10;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;AddNode Node-11 Node-11; run;
+Primates.trees	Primates.txt	3;1;cv;run
+Primates.trees	Primates.txt	2;2;run
+Primates.trees	Primates.txt	2;2;rj exp 50;run
+Primates.trees	Primates.txt	2;2;rj gamma 20 40;run
+Primates.trees	Primates.txt	2;2;rj gamma 10 30;run
+Primates.trees	Primates.txt	2;2;resall q01;run
+Primates.trees	Primates.txt	2;2;pa exp 10;run
+Primates.trees	Primates.txt	2;2;pa gamma 10 10;run
+Primates.trees	Primates.txt	2;2;rj exp 10;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;AddMRCA Node-01 Node-01;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;AddMRCA Node-02 Node-02;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;AddMRCA Node-03 Node-03;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;AddMRCA Node-04 Node-04;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;AddMRCA Node-05 Node-05;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddMRCA Node-06 Node-06;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddMRCA Node-07 Node-07;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;AddMRCA Node-08 Node-08;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;AddMRCA Node-09 Node-09;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;AddMRCA Node-10 Node-10;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;AddMRCA Node-11 Node-11; run;
+Primates.trees	Primates.txt	2;2;rj exp 10;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;Fossil Node-01 Node-01 0;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;Fossil Node-02 Node-02 1;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;Fossil Node-03 Node-03 2;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;Fossil Node-04 Node-04 3;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;Fossil Node-05 Node-05 10;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;Fossil Node-06 Node-06 12;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;Fossil Node-07 Node-07 13;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;Fossil Node-08 Node-08 14;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;Fossil Node-09 Node-09 20;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;Fossil Node-10 Node-10 22;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;Fossil Node-11 Node-11 23;run
+Primates.trees	Primates.txt	2;2;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;AddNode Node-01 Node-01;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;AddNode Node-02 Node-02;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;AddNode Node-03 Node-03;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;AddNode Node-04 Node-04;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;AddNode Node-05 Node-05;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddNode Node-06 Node-06;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddNode Node-07 Node-07;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;AddNode Node-08 Node-08;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;AddNode Node-09 Node-09;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;AddNode Node-10 Node-10;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;AddNode Node-11 Node-11; run;
+Primates.trees	Primates.txt	2;2;cv;rj exp 10;run
+Primates.trees	Primates.txt	3;2;run
+Primates.trees	Primates.txt	3;2;rj exp 50;run
+Primates.trees	Primates.txt	3;2;rj gamma 20 40;run
+Primates.trees	Primates.txt	3;2;rj gamma 10 30;run
+Primates.trees	Primates.txt	3;2;resall q01;run
+Primates.trees	Primates.txt	3;2;pa exp 10;run
+Primates.trees	Primates.txt	3;2;pa gamma 10 10;run
+Primates.trees	Primates.txt	3;2;rj exp 10;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;AddMRCA Node-01 Node-01;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;AddMRCA Node-02 Node-02;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;AddMRCA Node-03 Node-03;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;AddMRCA Node-04 Node-04;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;AddMRCA Node-05 Node-05;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddMRCA Node-06 Node-06;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddMRCA Node-07 Node-07;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;AddMRCA Node-08 Node-08;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;AddMRCA Node-09 Node-09;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;AddMRCA Node-10 Node-10;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;AddMRCA Node-11 Node-11; run;
+Primates.trees	Primates.txt	3;2;rj exp 10;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;Fossil Node-01 Node-01 0;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;Fossil Node-02 Node-02 1;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;Fossil Node-03 Node-03 2;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;Fossil Node-04 Node-04 3;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;Fossil Node-05 Node-05 10;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;Fossil Node-06 Node-06 12;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;Fossil Node-07 Node-07 13;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;Fossil Node-08 Node-08 14;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;Fossil Node-09 Node-09 20;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;Fossil Node-10 Node-10 22;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;Fossil Node-11 Node-11 23;run
+Primates.trees	Primates.txt	3;2;AddTag Node-01 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura Macaca_brunnescens Macaca_tonkeana Macaca_nemestrina;AddNode Node-01 Node-01;AddTag Node-02 Macaca_nigra Macaca_nigriscens Macaca_hecki Macaca_maura;AddNode Node-02 Node-02;AddTag Node-03 Macaca_mulatta Macaca_fascicularis Macaca_Arctoides Macaca_cyclopis;AddNode Node-03 Node-03;AddTag Node-04 Mandrillus_leucophaeus Mandrillus_sphinx Cercocebus_torquatus Papio_cynocephalus Papio_hamadryas Papio_anubis;AddNode Node-04 Node-04;AddTag Node-05 Cercopithecus_aethiops Cercopithecus_mona Cercopithecus_nictitans;AddNode Node-05 Node-05;AddTag Node-06 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddNode Node-06 Node-06;AddTag Node-07 Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii;AddNode Node-07 Node-07;AddTag Node-08 Pygathrix_roxellana Rhinopithecus_avunculus Rhinopithecus_bieti Pygathrix_nemaeus asalis_larvatus Presbytis_senex Trachypithecus_vetulus Trachypithecus_geei Trachypithecus_pileatus Semnopithecus_entellus Trachypithecus_johnii Presbytis_francoisi Trachypithecus_francoisi Presbytis_phayrei Trachypithecus_cristatus Trachypithecus_phayrei;AddNode Node-08 Node-08;AddTag Node-09 Hylobates_lar Hylobates_muelleri Hylobates_agilis;AddNode Node-09 Node-09;AddTag Node-10 Hylobates_lar Hylobates_muelleri Hylobates_agilis Hylobates_moloch;AddNode Node-10 Node-10;AddTag Node-11 Hylobates_hoolock Hylobates_gabriellae Hylobates_leucogenys Hylobates_concolor Hylobates_syndactylus;AddNode Node-11 Node-11; run;
+Primates.trees	Primates.txt	3;2;cv;rj exp 10;run
+Primates.trees	Primates.txt	3;2;kappa;rj exp 10;run
+Mammal.trees	MammalBrainBody.txt	4;1;run
+Mammal.trees	MammalBrainBody.txt	4;1;kappa;run
+Mammal.trees	MammalBrainBody.txt	4;1;lambda;run
+Mammal.trees	MammalBrainBody.txt	4;1;delta;run
+Mammal.trees	MammalBrainBody.txt	4;1;OU;run
+Mammal.trees	MammalBrainBody.txt	4;1;kappa;lambda;run
+Mammal.trees	MammalBrainBody.txt	4;1;kappa;delta;run
+Mammal.trees	MammalBrainBody.txt	4;1;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	4;1;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	4;1;kappa;lambda;delta;ou;run
+Mammal.trees	MammalBrainBody.txt	4;1;kappa 0.5;run
+Mammal.trees	MammalBrainBody.txt	4;1;lambda 0.25;run
+Mammal.trees	MammalBrainBody.txt	4;1;delta 2.2;run
+Mammal.trees	MammalBrainBody.txt	4;1;OU 1.5;run
+Mammal.trees	MammalBrainBody.txt	4;1;kappa 0.2;lambda;run
+Mammal.trees	MammalBrainBody.txt	4;1;kappa 0.9;delta;run
+Mammal.trees	MammalBrainBody.txt	4;1;lambda 0.7;kappa;run
+Mammal.trees	MammalBrainBody.txt	4;1;ou;lambda 0.1;delta;run
+Mammal.trees	MammalBrainBody.txt	4;1;lambda 0.1;delta;run
+Mammal.trees	MammalBrainBody.txt	5;1;run
+Mammal.trees	MammalBrainBody.txt	5;1;kappa;run
+Mammal.trees	MammalBrainBody.txt	5;1;lambda;run
+Mammal.trees	MammalBrainBody.txt	5;1;delta;run
+Mammal.trees	MammalBrainBody.txt	5;1;OU;run
+Mammal.trees	MammalBrainBody.txt	5;1;kappa;lambda;run
+Mammal.trees	MammalBrainBody.txt	5;1;kappa;delta;run
+Mammal.trees	MammalBrainBody.txt	5;1;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	5;1;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	5;1;kappa;lambda;delta;ou;run
+Mammal.trees	MammalBrainBody.txt	5;1;kappa 0.5;run
+Mammal.trees	MammalBrainBody.txt	5;1;lambda 0.25;run
+Mammal.trees	MammalBrainBody.txt	5;1;delta 2.2;run
+Mammal.trees	MammalBrainBody.txt	5;1;OU 1.5;run
+Mammal.trees	MammalBrainBody.txt	5;1;kappa 0.2;lambda;run
+Mammal.trees	MammalBrainBody.txt	5;1;kappa 0.9;delta;run
+Mammal.trees	MammalBrainBody.txt	5;1;lambda 0.7;kappa;run
+Mammal.trees	MammalBrainBody.txt	5;1;ou;lambda 0.1;delta;run
+Mammal.trees	MammalBrainBody.txt	5;1;lambda 0.1;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;kappa;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;lambda;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;OU;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;kappa;lambda;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;kappa;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;lambda;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;kappa;lambda;delta;ou;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;kappa 0.5;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;lambda 0.25;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;delta 2.2;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;OU 1.5;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;kappa 0.2;lambda;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;kappa 0.9;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;lambda 0.7;kappa;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;ou;lambda 0.1;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;1;lambda 0.1;delta;run
+Mammal.trees	MammalBrainBody.txt	4;2;run
+Mammal.trees	MammalBrainBody.txt	4;2;kappa;run
+Mammal.trees	MammalBrainBody.txt	4;2;lambda;run
+Mammal.trees	MammalBrainBody.txt	4;2;delta;run
+Mammal.trees	MammalBrainBody.txt	4;2;OU;run
+Mammal.trees	MammalBrainBody.txt	4;2;kappa;lambda;run
+Mammal.trees	MammalBrainBody.txt	4;2;kappa;delta;run
+Mammal.trees	MammalBrainBody.txt	4;2;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	4;2;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	4;2;kappa 0.5;run
+Mammal.trees	MammalBrainBody.txt	4;2;lambda 0.25;run
+Mammal.trees	MammalBrainBody.txt	4;2;delta 2.2;run
+Mammal.trees	MammalBrainBody.txt	4;2;ou 0.5;run
+Mammal.trees	MammalBrainBody.txt	4;2;kappa 0.2;lambda;run
+Mammal.trees	MammalBrainBody.txt	4;2;kappa 0.9;delta;run
+Mammal.trees	MammalBrainBody.txt	4;2;lambda 0.7;kappa;run
+Mammal.trees	MammalBrainBody.txt	4;2;lambda 0.1;delta;run
+Mammal.trees	MammalBrainBody.txt	4;2;lambda 0.1;delta;OU;run
+Mammal.trees	MammalBrainBody.txt	4;2;SaveModels Model1.bin;run
+Mammal.trees	MammalBrainBody.txt	4;2;LoadModels Model1.bin;run
+Mammal.trees	MammalBrainBody.txt	4;2;LoadModels Model1.bin;AddTag Node-01 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat;AddMRCA Node-01 Node-01;AddTag Node-02 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir;AddMRCA Node-02 Node-02;AddTag Node-03 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir Cat Caniform Pangolin;AddMRCA Node-03 Node-03;AddTag Node-04 Mouse Rat Hystricid Caviomorph;AddMRCA Node-04 Node-04;AddTag Node-05 Sloth Armadillo Anteater;AddMRCA Node-05 Node-05;AddTag Node-06 Tenrecid Golden_Mole Sirenian Hyrax Elephant Lo_Ear_Ele_shrew;AddMRCA Node-06 Node-06;run
+Mammal.trees	MammalBrainBody.txt	4;2;SaveModels Model1.bin;kappa;run
+Mammal.trees	MammalBrainBody.txt	4;2;LoadModels Model1.bin;kappa;run
+Mammal.trees	MammalBrainBody.txt	4;2;LoadModels Model1.bin;kappa;AddTag Node-01 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat;AddMRCA Node-01 Node-01;AddTag Node-02 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir;AddMRCA Node-02 Node-02;AddTag Node-03 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir Cat Caniform Pangolin;AddMRCA Node-03 Node-03;AddTag Node-04 Mouse Rat Hystricid Caviomorph;AddMRCA Node-04 Node-04;AddTag Node-05 Sloth Armadillo Anteater;AddMRCA Node-05 Node-05;AddTag Node-06 Tenrecid Golden_Mole Sirenian Hyrax Elephant Lo_Ear_Ele_shrew;AddMRCA Node-06 Node-06;run
+Mammal.trees	MammalBrainBody.txt	4;2;SaveModels Model1.bin;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	4;2;LoadModels Model1.bin;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	4;2;LoadModels Model1.bin;kappa;lambda;delta;AddTag Node-01 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat;AddMRCA Node-01 Node-01;AddTag Node-02 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir;AddMRCA Node-02 Node-02;AddTag Node-03 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir Cat Caniform Pangolin;AddMRCA Node-03 Node-03;AddTag Node-04 Mouse Rat Hystricid Caviomorph;AddMRCA Node-04 Node-04;AddTag Node-05 Sloth Armadillo Anteater;AddMRCA Node-05 Node-05;AddTag Node-06 Tenrecid Golden_Mole Sirenian Hyrax Elephant Lo_Ear_Ele_shrew;AddMRCA Node-06 Node-06;run
+Mammal.trees	MammalBrainBody.txt	4;2;SaveModels Model1.bin;OU;run
+Mammal.trees	MammalBrainBody.txt	4;2;LoadModels Model1.bin;OU;run
+wholebrain.trees	model-Aus_afa.txt	6;2;prior Beta-2 normal 0 5;lambda;burnin       10000;iterations 110000;sample 1000;SaveModels Aus_afa-model.bin;run;
+wholebrain.trees	predict-Aus_afa.txt	6;2;prior Beta-2 normal 0 5;lambda;burnin       10000;iterations 110000;sample 1000;LoadModels Aus_afa-model.bin;run;
+Mammal.trees	MammalBrainBody.txt	5;2;run
+Mammal.trees	MammalBrainBody.txt	5;2;kappa;run
+Mammal.trees	MammalBrainBody.txt	5;2;lambda;run
+Mammal.trees	MammalBrainBody.txt	5;2;delta;run
+Mammal.trees	MammalBrainBody.txt	5;2;OU;run
+Mammal.trees	MammalBrainBody.txt	5;2;kappa;lambda;run
+Mammal.trees	MammalBrainBody.txt	5;2;kappa;delta;run
+Mammal.trees	MammalBrainBody.txt	5;2;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	5;2;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	5;2;kappa 0.5;run
+Mammal.trees	MammalBrainBody.txt	5;2;lambda 0.25;run
+Mammal.trees	MammalBrainBody.txt	5;2;delta 2.2;run
+Mammal.trees	MammalBrainBody.txt	5;2;ou 0.5;run
+Mammal.trees	MammalBrainBody.txt	5;2;kappa 0.2;lambda;run
+Mammal.trees	MammalBrainBody.txt	5;2;kappa 0.9;delta;run
+Mammal.trees	MammalBrainBody.txt	5;2;lambda 0.7;kappa;run
+Mammal.trees	MammalBrainBody.txt	5;2;lambda 0.1;delta;run
+Mammal.trees	MammalBrainBody.txt	5;2;lambda 0.1;delta;OU;run
+Mammal.trees	MammalBrainBody.txt	5;2;SaveModels Model1.bin;run
+Mammal.trees	MammalBrainBody.txt	5;2;LoadModels Model1.bin;run
+Mammal.trees	MammalBrainBody.txt	5;2;LoadModels Model1.bin;AddTag Node-01 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat;AddMRCA Node-01 Node-01;AddTag Node-02 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir;AddMRCA Node-02 Node-02;AddTag Node-03 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir Cat Caniform Pangolin;AddMRCA Node-03 Node-03;AddTag Node-04 Mouse Rat Hystricid Caviomorph;AddMRCA Node-04 Node-04;AddTag Node-05 Sloth Armadillo Anteater;AddMRCA Node-05 Node-05;AddTag Node-06 Tenrecid Golden_Mole Sirenian Hyrax Elephant Lo_Ear_Ele_shrew;AddMRCA Node-06 Node-06;run
+Mammal.trees	MammalBrainBody.txt	5;2;SaveModels Model1.bin;kappa;run
+Mammal.trees	MammalBrainBody.txt	5;2;LoadModels Model1.bin;kappa;run
+Mammal.trees	MammalBrainBody.txt	5;2;LoadModels Model1.bin;kappa;AddTag Node-01 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat;AddMRCA Node-01 Node-01;AddTag Node-02 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir;AddMRCA Node-02 Node-02;AddTag Node-03 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir Cat Caniform Pangolin;AddMRCA Node-03 Node-03;AddTag Node-04 Mouse Rat Hystricid Caviomorph;AddMRCA Node-04 Node-04;AddTag Node-05 Sloth Armadillo Anteater;AddMRCA Node-05 Node-05;AddTag Node-06 Tenrecid Golden_Mole Sirenian Hyrax Elephant Lo_Ear_Ele_shrew;AddMRCA Node-06 Node-06;run
+Mammal.trees	MammalBrainBody.txt	5;2;SaveModels Model1.bin;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	5;2;LoadModels Model1.bin;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBody.txt	5;2;LoadModels Model1.bin;kappa;lambda;delta;AddTag Node-01 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat;AddMRCA Node-01 Node-01;AddTag Node-02 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir;AddMRCA Node-02 Node-02;AddTag Node-03 Phyllostomid Free_tailed_bat False_vampire_bat Flying_Fox Rousette_Fruitbat Horse Rhino Tapir Cat Caniform Pangolin;AddMRCA Node-03 Node-03;AddTag Node-04 Mouse Rat Hystricid Caviomorph;AddMRCA Node-04 Node-04;AddTag Node-05 Sloth Armadillo Anteater;AddMRCA Node-05 Node-05;AddTag Node-06 Tenrecid Golden_Mole Sirenian Hyrax Elephant Lo_Ear_Ele_shrew;AddMRCA Node-06 Node-06;run
+Mammal.trees	MammalBrainBody.txt	5;2;SaveModels Model1.bin;OU;run
+Mammal.trees	MammalBrainBody.txt	5;2;LoadModels Model1.bin;OU;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;kappa;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;lambda;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;OU;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;kappa;lambda;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;kappa;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;lambda;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;kappa 0.5;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;lambda 0.25;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;delta 2.2;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;ou 0.5;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;kappa 0.2;lambda;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;kappa 0.9;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;lambda 0.7;kappa;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;lambda 0.1;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;lambda 0.1;delta;OU;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;SaveModels Model1.bin;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;LoadModels Model1.bin;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;SaveModels Model1.bin;kappa;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;LoadModels Model1.bin;kappa;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;SaveModels Model1.bin;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;LoadModels Model1.bin;kappa;lambda;delta;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;SaveModels Model1.bin;OU;run
+Mammal.trees	MammalBrainBodyGt.txt	6;2;LoadModels Model1.bin;OU;run
+Mammal.trees	MammalBrainBodyMissing.txt	4;2;SaveModels Model1.bin;run
+Mammal.trees	MammalBrainBodyEst.txt	4;2;LoadModels Model1.bin;run
+Mammal.trees	MammalBrainBodyMissing.txt	4;2;SaveModels Model1.bin;lambda;run
+Mammal.trees	MammalBrainBodyEst.txt	4;2;LoadModels Model1.bin;lambda;run
+Mammal.trees	MammalBrainBodyMissing.txt	4;2;SaveModels Model1.bin;lambda;delta;run
+Mammal.trees	MammalBrainBodyEst.txt	4;2;LoadModels Model1.bin;lambda;delta;run
+Marsupials.trees	Marsupials.txt	7;1;run
+Marsupials.trees	Marsupials.txt	7;1;kappa;run
+Marsupials.trees	Marsupials.txt	7;1;lambda;run
+Marsupials.trees	Marsupials.txt	7;1;delta;run
+Marsupials.trees	Marsupials.txt	7;1;OU;run
+Marsupials.trees	Marsupials.txt	7;1;kappa;OU;run
+Marsupials.trees	Marsupials.txt	7;1;lambda;OU;run
+Marsupials.trees	Marsupials.txt	7;1;delta;OU;run
+Marsupials.trees	Marsupials.txt	7;2;delta;varrates;run
+Marsupials.trees	Marsupials.txt	7;2;kappa;varrates;run
+Marsupials.trees	Marsupials.txt	7;2;lambda;varrates;run
+Marsupials.trees	Marsupials.txt	7;2;OU;varrates;run
+Mammal.trees	MammalBrainBody.txt	8;1;run
+Mammal.trees	MammalBrainBody.txt	8;1;kappa;run
+Mammal.trees	MammalBrainBody.txt	8;1;lambda;run
+Mammal.trees	MammalBrainBody.txt	8;1;delta;run
+Mammal.trees	MammalBrainBody.txt	8;1;OU;run
+Mammal.trees	MammalBrainBody.txt	8;1;kappa;OU;run
+Mammal.trees	MammalBrainBody.txt	8;1;lambda;OU;run
+Mammal.trees	MammalBrainBody.txt	8;1;delta;OU;run
+Mammal.trees	MammalBrainBody.txt	8;2;delta;varrates;run
+Mammal.trees	MammalBrainBody.txt	8;2;kappa;varrates;run
+Mammal.trees	MammalBrainBody.txt	8;2;lambda;varrates;run
+Mammal.trees	MammalBrainBody.txt	8;2;OU;varrates;run
+Mammal.trees	MammalBrainBody.txt	8;2;TC;run
+Mammal.trees	MammalBrainBody.txt	8;2;TC;varrates;run
+Mammal.trees	MammalBrainBody.txt	8;1;TC;run
+Mammal.trees	MammalBrainBody.txt	8;1;kappa;run
+Mammal.trees	MammalBrainBody.txt	8;1;delta;run
+Mammal.trees	MammalBrainBody.txt	8;1;lambda;run
+Mammal.trees	MammalBrainBody.txt	8;1;OU;run
+Mammal.trees	MammalBrainBody.txt	9;1;run
+Mammal.trees	MammalBrainBody.txt	9;1;kappa;run
+Mammal.trees	MammalBrainBody.txt	9;1;lambda;run
+Mammal.trees	MammalBrainBody.txt	9;1;delta;run
+Mammal.trees	MammalBrainBody.txt	9;1;OU;run
+Mammal.trees	MammalBrainBody.txt	9;1;kappa;OU;run
+Mammal.trees	MammalBrainBody.txt	9;1;lambda;OU;run
+Mammal.trees	MammalBrainBody.txt	9;1;delta;OU;run
+Mammal.trees	MammalBrainBody.txt	9;2;delta;varrates;run
+Mammal.trees	MammalBrainBody.txt	9;2;kappa;varrates;run
+Mammal.trees	MammalBrainBody.txt	9;2;lambda;varrates;run
+Mammal.trees	MammalBrainBody.txt	9;2;OU;varrates;run
+Mammal.trees	MammalBrainBody.txt	9;1;TC;run
+Mammal.trees	MammalBrainBody.txt	9;2;TC;varrates;run
+Mammal.trees	MammalBrainBody.txt	9;1;TC;run
+Mammal.trees	MammalBrainBody.txt	9;1;kappa;run
+Mammal.trees	MammalBrainBody.txt	9;1;delta;run
+Mammal.trees	MammalBrainBody.txt	9;1;lambda;run
+Mammal.trees	MammalBrainBody.txt	9;1;OU;run
+Marsupials.trees	Marsupials.txt	7;2;run
+Marsupials.trees	Marsupials.txt	7;2;kappa;run
+Marsupials.trees	Marsupials.txt	7;2;lambda;run
+Marsupials.trees	Marsupials.txt	7;2;delta;run
+Marsupials.trees	Marsupials.txt	7;2;OU;run
+Marsupials.trees	Marsupials.txt	7;2;kappa;OU;run
+Marsupials.trees	Marsupials.txt	7;2;lambda;OU;run
+Marsupials.trees	Marsupials.txt	7;2;delta;OU;run
+Marsupials.trees	Marsupials.txt	7;2;delta;varrates;run
+Marsupials.trees	Marsupials.txt	7;2;kappa;varrates;run
+Marsupials.trees	Marsupials.txt	7;2;lambda;varrates;run
+Marsupials.trees	Marsupials.txt	7;2;OU;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;kappa;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;lambda;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;delta;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;OU;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;kappa;OU;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;lambda;OU;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;delta;OU;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;delta;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;kappa;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;lambda;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;OU;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;TC;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;TC;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;TC;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;kappa;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;delta;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;lambda;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	8;2;OU;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;kappa;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;lambda;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;delta;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;OU;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;kappa;OU;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;lambda;OU;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;delta;OU;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;delta;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;kappa;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;lambda;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;OU;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;TC;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;TC;varrates;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;TC;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;kappa;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;delta;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;lambda;run
+PrimatesBrainBody.trees	PrimatesBrainBody.txt	9;2;OU;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;1;AddTag T1 Otocyon_megalotis Urocyon_cinereoargenteus Urocyon_littoralis Vulpes_bengalensis Vulpes_chama Vulpes_pallida Vulpes_cana Vulpes_zerda Alopex_lagopus Vulpes_velox Vulpes_corsac Vulpes_ferrilata Vulpes_rueppellii Vulpes_vulpes Nyctereutes_procyonoides Atelocynus_microtis Cerdocyon_thous Chrysocyon_brachyurus Cuon_alpinus Lycaon_pictus Speothos_venaticus  Pseudalopex_culpaeus  Canis_lupus Canis_latrans Canis_simensis Canis_mesomelas Canis_adustus Canis_aureus;LocalTransform Trans1 T1 LandscapeBL;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;1;AddTag T1 Otocyon_megalotis Urocyon_cinereoargenteus Urocyon_littoralis Vulpes_bengalensis Vulpes_chama Vulpes_pallida Vulpes_cana Vulpes_zerda Alopex_lagopus Vulpes_velox Vulpes_corsac Vulpes_ferrilata Vulpes_rueppellii Vulpes_vulpes Nyctereutes_procyonoides Atelocynus_microtis Cerdocyon_thous Chrysocyon_brachyurus Cuon_alpinus Lycaon_pictus Speothos_venaticus  Pseudalopex_culpaeus  Canis_lupus Canis_latrans Canis_simensis Canis_mesomelas Canis_adustus Canis_aureus;AddTag T2 Helogale_hirtula Helogale_parvula Mungos_gambianus Mungos_mungo Crossarchus_alexandri Crossarchus_ansorgei Crossarchus_obscurus Ichneumia_albicauda Suricata_suricatta Bdeogale_crassicauda Bdeogale_jacksoni Bdeogale_nigripes Liberiictis_kuhni Cynictis_penicillata Paracynictis_selousi Herpestes_edwardsii Herpestes_javanicus Herpestes_brachyurus Herpestes_urva Herpestes_ichneumon Herpestes_naso Herpestes_palustris Herpestes_smithii Herpestes_vitticollis Galerella_flavescens Galerella_pulverulenta Galerella_sanguinea ;LocalTransform Trans1 T1 T2 LandscapeBL;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Landscape;Prior FabricBeta Weibull 0.6 1.4;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Landscape;Prior FabricBeta Weibull 0.6 1.4;RJThreshold LandscapeBL -5;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Landscape;Prior FabricBeta Weibull 0.6 1.4;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Landscape;Prior FabricBeta Weibull 0.6 1.4;kappa;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Landscape;Prior FabricBeta Weibull 0.6 1.4;lambda;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Landscape;Prior FabricBeta Weibull 0.6 1.4;delta;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Landscape;Prior FabricBeta Weibull 0.6 1.4;OU;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Landscape;Prior FabricBeta Weibull 0.6 1.4;TestPrior FabricBeta 1000;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Landscape;Prior FabricBeta Weibull 0.6 1.4;GlobalTrend;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;RJLocaltransform LandscapeBL;Prior FabricBeta Weibull 0.6 1.4;run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Landscape;AddTag T1 Otocyon_megalotis Urocyon_cinereoargenteus Urocyon_littoralis Vulpes_bengalensis Vulpes_chama Vulpes_pallida Vulpes_cana Vulpes_zerda Alopex_lagopus Vulpes_velox Vulpes_corsac Vulpes_ferrilata Vulpes_rueppellii Vulpes_vulpes Nyctereutes_procyonoides Atelocynus_microtis Cerdocyon_thous Chrysocyon_brachyurus Cuon_alpinus Lycaon_pictus Speothos_venaticus  Pseudalopex_culpaeus  Canis_lupus Canis_latrans Canis_simensis Canis_mesomelas Canis_adustus Canis_aureus;LocalTransform Trans1 T1 LandscapeBL;Prior FabricBeta Weibull 0.6 1.4;run
+MarsupialsScaled1.trees	Marsupials.txt	7;2;GlobalTrend;run
+MarsupialsScaled1.trees	Marsupials.txt	7;1;GlobalTrend;run
+GeoTree.trees	GeoCentroids.txt	13;2;run
+GeoTree.trees	GeoCentroids.txt	13;2;VarRates;run
+GeoTree.trees	GeoCentroids.txt	13;2;VarRates;lambda;run
+GeoTree.trees	GeoCentroids.txt	13;2;DistData GeoMultiTips.txt;run
+GeoTree.trees	GeoCentroids.txt	13;2;DistData GeoMultiTips.txt;VarRates;run
+GeoTree.trees	GeoCentroids.txt	13;2;DistData GeoMultiTips.txt;lambda;VarRates;run
+CarnivoresNoMissing.trees	Carnivores.txt	12;2;IT 20000;Run
+CarnivoresNoMissing.trees	Carnivores.txt	12;2;IT 20000;VarRates;Run
+CarnivoresNoMissing.trees	Carnivores.txt	12;2;IT 20000;Lambda;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 gamma 1.5 2.5;TestPrior Sigma-1 1000;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 uniform 4 5;TestPrior Sigma-1 1000;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 chi-squared 3.3;TestPrior Sigma-1 1000;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 exp 5.5;TestPrior Sigma-1 1000;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 sgamma 1.1 10.5;TestPrior Sigma-1 1000;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 lognormal -5 5;TestPrior Sigma-1 1000;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 normal 5 1;TestPrior Sigma-1 1000;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 weibull 5 1;TestPrior Sigma-1 1000;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;RJLocaltransform kappa;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;RJLocaltransform lambda;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;RJLocaltransform delta;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;RJLocaltransform ou;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;RJLocaltransform node;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;RJLocaltransform branch;Run
+CarnivoresNoMissing.trees	Carnivores.txt	7;2;RJLocaltransform LandscapeBL;Prior FabricBeta Weibull 0.6 1.4;Run
+Artiodactyl.trees	Artiodactyl.txt	1;2;NormaliseQMatrix;Run
+Artiodactyl.trees	Artiodactyl.txt	1;2;NormaliseQMatrix;RJ exp 1;Run
+Artiodactyl.trees	Artiodactyl.txt	1;2;NormaliseQMatrix;RJ exp 1;cv;Run

@@ -3,6 +3,7 @@
 
 #define LINEAR_INTERPOLATION
 
+
 typedef struct
 {
 	double	Alpha;
@@ -16,12 +17,9 @@ typedef struct
 STABLEDIST*	CreatStableDist(void);
 void		FreeStableDist(STABLEDIST* SD);
 
-void		SetStableDist(STABLEDIST* SD, double Alpha, double Scale);
-
 double		StableDistPDF(STABLEDIST* SD, double x);
-double		StableDistTPDF(STABLEDIST* SD, double x, double t);
+double		StableDistTPDF(double Scale, double x, double t);
 
 double		CaclNormalLogLh(double X, double Scale, double T);
-
 
 #endif

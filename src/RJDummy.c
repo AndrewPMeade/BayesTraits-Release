@@ -151,14 +151,14 @@ int			ValidDummyNode(TREE *Tree, NODE N)
 	return TRUE;
 }
 
-NODE		GetDummyCodeNode(RANDSTATES *RS, TREE *Tree)
+NODE		GetDummyCodeNode(gsl_rng *RNG, TREE *Tree)
 {
 	int Pos;
 	NODE N;
 
 	do
 	{
-		Pos = RandUSInt(RS) % Tree->NoNodes;
+		Pos = (int)gsl_rng_uniform_int(RNG, Tree->NoNodes);
 		N = Tree->NodeList[Pos];
 	} while(ValidDummyNode(Tree, N) == FALSE);
 
@@ -234,7 +234,7 @@ void		SortDummyCodes(RJDUMMY *RJDummy)
 	qsort(RJDummy->DummyList, RJDummy->NoDummyCode, sizeof(DUMMYCODE*), CompRJDummy);
 }
 
-void		AddRJDummyCode(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates, NODE N)
+void		AddRJDummyCode(size_t Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates, NODE N)
 {
 	CONTRASTR	*CRates;
 	TREE		*Tree;
@@ -251,13 +251,13 @@ void		AddRJDummyCode(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates, 
 	RJDummy->DummyList[RJDummy->NoDummyCode] = DC;
 
 	DC->Iteration = Itter;
-	DC->Beta[0] = (RandDouble(Rates->RS) * 10) - 5;
+	DC->Beta[0] = (gsl_rng_uniform_pos(Rates->RNG) * 10) - 5;
 	DC->Type = RJDUMMY_INTER;
 	
-	if(RandDouble(Rates->RS) < 0.5)
+	if(gsl_rng_uniform_pos(Rates->RNG) < 0.5)
 	{
 		DC->Type = RJDUMMY_INTER_SLOPE;
-		DC->Beta[1] = (RandDouble(Rates->RS) * 10) - 5;
+		DC->Beta[1] = (gsl_rng_uniform_pos(Rates->RNG) * 10) - 5;
 		CRates->NoSites++;
 	}
 	
@@ -331,7 +331,7 @@ int			GetPosFromNode(NODE N, RJDUMMY *RJDummy)
 }
 
 
-void		RJDummyMove(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void		RJDummyMove(size_t Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	RJDUMMY		*RJDummy;
 	NODE		N;
@@ -342,7 +342,7 @@ void		RJDummyMove(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	RJDummy = Rates->RJDummy;
 
-	N = GetDummyCodeNode(Rates->RS, Tree);
+	N = GetDummyCodeNode(Rates->RNG, Tree);
 
 	Pos = GetPosFromNode(N, RJDummy);
 	if(Pos == -1)
@@ -392,17 +392,15 @@ void		RJDummyMoveNode( OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	RJDummy = Rates->RJDummy;
 	
-	Pos = RandUSInt(Rates->RS) % RJDummy->NoDummyCode;
+	Pos = (int)gsl_rng_uniform_int(Rates->RNG, RJDummy->NoDummyCode);
 	DC = RJDummy->DummyList[Pos];
-
-
 	N = DC->Node;
 
-	if((RandDouble(Rates->RS) < 0.33) || (N->Tip == TRUE))
+	if((gsl_rng_uniform_pos(Rates->RNG) < 0.33) || (N->Tip == TRUE))
 		N = N->Ans;
 	else
 	{
-		Pos = RandUSInt(Rates->RS) % N->NoNodes;
+		Pos = (int)gsl_rng_uniform_int(Rates->RNG, N->NoNodes);
 		N = N->NodeList[Pos];
 	}
 		
@@ -553,11 +551,15 @@ void		MapDummyCodes(TREES *Trees, RATES *Rates)
 }
 
 
-void	InitRJDummyFile(OPTIONS *Opt)
+void	InitRJDummyFile(OPTIONS *Opt, TREES *Trees)
 {
-	Opt->RJDummyLog = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_DUMMY_CODE);
 
-	PrintOptions(Opt->RJDummyLog, Opt);
+	Opt->RJDummyLog = OpenWithExt(Opt->CheckPointAppendFiles, Opt->BaseOutputFN, OUTPUT_EXT_DUMMY_CODE);
+
+	if(Opt->CheckPointAppendFiles == TRUE)
+		return;
+
+	PrintOptions(Opt->RJDummyLog, Opt, Trees);
 
 	fprintf(Opt->RJDummyLog, "Iteration\tLh\tNo Dummy Codes\tBeta\tNo Taxa\tTaxa List");
 
@@ -586,7 +588,7 @@ void	PrintRJDummyTaxaList(FILE *Out, TREES *Trees, DUMMYCODE *DC)
 	fprintf(Out, "\t");
 }
 
-void	PrintRJDummy(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	PrintRJDummy(size_t Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	RJDUMMY		*RJDummy;
 	DUMMYCODE	*DC;
@@ -595,7 +597,7 @@ void	PrintRJDummy(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	
 	RJDummy = Rates->RJDummy;
 
-	fprintf(Opt->RJDummyLog, "%lld\t%f\t%d\t", Itter, Rates->Lh, RJDummy->NoDummyCode);
+	fprintf(Opt->RJDummyLog, "%zu\t%f\t%d\t", Itter, Rates->Lh, RJDummy->NoDummyCode);
 
 	for(Index=0;Index<RJDummy->NoDummyCode;Index++)
 	{
@@ -647,16 +649,17 @@ void	RJDummyChange(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	RJDummy = Rates->RJDummy;
 
-	Pos = RandUSInt(Rates->RS) % RJDummy->NoDummyCode;
+//	Pos = RandUSInt(Rates->RS) % RJDummy->NoDummyCode;
+	Pos = (int)gsl_rng_uniform_int(Rates->RNG, RJDummy->NoDummyCode);
 
 	DC = RJDummy->DummyList[Pos];
 
 	Dev = Opt->RJDummyBetaDev;
 
-	if((DC->Type == RJDUMMY_INTER_SLOPE) && (RandDouble(Rates->RS) < 0.5))
-		DC->Beta[1] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
+	if((DC->Type == RJDUMMY_INTER_SLOPE) && (gsl_rng_uniform_pos(Rates->RNG) < 0.5))
+		DC->Beta[1] += (gsl_rng_uniform_pos(Rates->RNG) * Dev) - (Dev / 2.0);
 	else
-		DC->Beta[0] += (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
+		DC->Beta[0] += (gsl_rng_uniform_pos(Rates->RNG) * Dev) - (Dev / 2.0);
 }
 
 void	TestDummyCodeSig(OPTIONS *Opt, TREES *Trees, RATES *Rates)

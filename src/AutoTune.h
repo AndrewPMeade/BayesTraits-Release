@@ -30,10 +30,11 @@ void		FreeAutoTune(AUTOTUNE *AutoTune);
 
 void		SetMaxDev(AUTOTUNE *AutoTune, double MaxDev);
 
-void		AutoTuneUpDate(AUTOTUNE *AutoTune, RANDSTATES *RS);
+void		AutoTuneUpDate(AUTOTUNE *AutoTune, gsl_rng *RNG);
 
 double		AutoTuneCalcAcc(AUTOTUNE *AT);
 
 void		ReSetAutoTune(AUTOTUNE *AutoTune);
+
 
 #endif

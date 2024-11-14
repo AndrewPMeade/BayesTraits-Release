@@ -30,6 +30,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <math.h>
 
 #include "TypeDef.h"
 #include "GenLib.h"
@@ -52,6 +53,8 @@
 #include "NLOptBT.h"
 #include "Pattern.h"
 #include "RestrictionMap.h"
+#include "BinaryCompressedResMaps.h"
+#include "Power.h"
 
 #define	RATEOUTPUTLEN	33
 #define	RIGHT_INDENT	4
@@ -181,6 +184,9 @@ void	PrintPriorOpt(FILE* Str, OPTIONS *Opt)
 				PrintPriorVals(Str, Prior);
 		}
 	}
+
+	if(Opt->FabricBetaZPrior == TRUE)
+		printf("Fabric Beta Z Prior:             True\n");
 }
 
 void	PrintConPar(FILE* Str, int InUse, int Est, double Const)
@@ -200,14 +206,13 @@ void	PrintConPar(FILE* Str, int InUse, int Est, double Const)
 	fprintf(Str, "Not in use\n");
 }
 
-void	PrintEstData(FILE *Str, OPTIONS *Opt)
+void	PrintEstData(FILE *Str, OPTIONS *Opt, TREES	*Trees)
 {
 	int		TIndex;
 	int		SIndex;
-	TREES	*Trees;
+	;
 	TAXA	*Taxa;
-
-	Trees = Opt->Trees;
+		
 		
 	if(EstData(Trees) == FALSE)
 		return;
@@ -266,7 +271,7 @@ void	PrintHetMap(FILE *Str, OPTIONS *Opt, TREES *Trees)
 	}
 }
 
-void	PrintRecNodes(FILE* Str, OPTIONS *Opt)
+void	PrintRecNodes(FILE* Str, OPTIONS *Opt, TREES *Trees)
 {
 	int Index, RIndex;
 	RECNODE *RNode;
@@ -292,7 +297,7 @@ void	PrintRecNodes(FILE* Str, OPTIONS *Opt)
 			{
 				fprintf(Str, "\tFossil %s %s ", RNode->Name, RNode->Tag->Name);
 				for(Index=0;Index<RNode->NoFossilStates;Index++)
-					fprintf(Str, "%c ", Opt->Trees->SymbolList[RNode->FossilStates[Index]]);
+					fprintf(Str, "%c ", Trees->SymbolList[RNode->FossilStates[Index]]);
 				fprintf(Str, "\n");
 			}
 			else
@@ -305,6 +310,14 @@ void	PrintRJLocalTrans(FILE* Str, OPTIONS *Opt)
 {
 	fprintf(Str, "Min Trans Taxa No:               %d\n", Opt->MinTransTaxaNo);
 
+	fprintf(Str, "Homogenous fabric model:         ");
+
+	if(Opt->FabricHomo == TRUE)
+		fprintf(Str, "True\n");
+	else
+		fprintf(Str, "False\n");
+
+	
 
 	fprintf(Str, "RJ Local Branch:                 ");
 	if(Opt->UseRJLocalScalar[VR_BL] == TRUE)
@@ -342,22 +355,22 @@ void	PrintRJLocalTrans(FILE* Str, OPTIONS *Opt)
 	else
 		fprintf(Str, "False\n");	
 
-	fprintf(Str, "RJ Local LandscapeBL:            ");
-	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
-		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_LS_BL]);
+	fprintf(Str, "RJ Local FabricBeta:            ");
+	if(Opt->UseRJLocalScalar[VR_FABRIC_BETA] == TRUE)
+		fprintf(Str, "True Threshold %f\n", Opt->RJLocalScalarThreshold[VR_FABRIC_BETA]);
 	else
 		fprintf(Str, "False\n");	
 
 }
 
-void	PrintEmpPis(FILE* Str, OPTIONS *Opt)
+void	PrintEmpPis(FILE* Str, OPTIONS *Opt, TREES *Trees)
 {
 	int NOS, Index;
 	double *Pis;
 	
-	NOS = Opt->Trees->NoStates;
+	NOS = Trees->NoStates;
 
-	Pis = GetEmpPis(Opt);
+	Pis = GetEmpPis(Opt, Trees);
 
 	fprintf(Str, "(");
 	for(Index=0;Index<NOS-1;Index++)
@@ -393,7 +406,7 @@ void	PrintRestrictionMaps(FILE *Str, OPTIONS *Opt)
 }
 
 
-void	PrintOptions(FILE* Str, OPTIONS *Opt)
+void	PrintOptions(FILE* Str, OPTIONS *Opt, TREES *Trees)
 {
 	int		Index, NOS;
 	
@@ -432,7 +445,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->MakeUM == TRUE)
 		fprintf(Str, "Make UM:                     True\n");
 
-	if(Opt->Analsis == ANALML)
+	if(Opt->Analsis == ANALYSIS_ML)
 	{
 		fprintf(Str, "Analsis Type:                    Maximum Likelihood\n" );
 		fprintf(Str, "ML Attempt Per Tree:             %d\n", Opt->MLTries);
@@ -445,12 +458,17 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	fprintf(Str, "Precision:                       %d bits\n", Opt->Precision);
 	fprintf(Str, "Cores:                           %d\n", Opt->Cores);
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 	{
 		fprintf(Str, "Analysis Type:                   MCMC\n" );
 		fprintf(Str, "Sample Period:                   %d\n", Opt->Sample);
-		fprintf(Str, "Iterations:                      %lld\n", Opt->Itters);
-		fprintf(Str, "Burn in:                         %lld\n", Opt->BurnIn);
+
+		if(Opt->Itters != 0)
+			fprintf(Str, "Iterations:                      %zu\n", Opt->Itters);
+		else 
+			fprintf(Str, "Iterations:                      Infinite\n");
+
+		fprintf(Str, "Burn in:                         %zu\n", Opt->BurnIn);
 
 		fprintf(Str, "MCMC ML Start:                   ");
 		
@@ -482,6 +500,9 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 
 	}
 
+	if(Opt->UseIntraNode == TRUE)
+		fprintf(Str, "IntraNode:                       %f\n", Opt->IntraNodeDist);
+
 	if(Opt->RJDummy == TRUE)
 		fprintf(Str, "RJDummy Codeing:                 True\n");
 		
@@ -500,7 +521,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 				break;
 			case PI_EMP:
 				fprintf(Str, "Empirical: ");
-				PrintEmpPis(Str, Opt);
+				PrintEmpPis(Str, Opt, Trees);
 				fprintf(Str, "\n");
 				break;
 			case PI_UNI:
@@ -518,12 +539,12 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 
 		if(Opt->Model == M_MULTISTATE)
 		{
-			NOS = Opt->Trees->NoStates;
+			NOS = Trees->NoStates;
 			if(Opt->UseCovarion == TRUE)
 				NOS = NOS / 2;
 			for(Index=0;Index<NOS-1;Index++)
-				fprintf(Str, "%c,", Opt->Trees->SymbolList[Index]);
-			fprintf(Str, "%c\n", Opt->Trees->SymbolList[Index]);
+				fprintf(Str, "%c,", Trees->SymbolList[Index]);
+			fprintf(Str, "%c\n", Trees->SymbolList[Index]);
 		}
 		else
 			fprintf(Str, "00,01,10,11\n");
@@ -549,7 +570,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 		fprintf(Str, "OU:                              ");
 		PrintConPar(Str, Opt->UseOU, Opt->EstOU, Opt->FixOU);
 		
-		if(Opt->Analsis == ANALMCMC  && UseNonParametricMethods(Opt) == TRUE)
+		if(Opt->Analsis == ANALYSIS_MCMC  && UseNonParametricMethods(Opt) == TRUE)
 			PrintRJLocalTrans(Str, Opt);
 
 		if(Opt->AlphaZero == TRUE)
@@ -614,7 +635,7 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	if(Opt->VarRatesCheckPoint != NULL)
 		fprintf(Str, "Var Rates Check Point:           %s\n", Opt->VarRatesCheckPoint);
 
-	PrintEstData(Str, Opt);
+	PrintEstData(Str, Opt, Trees);
 
 	if(Opt->ScaleTrees != -1)
 		fprintf(Str, "Scale Tree:                      %f\n", Opt->ScaleTrees);
@@ -629,21 +650,21 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	}
 
 	PrintOptRes(Str, Opt);
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		PrintPriorOpt(Str, Opt);
 
 	if(Opt->Model != M_CONTINUOUS_RR && Opt->Model != M_CONTINUOUS_DIR)
-		PrintRecNodes(Str, Opt);
+		PrintRecNodes(Str, Opt, Trees);
 
-	if(Opt->Trees->NoOfRemovedTaxa != 0)
+	if(Trees->NoOfRemovedTaxa != 0)
 	{
 		fprintf(Str, "Removed taxa:\n");
-		for(Index=0;Index<Opt->Trees->NoOfRemovedTaxa;Index++)
-			fprintf(Str, "          %s\n", Opt->Trees->RemovedTaxa[Index]);
+		for(Index=0;Index<Trees->NoOfRemovedTaxa;Index++)
+			fprintf(Str, "          %s\n", Trees->RemovedTaxa[Index]);
 	}
 	
 	if(Opt->Model == M_DISC_HET)
-		PrintHetMap(Str, Opt, Opt->Trees);
+		PrintHetMap(Str, Opt, Trees);
 	
 	if(Opt->DistData != NULL)
 		PrintDistData(Str, Opt->DistData);
@@ -659,9 +680,50 @@ void	PrintOptions(FILE* Str, OPTIONS *Opt)
 	PrintTimeSlices(Str, Opt->TimeSlices);
 	PrintPatterns(Str, Opt->NoPatterns, Opt->PatternList);
 
-	PrintTreesInfo(Str, Opt->Trees, Opt->DataType);
+	PrintTreesInfo(Str, Trees, Opt->DataType);
 
-	
+//	fprintf(Str, "Analytical P:                    True\n");
+	fprintf(Str, "Checkpoint:                      ");
+	if(Opt->CheckPoint == FALSE)
+		fprintf(Str, "False\n");
+	else
+		fprintf(Str, "True\n");
+
+	if(Opt->CheckPointFile != NULL)
+		fprintf(Str, "CheckpointFile:                  %s\n", Opt->CheckPointFile);
+
+	fprintf(Str, "Re Set Itterations:              ");
+	if(Opt->CheckPointReSetItterations == FALSE)
+		fprintf(Str, "False\n");
+	else
+		fprintf(Str, "True\n");
+
+	fprintf(Str, "Re Set Seed:                     ");
+	if(Opt->ReSetSeed == FALSE)
+		fprintf(Str, "False\n");
+	else
+		fprintf(Str, "%lu\n", Opt->ReSetSeedVal);
+
+	if(Opt->NoFlippedNodes > 0)
+	{
+		fprintf(Str, "Flipped Nodes:                   ");
+		for(Index=0;Index<Opt->NoFlippedNodes;Index++)
+			fprintf(Str, "%s ", Opt->FlippedNodes[Index]->Name);
+		fprintf(Str, "\n");
+	}
+
+	if(Opt->NoLockedRJBL > 0)
+	{
+		fprintf(Str, "Locked RJ Branches:                   ");
+		for (Index = 0;Index < Opt->NoLockedRJBL;Index++)
+			fprintf(Str, "%s ", Opt->LockedRJBL[Index]->Name);
+		fprintf(Str, "\n");
+	}
+
+	PrintPowerOpt(Str, Opt);
+		
+	if(Opt->RJLockModel == TRUE)
+		fprintf(Str, "RJLockMode:                      True\n");
 
 	fflush(Str);
 }
@@ -691,7 +753,9 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 	free(Opt->DataFN);
 	free(Opt->TreeFN);
 	free(Opt->BaseOutputFN);
-	fclose(Opt->LogFile);
+
+	if(Opt->LogFile != NULL)
+		fclose(Opt->LogFile);
 
 	if(Opt->MLAlg != NULL)
 		free(Opt->MLAlg);
@@ -704,6 +768,9 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->PassedOut != NULL)
 		free(Opt->PassedOut);
+
+	if(Opt->LogIntraNode != NULL)
+		fclose(Opt->LogIntraNode);
 
 	free(Opt->ResTypes);
 	free(Opt->ResNo);
@@ -719,9 +786,6 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->LoadModelsFN != NULL)
 		free(Opt->LoadModelsFN);
-
-	if(Opt->Stones != NULL)
-		FreeStones(Opt->Stones);
 
 	for(Index=0;Index<Opt->NoLocalTransforms;Index++)
 		FreeLocalTransforms(Opt->LocalTransforms[Index]);
@@ -765,12 +829,27 @@ void	FreeOptions(OPTIONS *Opt, int NoSites)
 
 	if(Opt->NoRestrictionMaps > 0)
 	{
-
 		for(Index=0;Index<Opt->NoRestrictionMaps;Index++)
 			FreeResMap(Opt->RestrictionMaps[Index]);
 
 		free(Opt->RestrictionMaps);
 	}
+
+	if(Opt->CheckPointFile != NULL)
+		free(Opt->CheckPointFile);
+
+	if(Opt->StoneOptions != NULL)
+		FreeStonesOptions(Opt->StoneOptions);
+
+	if(Opt->FlippedNodes != NULL)
+		free(Opt->FlippedNodes);
+
+	if(Opt->LockedRJBL != NULL)
+		free(Opt->LockedRJBL);
+
+	if(Opt->PowerSites != NULL)
+		free(Opt->PowerSites);
+	
 
 	free(Opt);
 }
@@ -786,13 +865,13 @@ char*	CreatRateName(char N1, char N2)
 	return Ret;
 }
 
-char**	ModelARateName(OPTIONS* Opt)
+char**	ModelARateName(OPTIONS* Opt, TREES *Trees)
 {
 	char**	Ret;
 	char*	Buffer;
 	int		Index;
 
-	Opt->NoOfRates = Opt->Trees->NoSites;
+	Opt->NoOfRates = Trees->NoSites;
 
 	Ret = (char**)SMalloc(sizeof(char*)*Opt->NoOfRates);
 	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
@@ -807,7 +886,7 @@ char**	ModelARateName(OPTIONS* Opt)
 	return Ret;
 }
 
-char**	ModelBRateName(OPTIONS* Opt)
+char**	ModelBRateName(OPTIONS* Opt, TREES *Trees)
 {
 	char**	Ret;
 	char*	Buffer;
@@ -818,14 +897,14 @@ char**	ModelBRateName(OPTIONS* Opt)
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
-		if(Index<Opt->Trees->NoSites)
+		if(Index<Trees->NoSites)
 		{
 			No = Index+1;
 			sprintf(Buffer, "Alpha-%d", No);
 		}
 		else
 		{
-			No = (Index - Opt->Trees->NoSites) + 1;
+			No = (Index - Trees->NoSites) + 1;
 			sprintf(Buffer, "Beta-%d", No);
 		}
 
@@ -858,19 +937,19 @@ char**	RetModelRateName(OPTIONS* Opt)
 	return Ret;
 }
 
-char**	ContrastRateNames(OPTIONS *Opt)
+char**	ContrastRateNames(OPTIONS *Opt, TREES *Trees)
 {
 	char	**Ret;
 	char	*Buffer;
 	int		Index, NOS, i;
 	
-	NOS = Opt->Trees->NoSites;
+	NOS = Trees->NoSites;
 	 
 	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
 	
 	i = 0;
-	for(Index=0;Index<Opt->Trees->NoSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 	{
 		sprintf(Buffer, "Alpha-%d", Index+1);
 		Ret[i++] = StrMake(Buffer);
@@ -880,13 +959,13 @@ char**	ContrastRateNames(OPTIONS *Opt)
 	return Ret;
 }
 
-char**	ContrastFullRateNames(OPTIONS *Opt)
+char**	ContrastFullRateNames(OPTIONS *Opt, TREES *Trees)
 {
 	char	**Ret;
 	char	*Buffer;
 	int		Index, NOS, i;
 	
-	NOS = Opt->Trees->NoSites;
+	NOS = Trees->NoSites;
 	 
 	Ret = (char**)SMalloc(sizeof(char**) * Opt->NoOfRates);
 	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
@@ -908,7 +987,7 @@ char**	ContrastFullRateNames(OPTIONS *Opt)
 	return Ret;
 }
 
-char**	ContrastRegRateNames(OPTIONS *Opt)
+char**	ContrastRegRateNames(OPTIONS *Opt, TREES *Trees)
 {
 	char	**Ret;
 	char	*Buffer;
@@ -918,7 +997,7 @@ char**	ContrastRegRateNames(OPTIONS *Opt)
 	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
 	
 	Pos = 0;
-	for(Index=1;Index<Opt->Trees->NoSites;Index++)
+	for(Index=1;Index<Trees->NoSites;Index++)
 	{
 		sprintf(Buffer, "Beta-%d", Index);
 		Ret[Pos++] = StrMake(Buffer);
@@ -928,7 +1007,7 @@ char**	ContrastRegRateNames(OPTIONS *Opt)
 	return Ret;
 }
 
-char**	FatTailRateNames(OPTIONS *Opt)
+char**	FatTailRateNames(OPTIONS *Opt, TREES *Trees)
 {
 	char	**Ret;
 	char	*Buffer;
@@ -938,7 +1017,7 @@ char**	FatTailRateNames(OPTIONS *Opt)
 	Buffer = (char*)SMalloc(sizeof(char*) * BUFFERSIZE);
 		
 	Pos = 0;
-	for(Index=0;Index<Opt->Trees->NoSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 	{
 		sprintf(Buffer, "Sig2-%d", Index+1);
 		Ret[Pos++] = StrMake(Buffer);
@@ -963,33 +1042,33 @@ char**	GeoRateNames(OPTIONS *Opt)
 	return Ret;
 }
 
-char**	CreatContinusRateName(OPTIONS* Opt)
+char**	CreatContinusRateName(OPTIONS* Opt, TREES *Trees)
 {
 
-	Opt->NoOfRates  = FindNoConRates(Opt);
+	Opt->NoOfRates  = FindNoConRates(Opt, Trees);
 
 	switch(Opt->Model)
 	{
 		case M_CONTINUOUS_RR:
-			return ModelARateName(Opt);
+			return ModelARateName(Opt, Trees);
 
 		case M_CONTINUOUS_DIR:
-			return ModelBRateName(Opt);
+			return ModelBRateName(Opt, Trees);
 
 		case M_CONTINUOUS_REG:
 			return RetModelRateName(Opt);
 
 		case M_CONTRAST:
-			return ContrastFullRateNames(Opt);
+			return ContrastFullRateNames(Opt, Trees);
 
 		case M_CONTRAST_CORREL:
-			return ContrastRateNames(Opt);
+			return ContrastRateNames(Opt, Trees);
 
 		case M_CONTRAST_REG:
-			return ContrastRegRateNames(Opt);
+			return ContrastRegRateNames(Opt, Trees);
 
 		case M_FATTAIL:
-			return FatTailRateNames(Opt);
+			return FatTailRateNames(Opt, Trees);
 
 		case M_GEO:
 			return GeoRateNames(Opt);
@@ -1025,13 +1104,13 @@ double*	AllocDefRateScalars(int NoPram)
 	return Ret;
 }
 
-void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList)
+void	SetOptRates(OPTIONS* Opt, int NOS, char *SymbolList, TREES *Trees)
 {
 	int		Index, Inner, Outter;
 
 	if(Opt->DataType == CONTINUOUS)
 	{
-		Opt->RateName	= CreatContinusRateName(Opt);
+		Opt->RateName	= CreatContinusRateName(Opt, Trees);
 		return;
 	}
 
@@ -1093,20 +1172,17 @@ void		AllocRestictions(OPTIONS *Opt)
 	}
 }
 
-void	SetFatTailPrior(OPTIONS *Opt)
+void	SetFatTailPrior(OPTIONS *Opt, TREES *Trees)
 {
-	int Index, Pos;
+	int Index;
 	PRIOR *Prior;
-
-
-	Pos = 0;
-	
-	for(Index=0;Index<Opt->Trees->NoSites;Index++)
+		
+	for(Index=0;Index<Trees->NoSites;Index++)
 	{
 //		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.2, 2.0);
 //		AddPriorToOpt(Opt, Prior);
 
-		Prior = CreateUniformPrior(Opt->RateName[Pos], 0.0, 100.0);
+		Prior = CreateUniformPrior(Opt->RateName[Index], 0.0, 100.0);
 		AddPriorToOpt(Opt, Prior);
 	}
 }
@@ -1146,7 +1222,7 @@ void	AllocRatePriors(OPTIONS *Opt, TREES *Trees)
 
 	if(Opt->Model == M_FATTAIL)
 	{
-		SetFatTailPrior(Opt);
+		SetFatTailPrior(Opt, Trees);
 		return;
 	}
 
@@ -1163,18 +1239,18 @@ void	AllocRatePriors(OPTIONS *Opt, TREES *Trees)
 		else
 			Prior = CreateUniformPrior(Opt->RateName[Index], -100, 100);
 				
-		if(Opt->Model == M_CONTRAST && Index >= Opt->Trees->NoSites)
+		if(Opt->Model == M_CONTRAST && Index >= Trees->NoSites)
 			Prior->DistVals[0] = 0;
 		
 		AddPriorToOpt(Opt, Prior);
 	}
-/*
+
 	if(Opt->Model == M_CONTRAST_REG)
 	{
-		Prior = CreateUniformPrior("Var", -100, 100);
+		Prior = CreateUniformPrior("Var", 0, 100);
 		AddPriorToOpt(Opt, Prior);
 	}
-*/
+
 }
 
 MODEL_TYPE	GetModelType(MODEL Model)
@@ -1223,11 +1299,12 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 
-	Ret->Trees		= Trees;
 	Ret->Model		= Model;
 	Ret->Analsis	= Analsis;
 
 	Ret->ModelType	= GetModelType(Model);
+
+	Ret->NoOfSites = Trees->NoSites;
 
 	Ret->TestCorrel	= FALSE;
 	Ret->UseCovarion= FALSE;
@@ -1241,6 +1318,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->VarRatesLog= NULL;
 
 	Ret->LogFatTail	= NULL;
+	Ret->LogIntraNode = NULL;
 	
 	Ret->UseRModel	= FALSE;
 	Ret->RModelP	= -1;
@@ -1273,7 +1351,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->RateScalars = NULL;
 
-	SetOptRates(Ret, NOS, SymbolList);
+	SetOptRates(Ret, NOS, SymbolList, Trees);
 
 	SetDefRates(Ret);
 	
@@ -1287,6 +1365,11 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->LogFile		= NULL;
 	Ret->LogFileRead	= NULL;
 	Ret->LogFileBuffer	= NULL;
+
+	Ret->ShedFile		= NULL;
+	Ret->SaveModelFile	= NULL;
+	Ret->StoneFile		= NULL;
+
 	Ret->PassedOut		= NULL;		
 	Ret->UseSchedule	= FALSE;
 
@@ -1308,7 +1391,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->RateMin		= RATE_MIN;
 	Ret->RateMax		= RATE_MAX;
 
-	if(Ret->Analsis == ANALML)
+	if(Ret->Analsis == ANALYSIS_ML)
 	{
 		Ret->Itters		=	-1;
 		Ret->Sample		=	-1;
@@ -1320,7 +1403,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 		Ret->MLAlg			=	StrMake("BOBYQA");
 	}
 	
-	if(Ret->Analsis == ANALMCMC)
+	if(Ret->Analsis == ANALYSIS_MCMC)
 	{
 		
 		Ret->Itters		=	5050000;
@@ -1380,7 +1463,7 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->MakeUM			=	FALSE;
 
 	Ret->UseEqualTrees	=	FALSE;
-	Ret->ETreeBI		=	-1;
+	Ret->EqualTreesBI	=	-1;
 
 	Ret->SaveInitialTrees=	NULL;
 	Ret->SaveTrees		=	FALSE;
@@ -1399,7 +1482,6 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 	Ret->LoadModels		=	FALSE;
 	Ret->LoadModelsFN	=	NULL;
 
-	Ret->Stones			=	NULL;
 	Ret->RJDummy		=	FALSE;
 	Ret->RJDummyLog		=	NULL;
 
@@ -1454,6 +1536,38 @@ OPTIONS*	CreatOptions(MODEL Model, ANALSIS Analsis, int NOS, char *TreeFN, char 
 
 	Ret->RestrictionMaps = NULL;
 	Ret->NoRestrictionMaps = 0;
+
+
+	Ret->FabricBetaZPrior = FALSE;
+
+	Ret->UseIntraNode = FALSE;
+	Ret->IntraNodeDist = -1;
+
+
+//	Ret->CheckPoint = TRUE;
+	Ret->CheckPoint = FALSE;
+	Ret->CheckPointFile = NULL;
+	Ret->CheckPointAppendFiles = FALSE;
+	Ret->LoadCheckPointFile = FALSE;
+	Ret->CheckPointReSetItterations = FALSE;
+	Ret->ReSetSeed = FALSE;
+	Ret->ReSetSeedVal = -1;
+
+	Ret->StoneOptions = NULL;
+
+	Ret->FabricHomo = FALSE;
+
+	Ret->NoFlippedNodes = 0;
+	Ret->FlippedNodes = NULL;
+
+	Ret->NoLockedRJBL = 0;
+	Ret->LockedRJBL = NULL;
+
+	Ret->PowerSites = (int*)SMalloc(sizeof(int) * Trees->NoSites);
+	for(Index=0;Index<Trees->NoSites;Index++)
+		Ret->PowerSites[Index] = FALSE;
+
+	Ret->RJLockModel = FALSE;
 
 	free(Buffer);
 
@@ -1652,6 +1766,23 @@ MODEL	GetModel(TREES *Trees)
 	return Model;
 }
 
+ANALSIS AnalsisFromNum(int No)
+{
+	switch(No)
+	{
+		case 1:
+			return ANALYSIS_ML;
+
+		case 2:
+			return ANALYSIS_MCMC;
+
+
+		default:
+			printf("Analysis type unkown (%d).\n", No);
+			exit(1);
+	}
+}
+
 
 ANALSIS	GetAnalsis(TREES *Trees)
 {
@@ -1670,16 +1801,13 @@ ANALSIS	GetAnalsis(TREES *Trees)
 	No = atoi(Buffer);
 	free(Buffer);
 
-	if(No != 1 && No != 2)
+	if(No < 1 || No > 2)
 	{
-		printf("Invalid analysis choice\n");
+		printf("Invalid analysis choice (%s).\n", Buffer);
 		exit(1);
 	}
 	
-	if(No == 1)
-		return ANALML;
-
-	return ANALMCMC;
+	return AnalsisFromNum(No);
 }
 
 COMMANDS	StringToCommand(char *Str)
@@ -2139,7 +2267,7 @@ int		MSStateToNo(char State, char *SList, int NoS)
 	return -1;
 }
 
-int*	CrateMSFossilStateList(char *List, OPTIONS *Opt, int *No)
+int*	CrateMSFossilStateList(char *List, OPTIONS *Opt, int *No, TREES *Trees)
 {
 	int *Ret, Index;
 	
@@ -2148,15 +2276,15 @@ int*	CrateMSFossilStateList(char *List, OPTIONS *Opt, int *No)
 	Ret = (int*)SMalloc(sizeof(int) * *No);
 
 	for(Index=0;Index<*No;Index++)
-		Ret[Index] = MSStateToNo(List[Index], Opt->Trees->SymbolList, Opt->Trees->NoStates);
+		Ret[Index] = MSStateToNo(List[Index], Trees->SymbolList, Trees->NoStates);
 
 	return Ret;
 }
 
-int*	FossilState(char *States, OPTIONS *Opt, int *No)
+int*	FossilState(char *States, OPTIONS *Opt, int *No, TREES *Trees)
 {
 	if(Opt->Model == M_MULTISTATE)
-		return CrateMSFossilStateList(States, Opt, No);
+		return CrateMSFossilStateList(States, Opt, No, Trees);
 
 	*No = 1;
 	return DesFossilSate(States, Opt);
@@ -2179,7 +2307,7 @@ int		GetTaxaNoFormName(char* Name, TREES* Trees, int *No)
 	return FALSE;
 }
 
-int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
+int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt, TREES *Trees)
 {
 	int		Index;
 	int		OK;
@@ -2194,7 +2322,7 @@ int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 			OK = TRUE;
 			TaxaNo = atoi(List[Index]);
 
-			if(GetTaxaFromID(TaxaNo, Opt->Trees->Taxa, Opt->Trees->NoTaxa) == NULL)
+			if(GetTaxaFromID(TaxaNo, Trees->Taxa, Trees->NoTaxa) == NULL)
 			{
 				printf("Error: Could not convert %s to a valid taxa number.\n", List[Index]);
 				exit(0);
@@ -2203,7 +2331,7 @@ int		ValidTaxaList(char** List, int Start, int No, OPTIONS *Opt)
 		}
 		else
 		{
-			if(GetTaxaNoFormName(List[Index], Opt->Trees, &TaxaNo) == FALSE)
+			if(GetTaxaNoFormName(List[Index], Trees, &TaxaNo) == FALSE)
 			{
 				printf("Error: Could not convert %s to a valid taxa name.\n", List[Index]);
 				exit(0);
@@ -2226,14 +2354,14 @@ TAXA*	GetTaxaFromName(char *ID, TREES* Trees)
 	return NULL;
 }*/		  
 
-char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char **argv)
+char**	SetConFState(OPTIONS *Opt, NODETYPE NodeType, char **argv, TREES *Trees)
 {
 	int		Index;
 	char	**Ret;
 
-	Ret = (char**)SMalloc(sizeof(char*) * Opt->Trees->NoSites);
+	Ret = (char**)SMalloc(sizeof(char*) * Trees->NoSites);
 
-	for(Index=0;Index<Opt->Trees->NoSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 	{
 		if(NodeType != FOSSIL)
 			Ret[Index] = StrMake(ESTDATAPOINT); 
@@ -2420,7 +2548,7 @@ void	SetConAnsStatesPriors(OPTIONS *Opt, TREES *Trees)
 		AddConAnsStatePrior(Opt, Index+1);
 }
 
-void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
+void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv, TREES *Trees)
 {
 	RECNODE	*RNode;
 	
@@ -2433,12 +2561,12 @@ void	AddRecNode(OPTIONS *Opt, NODETYPE NodeType, int Tokes, char **argv)
 	RNode->NodeType	 = NodeType;
 	
 	if(NodeType == FOSSIL && Opt->DataType == DISCRETE)
-		RNode->FossilStates = FossilState(argv[3], Opt, &RNode->NoFossilStates);
+		RNode->FossilStates = FossilState(argv[3], Opt, &RNode->NoFossilStates, Trees);
 
 	if(Opt->DataType == CONTINUOUS)	
 	{
-		RNode->ConData = SetConFState(Opt, NodeType, &argv[3]);
-		SetConAnsStatesPriors(Opt, Opt->Trees);
+		RNode->ConData = SetConFState(Opt, NodeType, &argv[3], Trees);
+		SetConAnsStatesPriors(Opt, Trees);
 	}
 		
 	Opt->RecNodeList = (RECNODE**)AddToList(&Opt->NoOfRecNodes, (void**)Opt->RecNodeList, RNode);
@@ -2465,7 +2593,7 @@ void	SetEvenRoot(TREES *Trees)
 	}
 }
 
-void	SetLogFile(OPTIONS *Opt, int Tokes, char **Passed)
+void	SetLogFileName(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	if(Tokes != 2)
 	{
@@ -2552,7 +2680,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 			if(Opt->ModelType == MT_CONTINUOUS)
 				return FALSE;
 
-			if(Opt->Analsis == ANALMCMC)
+			if(Opt->Analsis == ANALYSIS_MCMC)
 				return TRUE;
 
 			return FALSE;
@@ -2622,7 +2750,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 		}
 	}
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 	{
 		if(	Command == CCI ||
 			Command == CMLTOL ||
@@ -2638,7 +2766,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 		}
 	}
 
-	if(Opt->Analsis == ANALML)
+	if(Opt->Analsis == ANALYSIS_ML)
 	{
 		if(
 			Command ==	CITTERS		||
@@ -2707,7 +2835,7 @@ void	SetKappa(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	double Val;
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		RemovePriorFormOpt("Kappa", Opt);
 
 	if(Tokes == 2)
@@ -2748,7 +2876,7 @@ void	SetLambda(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	double Val;
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		RemovePriorFormOpt("Lambda", Opt);
 
 	if(Tokes == 2)
@@ -2789,7 +2917,7 @@ void	SetDelta(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	double Val;
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		RemovePriorFormOpt("Detla", Opt);
 
 	if(Tokes == 2)
@@ -2830,7 +2958,7 @@ void	SetOU(OPTIONS *Opt, int Tokes, char **Passed)
 {
 	double Val;
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		RemovePriorFormOpt("OU", Opt);
 
 	if(Tokes == 2)
@@ -2867,7 +2995,7 @@ void	SetOU(OPTIONS *Opt, int Tokes, char **Passed)
 	SetLocalTransformPrior(Opt, VR_OU);
 }
 
-void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed)
+void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed, TREES *Trees)
 {
 	int		Index;
 	char	*Name;
@@ -2875,7 +3003,7 @@ void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed)
 
 	for(Index=0;Index<Tokes;Index++)
 	{
-		Taxa = GetTaxaFromName(Passed[Index], Opt->Trees->Taxa, Opt->Trees->NoTaxa);
+		Taxa = GetTaxaFromName(Passed[Index], Trees->Taxa, Trees->NoTaxa);
 
 		if(Taxa == NULL)
 		{
@@ -2883,14 +3011,14 @@ void	ExcludeTaxa(OPTIONS *Opt, int Tokes, char **Passed)
 			exit(0);
 		}
 
-		CheckDelTaxa(Opt, Opt->Trees, Passed[Index]);
+		CheckDelTaxa(Opt, Trees, Passed[Index]);
 
 		Name = Taxa->Name;
 
-		RemoveTaxa(Opt->Trees, Name);
+		RemoveTaxa(Trees, Name);
 	}
 
-	SetParts(Opt->Trees);
+	SetParts(Trees);
 }
 
 void	SetCovarion(OPTIONS *Opt, int Tokes, char **Passed)
@@ -2902,7 +3030,7 @@ void	SetCovarion(OPTIONS *Opt, int Tokes, char **Passed)
 	else
 		Opt->UseCovarion = TRUE;
 
-	if(Opt->Analsis == ANALML)
+	if(Opt->Analsis == ANALYSIS_ML)
 		return;
 
 	RemovePriorFormOpt("CVSwichRate", Opt);
@@ -2963,7 +3091,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 	double	Value;
 	PRIOR	*Prior;
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		RemovePriorFormOpt("Gamma", Opt);
 
 	if(Tokes == 1)
@@ -3004,7 +3132,7 @@ void	SetGamma(OPTIONS *Opt, char** Passed, int Tokes)
 	
 		Opt->GammaCats = GammaCats;
 
-		if(Opt->Analsis == ANALMCMC)
+		if(Opt->Analsis == ANALYSIS_MCMC)
 		{
 			Prior	= CreateUniformPrior("Gamma", MIN_GAMMA, MAX_GAMMA);
 			AddPriorToOpt(Opt, Prior);
@@ -3163,7 +3291,7 @@ void	SetEqualTrees(OPTIONS *Opt, int Tokes, char **Passed)
 	}
 
 	Opt->UseEqualTrees = TRUE;
-	Opt->ETreeBI = NoTreeBI;
+	Opt->EqualTreesBI = NoTreeBI;
 }
 
 void	SetPrecision(OPTIONS *Opt, char *Token)
@@ -3226,12 +3354,12 @@ void	ResRateNo(OPTIONS *Opt, int From, int To)
 	Opt->ResNo[From] = To;
 }
 
-void	SetMSSymmetrical(OPTIONS *Opt)
+void	SetMSSymmetrical(OPTIONS *Opt, TREES *Trees)
 {
 	int		x, y, NOS, From, To;
 	char	FromS[4], ToS[4];
 		
-	NOS = Opt->Trees->NoStates;
+	NOS = Trees->NoStates;
 
 	for(x=0;x<NOS;x++)
 	{
@@ -3239,8 +3367,8 @@ void	SetMSSymmetrical(OPTIONS *Opt)
 		{
 			if(x != y)
 			{
-				sprintf(&FromS[0], "q%c%c", Opt->Trees->SymbolList[x], Opt->Trees->SymbolList[y]);
-				sprintf(&ToS[0], "q%c%c", Opt->Trees->SymbolList[y], Opt->Trees->SymbolList[x]);
+				sprintf(&FromS[0], "q%c%c", Trees->SymbolList[x], Trees->SymbolList[y]);
+				sprintf(&ToS[0], "q%c%c", Trees->SymbolList[y], Trees->SymbolList[x]);
 				
 				From	= StrToRate(Opt, &FromS[0]);
 				To		= StrToRate(Opt, &ToS[0]);
@@ -3251,13 +3379,13 @@ void	SetMSSymmetrical(OPTIONS *Opt)
 	}	
 }
 
-void	SetSymmetrical(OPTIONS *Opt)
+void	SetSymmetrical(OPTIONS *Opt, TREES *Trees)
 {
 	UnRestictAll(Opt);
 
 	if(Opt->Model == M_MULTISTATE)
 	{
-		SetMSSymmetrical(Opt);
+		SetMSSymmetrical(Opt, Trees);
 	}
 
 	if(Opt->Model == M_DISC_INDEP)
@@ -3418,7 +3546,7 @@ void	LineAddErr(TREES *Trees, char *Line)
 	free(Buffer);	
 }
 
-void	LoadAddErr(OPTIONS *Opt, int Tokes, char **argv)
+void	LoadAddErr(OPTIONS *Opt, int Tokes, char **argv, TREES *Trees)
 {
 	TEXTFILE *TF;
 	int	Index;
@@ -3436,21 +3564,23 @@ void	LoadAddErr(OPTIONS *Opt, int Tokes, char **argv)
 	TF = LoadTextFile(FName, FALSE);
 
 	for(Index=0;Index<TF->NoOfLines;Index++)
-		LineAddErr(Opt->Trees, TF->Data[Index]);
+		LineAddErr(Trees, TF->Data[Index]);
 	
 	FreeTextFile(TF);
 }
 
 void	SetSteppingstone(OPTIONS *Opt, char **Passed, int Tokes)
 {
-	int K, Sample;
+	size_t K, Sample;
 	double	Alpha, Beta;
 
 	if(Tokes == 1)
 	{
-		if(Opt->Stones != NULL)
-			FreeStones(Opt->Stones);
-		Opt->Stones = NULL;
+		if(Opt->StoneOptions != NULL)
+			FreeStonesOptions(Opt->StoneOptions);
+
+		Opt->StoneOptions = NULL;
+		return;
 	}
 
 	Beta = 1.0;
@@ -3469,20 +3599,15 @@ void	SetSteppingstone(OPTIONS *Opt, char **Passed, int Tokes)
 		return;
 	}
 
-	K = atoi(Passed[1]);
-	if(K < 1)
-	{
-		printf("Stones: could not convert %s to a valid number of stones.\n", Passed[1]);
-		return;
-	}
 
+	sscanf(Passed[1], "%zu", &K);
 	if(IsValidInt(Passed[2]) == FALSE)
 	{
 		printf("Stones: could not convert %s to a valid number of itterations per stone.\n", Passed[2]);
 		return;
 	}
 
-	Sample = atoi(Passed[2]);
+	sscanf(Passed[2], "%zu", &Sample);
 	if(Sample < 1)
 	{
 		printf("Stones: could not convert %s to a valid number of iterations per stone \n", Passed[2]);
@@ -3518,21 +3643,22 @@ void	SetSteppingstone(OPTIONS *Opt, char **Passed, int Tokes)
 		}		
 	}
 
-	if(Opt->Stones != NULL)
-		FreeStones(Opt->Stones);
+	if(Opt->StoneOptions != NULL)
+		FreeStonesOptions(Opt->StoneOptions);
+		
 
-	Opt->Stones = CratesStones(K,  Sample,  Alpha,  Beta);
+	Opt->StoneOptions = CrateStonesOptions(K, Sample, Alpha, Beta);
 }
 
-void	SetRJDummy(OPTIONS *Opt, char **Passed, int Tokes)
+void	SetRJDummy(OPTIONS *Opt, char **Passed, int Tokes, TREES *Trees)
 {
-	if(Opt->Trees->NoTrees != 1)
+	if(Trees->NoTrees != 1)
 	{
 		printf("RJ Dummy coding only works on a singel tree.\n");
 		return;
 	}
 
-	if(Opt->Trees->NoSites > 2)
+	if(Trees->NoSites > 2)
 	{
 		printf("RJ Dummy coding does not currently work with multiple regressions.\n");
 		return;
@@ -3544,13 +3670,13 @@ void	SetRJDummy(OPTIONS *Opt, char **Passed, int Tokes)
 		Opt->RJDummy = TRUE;
 }
 
-void	SetScaleTree(OPTIONS *Opt, char **Passed, int Tokes)
+void	SetScaleTree(OPTIONS *Opt, char **Passed, int Tokes, TREES *Trees)
 {
 	double S;
 
 	if(Tokes == 1)
 	{
-		Opt->ScaleTrees = FindTreeNormalise(Opt->Trees);
+		Opt->ScaleTrees = FindTreeNormalise(Trees);
 		return;
 	}
 
@@ -3579,15 +3705,17 @@ void	SetScaleTree(OPTIONS *Opt, char **Passed, int Tokes)
 
 int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 {
-	int Err;
-
+	int Err, Index;
+	
 	if(Tokes != 2)
 	{
-		printf("RJ Local Scalar take a scalar names (kappa, lambda, delta, OU, Node, Branch, LandscapeBL).\n");
+		printf("RJ Local Scalar take a scalar names, ");
+		for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
+			printf("%s, ", RJ_LOCAL_SCALAR_NAMES[Index]);
 		return FALSE;
 	}
 
-	if(Opt->ModelType != MT_CONTRAST || Opt->Analsis == ANALML)
+	if(Opt->ModelType != MT_CONTRAST || Opt->Analsis == ANALYSIS_ML)
 	{
 		printf("RJ Local Scalar is only valid with MCMC and a contrast model.\n");
 		return FALSE;
@@ -3597,7 +3725,9 @@ int		ValidRJLocalScalarModel(OPTIONS *Opt, char **Passed, int Tokes)
 
 	if(Err == TRUE)
 	{
-		printf("invalid transform name, valid scalars are (kappa, lambda, delta, OU, Node, Branch, LandscapeBL).\n");
+		printf("invalid transform name, valid scalars are, .");
+		for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
+			printf("%s, ", RJ_LOCAL_SCALAR_NAMES[Index]);
 		return FALSE;
 	}
 
@@ -3608,7 +3738,7 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 {
 	PRIOR *Prior;
 
-	if(Opt->Analsis == ANALML)
+	if(Opt->Analsis == ANALYSIS_ML)
 		return;
 
 	if(Type == VR_KAPPA)
@@ -3650,18 +3780,14 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	{
 		RemovePriorFormOpt("VRNode", Opt);
 		Prior = CreateSGammaPrior("VRNode", VAR_RATES_ALPHA, VAR_RATES_BETA);
-		//Prior = CreateGammaPrior("VRNode", VAR_RATES_SHAPE, VAR_RATES_SCALE);
 		AddPriorToOpt(Opt, Prior);
 	}
 
-	if(Type == VR_LS_BL)
+	if(Type == VR_FABRIC_BETA)
 	{
-		RemovePriorFormOpt("VR_LS_BL", Opt);
-//		Prior = CreateUniformPrior("VR_LS_BL", -5, 5);
-//		Prior = CreateNormalPrior("VR_LS_BL", 0, 2.0);	
-//		Prior = CreateWeibullPrior("VR_LS_BL", 1.1, 1.5);
+		RemovePriorFormOpt("FabricBeta", Opt);
+		Prior = CrateUndefinedPrior("FabricBeta");
 
-		Prior = CrateUndefinedPrior("VR_LS_BL");
 		AddPriorToOpt(Opt, Prior);
 	}
 }
@@ -3793,7 +3919,7 @@ void	AddLocalTransform(OPTIONS *Opt, int Tokes, char **Passed)
 	Opt->SaveTrees = TRUE;
 }
 
-void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)
+void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed, TREES *Trees)
 {
 	if(Tokes != 2)
 	{
@@ -3804,27 +3930,24 @@ void	SetDistData(OPTIONS *Opt, int Tokes, char **Passed)
 	if(Opt->DistData != NULL)
 		FreeDistData(Opt->DistData);
 
-	Opt->DistData = LoadDistData(Opt, Opt->Trees, Passed[1]);
+	Opt->DistData = LoadDistData(Opt, Trees, Passed[1]);
 	Opt->UseDistData = TRUE;
 }
 
 int		CompCShed(const void *CS1, const void *CS2)
 {
 	CUSTOM_SCHEDULE **S1, **S2;
-	long long Diff;
 
 	S1 = (CUSTOM_SCHEDULE**)CS1;
 	S2 = (CUSTOM_SCHEDULE**)CS2;
 
-	Diff  = (*S1)->Iteration - (*S2)->Iteration;
-
-	if(Diff == 0)
+	if((*S1)->Iteration == (*S2)->Iteration)
 		return 0;
 
-	if(Diff < 0)
-		return -1;
+	if((*S1)->Iteration > (*S2)->Iteration)
+		return 1;
 
-	return 1;
+	return -1;
 }
 
 void	AddTimeSlicePriors(TIME_SLICE *TS, OPTIONS *Opt)
@@ -3906,7 +4029,7 @@ void	OptAddTimeSlice(OPTIONS *Opt, int Tokes, char **Passed)
 	TS = AddTimeSlice(Opt->TimeSlices, Name, Time, Scale);
 	Opt->SaveTrees = TRUE;
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		AddTimeSlicePriors(TS, Opt);
 }
 
@@ -3953,13 +4076,13 @@ void	OptAddPattern(OPTIONS *Opt, int Tokes, char **Passed)
 
 	AddPattern(Opt, Passed[1], Tokes-2, &Passed[2]);
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		RemoveRateNamePriors(Opt);
 
 	SetPatternRateNames(Opt);
 	AllocRestictions(Opt);
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		AddRateNamePriors(Opt);
 }
 
@@ -3981,7 +4104,7 @@ void SetOptCustomSchedule(OPTIONS *Opt, int Tokes, char **Passed)
 
 	CShed = AllocCustomSchedule();
 
-	sscanf(Passed[1], "%lld", &CShed->Iteration);
+	sscanf(Passed[1], "%zu", &CShed->Iteration);
 	if(CShed->Iteration < 0)
 	{
 		printf("Iteration number must be >0.\n");
@@ -4036,7 +4159,7 @@ void	SetSaveTrees(OPTIONS *Opt)
 
 void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
 {
-	long long TBurnIn;
+	size_t TBurnIn;
 
 	if(Tokes != 2)
 	{
@@ -4050,12 +4173,7 @@ void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
 		return;
 	}
 
-	sscanf(Passed[1], "%lld", &TBurnIn);
-	if(TBurnIn < 0)
-	{
-		printf("Burn In period must be greater than 0.\n");
-		return;
-	}
+	sscanf(Passed[1], "%zu", &TBurnIn);
 
 	Opt->BurnIn = TBurnIn;
 }
@@ -4063,7 +4181,7 @@ void	SetBurnIn(OPTIONS *Opt, int Tokes, char **Passed)
 
 void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
 {
-	long long TItter;
+	size_t TItter;
 
 	if(Tokes != 2)
 	{
@@ -4077,12 +4195,13 @@ void	SetItters(OPTIONS *Opt, int Tokes, char **Passed)
 		return;
 	}
 
-	sscanf(Passed[1], "%lld", &TItter);
-	if(TItter < -1) 
+	if(strcmp(Passed[1], "-1") == 0)
 	{
-		printf("Number of itterations must be 0 or greater, or -1 to run an infinite chain.\n");
+		Opt->Itters = 0;
 		return;
 	}
+
+	sscanf(Passed[1], "%zu", &TItter);
 
 	Opt->Itters = TItter;
 }
@@ -4108,6 +4227,8 @@ void	SetVarRatesOpt(OPTIONS *Opt)
 
 void	SetLandscape(OPTIONS *Opt, int Tokes, char **Passed)
 {
+	PRIOR *Prior;
+
 	if(Tokes != 1)
 	{
 		printf("Landscape Does not take any parameters.\n");
@@ -4115,22 +4236,339 @@ void	SetLandscape(OPTIONS *Opt, int Tokes, char **Passed)
 	}
 
 	if(	Opt->UseRJLocalScalar[VR_NODE]	== TRUE ||
-		Opt->UseRJLocalScalar[VR_LS_BL]	== TRUE)
+		Opt->UseRJLocalScalar[VR_FABRIC_BETA]	== TRUE)
 	{
 		printf("Node or Landscape BL allready set.\n");
 		exit(1);
 	}
 
-	SetLocalTransformPrior(Opt, VR_LS_BL);
+	SetLocalTransformPrior(Opt, VR_FABRIC_BETA);
 	SetLocalTransformPrior(Opt, VR_NODE);
 
-	Opt->UseRJLocalScalar[VR_LS_BL]	= TRUE;
+	Opt->UseRJLocalScalar[VR_FABRIC_BETA]	= TRUE;
 	Opt->UseRJLocalScalar[VR_NODE]	= TRUE;
 	
+
+	// A messy hack but is used to give the same priors as the Nat Comms paper. 
+	RemovePriorFormOpt("VRNode", Opt);
+	Prior = CreateGammaPrior("VRNode", 1.2, 5.0);
+	AddPriorToOpt(Opt, Prior);
 	
-	Opt->RJLocalScalarThreshold[VR_LS_BL] = -2;
+	Opt->RJLocalScalarThreshold[VR_FABRIC_BETA] = -2;
 
 	Opt->SaveTrees = TRUE;
+}
+
+void	OptFabricBetaZPrior(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	PRIOR *Prior;
+
+	if(Opt->UseRJLocalScalar[VR_FABRIC_BETA] == FALSE)
+	{
+		printf("FabicBetaZPrior requires fabric direction changes.\n");
+		exit(1);
+	}
+
+	if(Opt->FabricBetaZPrior == TRUE)
+	{
+		Opt->FabricBetaZPrior = FALSE;
+		return;
+	}
+
+	Opt->FabricBetaZPrior = TRUE;
+
+	RemovePriorFormOpt("FabricBeta", Opt);
+	Prior = CreateNormalPrior("FabricBeta", 0.0, 1.0);
+	AddPriorToOpt(Opt, Prior);
+}
+
+void OptIntraNode(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	double Interval; 
+
+	if(Opt->Model != M_GEO)
+	{
+		printf("IntraNode can only be used with the geo model.\n");
+		exit(1);
+	}
+
+	if(Tokes == 1)
+	{
+		Opt->UseIntraNode = FALSE;
+		Opt->IntraNodeDist = -1.0;
+		return;
+	}
+
+	if(Tokes != 2)
+	{
+		printf("IntraNode takes a distance between nodes.\n");
+		exit(1);
+	}
+
+
+	if(IsValidDouble(Passed[1]) == FALSE)
+	{
+		printf("IntraNode takes a distance between nodes, must be float.\n");
+		exit(1);
+	}
+
+	Interval = atof(Passed[1]);
+
+	if(Interval <= 0)
+	{
+		printf("IntraNode takes a distance between nodes, must be >0.\n");
+		exit(1);
+	}
+
+	Opt->UseIntraNode = TRUE;
+	Opt->IntraNodeDist = Interval;
+}
+
+void OptSetCheckpoint(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("Checkpoint does not take any paramters.\n");
+		exit(1);
+	}
+
+	if(Opt->CheckPoint == FALSE)
+		Opt->CheckPoint = TRUE;
+	else
+		Opt->CheckPoint = FALSE;
+}
+
+void OptSetCheckpointFile(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes == 1)
+	{
+		if(Opt->CheckPointFile != NULL)
+			free(Opt->CheckPointFile);
+		Opt->CheckPointFile = NULL;
+		return;
+	}
+
+	if(Tokes != 2)
+	{
+		printf("CheckPointFile takes a file name.\n");
+		exit(1);
+	}
+
+	Opt->CheckPointFile = StrMake(Passed[1]);
+}
+
+void OptReSetSeed(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes == 2)
+	{
+		sscanf(Passed[1], "%lu", &Opt->ReSetSeedVal);
+		Opt->ReSetSeed = TRUE;
+		return;
+	}
+
+	if(Tokes == 1)
+	{
+		if(Opt->ReSetSeed == TRUE)
+			Opt->ReSetSeed = FALSE;
+		else
+		{
+			Opt->ReSetSeed = TRUE;
+			Opt->ReSetSeedVal = GetSeed();
+		}
+	}
+}
+
+void OptReSetItters(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Opt->CheckPointReSetItterations == TRUE)
+		Opt->CheckPointReSetItterations = FALSE;
+	else
+		Opt->CheckPointReSetItterations = TRUE;
+}
+
+void OptSetLandscapeHomo(OPTIONS *Opt, int Tokes, char **Passed)
+{
+
+	PRIOR *Prior;
+//	SetLandscape(Opt, Tokes, Passed);
+
+	RemovePriorFormOpt("FabricHomoA", Opt);
+	RemovePriorFormOpt("FabricHomoC", Opt);
+
+
+	if(Opt->FabricHomo == TRUE)
+		Opt->FabricHomo = FALSE;
+	else
+	{
+		if(Opt->UseRJLocalScalar[VR_FABRIC_BETA] != TRUE)
+		{
+			printf("FabricHomo requires the Fabric model to be set of the fabric RJLocaltransform.\n");
+			exit(1);
+		}
+
+		Prior = CreateExpPrior("FabricHomoA", 1.0);
+		AddPriorToOpt(Opt, Prior);
+
+		Prior = CreateExpPrior("FabricHomoC", 1.0);
+		AddPriorToOpt(Opt, Prior);
+
+		Opt->FabricHomo = TRUE;
+	}
+}
+
+void	CheckFlippedNodesTags(OPTIONS *Opt, int NoTags, char **TagList)
+{
+	TAG *Tag;
+	int Index;
+
+	for(Index=0;Index<NoTags;Index++)
+	{
+		Tag = GetTagFromName(Opt, TagList[Index]);
+		if(Tag == NULL)
+		{
+			printf("FlippedNodes. Tag name %s is not a valid tag.\n", TagList[Index]);
+			exit(1);
+		}
+
+		Tag = GetTagFromNameList(TagList[Index], Opt->FlippedNodes, Opt->NoFlippedNodes);
+		if(Tag != NULL)
+		{
+			printf("Tag %s is already defined as a flipped node.", TagList[Index]);
+			exit(1);
+		}
+	}
+}
+
+void	AddFlippedNodesTags(OPTIONS *Opt, int NoTags, char **TagList)
+{
+	int Index;
+	TAG **NewList;
+
+	NewList = (TAG**)SMalloc(sizeof(TAG*) * (Opt->NoFlippedNodes + NoTags));
+
+
+	for(Index=0;Index<NoTags;Index++)
+		NewList[Index] = GetTagFromName(Opt, TagList[Index]);
+	
+	if(Opt->NoTags != 0)
+	{
+		memcpy(&NewList[Index], Opt->FlippedNodes, sizeof(TAG*) * Opt->NoFlippedNodes);
+		free(Opt->FlippedNodes);
+	}
+
+	Opt->FlippedNodes = NewList;
+	Opt->NoFlippedNodes += NoTags;
+}
+
+int FlipNodesCmp(const void *a, const void *b)
+{
+	TAG *A, *B;
+		
+	A = *(TAG**)a;
+	B = *(TAG**)b;
+
+	if((A->NoTaxa) == (B->NoTaxa))
+		return strcmp((A->Name), (B->Name));
+	
+	return (B->NoTaxa) - (A->NoTaxa);
+}
+
+void	OptFlipNodes(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes == 1)
+	{
+		if(Opt->FlippedNodes != NULL)
+			free(Opt->FlippedNodes);
+		Opt->FlippedNodes = NULL;
+		Opt->NoFlippedNodes = 0;
+		return;
+	}
+
+	CheckFlippedNodesTags(Opt, Tokes-1, &Passed[1]);
+	AddFlippedNodesTags(Opt, Tokes-1, &Passed[1]);
+
+	qsort(Opt->FlippedNodes, Opt->NoFlippedNodes, sizeof(TAG*), FlipNodesCmp);
+}
+
+void OptLockRJBranch(OPTIONS* Opt, int Tokes, char** Passed)
+{
+	int Index;
+
+	if (Opt->LockedRJBL != NULL)
+		free(Opt->LockedRJBL);
+
+	if(Tokes == 1)
+	{
+		Opt->LockedRJBL = NULL;
+		Opt->NoLockedRJBL = 0;
+		return;
+	}
+
+	Opt->NoLockedRJBL = Tokes - 1;
+	Opt->LockedRJBL = (TAG**)SMalloc(sizeof(TAG*) * Opt->NoLockedRJBL);
+
+	for(Index=0;Index<Opt->NoLockedRJBL;Index++)
+		Opt->LockedRJBL[Index] = GetTagFromName(Opt, Passed[Index+1]);
+}
+
+void	OptSetPower(OPTIONS* Opt, int Tokes, char** Passed)
+{
+	int Index;
+	char *PriorStr;
+	PRIOR *Prior;
+
+	if(!(Opt->Model == M_CONTRAST || Opt->Model == M_CONTRAST_CORREL  || Opt->Model == M_CONTRAST_REG ))
+	{
+		printf("The power options can only be used with the contrast set of models.\n");
+		exit(0);
+	}
+
+	if(Tokes != 2 )
+	{
+		printf("The power options takes a site number, starting from zero.\n");
+		exit(0);
+	}
+
+	if(IsValidInt(Passed[1]) == FALSE)
+	{
+		printf("%s is not a valid site number, sites should start from zero.\n", Passed[1]);
+		exit(0);
+	}
+
+	Index = atoi(Passed[1]);
+
+	if(Index < 0 || Index >= Opt->NoOfSites)
+	{
+		printf("power: %s is not a valid site number, sites should start from zero.\n", Passed[1]);
+		exit(0);
+	}
+
+	Opt->PowerSites[Index] = TRUE;
+
+	if(Opt->Analsis == ANALYSIS_MCMC)
+	{
+		PriorStr = (char*)SMalloc(sizeof(char) * 128);
+		sprintf(PriorStr, "Power-%d", Index);
+		Prior	= CreateNormalPrior(PriorStr, 1.0, 1.0);
+		
+		AddPriorToOpt(Opt, Prior);
+
+		free(PriorStr);
+	}
+}
+
+void	OptSetRJLockModel(OPTIONS* Opt, int Tokes, char** Passed)
+{
+	if(Tokes != 1)
+	{
+		printf("RJLockModel does not take any praramters.\n");
+		exit(1);
+	}
+
+	if(Opt->RJLockModel == TRUE)
+		Opt->RJLockModel = FALSE;
+	else
+		Opt->RJLockModel = TRUE;
 }
 
 void	SetRateScalars(OPTIONS *Opt, int Tokes, char **Passed)
@@ -4200,7 +4638,7 @@ void	SetGlobalTrendOpt(OPTIONS* Opt, int Tokes, char** Passed)
 	else
 		Opt->UseGlobalTrend = FALSE;
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 	{
 		RemovePriorFormOpt("GlobalTrend", Opt);
 		Prior = CreateNormalPrior("GlobalTrend", 0.0, 1.0);
@@ -4211,7 +4649,7 @@ void	SetGlobalTrendOpt(OPTIONS* Opt, int Tokes, char** Passed)
 void	SetRJThreshold(OPTIONS* Opt, int Tokes, char** Passed)
 {
 	TRANSFORM_TYPE TType;
-	int Err;
+	int Err, Index;
 	double TVal;
 	
 	if(Tokes != 3)
@@ -4231,6 +4669,9 @@ void	SetRJThreshold(OPTIONS* Opt, int Tokes, char** Passed)
 	if(Err == TRUE)
 	{
 		printf("Cannot convert %s to a valid transform type", Passed[1]);
+		printf("Valid are transform type");
+		for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
+			printf("%s, ", RJ_LOCAL_SCALAR_NAMES[Index]);
 		exit(1);
 	}
 
@@ -4305,9 +4746,60 @@ void	OptTestPrior(OPTIONS *Opt, int Tokes, char **Passed)
 		exit(1);
 	}
 
-	sscanf(Passed[2], "%zu", &NoSample);
+	(void)sscanf(Passed[2], "%zu", &NoSample);
 	TestPrior(Prior, NoSample);
 }
+
+void	OptPriorProbability(OPTIONS* Opt, int Tokes, char** Passed)
+{
+	PRIOR* Prior;
+	double Start, End, Step, X, Lh;
+
+	if (Tokes != 5)
+	{
+		printf("PriorProbability takes a prior name, a start x values, an end x value and a step size of x.\n");
+		exit(1);
+	}
+
+	Prior = GetPriorFromName(Passed[1], Opt->AllPriors, Opt->NoAllPriors);
+	if (Prior == NULL)
+	{
+		printf("Invalid prior name %s\n", Passed[1]);
+		exit(1);
+	}
+
+	if(Prior->UseHP == TRUE)
+	{
+		printf("PriorProbability cannot be used with a hyper prior.\n");
+		exit(1);
+	}
+
+	if(IsValidDouble(Passed[2]) == FALSE || IsValidDouble(Passed[3]) == FALSE || IsValidDouble(Passed[4]) == FALSE)
+	{
+		printf("PriorProbability %s, %s or %s is not a valid float.\n", Passed[2], Passed[3], Passed[4]);
+		exit(1);
+	}
+
+	Start = atof(Passed[2]);
+	End = atof(Passed[3]);
+	Step = atof(Passed[4]);
+
+	printf("PriorProbability");
+	PrintPriorVals(stdout, Prior);
+
+
+	printf("X\tln(P(X))\tP(X)\n");
+	for(X=Start;X<End;X+=Step)
+	{
+		Lh = CalcLhPriorP(X, Prior);
+
+		if(Lh == ERRLH)
+			printf("%f\tN/A\t0\n", X);
+		else
+			printf("%f\t%12.12f\t%12.12f\n", X, Lh, exp(Lh));
+	}
+}
+
 
 void 		OptAddRestrictionMap(OPTIONS *Opt, int Tokes, char **Passed)
 {
@@ -4349,6 +4841,25 @@ void 		OptAddRestrictionMap(OPTIONS *Opt, int Tokes, char **Passed)
 
 	Opt->RestrictionMaps = (RESTRICTION_MAP**)AddToList(&Opt->NoRestrictionMaps, (void**)Opt->RestrictionMaps, ResMap);
 
+}
+
+void OptLoadRestrictionMapBin(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	RESTRICTION_MAP** ResMapList;
+	int Size, Index;
+
+	if(Tokes != 2)
+	{
+		printf("LoadMaps take a bianry restriction map file.\n");
+		exit(1);
+	}
+
+	ResMapList = LoadBinCompResMaps(Passed[1], &Size);
+
+	for(Index=0;Index<Size;Index++)
+		Opt->RestrictionMaps = (RESTRICTION_MAP**)AddToList(&Opt->NoRestrictionMaps, (void**)Opt->RestrictionMaps, ResMapList[Index]);
+	
+	free(ResMapList);
 }
 
 
@@ -4582,9 +5093,19 @@ void	SetRJZero(OPTIONS *Opt, int Tokes, char **Passed)
 		Opt->RJZero = TRUE;
 }
 
+void OptBuildMapFile(OPTIONS *Opt, int Tokes, char **Passed)
+{
+	if(Tokes != 2)
+	{
+		printf("BuildMapFile take map file, see manual for details.\n");
+		exit(1);
+	}
+
+	BuildBinResMaps(Passed[1]);
+}
 
 
-int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
+int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed, TREES *Trees)
 {
 	int			Tokes;
 	COMMANDS	Command;
@@ -4596,8 +5117,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	ReplaceChar(',', ' ', Buffer);
 	ReplaceChar('\r','\n', Buffer);
 	RemoveChar('\n', Buffer);
-
-	
+		
 	Tokes = MakeArgv(Buffer, Passed, BUFFERSIZE);
 
 	if(Tokes == BUFFERSIZE)
@@ -4725,7 +5245,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetMLAlg(Opt, Tokes, Passed);
 
 	if(Command == CINFO)
-		PrintOptions(stdout, Opt);
+		PrintOptions(stdout, Opt, Trees);
 		
 	if(Command == CHELP)
 	{
@@ -4738,10 +5258,10 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CNODE)
-		AddRecNode(Opt, NODEREC, Tokes, Passed);
+		AddRecNode(Opt, NODEREC, Tokes, Passed, Trees);
 
 	if(Command == CMRCA)
-		AddRecNode(Opt, MRCA, Tokes, Passed);
+		AddRecNode(Opt, MRCA, Tokes, Passed, Trees);
 
 
 	if(Command == CADDTAXA)
@@ -4757,10 +5277,10 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CEVENROOT)
-		SetEvenRoot(Opt->Trees);
+		SetEvenRoot(Trees);
 
 	if(Command == CLOGFILE)
-		SetLogFile(Opt, Tokes, Passed); 
+		SetLogFileName(Opt, Tokes, Passed); 
 
 
 	if(Command == CPRESET)
@@ -4804,10 +5324,10 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	{
 		if(Tokes > 1)
 		{
-			FreeTreeParts(Opt->Trees);
-			FreeRecNodes(Opt, Opt->Trees->NoSites);
-			ExcludeTaxa(Opt, Tokes-1, &Passed[1]);
-			SetParts(Opt->Trees);
+			FreeTreeParts(Trees);
+			FreeRecNodes(Opt, Trees->NoSites);
+			ExcludeTaxa(Opt, Tokes-1, &Passed[1], Trees);
+			SetParts(Trees);
 		}
 		else
 		{
@@ -4837,7 +5357,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		exit(0);
 	
 	if(Command == CFOSSIL)
-		AddRecNode(Opt, FOSSIL, Tokes, Passed);
+		AddRecNode(Opt, FOSSIL, Tokes, Passed, Trees);
 
 	if(Command == CNODEDATA)
 	{
@@ -4931,7 +5451,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CMAKEUM)
-		MakeUM(Opt->Trees);
+		MakeUM(Trees);
 
 	if(Command == CVARRATES)
 		SetVarRatesOpt(Opt);
@@ -4953,7 +5473,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetCores(Opt, Tokes, Passed);
 
 	if(Command == CSYMMETRICAL)
-		SetSymmetrical(Opt);
+		SetSymmetrical(Opt, Trees);
 
 	if(Command == CMCMCMLSTART)
 		SetMCMCMLStart(Opt);
@@ -4968,7 +5488,7 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetLoadModels(Opt, Tokes, Passed);
 
 	if(Command == CADDERR)
-		LoadAddErr(Opt, Tokes, Passed);
+		LoadAddErr(Opt, Tokes, Passed, Trees);
 	
 	if(Command == CSTONES)
 		SetSteppingstone(Opt, Passed, Tokes);
@@ -4983,10 +5503,10 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	}
 
 	if(Command == CRJDUMMY)
-		SetRJDummy(Opt, Passed, Tokes);
+		SetRJDummy(Opt, Passed, Tokes, Trees);
 		
 	if(Command == CSCALETREES)
-		SetScaleTree(Opt, Passed, Tokes);
+		SetScaleTree(Opt, Passed, Tokes, Trees);
 	
 	if(Command == CRJLOCALTRANSFORM)
 		SetRJLocalTransform(Opt, Passed, Tokes);
@@ -4995,13 +5515,13 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 		SetFatTailNormal(Opt);
 
 	if(Command == CADDTAG)
-		AddTag(Opt, Tokes, Passed);
+		AddTag(Opt, Tokes, Passed, Trees);
 
 	if(Command == CLOCALTRANSFORM)
 		AddLocalTransform(Opt, Tokes, Passed);
 
 	if(Command == CDISTDATA)
-		SetDistData(Opt, Tokes, Passed);
+		SetDistData(Opt, Tokes, Passed, Trees);
 
 	if(Command == CNOLH)
 		SetNoLh(Opt);
@@ -5060,11 +5580,53 @@ int		PassLine(OPTIONS *Opt, char *Buffer, char **Passed)
 	if(Command == C_RES_MAP)
 		OptAddRestrictionMap(Opt, Tokes, Passed);
 
+	if(Command == C_LOAD_MAPS)
+		OptLoadRestrictionMapBin(Opt, Tokes, Passed);
+
+	if(Command == C_FABRIC_BETA_Z_PRIOR)
+		OptFabricBetaZPrior(Opt, Tokes, Passed);
+
+	if(Command == C_INTRA_NODE)
+		OptIntraNode(Opt, Tokes, Passed);
+
+	if(Command == C_CHECKPOINT)
+		OptSetCheckpoint(Opt, Tokes, Passed);
+	
+	if(Command == C_CHECKPOINT_FILE)
+		OptSetCheckpointFile(Opt, Tokes, Passed);
+
+	if(Command == C_RESET_SEED)
+		OptReSetSeed(Opt, Tokes, Passed);
+
+	if(Command == C_RESET_ITTERS)
+		OptReSetItters(Opt, Tokes, Passed);
+
+	if(Command == C_LANDSCAPE_HOMO)
+		OptSetLandscapeHomo(Opt, Tokes, Passed);
+
+	if(Command == C_FLIPP_NODES)
+		OptFlipNodes(Opt, Tokes, Passed);
+
+	if(Command == C_LOCK_RJ_BRANCH)
+		OptLockRJBranch(Opt, Tokes, Passed);
+
+	if(Command == C_PRIOR_PROBABILITY)
+		OptPriorProbability(Opt, Tokes, Passed);
+
+	if(Command == C_POWER)
+		OptSetPower(Opt, Tokes, Passed);
+
+	if(Command == C_RJ_LOCK_MODEL)
+		OptSetRJLockModel(Opt, Tokes, Passed);
+
+	if(Command == C_BUILD_MAP_FILE)
+		OptBuildMapFile(Opt, Tokes, Passed);
+		
 
 	return FALSE;
 }
 
-void	GetOptionsArry(OPTIONS *Opt, int Size, char** OptStr)
+void	GetOptionsArry(OPTIONS *Opt, int Size, char** OptStr, TREES *Trees)
 {
 	int		Index;
 	char	**Passed;
@@ -5072,12 +5634,12 @@ void	GetOptionsArry(OPTIONS *Opt, int Size, char** OptStr)
 	Passed = (char**)SMalloc(sizeof(char*)*BUFFERSIZE);
 
 	for(Index=0;Index<Size;Index++)
-		PassLine(Opt, OptStr[Index], Passed);
+		PassLine(Opt, OptStr[Index], Passed, Trees);
 
 	free(Passed);
 }
 
-void	GetOptions(OPTIONS *Opt)
+void	GetOptions(OPTIONS *Opt, TREES *Trees)
 {
 	char	*Buffer;
 	char	**Passed;
@@ -5087,100 +5649,28 @@ void	GetOptions(OPTIONS *Opt)
 
 	do
 	{
-		fgets(Buffer, BUFFERSIZE, stdin); 
-	} while(PassLine(Opt,Buffer, Passed) == FALSE);
+		fgets(Buffer, BUFFERSIZE, stdin);
+	} while(PassLine(Opt,Buffer, Passed, Trees) == FALSE);
 	
 	free(Buffer);
 	free(Passed);
 }
 
-void	CheckUndefinedPrior(OPTIONS *Opt)
+int	DataModifiedOptions(OPTIONS *Opt)
 {
 	int Index;
-	PRIOR *Prior;
 
-	for(Index=0;Index<Opt->NoAllPriors;Index++)
+	if(Opt->UseGlobalTrend == TRUE)
+		return TRUE;
+
+	if(Opt->UseRJLocalScalar[VR_FABRIC_BETA] == TRUE)
+		return TRUE;
+
+	for(Index=0;Index<Opt->NoLocalTransforms;Index++)
 	{
-		Prior = Opt->AllPriors[Index];
-		if(Prior->Dist == PDIST_UNDEFINED)
-		{
-			if(strcmp("VR_LS_BL", Prior->Name) == 0)
-			{
-				printf("The priors on the betas x branch (VR_LS_BL) are undefined.\nThis prior is specific to the data under analysis, currently there is no generic prior that can be used.\nPlease see the manual section \"Some guidelines for developing prior distributions for directional effects\" and the paper \"General statistical model shows that macroevolutionary patterns and processes are consistent with Darwinian gradualism\" for more information.\n");
-				exit(1);
-			}
-
-			printf("prior on %s is undefined.\n", Prior->Name);
-			exit(1);
-		}
+		if(Opt->LocalTransforms[Index]->Type == VR_FABRIC_BETA)
+			return TRUE; 
 	}
+
+	return FALSE;
 }
-
-void CheckRegOpt(OPTIONS *Opt)
-{
-	int TaxaIndex,SiteIndex;
-	TAXA	*Taxa;
-
-
-	if(Opt->Model != M_CONTINUOUS_REG)
-		return;
-
-	if(Opt->NoOfRecNodes > 0)
-	{
-		printf("Ancestral states cannot be estimated for GLM regression models, are it requires the estimation of independent data. To estimate the dependent value, add a dummy node to the tree and include a independent variables in the data file, using ? for the dependent values.\n");
-		exit(1);
-	}
-
-	for(TaxaIndex=0;TaxaIndex<Opt->Trees->NoTaxa;TaxaIndex++)
-	{
-		Taxa = Opt->Trees->Taxa[TaxaIndex];
-
-		for(SiteIndex=1;SiteIndex<Opt->Trees->NoSites;SiteIndex++)
-		{
-			if(Taxa->EstDataP[SiteIndex] == TRUE)
-			{
-				printf("Independent sites %d (for taxa %s) cannot be estimated under a GLM regression. If a value is needed, try estimating under a non-regression GLM. Dependent sites can be estimated.\n", SiteIndex+1, Taxa->Name);
-				exit(1);
-			}
-		}
-	}
-}
-
-void	CheckOptions(OPTIONS *Opt)
-{
-	int NoFreeP;
-	printf("\n");
-
-	if(Opt->LoadModels == TRUE)
-	{
-		if(Opt->UseRJMCMC == TRUE)
-		{
-			printf("RJ MCMC and the use of a model file are mutuality exclusive.\n");
-			exit(1);
-		}
-	}
-
-	NoFreeP = FindNoOfRates(Opt);
-
-	if(Opt->UseRJMCMC == FALSE && Opt->DataType == DISCRETE)
-	{
-		if(FindNoOfRates(Opt) > 25)
-		{
-			printf("Too many free parameter to estimate (%d), try reducing the model or using RJ MCMC\n", NoFreeP);
-			printf("If you believe you data can support this number of free parameter please contact the developers to have this limitation removed.\n");
-			exit(1);
-		}	
-	}
-
-	if(Opt->Stones != NULL && Opt->Itters == -1)
-	{
-		printf("Stepping stone sampler is not valid with an infinite number of iterations.\n");
-		exit(1);
-	}
-
-	CheckResMaps(Opt->RestrictionMaps, Opt->NoRestrictionMaps);
-
-	CheckUndefinedPrior(Opt);
-
-	CheckRegOpt(Opt);
-} 

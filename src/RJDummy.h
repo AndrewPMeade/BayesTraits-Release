@@ -11,11 +11,11 @@ void		RJDummyCopy(RATES *A, RATES *B);
 
 void		MapDummyCodes(TREES *Trees, RATES *Rates);
 
-void		RJDummyMove(long long Itters, OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void		RJDummyMove(size_t Itters, OPTIONS *Opt, TREES *Trees, RATES *Rates);
 void		RJDummyMoveNode(OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
-void		InitRJDummyFile(OPTIONS *Opt);
-void		PrintRJDummy(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates);
+void		InitRJDummyFile(OPTIONS *Opt, TREES *Trees);
+void		PrintRJDummy(size_t Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates);
 
 void		BuildDummyCodeBeta(RJDUMMY *RJDummy);
 

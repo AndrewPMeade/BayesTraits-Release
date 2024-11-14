@@ -36,6 +36,7 @@
 #include "GenLib.h"
 #include "Trees.h"
 #include "Rates.h"
+#include "Tag.h"
 
 LOCAL_TRANSFORM*	CreateLocalTransforms(char *Name, TAG **TagList, int NoTags, TRANSFORM_TYPE Type, int Est, double Scale)
 {
@@ -45,7 +46,7 @@ LOCAL_TRANSFORM*	CreateLocalTransforms(char *Name, TAG **TagList, int NoTags, TR
 
 
 	Ret->Name = StrMake(Name);
-	Ret->TagList = CloneMem(sizeof(TAG**) * NoTags, TagList);
+	Ret->TagList = (TAG**)CloneMem(sizeof(TAG**) * NoTags, TagList);
 	Ret->NoTags = NoTags;	
 	Ret->Type = Type;
 	Ret->Est = Est;
@@ -146,13 +147,13 @@ void	ApplyLocalTransforms(RATES *Rates, TREES *Trees, OPTIONS *Opt, int Norm)
 //	SaveTrees("sout.trees", Trees);exit(0);
 }
 
-double	ChangeLocalScale(RANDSTATES	*RS, double Scale, double Dev)
+double	ChangeLocalScale(gsl_rng *RNG, double Scale, double Dev)
 {
 	double		Ret;
 	
 	do
 	{
-		Ret = ((RandDouble(RS) * Dev) - (Dev / 2.0)) + Scale; 
+		Ret = ((gsl_rng_uniform_pos(RNG) * Dev) - (Dev / 2.0)) + Scale; 
 	} while(Ret <= 0);
 	
 	return Ret;
@@ -163,7 +164,7 @@ LOCAL_TRANSFORM*	GetEstRate(RATES *Rates)
 	int Ret;
 	do
 	{
-		Ret = RandUSInt(Rates->RS) % Rates->NoLocalTransforms;
+		Ret = (int)gsl_rng_uniform_int(Rates->RNG, Rates->NoLocalTransforms);
 	}while(Rates->LocalTransforms[Ret]->Est == FALSE);
 
 	return Rates->LocalTransforms[Ret];
@@ -180,15 +181,15 @@ void		ChangeLocalTransform(OPTIONS *Opt, TREES *Trees, RATES *Rates, SCHEDULE *S
 	LRate = GetEstRate(Rates); 
 
 
-	if(LRate->Type != VR_LS_BL)
+	if(LRate->Type != VR_FABRIC_BETA)
 	{
-		NRate = ChangeRateExp(LRate->Scale, Dev, Rates->RS, &Rates->LnHastings);
+		NRate = ChangeRateExp(LRate->Scale, Dev, Rates->RNG, &Rates->LnHastings);
 
 		if(NRate > MAX_LOCAL_RATE || NRate < MIN_LOCAL_RATE)
 			NRate = LRate->Scale;
 	}
 	else
-		NRate = RandNormal(Rates->RS, LRate->Scale, Dev);
+		NRate = gsl_ran_gaussian(Rates->RNG, Dev) + LRate->Scale;
 
 //	NRate = ChangeLocalScale(Rates->RS, LRate->Scale, Dev);
 //	Rates->LnHastings = CalcNormalHasting(LRate->Scale, Dev);

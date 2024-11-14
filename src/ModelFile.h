@@ -11,7 +11,7 @@ void			FreeModelFile(MODELFILE *MF);
 
 
 void		TestModelFile(OPTIONS *Opt, TREES *Trees, RATES *Rates);
-void		ChangeModelFile(RATES *Rates, RANDSTATES *RS);
-void		MapModelFile(OPTIONS *Opt, RATES *Rates);
+void		ChangeModelFile(RATES *Rates, gsl_rng *RNG);
+void		MapModelFile(OPTIONS *Opt, RATES *Rates, TREES *Trees);
 
 #endif

@@ -15,7 +15,7 @@ RESTRICTION_MAP*	InitGeoMap(void)
 {
 	RESTRICTION_MAP* Ret;
 
-	Ret = SMalloc(sizeof(RESTRICTION_MAP));
+	Ret = (RESTRICTION_MAP*)SMalloc(sizeof(RESTRICTION_MAP));
 
 	Ret->FileName = NULL;
 	Ret->GeoPointList = NULL;
@@ -38,7 +38,7 @@ RESTRICTION_POINT*	GeoPointFromLine(char **Passed)
 {
 	RESTRICTION_POINT* Ret;
 
-	Ret = SMalloc(sizeof(RESTRICTION_POINT));
+	Ret = (RESTRICTION_POINT*)SMalloc(sizeof(RESTRICTION_POINT));
 	Ret->Long = atof(Passed[0]);
 	Ret->Lat = atof(Passed[1]);
 	Ret->Value = atoi(Passed[2]);
@@ -156,18 +156,21 @@ void PlaceGeoGrid(RESTRICTION_MAP* GeoMap)
 	size_t LatI, LongI;
 	RESTRICTION_POINT *Point;
 
+
+	LatI = LongI = 0;
 	for(Index=0;Index<GeoMap->NoResPoint;Index++)
 	{
 		Point = GeoMap->GeoPointList[Index];
+
 		GetPointLocation(GeoMap, Point->Long, Point->Lat, &LongI, &LatI);
 
 		if(LongI >= GeoMap->NoGridLong || LatI >= GeoMap->NoGridLat)
 		{
-			printf("point falls outside the range %zu\t%f\t%f\n", Index, Point->Long, Point->Lat);
+			printf("point (%zu\t%f\t%f) in file (%s) falls outside range.\n", Index, Point->Long, Point->Lat, GeoMap->FileName);
 			exit(1);
 		}
-
-		PlacePointInBox(GeoMap->Grid[LatI][LongI], GeoMap->GeoPointList[Index]);
+		else
+			PlacePointInBox(GeoMap->Grid[LatI][LongI], GeoMap->GeoPointList[Index]);
 	}
 
 	FillZeroMap(GeoMap);
@@ -244,18 +247,28 @@ size_t	GetNoLines(FILE *InFile)
 	return NoLines;
 }
 
-void	AllocDataPoints(RESTRICTION_MAP* ResMap, size_t MaxDataPoints)
+
+void	SetPointList(RESTRICTION_MAP* ResMap, size_t MaxDataPoints)
 {
-	size_t Index;
+	int Index;
 
-
-	ResMap->GeoPointListConMem = (RESTRICTION_POINT*)SMalloc(sizeof(RESTRICTION_POINT) * MaxDataPoints);
 	ResMap->GeoPointList = (RESTRICTION_POINT**)SMalloc(sizeof(RESTRICTION_POINT*) * MaxDataPoints);
 
 	for(Index=0;Index<MaxDataPoints;Index++)
 	{
 		ResMap->GeoPointList[Index] = &ResMap->GeoPointListConMem[Index];
 	}
+
+}
+
+void	AllocDataPoints(RESTRICTION_MAP* ResMap, size_t MaxDataPoints)
+{
+//	size_t Index;
+
+
+	ResMap->GeoPointListConMem = (RESTRICTION_POINT*)SMalloc(sizeof(RESTRICTION_POINT) * MaxDataPoints);
+
+	SetPointList(ResMap, MaxDataPoints);
 }
 
 void	ReadPointData(FILE *FIn, RESTRICTION_MAP* ResMap)
@@ -267,12 +280,16 @@ void	ReadPointData(FILE *FIn, RESTRICTION_MAP* ResMap)
 	RESTRICTION_POINT *Point;
 
 
-	Buffer = (char*)SMalloc(sizeof(char) * MAX_LINE_SIZE);
+	Buffer = (char*)SMalloc(sizeof(char) * (MAX_LINE_SIZE+1));
 	Passed = (char**)SMalloc(sizeof(char*) * MAX_LINE_SIZE);
+
+	// disgard the header line. 
+	fgets(Buffer,MAX_LINE_SIZE, FIn);
 	
 	Index = 0;
 	while(fgets(Buffer,MAX_LINE_SIZE, FIn) != NULL)
 	{
+		ReplaceChar('\t', ',', Buffer);
 		Tokes = MakeArgvChar(Buffer, Passed, MAX_LINE_SIZE, ',');
 		if(Tokes == 3)
 		{
@@ -319,7 +336,9 @@ RESTRICTION_MAP*	LoadResMap(char *FileName, double AgeMin, double AgeMax)
 	AllocDataPoints(Ret, NoLines);
 	ReadPointData(FIn, Ret);
 
-	CreateGeoGrid(Ret, 250, 150);
+	CreateGeoGrid(Ret, NO_GEO_MAP_BOX_SIZE_LONG, NO_GEO_MAP_BOX_SIZE_LAT);
+
+	fclose(FIn);
 
 	return Ret;
 }
@@ -366,6 +385,9 @@ RESTRICTION_MAP*	LoadResMap(char *FileName, double AgeMin, double AgeMax)
 void FreeGeoGrid(RESTRICTION_MAP* GeoMap)
 {
 	size_t LongI, LatI;
+
+	if(GeoMap->Grid == NULL)
+		return;
 
 	for(LatI=0;LatI<GeoMap->NoGridLat;LatI++)
 	{
@@ -482,6 +504,23 @@ int	ValidResPoint(RESTRICTION_MAP* Map, double Long, double Lat)
 	return FALSE;
 }
 
+int ValidNodeResPoint(NODE_RES_MAP *NodeResMap, double Long, double Lat)
+{
+	int Valid;
+
+	Valid = ValidResPoint(NodeResMap->ResMap, Long, Lat);
+
+	if(NodeResMap->Flipped == TRUE)
+	{
+		if(Valid == TRUE)
+			return FALSE;
+		else
+			return TRUE;
+	}
+
+	return Valid;
+}
+
 int	GetNoGlobal(RESTRICTION_MAP** Maps, int NoMaps)
 {
 	int Index, Ret;
@@ -553,7 +592,7 @@ void CheckResMaps(RESTRICTION_MAP** Maps, int NoMaps)
 
 
 
-void	SetNodeMap(NODE Node, RESTRICTION_MAP** Maps, int NoMaps)
+RESTRICTION_MAP* GetMapFromHeight(double Height, RESTRICTION_MAP** Maps, int NoMaps)
 {
 	int Index;
 	RESTRICTION_MAP* Map;
@@ -562,12 +601,12 @@ void	SetNodeMap(NODE Node, RESTRICTION_MAP** Maps, int NoMaps)
 	{
 		Map = Maps[Index];
 
-		if(Map->AgeMax == GLOBAL_AGE_VAL || HeightInMapRange(Node->Height, Map) == TRUE)
-		{
-			Node->ResMap = Map;
-			return;
-		}
+		if(Map->AgeMax == GLOBAL_AGE_VAL || HeightInMapRange(Height, Map) == TRUE)
+			return Map;
+		
 	}
+
+	return NULL;
 }
 
 void PrintResMaps(TREES *Trees)
@@ -585,8 +624,8 @@ void PrintResMaps(TREES *Trees)
 			Node = Tree->NodeList[NIndex];
 
 			printf("%f\t", Node->Height);
-			if(Node->ResMap != NULL)
-				printf("%s\t", Node->ResMap->FileName);
+			if(Node->NodeResMap!= NULL)
+				printf("%s\t", Node->NodeResMap->ResMap->FileName);
 			else
 				printf("NA\t");
 			PrintPartTaxaOnly(stdout, Trees, Tree->NodeList[NIndex]->Part);
@@ -595,11 +634,56 @@ void PrintResMaps(TREES *Trees)
 	}
 }
 
-void MapResMaps(TREES *Trees, RESTRICTION_MAP** Maps, int NoMaps)
+NODE_RES_MAP*	CrateNodeResMap(RESTRICTION_MAP *ResMap)
+{
+	NODE_RES_MAP* NodeResMap;
+
+	NodeResMap = SMalloc(sizeof(NODE_RES_MAP));
+
+	NodeResMap->Flipped = FALSE;
+	NodeResMap->ResMap = ResMap;
+
+
+	return NodeResMap;
+
+}
+void	FreeNodeResMap(NODE_RES_MAP* NodeResMap)
+{
+	free(NodeResMap);
+}
+
+void	FlipTag(NODE Node)
+{
+	int Index;
+
+	if(Node->NodeResMap->Flipped == TRUE)
+		Node->NodeResMap->Flipped = FALSE;
+	else
+		Node->NodeResMap->Flipped = TRUE;
+
+	for(Index=0;Index<Node->NoNodes;Index++)
+		FlipTag(Node->NodeList[Index]);
+}
+
+
+void	SetFlippedMaps(OPTIONS *Opt, TREES *Trees)
+{
+	int Index;
+	TAG *Tag;
+
+	for(Index=0;Index<Opt->NoFlippedNodes;Index++)
+	{
+		Tag = Opt->FlippedNodes[Index];
+		FlipTag(Tag->NodeList[0]);
+	}
+}
+
+void MapResMaps(OPTIONS *Opt, TREES *Trees, RESTRICTION_MAP** Maps, int NoMaps)
 {
 	TREE *Tree;
 	int TIndex, NIndex;
 	NODE Node;
+	RESTRICTION_MAP *RMap;
 
 	if(NoMaps == 0)
 		return;
@@ -610,10 +694,41 @@ void MapResMaps(TREES *Trees, RESTRICTION_MAP** Maps, int NoMaps)
 		for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
 		{
 			Node = Tree->NodeList[NIndex];
-			SetNodeMap(Node, Maps, NoMaps);
+			RMap = GetMapFromHeight(Node->Height, Maps, NoMaps);
+			Node->NodeResMap = CrateNodeResMap(RMap);
 		}
 	}
 
+	SetFlippedMaps(Opt, Trees);
 //	PrintResMaps(Trees);
 //	exit(0);
 }
+
+size_t FindDiff(RESTRICTION_MAP* Map1, RESTRICTION_MAP* Map2)
+{
+	size_t Index, Diff;
+	RESTRICTION_POINT *P1, *P2;
+	
+	Diff = 0;
+	Index = 0;
+
+	for(Index=0;Index<Map1->NoResPoint;Index++)
+	{
+		P1 = Map1->GeoPointList[Index];
+		P2 = Map2->GeoPointList[Index];
+
+		if(P1->Lat != P2->Lat || P1->Long != P2->Long)
+		{
+			printf("Diff points\n");
+			exit(1);
+		}
+
+		if(P1->Value != P2->Value)
+			Diff++;
+	}
+
+	return Diff;
+}
+
+
+

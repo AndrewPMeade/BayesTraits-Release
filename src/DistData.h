@@ -8,7 +8,7 @@ void		FreeDistData(DIST_DATA *DistData);
 void		PrintDistData(FILE *Out, DIST_DATA *DistData);
 
 
-DIST_DATE_RATES*	CreateDistDataRates(DIST_DATA* DistData, RANDSTATES *RS);
+DIST_DATE_RATES*	CreateDistDataRates(DIST_DATA* DistData, gsl_rng *RNG);
 void				FreeDistDataRates(DIST_DATE_RATES* DistRates);
 
 void				CopyDistDataRates(DIST_DATE_RATES* A, DIST_DATE_RATES* B);
@@ -19,4 +19,5 @@ void				ChangeTreeDistData(OPTIONS *Opt, RATES *Rates);
 
 void				OutputDataDistHeadder(FILE *Str, OPTIONS *Opt);
 void				OutputDataDist(FILE *Str, RATES *Rates, OPTIONS *Opt);
+
 #endif

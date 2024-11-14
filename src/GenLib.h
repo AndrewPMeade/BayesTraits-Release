@@ -18,8 +18,10 @@
 #define	MallocErr() MallocErrFull(__FILE__, __LINE__)
 
 void*	smalloc(size_t n, char* FName, unsigned long LineNo);
+void*	sbmalloc(size_t n, char* FName, unsigned long LineNo);
 
 #define SMalloc(N) smalloc(N, __FILE__, __LINE__)
+#define SBMalloc(N) sbmalloc(N, __FILE__, __LINE__)
 
 typedef struct
 {
@@ -60,6 +62,10 @@ void		FreeNumFile(NUMFILE *NumFile);
 
 FILE*		OpenWrite(char *FileName);
 FILE*		OpenRead(char *FileName);
+FILE*		OpenAppend(char *FileName);
+FILE*		OpenWithExt(int Append, char *Base, char *Ext);
+
+
 void		MallocErrFull(char* FileName, int LineNo);
 char*		StrMake(const char* Str);
 void		MakeUpper(char* Str);
@@ -100,11 +106,16 @@ int			StrICmp(char const *a, char const *b);
 
 void	NormaliseVector(double *Vect, int Size);
 
+char*		GetFileNameWithExt(char *Base, char *Ext);
+
 FILE*		OpenWriteWithExt(char *Base, char *Ext);
+FILE*		OpenAppendWithExt(char *Base, char *Ext);
+
 
 void		PrintDoubleHexStr(double Double);
 double		HexStrToDouble(char *Str);
 char*		DoubleToHexStr(double Double);
 
+int			FileExists(char *FName);
 
 #endif

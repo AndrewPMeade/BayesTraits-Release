@@ -114,6 +114,8 @@ double	NLOptLh(unsigned N, const double *x, double *grad, void *Data)
 
 	Lh = LikelihoodML(NLOptLh->MLMap, NLOptLh->Opt, NLOptLh->Trees, NLOptLh->Rates);
 	
+//	printf("LhOpt:\t%f\t%f\n", NLOptLh->MLMap->PVal[0], Lh);
+
 	NLOptLh->NoCalled++;
 
 //	printf("%d\t%f\n", NLOptLh->NoCalled, Lh);fflush(stdout);
@@ -218,13 +220,11 @@ double NLOptBT(RATES *Rates, OPTIONS *Opt, TREES *Trees, ML_MAP *MLMap)
 
 	TRates = (double*)CloneMem(sizeof(double) * MLMap->NoP, MLMap->PVal);
 
-	nlopt_srand(RandUSLong(Rates->RS));
-
+	nlopt_srand(gsl_rng_get(Rates->RNG));
 
 	OStruct = CreateNLOptLh(Rates, Opt, Trees, MLMap);
 
 	Lh 	= Likelihood(Rates, Trees, Opt);
-
 
 	Alg = MLStrToAlg(Opt->MLAlg);
 	NLOpt = nlopt_create(Alg, MLMap->NoP);

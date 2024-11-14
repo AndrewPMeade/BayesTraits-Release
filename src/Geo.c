@@ -41,6 +41,8 @@
 #include "Rates.h"
 #include "DistData.h"
 #include "RestrictionMap.h"
+#include "IntraNode.h"
+#include "Trees.h"
 
 
 #ifndef M_PI
@@ -52,24 +54,39 @@
 
 #define EARTH_KM_EARTH_KM 40589641
 
+int		ValidLongLat(double Long, double Lat)
+{
+	if(Long < -180 || Long >= 180)
+		return FALSE;
+
+	if(Lat < -90 || Lat >= 90)
+		return FALSE;
+
+	return TRUE;
+}
+
 int		ValidGeoNodeXYZ(NODE Node, double RX, double RY, double RZ)
 {
 	double Long, Lat;
 
-	if(Node->ResMap == NULL)
+	if(Node->NodeResMap == NULL)
 		return TRUE;
 
 	XYZToLongLat(RX, RY, RZ, &Long, &Lat);
 
-	return ValidResPoint(Node->ResMap, Long, Lat);
+	return ValidNodeResPoint(Node->NodeResMap, Long, Lat);
 }
 
 int		ValidGeoNodeLongLat(NODE Node, double Long, double Lat)
 {
-	if(Node->ResMap == NULL)
+	if(ValidLongLat(Long, Lat) == FALSE)
+		return FALSE;
+
+	if(Node->NodeResMap == NULL)
 		return TRUE;
 
-	return ValidResPoint(Node->ResMap, Long, Lat);
+
+	return ValidNodeResPoint(Node->NodeResMap, Long, Lat);
 }
 
 void	ValidGeoData(TREES *Trees)
@@ -93,15 +110,9 @@ void	ValidGeoData(TREES *Trees)
 			Long = T->ConData[0];
 			Lat = T->ConData[1];
 
-			if(Long < -180 || Long > 180)
+			if(ValidLongLat(Long, Lat) == FALSE)
 			{
-				printf("Invalid longitude (%f) for taxa %s.\n", Long, T->Name);
-				exit(1);
-			}
-
-			if(Lat < -90 || Lat > 90)
-			{
-				printf("Invalid latitude (%f) for taxa %s.\n", Lat, T->Name);
+				printf("Invalid longitude (%f) or latitude (%f) for taxa %s.\n", Long, Lat, T->Name);
 				exit(1);
 			}
 		}
@@ -204,28 +215,34 @@ void	GetRandLongLatCore(gsl_rng *RNG, double Long, double Lat, double *RLong, do
 	}
 }
 
-int		CheckLongLatCoord(double Long, double Lat)
-{
-	if(Long >= 180 || Long <= -180)
-		return FALSE;
-
-	if (Lat >= 90 || Lat <= -90)
-		return FALSE;
-
-	return TRUE;
-}
-
 void	GetRandLongLat(gsl_rng* RNG, double Long, double Lat, double* RLong, double* RLat, double Radius)
 {
 	do
 		GetRandLongLatCore(RNG, Long, Lat, RLong, RLat, Radius);
-	while(CheckLongLatCoord(*RLong, *RLat) == FALSE);
+	while(ValidLongLat(*RLong, *RLat) == FALSE);
 }
 
 void	GetGloablRandLongLat(gsl_rng *RNG, double *RLong, double *RLat)
 {
 	*RLong = gsl_ran_flat(RNG, -179.999999, 180.0);
 	*RLat = gsl_ran_flat(RNG, -89.999999, 90.0);
+}
+
+void RRest(NODE Node, double Long, double Lat, double Radius)
+{
+	int Index;
+	double RLong, RLat;
+
+	printf("Long:\tLat:\n");
+	printf("%f\t%f\n\n\n", Long, Lat);
+
+	for(Index=0;Index<10000;Index++)
+	{
+		GetRandLongLat(Node->RNG, Long, Lat, &RLong, &RLat, Radius);
+		printf("%f\t%f\n", RLong, RLat);
+	}
+
+	exit(0);
 }
 
 void	GetRandXYZPoint(NODE Node, double SX, double SY, double SZ, double *RX, double *RY, double *RZ, double Radius)
@@ -245,12 +262,11 @@ void	GetRandXYZPoint(NODE Node, double SX, double SY, double SZ, double *RX, dou
 
 		Tried++;
 	} while(ValidGeoNodeLongLat(Node, RLong, RLat) == FALSE);
-
-
+	
 	LongLatToXYZ(RLong, RLat, RX, RY, RZ);
 }
 
-double	GeoCalcAnsStateLh(double X, double Y, double Z, NODE N, STABLEDIST *SD)
+double	GeoCalcAnsStateLh(double X, double Y, double Z, NODE N, double Scale)
 {
 	double Ret, Val;
 	int Index;
@@ -260,25 +276,25 @@ double	GeoCalcAnsStateLh(double X, double Y, double Z, NODE N, STABLEDIST *SD)
 	for(Index=0;Index<N->NoNodes;Index++)
 	{
 		Val = X - N->NodeList[Index]->FatTailNode->Ans[0];
-		Ret += StableDistTPDF(SD, Val, N->NodeList[Index]->Length);
+		Ret += StableDistTPDF(Scale, Val, N->NodeList[Index]->Length);
 
 		Val = Y - N->NodeList[Index]->FatTailNode->Ans[1];
-		Ret += StableDistTPDF(SD, Val, N->NodeList[Index]->Length);
+		Ret += StableDistTPDF(Scale, Val, N->NodeList[Index]->Length);
 
 		Val = Z - N->NodeList[Index]->FatTailNode->Ans[2];
-		Ret += StableDistTPDF(SD, Val, N->NodeList[Index]->Length);
+		Ret += StableDistTPDF(Scale, Val, N->NodeList[Index]->Length);
 	}
 
 	if(N->Ans != NULL)
 	{
 		Val = X - N->Ans->FatTailNode->Ans[0];
-		Ret += StableDistTPDF(SD, Val, N->Length);
+		Ret += StableDistTPDF(Scale, Val, N->Length);
 
 		Val = Y - N->Ans->FatTailNode->Ans[1];
-		Ret += StableDistTPDF(SD, Val, N->Length);
+		Ret += StableDistTPDF(Scale, Val, N->Length);
 
 		Val = Z - N->Ans->FatTailNode->Ans[2];
-		Ret += StableDistTPDF(SD, Val, N->Length);
+		Ret += StableDistTPDF(Scale, Val, N->Length);
 	}
 
 	return Ret;
@@ -353,22 +369,22 @@ void	GeoUpDateNode(NODE N, RATES *Rates)
 {
 	FATTAILRATES *FTR;
 	double NLh, CLh, X, Y, Z, RX, RY, RZ;
-	STABLEDIST *SD;
+	double Scale;
 	
 
 	FTR = Rates->FatTailRates;
-	SD = FTR->SDList[0];
+	Scale = Rates->Rates[0];	
 
 	NodeToXYZ(N, &X, &Y, &Z);
 	
-	CLh = GeoCalcAnsStateLh(X, Y, Z, N, SD);
+	CLh = GeoCalcAnsStateLh(X, Y, Z, N, Scale );
 
 	do
 	{
 		GetRandXYZPoint(N, X, Y, Z, &RX, &RY, &RZ, 2000);
 	} while(ValidGeoNodeXYZ(N, RX, RY, RZ) == FALSE);
 		
-	NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
+	NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, Scale);
 	
 	XYZToNode(N, RX, RY, RZ);
 
@@ -390,15 +406,15 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates)
 {
 	FATTAILRATES *FTR;
 	double NLh, CLh, X, Y, Z, RX, RY, RZ;
-	STABLEDIST *SD;
 	int Changed, Tried;
+	double Scale;
 
 	FTR = Rates->FatTailRates;
-	SD = FTR->SDList[0];
+	Scale = Rates->Rates[0];
 
 	NodeToXYZ(N, &X, &Y, &Z);
 
-	CLh = GeoCalcAnsStateLh(X, Y, Z, N, SD);
+	CLh = GeoCalcAnsStateLh(X, Y, Z, N, Scale);
 
 	Changed = FALSE;
 	Tried = 0;
@@ -406,7 +422,7 @@ void	GeoForceUpDateNode(NODE N, RATES *Rates)
 	{
 		GetRandXYZPoint(N, X, Y, Z, &RX, &RY, &RZ, 2000);
 
-		NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, SD);
+		NLh = GeoCalcAnsStateLh(RX, RY, RZ, N, Scale);
 		
 		if(log(gsl_rng_uniform_pos(N->RNG)) < (NLh - CLh))
 			Changed = TRUE;
@@ -450,71 +466,48 @@ void	GeoUpDateAllAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	TREE *Tree;
 	FATTAILRATES *FTR;
 
+	CheckRestictedMaps(Trees, Rates->FatTailRates);
+
 	LhTransformTree(Rates, Trees, Opt);
+
 
 	Tree = Trees->Tree[Rates->TreeNo];
 	FTT = Tree->FatTailTree;
 
 	FTR = Rates->FatTailRates;
 
-	MapRatesToFatTailRate(Rates, FTR);
-
 	FatTailSetAnsSates(Tree, Trees->NoSites, FTR);
-
-	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
-
+	
 	if(Opt->UseDistData == TRUE)
 		SetTreeDistData(Rates, Opt, Trees);
 
-	for(GIndex=0;GIndex<FTT->NoParallelGroups;GIndex++)
-	{
-		GroupSize = FTT->ParallelNodeListLength[GIndex];
-		NodeList = FTT->ParallelNodeList[GIndex];
 
-#ifdef OPENMP_THR
-// Dynamic slows things down oddly and can leve long long running process. 
-//	#pragma omp parallel for num_threads(Opt->Cores) schedule(dynamic)
-	#pragma omp parallel for num_threads(Opt->Cores) schedule(static)
-#endif
-		for(NIndex=0;NIndex<GroupSize;NIndex++)
-			GeoForceUpDateNode(NodeList[NIndex], Rates);
+	if(Opt->UseIntraNode == TRUE)
+		ChangeAllIntraNodeLh(Opt, Trees, Rates);
+	else
+	{
+		for(GIndex=0;GIndex<FTT->NoParallelGroups;GIndex++)
+		{
+			GroupSize = FTT->ParallelNodeListLength[GIndex];
+			NodeList = FTT->ParallelNodeList[GIndex];
+
+	#ifdef OPENMP_THR
+	// Dynamic slows things down oddly and can leve long long running process. 
+	//	#pragma omp parallel for num_threads(Opt->Cores) schedule(dynamic)
+		#pragma omp parallel for num_threads(Opt->Cores) schedule(static)
+	#endif
+			for(NIndex=0;NIndex<GroupSize;NIndex++)
+				GeoForceUpDateNode(NodeList[NIndex], Rates);
+		}
 	}
 
 	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
 
+	CheckRestictedMaps(Trees, FTR);
+
 	Rates->AutoAccept = TRUE;
 }
 
-/*
-void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
-{
-	int NIndex;
-
-	TREE *Tree;
-	FATTAILRATES *FTR;
-	NODE N;
-
-	Tree = Trees->Tree[Rates->TreeNo];
-
-	FTR = Rates->FatTailRates;
-
-	MapRatesToFatTailRate(Rates, FTR);
-
-	FatTailSetAnsSates(Tree, Trees->NoOfSites, FTR);
-
-	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
-
-	do
-	{
-		NIndex = RandUSInt(Rates->RS) % Tree->NoNodes;
-		N = Tree->NodeList[NIndex];
-	} while(N->Tip == TRUE);
-
-	GeoUpDateNode(N, Rates, Rates->RS);
-	
-	FatTailGetAnsSates(Tree, Trees->NoOfSites, FTR);
-}
-*/
 
 void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
@@ -528,16 +521,12 @@ void	GeoUpDateAnsStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	Tree = Trees->Tree[Rates->TreeNo];
 	
 	FTR = Rates->FatTailRates;
-
-	MapRatesToFatTailRate(Rates, FTR);
-
+		
 	FatTailSetAnsSates(Tree, Trees->NoSites, FTR);
-
-	SetStableDist(FTR->SDList[0], FTR->Alpha[0], FTR->Scale[0]);
 
 	do
 	{
-		NIndex = RandUSInt(Rates->RS) % Tree->NoNodes;
+		NIndex = (int)gsl_rng_uniform_int(Rates->RNG, Tree->NoNodes);
 		N = Tree->NodeList[NIndex];
 	} while(N->Tip == TRUE);
 
@@ -587,19 +576,13 @@ void	SetValidNode(NODE Node)
 	NodeToXYZ(Node, &X, &Y, &Z);
 	XYZToLongLat(X, Y, Z, &Long, &Lat);
 	
-	while(ValidResPoint(Node->ResMap, Long, Lat) == FALSE)
+	while(ValidGeoNodeLongLat(Node, Long, Lat) == FALSE)
 	{
 		GetRandXYZPoint(Node, X, Y, Z, &RX, &RY, &RZ, 2000);
 		XYZToLongLat(RX, RY, RZ, &Long, &Lat);
 	}
 
-	XYZToNode(Node, X, Y, Z);
-/*
-	Valid = ValidResPoint(Node->ResMap, Long, Lat);
-	printf("%d\t%f\t%f\t%f\t", Valid, Long, Lat, Node->Height);
-//	PrintPartTaxaOnly(stdout, Trees, Tree->NodeList[NIndex]->Part);
-	printf("\n");
-*/
+	LongLatToNode(Node, Long, Lat);
 }
 
 void	CorrectIntGeoNodes(TREE *Tree)
@@ -622,9 +605,7 @@ void	CorrectIntGeoNodes(TREE *Tree)
 			XYZToNode(N, X, Y, Z);
 
 			SetValidNode(N);
-
 		}
-
 	}
 }
 
@@ -684,14 +665,9 @@ void	LoadGeoData(OPTIONS *Opt, TREES *Trees, RATES *CRates, char *Str)
 	Passed = (char**)SMalloc(sizeof(char*) * (strlen(S) + 1));
 
 	Tokes = MakeArgv(S, Passed, (int)(strlen(S) + 1));
-
-	FTR->Alpha[0] = atof(Passed[2]);
-	FTR->Scale[0] = atof(Passed[3]);
 		
 	SetLoadGeoData(&Passed[4], Trees, Tree);
-
-	MapFatTailRateToRates(CRates, FTR);
-
+		
 	FatTailGetAnsSates(Tree, Trees->NoSites, FTR);
 
 	CRates->Lh = Likelihood(CRates, Trees, Opt);
@@ -701,4 +677,135 @@ void	LoadGeoData(OPTIONS *Opt, TREES *Trees, RATES *CRates, char *Str)
 
 	free(Passed);
 	free(S);
+}
+
+
+void	CheckRestictedMaps(TREES *Trees, FATTAILRATES *FTR)
+{
+	TREE *Tree;
+	int Index, Valid;
+	NODE Node;
+
+	double X,Y,Z, Long, Lat;
+
+	Tree = Trees->Tree[0];
+
+	FatTailSetAnsSates(Tree, Trees->NoSites, FTR);
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		Node = Tree->NodeList[Index];
+		if(Node->Tip == FALSE)
+		{
+			NodeToXYZ(Node, &X, &Y, &Z);
+
+			XYZToLongLat(X, Y, Z, &Long, &Lat);
+
+			Valid = ValidGeoNodeLongLat(Node, Long, Lat);
+
+
+			if(Valid == FALSE)
+			{
+				printf("%d\t%d\t%d\t%f\t%f\n", Index, Valid, Node->Tip, Long, Lat);
+				printf("Invalid point.\n");
+				exit(1);
+			}
+		}
+	}
+}
+
+void	RecSimGeoData(NODE Node, RATES *Rates, double Scale)
+{
+	double X, Y, Z;
+	double Long, Lat;
+	int Index;
+
+	X = Node->Ans->FatTailNode->Ans[0];
+	Y = Node->Ans->FatTailNode->Ans[1];
+	Z = Node->Ans->FatTailNode->Ans[2];
+
+	X += gsl_ran_gaussian(Rates->RNG, sqrt(Scale * Node->Length));
+	Y += gsl_ran_gaussian(Rates->RNG, sqrt(Scale * Node->Length));
+	Z += gsl_ran_gaussian(Rates->RNG, sqrt(Scale * Node->Length));
+
+	XYZToLongLat(X, Y, Z, &Long, &Lat);
+	LongLatToXYZ(Long, Lat, &X, &Y, &Z);
+
+	Node->FatTailNode->Ans[0] = X;
+	Node->FatTailNode->Ans[1] = Y;
+	Node->FatTailNode->Ans[2] = Z;
+
+	for(Index=0;Index<Node->NoNodes;Index++)
+		RecSimGeoData(Node->NodeList[Index], Rates, Scale);
+}
+
+void	PrintSimGeoData(TREE *Tree)
+{
+	int Index;
+	double Long, Lat;
+	NODE Node;
+
+	printf("\n\n\nAncestral states\n\n\n");
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		Node = Tree->NodeList[Index];
+
+		XYZToLongLat(Node->FatTailNode->Ans[0], Node->FatTailNode->Ans[1], Node->FatTailNode->Ans[2], &Long, &Lat);
+
+		printf("%f\t%f\t", Long, Lat);
+		RecPRintNodeTaxa(Node, ',');
+		printf("\n");
+	}
+
+	printf("\n\n\n\nTrait Data.\n\n\n");
+
+	for(Index=0;Index<Tree->NoNodes;Index++)
+	{
+		Node = Tree->NodeList[Index];
+
+		XYZToLongLat(Node->FatTailNode->Ans[0], Node->FatTailNode->Ans[1], Node->FatTailNode->Ans[2], &Long, &Lat);
+
+		if(Node->Tip == TRUE)
+		{
+			printf("%s\t%f\t%f\t", Node->Taxa->Name, Long, Lat);
+			printf("\n");
+		}
+	}
+}
+
+void	SimGeoData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double X, Y, Z;
+	double Scale;
+	TREE *Tree;
+	NODE Root;
+	FATTAILRATES *FTR;
+	int Index;
+	
+//	return;
+	Tree = Trees->Tree[0];
+	FTR = Rates->FatTailRates;
+	Scale = 500000;
+//	Scale = 3;
+
+	FatTailSetAnsSates(Tree, Trees->NoSites, FTR);
+
+	Root = Tree->Root;
+
+	LongLatToXYZ(0.0, 0.0, &X, &Y, &Z);
+
+	Root->FatTailNode->Ans[0] = X;
+	Root->FatTailNode->Ans[1] = Y;
+	Root->FatTailNode->Ans[2] = Z;
+
+	for(Index=0;Index<Root->NoNodes;Index++)
+		RecSimGeoData(Root->NodeList[Index], Rates, Scale);
+
+	PrintSimGeoData(Tree);
+	exit(0);
+//	GetGloablRandLongLat(Rates->RNG, &RLong, &RLat);
+//	XYZToLongLat(X, Y, Z, &Long, &Lat);
+//	LongLatToXYZ(Long, Lat, &X, &Y, &Z);
+
 }

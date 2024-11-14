@@ -43,10 +43,10 @@
 void	PrintStones(FILE *Str, STONES *Stones)
 {
 	fprintf(Str, "Steppingstone sampler:\n");
-	fprintf(Str, "        No Stones:                  %d\n", Stones->NoStones);
-	fprintf(Str, "        Start It:                   %llu\n", Stones->ItStart);
-	fprintf(Str, "        It Per Stone:               %d\n", Stones->ItPerStone);
-	fprintf(Str, "        Sample Freq:                %d\n", Stones->SampleFreq);
+	fprintf(Str, "        No Stones:                  %zu\n", Stones->NoStones);
+	fprintf(Str, "        Start It:                   %zu\n", Stones->ItStart);
+	fprintf(Str, "        It Per Stone:               %zu\n", Stones->ItPerStone);
+	fprintf(Str, "        Sample Freq:                %zu\n", Stones->SampleFreq);
 	fprintf(Str, "        Dist:                       Beta(%f,%f)\n", Stones->Alpha, Stones->Beta);
 }
 
@@ -60,24 +60,22 @@ void	OutputStoneHeadder(FILE *Out, STONES *Stones)
 	fflush(Out);
 }
 
-double	GetStoneHeat(STONES *Stones, long long Itter, double Heat)
+double	GetStoneHeat(STONES *Stones, size_t Itter, double Heat)
 {
-	long long StoneIt;
-	int CStone;
+	size_t StoneIt;
+	size_t CStone;
 
 	if(Itter < Stones->ItStart)
 		return Heat;
 	
 	StoneIt = Itter - Stones->ItStart;
-	CStone = (int) StoneIt / Stones->ItPerStone;
+	CStone = (size_t) StoneIt / Stones->ItPerStone;
 
 	return Heat * Stones->Power[CStone];
 }
 
-int		StonesStarted(STONES *Stones, long long Itter)
+int		StonesStarted(STONES *Stones, size_t Itter)
 {
-	
-
 	if(Stones == NULL)
 		return FALSE;
 
@@ -87,7 +85,7 @@ int		StonesStarted(STONES *Stones, long long Itter)
 	return FALSE;
 }
 
-int		ChangeSample(STONES *Stones, int Itters)
+int		ChangeSample(STONES *Stones, size_t Itters)
 {
 	if(Stones == NULL)
 		return TRUE;
@@ -122,10 +120,10 @@ void	SetStonesP(STONES *Stones)
 	}
 }
 
-STONES*	CratesStones(int NoS, int Sample, double Alpha, double Beta)
+STONES*	CratesStones(size_t NoS, size_t Sample, double Alpha, double Beta)
 {
 	STONES *Ret;
-	int Index;
+	size_t Index;
 
 	Ret = (STONES*)SMalloc(sizeof(STONES));
 
@@ -151,7 +149,7 @@ STONES*	CratesStones(int NoS, int Sample, double Alpha, double Beta)
 	return Ret;
 }
 
-double	GetMLhStoneSum(STONES *Stones, int Pos)
+double	GetMLhStoneSum(STONES *Stones, size_t Pos)
 {
 	int Index;
 	double Ret;
@@ -163,7 +161,7 @@ double	GetMLhStoneSum(STONES *Stones, int Pos)
 	return Ret;
 }
 
-void	NewStone(STONES *Stones, long long Itter, double Lh, int CStone, FILE *Out)
+void	NewStone(STONES *Stones, size_t Itter, double Lh, size_t CStone, FILE *Out)
 {
 	if(CStone != 0)
 	{
@@ -172,7 +170,7 @@ void	NewStone(STONES *Stones, long long Itter, double Lh, int CStone, FILE *Out)
 
 		Stones->Length = Stones->Power[CStone-1] - Stones->Power[CStone];
 
-		fprintf(Out, "%d\t%f\t%d\t%f\t%f\n", CStone-1, Stones->Power[CStone-1], Stones->N, Stones->MLh[CStone-1], GetMLhStoneSum(Stones, CStone));
+		fprintf(Out, "%zu\t%f\t%zu\t%f\t%f\n", CStone-1, Stones->Power[CStone-1], Stones->N, Stones->MLh[CStone-1], GetMLhStoneSum(Stones, CStone));
 
 		if(CStone == Stones->NoStones)
 			fprintf(Out, "Log marginal likelihood:\t%f\n", GetMLhStoneSum(Stones, CStone));
@@ -190,9 +188,9 @@ void	NewStone(STONES *Stones, long long Itter, double Lh, int CStone, FILE *Out)
 	fflush(Out);
 }
 
-int		SampleStone(STONES *Stones, long long StoneIt, int CStone)
+int		SampleStone(STONES *Stones, size_t StoneIt, size_t CStone)
 {
-	long long CIt;
+	size_t CIt;
 
 	if(StoneIt % Stones->SampleFreq != 0)
 		return FALSE;
@@ -206,16 +204,16 @@ int		SampleStone(STONES *Stones, long long StoneIt, int CStone)
 	return TRUE;
 }
 
-void	StoneItter(STONES *Stones, long long Itter, double Lh, FILE *Out)
+void	StoneItter(STONES *Stones, size_t Itter, double Lh, FILE *Out)
 {
-	long long StoneIt;
-	int CStone;
+	size_t StoneIt;
+	size_t CStone;
 
 	if(Itter < Stones->ItStart)
 		return;
 	
 	StoneIt = Itter - Stones->ItStart;
-	CStone = (int)StoneIt / Stones->ItPerStone;
+	CStone = (size_t)StoneIt / Stones->ItPerStone;
 
 	if(StoneIt % Stones->ItPerStone == 0)
 	{
@@ -230,7 +228,7 @@ void	StoneItter(STONES *Stones, long long Itter, double Lh, FILE *Out)
 
 }
 
-int		StoneExit(STONES *Stones, long long Itters)
+int		StoneExit(STONES *Stones, size_t Itters)
 {
 	if(Stones == NULL)
 		return FALSE;
@@ -240,3 +238,23 @@ int		StoneExit(STONES *Stones, long long Itters)
 
 	return FALSE;
 }
+
+void	FreeStonesOptions(STONES_OPTIONS* StoneOpt)
+{
+	free(StoneOpt);
+}
+
+STONES_OPTIONS*	CrateStonesOptions(size_t NoStones, size_t ItPerStone, double Alpha, double Beta)
+{
+	STONES_OPTIONS	*StoneOpt;
+
+	StoneOpt = (STONES_OPTIONS*)SMalloc(sizeof(STONES_OPTIONS));
+
+	StoneOpt->NoStones = NoStones;
+	StoneOpt->ItPerStone = ItPerStone;
+	StoneOpt->Alpha = Alpha;
+	StoneOpt->Beta = Beta;
+
+	return StoneOpt;
+}
+

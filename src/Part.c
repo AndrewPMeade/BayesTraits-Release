@@ -420,3 +420,16 @@ NODE	PartGetMRCA(TREE *Tree, PART *Part)
 
 	return NULL;
 }
+
+
+PART*	GetPartFromID(size_t ID, TREES *Trees)
+{
+	int Index;
+
+
+	for(Index=0;Index<Trees->NoParts;Index++)
+		if(Trees->PartList[Index]->PartID == ID)
+			return Trees->PartList[Index];
+
+	return NULL;
+}

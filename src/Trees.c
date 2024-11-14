@@ -42,7 +42,6 @@
 #include "BigLh.h"
 #include "Part.h"
 #include "RandLib.h"
-#include "QuadDouble.h"
 #include "Contrasts.h"
 #include "FatTail.h"
 
@@ -120,6 +119,8 @@ NODE	AllocNode(void)
 	Ret->LandscapeBeta	=	0.0;
 
 	Ret->RNG			=	NULL;
+
+	Ret->RJLockNode		=	FALSE;
 	
 	return Ret;
 }
@@ -228,6 +229,9 @@ void	FreeTree(TREE* Tree, int NoSites, int NoTaxa)
 	if(Tree->InternalNodesList != NULL)
 		free(Tree->InternalNodesList);
 
+	if(Tree->IntraNodes != NULL)
+		free(Tree->IntraNodes);
+
 
 	free(Tree->TaxaIDNodeMap);
 
@@ -245,11 +249,6 @@ void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 
 	FreeTreeBigLh(Opt, Trees);
 
-#ifdef QUAD_DOUBLE
-	if(Opt->ModelType == MT_DISCRETE)
-		FreeQuadLh(Opt, Trees);
-#endif
-
 #ifdef BTOCL
 	// Do this before individual trees are deallocated
 	if(Opt->ModelType == MT_DISCRETE) {
@@ -258,7 +257,7 @@ void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 	}
 #endif
 
-	FreeData(Opt);
+	FreeData(Opt, Trees);
 	free(Trees->Taxa);
 
 	for(Index=0;Index<Trees->NoTrees;Index++)
@@ -296,6 +295,8 @@ void	FreeTrees(TREES* Trees, OPTIONS *Opt)
 
 	if(Trees->PSD != NULL)
 		free(Trees->PSD);
+
+	
 
 	free(Trees);
 }
@@ -544,7 +545,7 @@ void	MakeNewTree(TREE *Tree, NTREE *PTree)
 		Node->Tip			= NNode->Tip;
 		Node->ConData		= NULL;
 		Node->FatTailNode	= NULL;
-		Node->ResMap		= NULL;	
+		Node->NodeResMap	= NULL;	
 
 		Node->Part = NULL;
 	//	Node->PSize= 0;
@@ -696,7 +697,8 @@ int		FindMaxPoly(TREES *Trees)
 
 	Ret->TaxaIDNodeMap = NULL;
 	
-
+	Ret->IntraNodes = NULL;
+	Ret->NoIntraNodes  = -1;
 
 	return Ret;
  }
@@ -1525,35 +1527,29 @@ void SetMinBL(TREES *Trees)
 	}
 }
 
-void	AllocNOSPerSite(OPTIONS *Opt)
+void	AllocNOSPerSite(OPTIONS *Opt, TREES	*Trees)
 {
-	TREES	*Trees;
 	int		Index;
 
-	Trees = Opt->Trees;
-	
+		
 	Trees->NOSPerSite	= TRUE;
 	Trees->MaxNOS		= Trees->NoStates;
-	Trees->NOSList		= (int*)malloc(sizeof(int) * Trees->NoSites);
-	Trees->SiteSymbols	= (char**)malloc(sizeof(char*) * Trees->NoSites);
+	Trees->NOSList		= (int*)SMalloc(sizeof(int) * Trees->NoSites);
+	Trees->SiteSymbols	= (char**)SMalloc(sizeof(char*) * Trees->NoSites);
 
-	if((Trees->NOSList == NULL) || (Trees->SiteSymbols == NULL))
-		MallocErr();
 
 	for(Index=0;Index<Trees->NoSites;Index++)
 		FindSiteSymbols(Trees, Index);
 }
 
-void	SetNOSPerSite(OPTIONS *Opt)
+void	SetNOSPerSite(OPTIONS *Opt, TREES *Trees)
 {
-	TREES	*Trees;
 	int		Index;
 
 	if(Opt->NOSPerSite == FALSE)
 		return;
 	
-	Trees = Opt->Trees;
-	AllocNOSPerSite(Opt);
+	AllocNOSPerSite(Opt, Trees);
 
 	for(Index=0;Index<Trees->NoTrees;Index++)
 		SetNOSPerSiteTipData(Trees->Tree[Index], Trees);
@@ -1979,10 +1975,6 @@ void	SetVisitedTree(TREE *Tree, int Val)
 		Tree->NodeList[Index]->Visited = Val;
 }
 
-void	SimRandChange(NODE N, double RateDev, RANDSTATES *RS)
-{
-
-}
 
 void	AddTaxaErr(TREES *Trees, int TaxaID, double Err)
 {
@@ -2190,12 +2182,12 @@ void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees)
 	fflush(Opt->OutTrees);
 }
 
-void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Out)
+void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, size_t No, FILE *Out)
 {
 	TREE *Tree;
 	NODE Root;
 	 
-	fprintf(Out, "\t\ttree No_%lld = ", No);
+	fprintf(Out, "\t\ttree No_%zu = ", No);
 	Tree = Trees->Tree[Rates->TreeNo];
 
 	Root = Tree->Root;
@@ -2447,7 +2439,7 @@ void	SetTreeNodeRNG(TREE *Tree, gsl_rng *RNG)
 	{
 		Node = Tree->NodeList[Index];
 
-		Node->RNG = gsl_rng_alloc(gsl_rng_mt19937);
+		Node->RNG = gsl_rng_alloc(RNG_TYPE);
 		gsl_rng_set(Node->RNG, gsl_rng_get(RNG));
 	}
 }
@@ -2457,7 +2449,7 @@ void	SetTreesRNG(TREES *Trees, long Seed)
 	gsl_rng	*RNG;
 	int Index;
 
-	RNG	= gsl_rng_alloc(gsl_rng_mt19937);
+	RNG	= gsl_rng_alloc(RNG_TYPE);
 	gsl_rng_set(RNG, Seed);
 
 	for(Index=0;Index<Trees->NoTrees;Index++)

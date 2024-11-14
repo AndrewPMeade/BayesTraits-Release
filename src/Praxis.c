@@ -368,7 +368,7 @@ next:
      if (PState->illc) {        /* random step to get off resolution valley */
         for (PState->i=0; PState->i<PState->n; PState->i++)
 		{
-            PState->z[PState->i] = (0.1 * PState->ldt + PState->t2 * pow(10.0,(double)PState->kt)) * (RandDouble(PState->Rates->RS) - 0.5);
+            PState->z[PState->i] = (0.1 * PState->ldt + PState->t2 * pow(10.0,(double)PState->kt)) * (gsl_rng_uniform_pos(PState->Rates->RNG) - 0.5);
             PState->s = PState->z[PState->i];
             for (PState->j=0; PState->j < PState->n; PState->j++)
                 PState->x[PState->j] += PState->s * PState->v[PState->j][PState->i];

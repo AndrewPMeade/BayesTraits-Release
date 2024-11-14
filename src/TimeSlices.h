@@ -28,5 +28,4 @@ int				TimeSliceEstScale(TIME_SLICES *TS);
 void			ChangeTimeSliceTime(RATES *Rates, SCHEDULE *Shed);
 void			ChangeTimeSliceScale(RATES *Rates, SCHEDULE *Shed);
 
-
 #endif

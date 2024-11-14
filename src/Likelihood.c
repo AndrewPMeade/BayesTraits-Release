@@ -49,15 +49,16 @@
 #include "PMatrix.h"
 #include "LinAlg.h"
 #include "ModelFile.h"
-#include "QuadDouble.h"
 #include "FatTail.h"
 #include "TransformTree.h"
 #include "VarRates.h"
 #include "LocalTransform.h"
 #include "DistData.h"
 #include "TimeSlices.h"
-#include "Landscape.h"
+#include "Fabric.h"
 #include "GlobalTrend.h"
+#include "IntraNode.h"
+#include "Power.h"
 
 #ifdef BTOCL
 	#include "btocl_discrete.h"
@@ -594,17 +595,16 @@ int		SetUpAllAMatrix(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 	return 0;
 }
 
-void	SetGammaBlank(RATES* Rates, OPTIONS* Opt)
+void	SetGammaBlank(RATES* Rates, OPTIONS* Opt, TREES	*Trees)
 {
 	NODE	N;
 	TREE	*Tree;
-	TREES	*Trees;
 	int		NIndex;
 	int		SiteIndex;
 	int		SIndex;
 	int		NOS;
 
-	Trees	= Opt->Trees;
+	
 	Tree	= Trees->Tree[Rates->TreeNo];
 	
 	for(NIndex=0;NIndex<Tree->NoNodes;NIndex++)
@@ -627,11 +627,11 @@ void	SetGammaBlank(RATES* Rates, OPTIONS* Opt)
 	}
 }
 
-void	SetUpGamma(RATES* Rates, OPTIONS* Opt)
+void	SetUpGamma(RATES* Rates, OPTIONS* Opt, TREES *Trees)
 {
 	double	*RateW;
 	
-	SetGammaBlank(Rates, Opt);
+	SetGammaBlank(Rates, Opt, Trees);
 
 	RateW = (double*)SMalloc(sizeof(double) * Opt->GammaCats);
 
@@ -711,7 +711,7 @@ void	SetDiscEstDataTaxa(TAXA *Taxa, char S1, char S2)
 		Taxa->DesDataChar[0] = SetDescUnknownStates(S1, S2);
 		return;
 	}
-	
+
 	Taxa->DesDataChar[0][1] = '\0';
 
 	if((S1 == '0') && (S2 == '0'))
@@ -890,11 +890,7 @@ void	RunNodeGroup(int GroupNo, RATES* Rates, TREE *Tree, TREES *Trees, OPTIONS *
 		#ifdef BIG_LH
 			LhBigLh(Tree->FNodes[GroupNo][NIndex], Opt, Trees, Opt->Precision, SiteNo);
 		#else
-			#ifdef QUAD_DOUBLE
-				NodeLhQuadDouble(Tree->FNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
-			#else
-				SumLikeMultiState(Tree->ParallelNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
-			#endif
+			SumLikeMultiState(Tree->ParallelNodes[GroupNo][NIndex], Opt, Trees, SiteNo);
 		#endif
 	}
 }
@@ -955,9 +951,6 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 #ifdef BIG_LH
 		Ret += CombineBigLh(Rates, Trees, Opt, SiteNo, NOS);
 #else
-	#ifdef QUAD_DOUBLE
-		Ret += CombineQuadDoubleLh(Rates, Trees, Opt, SiteNo, NOS);
-	#else
 		Sum = 0;
 		for(Index=0;Index<NOS;Index++)
 			Sum += Tree->Root->Partial[SiteNo][Index] * Rates->Pis[Index];
@@ -975,7 +968,6 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 			return ERRLH;
 
 		Ret += log(SiteLh);
-	#endif
 #endif
 	}
 
@@ -991,12 +983,16 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	
 	SetUserBranchLength(Trees->Tree[Rates->TreeNo]);
 	
-	if(	UseLandscapeBeta(Opt, Rates) == TRUE || 
-		Opt->UseGlobalTrend == TRUE)
+	if(	UseFabricBeta(Opt, Rates) == TRUE || 
+		Opt->UseGlobalTrend == TRUE ||
+		Rates->SitePowers != NULL)
 		RetSetConTraitData(Trees->Tree[Rates->TreeNo], Trees->NoSites);
+
+	if(Rates->SitePowers != NULL)
+		SetSitePower(Rates, Trees, Opt);
 	
-	if(UseLandscapeBeta(Opt, Rates) == TRUE)
-		MapLandscape(Opt, Trees, Rates);
+	if(UseFabricBeta(Opt, Rates) == TRUE)
+		MapFabric(Opt, Trees, Rates);
 
 	if(Rates->TimeSlices != NULL)
 		ApplyTimeSlices(Rates, Trees);
@@ -1010,6 +1006,10 @@ void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 	if(Opt->UseGlobalTrend == TRUE)
 		SetGlobalTrend(Opt, Trees, Rates);
+
+	if(Opt->UseIntraNode == TRUE)
+		SetIntraNodeTransformTree(Opt, Trees, Rates);
+		
 }
 
 int		ValidDouble(double LH)
@@ -1052,9 +1052,9 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	double	RateMult;
 	
 	if(Rates->ModelFile == NULL)
-		MapRates(Rates, Opt);
+		MapRates(Rates, Opt, Trees);
 	else
-		MapModelFile(Opt, Rates);
+		MapModelFile(Opt, Rates, Trees);
 
 	if(Opt->NoLh == TRUE)
 		return -1.0;
@@ -1063,7 +1063,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 		return Rates->Lh;
  	
 	LhTransformTree(Rates, Trees, Opt);
-	
+
 	if(Opt->UseDistData == TRUE && Opt->ModelType != MT_FATTAIL)
 		SetTreeDistData(Rates, Opt, Trees);
 	
@@ -1090,7 +1090,7 @@ double	Likelihood(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 	}
 
 	if(Opt->UseGamma == TRUE)
-		SetUpGamma(Rates, Opt);
+		SetUpGamma(Rates, Opt, Trees);
 
 	ZeroNoUnderFlow(Tree);
 

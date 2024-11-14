@@ -584,22 +584,20 @@ void	FreeTaxa(TAXA *Taxa, int NoSites)
 	free(Taxa);
 }
 
-void	FreeData(OPTIONS *Opt)
+void	FreeData(OPTIONS *Opt, TREES *Trees)
 {
 	int		Index;
 	TAXA	*Taxa;
 	int		NOS;
-	TREES	*Trees;
-
-	Trees = Opt->Trees;
-
+	
+	
 	NOS = Trees->NoSites;
 	if(Opt->Model == M_CONTINUOUS_REG)
 		NOS++;
 
-	for(Index=0;Index<Opt->Trees->NoTaxa;Index++)
+	for(Index=0;Index<Trees->NoTaxa;Index++)
 	{
-		Taxa = Opt->Trees->Taxa[Index];
+		Taxa = Trees->Taxa[Index];
 		FreeTaxa(Taxa, NOS);
 	}
 }
@@ -1001,15 +999,12 @@ void	AddRecNodes(OPTIONS *Opt, TREES *Trees)
 }
 
 
-void		SetDataRegTC(OPTIONS *Opt)
+void		SetDataRegTC(OPTIONS *Opt, TREES *Trees)
 {
 	int TIndex, SIndex;
-	TREES *Trees;
 	TAXA	*Taxa;
 
-	Trees = Opt->Trees;
-
-
+	
 	for(TIndex=0;TIndex<Trees->NoTaxa;TIndex++)
 	{
 		Taxa = Trees->Taxa[TIndex];

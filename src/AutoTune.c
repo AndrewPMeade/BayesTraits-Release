@@ -103,14 +103,14 @@ void		FreeAutoTune(AUTOTUNE *AutoTune)
 }
 
 
-void		BlindUpDate(AUTOTUNE *AT, RANDSTATES *RS, double Acc)
+void		BlindUpDate(AUTOTUNE *AT, gsl_rng *RNG, double Acc)
 {
 	double Scale;
 
 	if(Acc < AT->Target)
-		Scale = (RandDouble(RS) * 0.5) + 0.5;
+		Scale = (gsl_rng_uniform_pos(RNG) * 0.5) + 0.5;
 	else
-		Scale = RandDouble(RS) + 1;
+		Scale = gsl_rng_uniform_pos(RNG) + 1;
 	
 	AT->CDev = AT->CDev * Scale;
 
@@ -175,7 +175,7 @@ double		AutoTuneCalcAcc(AUTOTUNE *AT)
 	return (double)AT->NoAcc / AT->NoTried;
 }
 
-void		AutoTuneUpDate(AUTOTUNE *AT, RANDSTATES *RS)
+void		AutoTuneUpDate(AUTOTUNE *AT, gsl_rng *RNG)
 {
 	double NDev;
 	double R2, Slope, Int;
@@ -193,7 +193,7 @@ void		AutoTuneUpDate(AUTOTUNE *AT, RANDSTATES *RS)
 	{		
 		if(AutoTuneValid(AT, Acc) == FALSE)
 		{
-			BlindUpDate(AT, RS, Acc);
+			BlindUpDate(AT, RNG, Acc);
 			return;
 		}
 
@@ -201,7 +201,7 @@ void		AutoTuneUpDate(AUTOTUNE *AT, RANDSTATES *RS)
 		NDev = Int + (AT->Target * Slope);
 
 		if(NDev < 0)
-			BlindUpDate(AT, RS, Acc);
+			BlindUpDate(AT, RNG, Acc);
 		else
 			AT->CDev = NDev;
 
@@ -214,5 +214,7 @@ void		AutoTuneUpDate(AUTOTUNE *AT, RANDSTATES *RS)
 	if(AutoTuneValid(AT, Acc) == TRUE)
 		return;
 	
-	BlindUpDate(AT, RS, Acc);
+	BlindUpDate(AT, RNG, Acc);
 }
+
+

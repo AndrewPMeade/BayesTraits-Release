@@ -45,6 +45,7 @@
 #include "MCMC.h"
 #include "DistData.h"
 #include "Threaded.h"
+#include "IntraNode.h"
 
 
 
@@ -69,69 +70,42 @@ void FatTailGetAnsSates(TREE *Tree, int NoSites, FATTAILRATES *FTR)
 	memcpy(FTR->AnsVect, Tree->FatTailTree->AnsVect, Size);
 }
 
-void MapRatesToFatTailRate(RATES *Rates, FATTAILRATES *FatTailRates)
-{
-	int Index, Pos;
-
-	Pos = 0;
-	for(Index=0;Index<FatTailRates->NoSD;Index++)
-	{
-//		FatTailRates->Alpha[Index] = Rates->Rates[Pos++];
-		FatTailRates->Scale[Index] = Rates->Rates[Pos++];
-	}
-}
-
-
-void MapFatTailRateToRates(RATES *Rates, FATTAILRATES *FatTailRates)
-{
-	int Index, Pos;
-
-	Pos = 0;
-	for(Index=0;Index<FatTailRates->NoSD;Index++)
-	{
-//		Rates->Rates[Pos++] = FatTailRates->Alpha[Index];
-		Rates->Rates[Pos++] = FatTailRates->Scale[Index];
-	}
-}
-
 double*	SetPartialLikelihoodMem(TREES *Trees)
 {
 	assert(Trees->NoTrees == 1);
-	return SMalloc(sizeof(double) * Trees->Tree[0]->NoInternalNodes);
+	return (double*)SMalloc(sizeof(double) * Trees->Tree[0]->NoInternalNodes);
+}
+
+SLICESAMPLER**	AllocSliceSamplers(int NoT, int NoSteps)
+{
+	SLICESAMPLER** Ret;
+	int Index;
+
+	Ret = (SLICESAMPLER**)SMalloc(sizeof(SLICESAMPLER*) * NoT);
+
+	for(Index=0;Index<NoT;Index++)
+		Ret[Index] = CrateSliceSampler(NoSteps);
+
+	return Ret;
 }
 
 FATTAILRATES*	AllocFatTailRates(OPTIONS *Opt, TREES *Trees)
 {
 	FATTAILRATES* Ret;
-	int Index, NoSites;
+	int NoSites;
 
-	NoSites = Opt->Trees->NoSites;
+	NoSites = Trees->NoSites;
 
 	Ret = (FATTAILRATES*)SMalloc(sizeof(FATTAILRATES));
-
-	Ret->Alpha = (double*)SMalloc(sizeof(double) * NoSites);
-	Ret->Scale = (double*)SMalloc(sizeof(double) * NoSites);
-	Ret->SiteLh = (double*)SMalloc(sizeof(double) * NoSites);
 
 	Ret->SiteMin = (double*)SMalloc(sizeof(double) * NoSites);
 	Ret->SiteMax = (double*)SMalloc(sizeof(double) * NoSites);
 	Ret->SiteSD  = (double*)SMalloc(sizeof(double) * NoSites);
 
-	Ret->SliceSamplers = (SLICESAMPLER**)SMalloc(sizeof(SLICESAMPLER*) * GetMaxThreads());
 
-	for(Index=0;Index<GetMaxThreads();Index++)
-		Ret->SliceSamplers[Index] = CrateSliceSampler(Opt->NoSliceSampleSteps);
+	Ret->SliceSamplers = AllocSliceSamplers(GetMaxThreads(), Opt->NoSliceSampleSteps);
 	
 	Ret->AnsVect = (double*)SMalloc(sizeof(double) * NoSites * Trees->MaxNodes);
-
-	Ret->NoSD = NoSites;
-
-	if(Opt->Model == M_GEO)
-		Ret->NoSD = 1;
-
-	Ret->SDList = (STABLEDIST**)SMalloc(sizeof(STABLEDIST*) * Ret->NoSD);
-	for(Index=0;Index<Ret->NoSD;Index++)
-		Ret->SDList[Index] = CreatStableDist();
 
 	Ret->PartialLh = SetPartialLikelihoodMem(Trees);
 	
@@ -176,43 +150,32 @@ void			GetSiteInfo(int SiteNo, TREES *Trees, FATTAILRATES* FTR)
 	FTR->SiteSD[SiteNo] = SD;
 }
 
-FATTAILRATES*	CreateFatTailRates(OPTIONS *Opt, TREES *Trees)
+FATTAILRATES*	CreateFatTailRates(RATES *Rates, OPTIONS *Opt, TREES *Trees)
 {
 	FATTAILRATES* Ret;
 	int	Index;
 
 	Ret = AllocFatTailRates(Opt, Trees);
 
-	for(Index=0;Index<Ret->NoSD;Index++)
+	for(Index=0;Index<Rates->NoOfRates;Index++)
 	{
-/*		if(Opt->FatTailNormal == FALSE)
-			Ret->Alpha[Index] = 0.5;
-		else*/
-			Ret->Alpha[Index] = FAT_TAIL_NORMAL_VAL;
-
-		Ret->Scale[Index] = 0.5;
-
-		#ifdef FAT_TAIL_ML_PARAM
-			Ret->Scale[Index] = FAT_TAIL_ML_SIG2;
-		#endif
+		Rates->Rates[Index] = 0.5;
 	}
 	
-	for(Index=0;Index<Opt->Trees->NoSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 		GetSiteInfo(Index, Trees, Ret);
 
 	SetInitAnsStates(Opt, Trees, Trees->Tree[0]);
 	FatTailGetAnsSates(Trees->Tree[0], Trees->NoSites, Ret);
-			
+	
+	CheckRestictedMaps(Trees, Ret);
+
 	return Ret;
 }
 
 void	FreeFatTailRates(FATTAILRATES* FTR, int NoSites, int NoCores)
 {
 	int Index;
-
-	free(FTR->Alpha);
-	free(FTR->Scale);
-	free(FTR->SiteLh);
 
 	free(FTR->SiteMin);
 	free(FTR->SiteMax);
@@ -221,10 +184,6 @@ void	FreeFatTailRates(FATTAILRATES* FTR, int NoSites, int NoCores)
 	for(Index=0;Index<NoCores;Index++)
 		FreeSliceSampler(FTR->SliceSamplers[Index]);
 	free(FTR->SliceSamplers);
-
-	for(Index=0;Index<FTR->NoSD;Index++)
-		FreeStableDist(FTR->SDList[Index]);
-	free(FTR->SDList);
 		
 	free(FTR->AnsVect);
 
@@ -421,7 +380,7 @@ void	PrintFatTailGroups(TREE *Tree)
 	exit(0);
 }
 
-void	InitFatTailTree(OPTIONS *Opt, TREE *Tree)
+void	InitFatTailTree(OPTIONS *Opt, TREE *Tree, TREES *Trees)
 {
 	int Index;
 	NODE N;
@@ -429,7 +388,7 @@ void	InitFatTailTree(OPTIONS *Opt, TREE *Tree)
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		N = Tree->NodeList[Index];
-		N->FatTailNode = InitFatTailNode(Opt->Trees->NoSites, N, Tree->FatTailTree->AnsVect);
+		N->FatTailNode = InitFatTailNode(Trees->NoSites, N, Tree->FatTailTree->AnsVect);
 	}
 
 	SetFatTailTreeGroups(Tree);
@@ -568,37 +527,37 @@ void	InitFatTailTrees(OPTIONS *Opt, TREES *Trees)
 	{
 		Tree = Trees->Tree[Index];
 		Tree->FatTailTree = AllocFatTailTree(Tree, Trees->NoSites);
-		InitFatTailTree(Opt, Tree);
+		InitFatTailTree(Opt, Tree, Trees);
 
 	}
 
 	SetTreesRNG(Trees, Opt->Seed);
 }
 
-double	CalcNodeStableLh(NODE N, int NoSites, STABLEDIST **SDList, int UseGeoModel)
+double	CalcNodeStableLh(NODE N, int NoSites, double *ScaleList, int UseGeoModel)
 {
 	int Index, SIndex;
 	double Ret;
 	double L, x;
-	STABLEDIST *SD;
+	double Scale;
 
 	Ret = 0;
-	SD = SDList[0];
+	Scale = ScaleList[0];
 	for(SIndex=0;SIndex<NoSites;SIndex++)
 	{
 		if(UseGeoModel == FALSE)
-			SD = SDList[SIndex];
+			Scale = ScaleList[SIndex];
+
 
 		for(Index=0;Index<N->NoNodes;Index++)
 		{
 			x = N->FatTailNode->Ans[SIndex]- N->NodeList[Index]->FatTailNode->Ans[SIndex];
 			
-			L = StableDistTPDF(SD, x , N->NodeList[Index]->Length);
-				
+			L = StableDistTPDF(Scale, x , N->NodeList[Index]->Length);
+							
 			Ret += L;
 		}
 	}
-
 
 	return Ret;
 }
@@ -631,19 +590,20 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	if(Opt->UseDistData == TRUE)
 		SetTreeDistData(Rates, Opt, Trees);
 
-	for(Index=0;Index<FTR->NoSD;Index++)
-		SetStableDist(FTR->SDList[Index], FTR->Alpha[Index], FTR->Scale[Index]);
+	if(Opt->UseIntraNode == FALSE)
+	{
+		#ifdef OPENMP_THR
+			#pragma omp parallel for num_threads(Opt->Cores)
+		#endif
+		for(Index=0;Index<Tree->NoInternalNodes;Index++)
+			FTR->PartialLh[Index] = CalcNodeStableLh(Tree->InternalNodesList[Index], NoSites, Rates->Rates, UseGeoModel);
 
-	
-	#ifdef OPENMP_THR
-		#pragma omp parallel for num_threads(Opt->Cores)
-	#endif
-	for(Index=0;Index<Tree->NoInternalNodes;Index++)
-		FTR->PartialLh[Index] = CalcNodeStableLh(Tree->InternalNodesList[Index], NoSites, FTR->SDList, UseGeoModel);
-
-	Ret = 0;
-	for(Index=0;Index<Tree->NoInternalNodes;Index++)
-		Ret += FTR->PartialLh[Index];
+		Ret = 0;
+		for(Index=0;Index<Tree->NoInternalNodes;Index++)
+			Ret += FTR->PartialLh[Index];
+	}
+	else
+		Ret = CalcIntraNodeLh(Trees, Rates);
 
 	if(ValidLh(Ret, Opt->ModelType) == FALSE)
 		return ERRLH;
@@ -652,21 +612,22 @@ double	CalcTreeStableLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	return Ret;
 }
 
-NODE	GetSliceSampleNode(TREE *Tree, RANDSTATES *RS)
+NODE	GetSliceSampleNode(TREE *Tree, gsl_rng *RNG)
 {
 	NODE Ret;
 	int Pos;
 
 	do
 	{
-		Pos = RandUSInt(RS) % Tree->NoNodes;
+//		Pos = RandUSInt(RS) % Tree->NoNodes;
+		Pos = (int)gsl_rng_uniform_int(RNG, Tree->NoNodes);
 		Ret = Tree->NodeList[Pos];
 	}while(Ret->Tip == TRUE);
 
 	return Ret;
 }
 
-double	AnsStateLh(double X, int SiteNo, NODE N, STABLEDIST *SD)
+double	AnsStateLh(double X, int SiteNo, NODE N, double Scale)
 {
 	double Ret, Val;
 	int Index;
@@ -676,13 +637,13 @@ double	AnsStateLh(double X, int SiteNo, NODE N, STABLEDIST *SD)
 	for(Index=0;Index<N->NoNodes;Index++)
 	{
 		Val = X - N->NodeList[Index]->FatTailNode->Ans[SiteNo];
-		Ret += StableDistTPDF(SD, Val, N->NodeList[Index]->Length);
+		Ret += StableDistTPDF(Scale, Val, N->NodeList[Index]->Length);
 	}
 
 	if(N->Ans != NULL)
 	{
 		Val = X - N->Ans->FatTailNode->Ans[SiteNo];
-		Ret += StableDistTPDF(SD, Val, N->Length);
+		Ret += StableDistTPDF(Scale, Val, N->Length);
 	}
 
 	return Ret;
@@ -702,12 +663,12 @@ void	SetTestVect(NODE N, int SiteNo, STABLEDIST *SD, int NoSteps, double *XVect,
 		YVect[Index] = 20;
 }
 
-int		FatTailSetYPosVect(SLICESAMPLER *SS, OPTIONS *Opt, NODE N, int SiteNo, STABLEDIST *SD)
+int		FatTailSetYPosVect(SLICESAMPLER *SS, OPTIONS *Opt, NODE N, int SiteNo, double Scale)
 {
 	int Index; 
 
 	for(Index=0;Index<SS->NoSteps;Index++)
-		SS->SliceY[Index] = AnsStateLh(SS->SliceX[Index], SiteNo, N, SD);
+		SS->SliceY[Index] = AnsStateLh(SS->SliceX[Index], SiteNo, N, Scale);
 	
 	return TRUE;
 //	Used to test if the lh differnce between slices is to big, posible lh err
@@ -832,7 +793,7 @@ void	SSNodeFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates,
 	FTR = Rates->FatTailRates;
 	
 	CAns = N->FatTailNode->Ans[SiteNo];
-	CLh = AnsStateLh(CAns, SiteNo, N, FTR->SDList[SiteNo]);
+	CLh = AnsStateLh(CAns, SiteNo, N, Rates->Rates[SiteNo]);
 
 	FTR = Rates->FatTailRates;
 	
@@ -840,7 +801,7 @@ void	SSNodeFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates,
 
 	SSSetXPosVect(SS, Min, Max); 
 	
-	Valid = FatTailSetYPosVect(SS, Opt, N, SiteNo, FTR->SDList[SiteNo]);
+	Valid = FatTailSetYPosVect(SS, Opt, N, SiteNo, Rates->Rates[SiteNo]);
 
 	Changed = FALSE;
 	do
@@ -850,7 +811,7 @@ void	SSNodeFatTail(NODE N, int SiteNo, OPTIONS *Opt, TREES *Trees, RATES *Rates,
 		else
 			NAns = SSGetNewPoint(SS, RNG, CLh);
 
-		NLh = AnsStateLh(NAns, SiteNo, N, FTR->SDList[SiteNo]);
+		NLh = AnsStateLh(NAns, SiteNo, N, Rates->Rates[SiteNo]);
 
 		if(log(gsl_rng_uniform(RNG)) < (NLh - CLh))
 			Changed = TRUE;
@@ -885,8 +846,6 @@ void	SSAllAnsStatesFatTailSite(OPTIONS *Opt, TREES *Trees, RATES *Rates, FATTAIL
 	NODE N;
 	int TNo;
 
-	SetStableDist(FTR->SDList[SiteNo], FTR->Alpha[SiteNo], FTR->Scale[SiteNo]);
-	
 	for(FIndex=0;FIndex<Tree->NoParallelGroups;FIndex++)
 	{
 #ifdef OPENMP_THR
@@ -915,8 +874,7 @@ void	SSAllAnsStatesFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FTR = Rates->FatTailRates;
 
 	FatTailSetAnsSates(Tree, Trees->NoSites, FTR);
-	MapRatesToFatTailRate(Rates, FTR);
-
+	
 	for(SIndex=0;SIndex<Trees->NoSites;SIndex++)
 		SSAllAnsStatesFatTailSite(Opt, Trees, Rates, FTR, Tree, SIndex);
 
@@ -941,12 +899,10 @@ void	SSAnsStatesFatTail(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FTR = Rates->FatTailRates;
 
 	FatTailSetAnsSates(Tree, Trees->NoSites, FTR);
-	MapRatesToFatTailRate(Rates, FTR);
+	
+	SIndex = (int)gsl_rng_uniform_int(Rates->RNG, Trees->NoSites);
 
-	SIndex = RandInt(Rates->RS) % Trees->NoSites;
-	SetStableDist(FTR->SDList[SIndex], FTR->Alpha[SIndex], FTR->Scale[SIndex]);
-
-	N = GetSliceSampleNode(Tree, Rates->RS);
+	N = GetSliceSampleNode(Tree, Rates->RNG);
 
 	SSNodeFatTail(N, SIndex, Opt, Trees, Rates, FTR->SliceSamplers[0]);
 
@@ -965,47 +921,22 @@ int	GetMutateFatTailRatesPos(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*
 		return 0;
 	
 	if(Opt->FatTailNormal == FALSE)
-		return RandUSInt(Rates->RS) % Shed->NoParm;
+		return (int)gsl_rng_uniform_int(Rates->RNG, Shed->NoParm);
+
 
 	do
 	{
-		Pos = RandUSInt(Rates->RS) % Shed->NoParm;
+		Pos = (int)gsl_rng_uniform_int(Rates->RNG, Shed->NoParm);
 	}while(Rates->Rates[Pos] == FAT_TAIL_NORMAL_VAL);
 
 	return Pos;
 }
-/*
-void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
-{
-	int Pos;
-	double NewR, OldR, Dev;
-
-//	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
-	Shed->PNo = GetMutateFatTailRatesPos(Opt, Trees, Rates, Shed);
-
-	Pos = Shed->PNo;
-	Dev = Opt->RateDevList[Shed->PNo];
-//	Dev = 0.5;
-	OldR = Rates->Rates[Pos];
-
-	do
-	{
-		NewR = OldR + (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
-	} while(NewR < 0.0);
-	
-	Rates->Rates[Pos] = NewR;
-
-//	MapRatesToFatTailRate(Rates, Rates->FatTailRates);
-}
-*/
 
 void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed)
 {
 	int Pos;
 	double NewR, OldR, Dev;
-
-
-	
+		
 //	Shed->PNo = RandUSInt(Rates->RS) % Shed->NoParm;
 	Shed->PNo = GetMutateFatTailRatesPos(Opt, Trees, Rates, Shed);
 
@@ -1018,12 +949,10 @@ void MutateFatTailRates(OPTIONS *Opt, TREES* Trees, RATES* Rates, SCHEDULE*	Shed
 
 	do
 	{
-		NewR = OldR + (RandDouble(Rates->RS) * Dev) - (Dev / 2.0);
+		NewR = OldR + (gsl_rng_uniform_pos(Rates->RNG) * Dev) - (Dev / 2.0);
 	} while(NewR < 0.0);
 	
 	Rates->Rates[Pos] = NewR;
-	
-//	MapRatesToFatTailRate(Rates, Rates->FatTailRates);
 }
 
 void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
@@ -1035,20 +964,32 @@ void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
 	PART	*Part;
 	TAXA	*Taxa;
 
-	Opt->LogFatTail = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_ANC);
+	Opt->LogFatTail = OpenWithExt(Opt->CheckPointAppendFiles, Opt->BaseOutputFN, OUTPUT_EXT_ANC);
+
+	if(Opt->CheckPointAppendFiles == TRUE)
+		return;
+
+
+	fprintf(Opt->LogFatTail, "Node Name\tBrach length\tHeight\tRestriction Map\tTaxa\n");
 
 	Tree = Trees->Tree[0];
 	NID = 0;
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
 		N = Tree->NodeList[Index];
-//		if(N->Tip == FALSE)
+		//		if(N->Tip == FALSE)
 		{
 			Part = N->Part;
 
 			fprintf(Opt->LogFatTail, "Node-%05d\t", NID++);
 
-			fprintf(Opt->LogFatTail, "%f\t", N->UserLength);
+			fprintf(Opt->LogFatTail, "%f\t%f\t", N->UserLength, N->Height);
+
+			if(N->NodeResMap == NULL)
+				fprintf(Opt->LogFatTail, "None\t");
+			else
+				fprintf(Opt->LogFatTail, "%s\t", N->NodeResMap->ResMap->FileName);
+
 			
 			for(TIndex=0;TIndex<Part->NoTaxa;TIndex++)
 			{
@@ -1086,7 +1027,7 @@ void	InitFattailFile(OPTIONS *Opt, TREES *Trees)
 	fflush(Opt->LogFatTail);
 }
 
-void	OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void	OutputFatTail(size_t Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Index, SIndex;
 	NODE N;
@@ -1098,7 +1039,7 @@ void	OutputFatTail(long long Itter, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	FatTailSetAnsSates(Tree, Trees->NoSites, Rates->FatTailRates);
 
-	fprintf(Opt->LogFatTail, "%lld\t%f\t", Itter, Rates->Lh);
+	fprintf(Opt->LogFatTail, "%zu\t%f\t", Itter, Rates->Lh);
 
 	for(Index=0;Index<Rates->NoOfRates;Index++)
 		fprintf(Opt->LogFatTail, "%f\t", Rates->Rates[Index]);
@@ -1141,46 +1082,6 @@ double	FatTailLhPraxis(void* P, double *List)
 	return Ret;
 }
 
-void	TestLhNorm2(RATES *Rates)
-{
-	double p, x, a, c;
-	STABLEDIST *SDist;
-	
-	x = 0.1;
-	a = 0.2;
-	c = 1.0;
-
-	SDist = Rates->FatTailRates->SDList[0];
-
-	SetStableDist(SDist, a, c);
-	p = StableDistPDF(SDist, x);
-//	p = exp(p);
-
-	printf("p:\t%f\n", p);
-	exit(0);
-}
-
-void	TestLhNorm(RATES *Rates)
-{
-	double X, P, SD;
-	STABLEDIST *SDist;
-
-//	TestLhNorm2(Rates);
-	
-	SDist = Rates->FatTailRates->SDList[0];
-	
-	SD = 5.0;
-	SD = sqrt(SD);
-
-	SetStableDist(SDist, FAT_TAIL_NORMAL_VAL, SD/sqrt(2.0));
-	
-	for(X = -5;X < 5; X+=0.001)
-	{
-		P = StableDistPDF(SDist, X);
-		printf("%f\t%f\n", X, exp(P));
-	}
-	exit(0);
-}
 
 
 void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
@@ -1195,7 +1096,7 @@ void	SetRandFatTail(OPTIONS *Opt, RATES *Rates, int SiteNo)
 	Pos++;
 
 	P = Rates->Priors[Pos];
-	Rates->Rates[Pos] = RandUniDouble(Rates->RS, 0, 100);
+	Rates->Rates[Pos] = gsl_rng_uniform_pos(Rates->RNG) * 100;
 }
 
 
@@ -1217,40 +1118,6 @@ void	InitFatTailRates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	return;
 }
 */
-
-void	FatTailTest(int argc, char **argv)
-{
-	STABLEDIST *SD;
-	double Start, End, SSize, X, P, Alpha, Scale;
-	int No;
-
-	if(argc != 6)
-	{
-		printf("StableDist Test takes an Alpha, Scale, Start and Stop X and number of steps.\n");
-		exit(0);
-	}
-
-	Alpha = atof(argv[1]);
-	Scale = atof(argv[2]);
-	Start = atof(argv[3]);
-	End = atof(argv[4]);
-	No = atoi(argv[5]);
-
-	SD = CreatStableDist();
-
-	SetStableDist(SD, Alpha, Scale);
-
-	SSize = (End - Start) / (double)No;
-
-	for(X=Start;X<=End;X+=SSize)
-	{
-		P = StableDistPDF(SD, X);
-
-		printf("%f\t%f\n", X, P);
-	}
-	
-	exit(0);
-}
 
 void CheckFatTailBL(TREES *Trees)
 {
@@ -1314,8 +1181,7 @@ void	LoadRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt, TREES *Trees)
 	}
 
 	FatTailGetAnsSates(Tree, 1, FTR);
-	MapRatesToFatTailRate(Rates, FTR);
-
+	
 //	for(Index=0;Index<)
 
 	free(Buffer);
@@ -1324,3 +1190,4 @@ void	LoadRatesFromStr(char *Str, RATES *Rates, OPTIONS *Opt, TREES *Trees)
 	
 	Rates->Lh = Likelihood(Rates, Trees, Opt);
 }
+

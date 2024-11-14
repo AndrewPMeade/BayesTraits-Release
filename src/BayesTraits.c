@@ -46,6 +46,8 @@
 #include "RandLib.h"
 #include "BatchMode.h"
 #include "AncStateV.h"
+#include "BinaryCompressedResMaps.h"
+#include "RestrictionMapTest.h"
 
 #ifdef	OPENMP_THR
 	#include <omp.h>
@@ -67,17 +69,6 @@
 
 extern void BayesModeTest(OPTIONS *Opt, TREES *Trees);
 extern void PMatrixTest(void);
-/*
-
-*/
-
-#ifdef JNIRUN
-
-int main(int argc, char** argv)
-{
-}
-
-#else
 /*
 int		ValidTaxa(NODE N)
 {
@@ -153,45 +144,17 @@ void GetTreeDataF(int argc, char** argv, char **TreeFN, char **DataFN)
 	fgets(&Line[0], 64, stdin);
 	exit(0);
 }
-/*
-PRIOR*		CreateWeibullPrior(char *Name, double Scale, double Exponent);
-PRIOR*		CreateLogNormalPrior(char *Name, double Location, double Scale);
-PRIOR*		CreateGammaPrior(char *Name, double Shape, double Scale);
-PRIOR*		CreateUniformPrior(char *Name, double Min, double Max);
-PRIOR*		CreateChiPrior(char *Name, double Mean);
-PRIOR*		CreateExpPrior(char *Name, double Alpha);
-PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta);
-
-PRIOR*		CreateNormalPrior(char *Name, double Mean, double SD);
-*/
-
-// Full optermisation
-//	cl /Ox /Oi /Ob2 /Ot /Oy /GL /w *.c ./MathLib/*.c
-
-// gcc -O3 -fomit-frame-pointer -lm
-
-// Big Lh + OpenMP
-// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DOPENMP_THR -fopenmp
-// gcc *.c -lm -O3 -DBIG_LH -lmpfr -lgmp -fomit-frame-pointer -static -DOPENMP_THR -fopenmp -Dwarn _unused_result
 
 
-// Threaded + quad math
-// gcc *.c -O3 -fomit-frame-pointer -lgsl -DQUAD_DOUBLE -DOPENMP_THR -lquadmath -fopenmp
-
-
-// ./Seq/francoisT.nex.trees ./Seq/francoisT.txt < ./Seq/in.txt > ./Seq/sout.txt
-int main(int argc, char** argv)
+int 		BayesTraitsMain(int argc, char **argv)
 {
 	TREES*		Trees;
 	OPTIONS*	Opt;
 	char		*TreeFN, *DataFN;
 	int			NoSites;
 
-//	FatTailTest(argc, argv);
-
 	DISPLAY_INFO;
 
-	//btdebug_init();
 
 	if(argc == 2)
 	{
@@ -222,10 +185,9 @@ int main(int argc, char** argv)
 
 	Opt = SetUpOptions(Trees, TreeFN, DataFN);
 
-	PrintOptions(stdout, Opt);
+	PrintOptions(stdout, Opt, Trees);
 	
-	GetOptions(Opt);
-	CheckOptions(Opt);
+	GetOptions(Opt, Trees);
 
 //	MakeAncVMatrix(Opt, Trees);
 
@@ -241,10 +203,11 @@ int main(int argc, char** argv)
 
 	PreProcess(Opt, Trees);
 		
-	if(Opt->Analsis == ANALMCMC)
+
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		MCMC(Opt, Trees);
 
-	if(Opt->Analsis == ANALML)
+	if(Opt->Analsis == ANALYSIS_ML)
 		FindML(Opt, Trees);
 
 	Finalise(Opt, Trees);
@@ -263,5 +226,15 @@ int main(int argc, char** argv)
 	return 0;
 }
 
-#endif
+int main(int argc, char** argv)
+{
+#ifdef BUILD_RES_MAP_TEST
+	TestRestrictionMap(argc, argv);
+	return 0;
+#endif 
+
+	return BayesTraitsMain(argc, argv);
+}
+
+
 

@@ -91,10 +91,10 @@ ANALSIS GetBatchAnalsis(char *AType)
 	No = atoi(AType);
 
 	if(No == 1)
-		return ANALML;
+		return ANALYSIS_ML;
 
 	if(No == 2)
-		return ANALMCMC;
+		return ANALYSIS_MCMC;
 
 	printf("Unknown analysis type %s\n", AType);
 	exit(0);
@@ -135,11 +135,9 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 	Opt = CreatOptions(Model, Analsis, Trees->NoStates, TreeFN, DataFN, Trees->SymbolList, Trees);
 	SetLogFName(Opt, BNo);
 
-	GetOptionsArry(Opt, NoComs-2, &Coms[2]);
+	GetOptionsArry(Opt, NoComs-2, &Coms[2], Trees);
 
-	PrintOptions(stdout, Opt);
-
-	CheckOptions(Opt);
+	PrintOptions(stdout, Opt, Trees);
 
 	#ifdef BTOCL
 	//printf("Loading kernels\n");
@@ -152,10 +150,10 @@ void	BatchRunLine(int BNo, char *TreeFN, char *DataFN, char **Coms, int NoComs)
 
 	PreProcess(Opt, Trees);
 
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		MCMC(Opt, Trees);
 
-	if(Opt->Analsis == ANALML)
+	if(Opt->Analsis == ANALYSIS_ML)
 		FindML(Opt, Trees);
 
 	NoSites = Trees->NoSites;

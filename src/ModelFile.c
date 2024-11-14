@@ -109,13 +109,19 @@ FILE*	InitSaveModelFile(char *FName, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	FILE *MFile;
 	int		NoP;
 		
-	MFile = fopen(FName, "wb");
+	if(Opt->CheckPointAppendFiles == TRUE)
+		MFile = fopen(FName, "awb");
+	else
+		MFile = fopen(FName, "wb");
 
 	if(MFile == NULL)
 	{
 		printf("Could not open model file %s for writting.\n", FName);
 		exit(1);
 	}
+
+	if(Opt->CheckPointAppendFiles == TRUE)
+		return MFile;
 	
 	NoP = GetParamPerModel(Opt, Trees, Rates);
 	
@@ -171,14 +177,13 @@ void	SaveModelFile(FILE *MFile, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	fflush(MFile);
 }
 
-void		MapDescModelFile(OPTIONS *Opt, RATES *Rates)
+void		MapDescModelFile(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 {
 	MODELFILE *MF;
-	TREES *Trees;
 	double *Data;
 	int		Pos;
 
-	Trees = Opt->Trees;
+//	Trees = Opt->Trees;
 	MF = Rates->ModelFile;
 	Data = MF->ModelP[Rates->ModelNo];
 
@@ -210,15 +215,13 @@ void CopySig2Matrix(TREES* Trees, RATES *Rates, size_t Pos, size_t Sig2Size, dou
 	memcpy((void*)&CV->Sigma->me[0][0], (void*)&Data[Pos], sizeof(double) * Sig2Size);
 
 }
-void	MapConModelFile(OPTIONS *Opt, RATES *Rates)
+void	MapConModelFile(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 {
 	MODELFILE *MF;
-	TREES *Trees;
 	double *Data;
 	size_t		Pos;	
 	size_t		Sig2Size;
 
-	Trees = Opt->Trees;
 	MF = Rates->ModelFile;
 	Data = MF->ModelP[Rates->ModelNo];
 
@@ -242,15 +245,15 @@ void	MapConModelFile(OPTIONS *Opt, RATES *Rates)
 	if(Opt->EstOU == TRUE)
 		Rates->OU = Data[Pos++];
 
-	MapMCMCConRates(Rates, Opt);
+	MapMCMCConRates(Rates, Opt, Trees);
 }
 
-void		MapModelFile(OPTIONS *Opt, RATES *Rates)
+void		MapModelFile(OPTIONS *Opt, RATES *Rates, TREES *Trees)
 {
 	if(Opt->DataType == CONTINUOUS)
-		MapConModelFile(Opt, Rates);
+		MapConModelFile(Opt, Rates, Trees);
 	else
-		MapDescModelFile(Opt, Rates);
+		MapDescModelFile(Opt, Rates, Trees);
 }
 
 MODELFILE*		AllocModelFile(void)
@@ -419,10 +422,11 @@ void			FreeModelFile(MODELFILE *MF)
 	free(MF);
 }
 
-void		ChangeModelFile(RATES *Rates, RANDSTATES *RS)
+void		ChangeModelFile(RATES *Rates, gsl_rng *RNG)
 {
 	MODELFILE *MF;
 
 	MF = Rates->ModelFile;
-	Rates->ModelNo = RandUSInt(RS) % MF->NoModels;
+	Rates->ModelNo = (int)gsl_rng_uniform_int(Rates->RNG, MF->NoModels);
 }
+

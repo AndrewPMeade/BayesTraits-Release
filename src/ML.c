@@ -46,10 +46,12 @@
 #include "Data.h"
 #include "TimeSlices.h"
 #include "NLOptBT.h"
-#include "Landscape.h"
+#include "Fabric.h"
 #include "Part.h"
 #include "StateSpeciationRate.h"
 #include "LocalTransformMLAllNodes.h"
+#include "Output.h"
+#include "Power.h"
 
 #include <gsl/gsl_matrix.h>
 
@@ -114,6 +116,14 @@ void	AddPToMLMap(ML_MAP*	MLMap, double DefV, double MinV, double MaxV)
 	AddTypePToMLMap(MLMap, DefV, MinV, MaxV, ML_P_TYPE_NONE);
 }
 
+void	MLMapSetDevValues(ML_MAP* MLMap)
+{
+	int Index;
+
+	for(Index=0;Index<MLMap->NoP;Index++)
+		MLMap->PVal[Index] = MLMap->PDef[Index];
+}
+
 void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	int Index;
@@ -165,7 +175,7 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 					AddTypePToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE, ML_P_TYPE_RATE_S);
 				else
 				{
-					if(LT->Type == VR_LS_BL)
+					if(LT->Type == VR_FABRIC_BETA)
 						AddPToMLMap(MLMap, 1.0, -MAX_LOCAL_RATE, MAX_LOCAL_RATE);
 					else
 						AddPToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE);
@@ -180,10 +190,21 @@ void	BuildMLMap(ML_MAP*	MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		{
 			TS = Opt->TimeSlices->TimeSlices[Index];
 			if(TS->FixedTime == FALSE)
-				AddPToMLMap(MLMap, RandDouble(Rates->RS), 0.0, 1.0);
+				AddPToMLMap(MLMap, gsl_rng_uniform_pos(Rates->RNG), 0.0, 1.0);
 
 			if(TS->FixedScale == FALSE)
 				AddTypePToMLMap(MLMap, 1.0, MIN_LOCAL_RATE, MAX_LOCAL_RATE, ML_P_TYPE_RATE_S);
+		}
+	}
+
+	if(GetNoPowerSites(Opt) > 0)
+	{
+		for(Index=0;Index<Opt->NoOfSites;Index++)
+		{
+			if(Opt->PowerSites[Index] == TRUE)
+			{
+				AddPToMLMap(MLMap, 1.0, MIN_ML_POWER, MAX_ML_POWER);
+			}
 		}
 	}
 }
@@ -253,7 +274,11 @@ void	MLMapToRates(ML_MAP* MLMap, OPTIONS *Opt, RATES *Rates)
 
 	MLMapToRatesTimeSlices(MLMap, Opt, Rates, &Pos);
 
-
+	if(GetNoPowerSites(Opt) > 0)
+	{
+		for(Index=0;Index<Rates->SitePowers->NoSites;Index++)	
+			Rates->SitePowers->Powers[Index] = MLMap->PVal[Pos++];
+	}
 }
 
 double	LikelihoodML(ML_MAP* MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates)
@@ -268,25 +293,25 @@ void	MLMapSetDefVals(ML_MAP* MLMap)
 	memcpy(MLMap->PVal, MLMap->PDef, sizeof(double) * MLMap->NoP);
 }
 
-double	GetRandRateScale(RANDSTATES *RS, double Min, double Max)
+double	GetRandRateScale(gsl_rng *RNG, double Min, double Max)
 {
-	if(RandDouble(RS) < 0.5)
-		return RandUniDouble(RS, Min, 1.0);
+	if(gsl_rng_uniform_pos(RNG) < 0.5)
+		return gsl_ran_flat(RNG, Min, 1.0);
 
-	return RandUniDouble(RS, 1.0, Max);
+	return gsl_ran_flat(RNG, 1.0, Max);
 }
 
-void	MLMapSetRandVals(ML_MAP* MLMap, RANDSTATES *RS)
+void	MLMapSetRandVals(ML_MAP* MLMap, gsl_rng *RNG)
 {
 	int Index;
 
 	for(Index=0;Index<MLMap->NoP;Index++)
 	{
 		if(MLMap->PType[Index] == ML_P_TYPE_NONE)
-			MLMap->PVal[Index] = RandUniDouble(RS, MLMap->PMin[Index], MLMap->PMax[Index]);
+			MLMap->PVal[Index] = gsl_ran_flat(RNG, MLMap->PMin[Index], MLMap->PMax[Index]);
 		
 		if(MLMap->PType[Index] == ML_P_TYPE_RATE_S)
-			MLMap->PVal[Index] = GetRandRateScale(RS, MLMap->PMin[Index], MLMap->PMax[Index]);
+			MLMap->PVal[Index] = GetRandRateScale(RNG, MLMap->PMin[Index], MLMap->PMax[Index]);
 	}
 }
 
@@ -307,7 +332,7 @@ void	FindValidMLStartSet(ML_MAP *MLMap, OPTIONS *Opt, TREES *Trees, RATES *Rates
 	
 	for(Index=0;Index<NO_RAND_TRIES;Index++)
 	{
-		MLMapSetRandVals(MLMap, Rates->RS);
+		MLMapSetRandVals(MLMap, Rates->RNG);
 
 		Lh = LikelihoodML(MLMap, Opt, Trees, Rates);
 
@@ -365,7 +390,6 @@ ML_MAP*	MLMapTreeTry(OPTIONS *Opt, TREES *Trees, RATES *Rates, ML_MAP *Init)
 	if(Init != NULL)
 		CopyMLMap(Ret, Init);
 
-
 	Lh = LikelihoodML(Ret, Opt, Trees, Rates);
 
 	TVect = MLMapClonePVect(Ret);
@@ -405,8 +429,9 @@ void	MLTree(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	int Index;
 			
 	BMap = AllocMLMap();
-
 	BuildMLMap(BMap, Opt, Trees, Rates);
+	MLMapSetDevValues(BMap);
+
 	BLh = LikelihoodML(BMap, Opt, Trees, Rates);
 
 	if(ValidLh(BLh, Opt->ModelType) == FALSE)
@@ -623,7 +648,7 @@ void	MLTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	for(Index=0;Index<1000;Index++)
 	{
-		Rand = RandDouble(Rates->RS);
+		Rand = gsl_rng_uniform_pos(Rates->RNG);
 
 		Str = DoubleToHexStr(Rand);
 
@@ -648,11 +673,7 @@ void	PrintMLHeader()
 	fflush(stdout);
 }
 
-void PrintMLStdOutHeader(void)
-{
-	printf("Tree No\tLh\tElapsed Seconds\n");
 
-}
 
 void PrintMLTree(int TreeNo, double Lh, double Sec)
 {
@@ -661,6 +682,34 @@ void PrintMLTree(int TreeNo, double Lh, double Sec)
 	fflush(stdout);
 }
 
+void	MLTest2(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+{
+	double Lh, X;
+	int Index;
+
+	for(Index=0;Index<10000;Index++)
+	{
+		X = gsl_ran_weibull(Rates->RNG, 1.1, 1.5);
+		if(gsl_rng_uniform(Rates->RNG) > 0.5)
+			X = -X;
+
+		Rates->LocalTransforms[0]->Scale = X;
+		Lh = Likelihood(Rates, Trees, Opt);
+
+		printf("%f\t%f\n", X, Lh);
+	}
+	exit(0);
+
+	for(X=-6;X<6;X+=0.001)
+	{
+		Rates->LocalTransforms[0]->Scale = X;
+		Lh = Likelihood(Rates, Trees, Opt);
+
+		printf("%f\t%f\n", X, Lh);
+	}
+
+	exit(0);
+}
 
 void	FindML(OPTIONS *Opt, TREES *Trees)
 {
@@ -669,23 +718,16 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 	double Lh;
 	double	TStart, TEnd;
 
-	Rates = CreatRates(Opt);
+	Rates = CreatRates(Opt, Trees, Opt->Seed);
 
-	PrintOptions(Opt->LogFile, Opt);
-	PrintRatesHeadder(Opt->LogFile, Opt);
+//	MLTest2(Opt, Trees, Rates);
 
-	PrintOptions(stdout, Opt);
-	PrintMLStdOutHeader();
-//	PrintRatesHeadder(stdout, Opt);
-
-
-	fflush(stdout);
-	fflush(Opt->LogFile);
+	SetOutputFile(Opt, Trees, Rates, NULL, NULL);
 
 	TStart = GetSeconds();
 
 	if(Opt->UseMLLandscape == TRUE)
-		LocalTransformMLAllNodes(Opt, Trees, Rates, TRUE, FALSE, TRUE);
+		LocalTransformMLAllNodes(Opt, Trees, Rates, FALSE, FALSE, TRUE);
 		
 
 //	CalcAllNodeTransfroms(Opt, Trees, Rates); return;
@@ -703,14 +745,11 @@ void	FindML(OPTIONS *Opt, TREES *Trees)
 		if(Opt->NodeData == TRUE || Opt->NodeBLData == TRUE)
 			SetTreeAsData(Opt, Trees, Rates->TreeNo);
 
-
-
-
 		MLTree(Opt, Trees, Rates);
 
 		Lh = Likelihood(Rates, Trees, Opt);
 		
-		PrintRates(Opt->LogFile, Rates, Opt, NULL);
+		PrintRates(Opt->LogFile, Rates, Opt, NULL, Trees);
 		fprintf(Opt->LogFile, "\n");
 		fflush(Opt->LogFile);
 
@@ -860,7 +899,7 @@ void Opt1D(ML_MAP* Map, OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	// A set of Random
 	for(Index=0;Index<Opt->MLTries;Index++)
 	{
-		Val = Map->PMin[0] + (RandDouble(Rates->RS) * (Map->PMax[0] - Map->PMin[0]));
+		Val = Map->PMin[0] + (gsl_rng_uniform_pos(Rates->RNG) * (Map->PMax[0] - Map->PMin[0]));
 		CLh = -GoldenOpt(500, 1, Map->PMin[0], Val, Map->PMax[0], Opt1DFunc, Tol, &CVal);
 		Opt1DAcc(&BLh, &BVal, &CLh, &CVal, Opt->ModelType);
 	}

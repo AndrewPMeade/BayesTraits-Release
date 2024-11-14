@@ -191,11 +191,6 @@ void	FossilLh(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 		return;
 #endif
 
-#ifdef QUAD_DOUBLE
-		N->BigPartial[SiteNo][Index] = N->BigPartial[SiteNo][Index] * (double)Mask[Index];
-#else
-		N->Partial[SiteNo][Index] = N->Partial[SiteNo][Index] * (double)Mask[Index];
-#endif
 	}
 
 }

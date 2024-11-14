@@ -28,7 +28,7 @@ void	SaveTrees(char	*FileName, TREES* Trees);
 void	SetFossils(TREES *Trees, OPTIONS *Opt);
 
 void	SetMinBL(TREES *Trees);
-void	SetNOSPerSite(OPTIONS *Opt);
+void	SetNOSPerSite(OPTIONS *Opt, TREES *Trees);
 
 void	AddNewRecNode(TREES* Trees, RECNODE *RecNode);
 void	SetNodeTipData(OPTIONS *Opt, NODE N, TREE* Tree, TREES *Trees);
@@ -69,7 +69,7 @@ void	ScaleUserTrees(TREES *Trees, double Scale);
 NODE	GetTreeTaxaNode(TREE *Tree, int TaxaNo);
 
 void	InitialiseOutputTrees(OPTIONS *Opt, TREES *Trees);
-void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, long long No, FILE *Out);
+void	OutputTree(OPTIONS *Opt, TREES *Trees, RATES *Rates, size_t No, FILE *Out);
 
 void	PrintTreeBL(TREE *Tree);
 void	PrintTreeNode(TREES *Trees, TREE *Tree);

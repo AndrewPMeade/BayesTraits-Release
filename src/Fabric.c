@@ -12,22 +12,25 @@
 #include "ML.h"
 #include "NLOptBT.h"
 #include "Contrasts.h"
+#include "Rates.h"
 
-int			UseLandscapeBeta(OPTIONS* Opt, RATES *Rates)
+void	SetHomoFabricBeta(VARRATES* VR, VAR_RATES_NODE *VRNode);
+
+int			UseFabricBeta(OPTIONS* Opt, RATES *Rates)
 {
 	int Index;
 
-	if(Opt->UseRJLocalScalar[VR_LS_BL] == TRUE)
+	if(Opt->UseRJLocalScalar[VR_FABRIC_BETA] == TRUE)
 		return TRUE;
 
 	for(Index=0;Index<Rates->NoLocalTransforms;Index++)
-		if(Rates->LocalTransforms[Index]->Type == VR_LS_BL)
+		if(Rates->LocalTransforms[Index]->Type == VR_FABRIC_BETA)
 			return TRUE;
 
 	return FALSE;
 }
 
-void		ResetTreeLandscape(TREE *Tree)
+void		ResetTreeFabric(TREE *Tree)
 {
 	int Index;
 	for(Index=0;Index<Tree->NoNodes;Index++)
@@ -37,15 +40,17 @@ void		ResetTreeLandscape(TREE *Tree)
 void		SetLandscapeBetaTrait(NODE Node, int NoSites, double Change)
 {
 	CONDATA *Con;
-	int SIndex;
+//	int SIndex;
 
 	Con = Node->ConData;
 
-	for(SIndex=0;SIndex<NoSites;SIndex++)
-		Con->Contrast[0]->Data[SIndex] = Node->Taxa->ConData[SIndex] - Change;
+//	for(SIndex=0;SIndex<NoSites;SIndex++)
+//		Con->Contrast[0]->Data[SIndex] = Node->Taxa->ConData[SIndex] - Change;
+
+	Con->Contrast[0]->Data[0] = Node->Taxa->ConData[0] - Change;
 }
 
-void		PropLandscapeBeta(TREES *Trees, NODE Node, double Change)
+void		PropFabricBeta(TREES *Trees, NODE Node, double Change)
 {
 	int Index;
 
@@ -58,7 +63,7 @@ void		PropLandscapeBeta(TREES *Trees, NODE Node, double Change)
 	}
 	
 	for(Index=0;Index<Node->NoNodes;Index++)
-		PropLandscapeBeta(Trees, Node->NodeList[Index], Change);
+		PropFabricBeta(Trees, Node->NodeList[Index], Change);
 }
 
 void		SetBetaNode(NODE N, double Beta)
@@ -83,7 +88,7 @@ int			NodeSubSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	{
 		VRN_i = VarRates->NodeList[i];
 
-		if(VRN_i->Type == VR_LS_BL)
+		if(VRN_i->Type == VR_FABRIC_BETA)
 		{
 			for(j=0;j<VarRates->NoNodes;j++)
 			{
@@ -102,7 +107,7 @@ int			NodeSubSet(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	return FALSE;
 }
 
-void		MapRJLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void		MapRJFabric(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	NODE Node;
 	
@@ -121,16 +126,19 @@ void		MapRJLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	{
 		VR_Node = VarRates->NodeList[Index];
 
-		if(VR_Node->Type == VR_LS_BL)
+		if(VR_Node->Type == VR_FABRIC_BETA)
 		{
 			Node = GetVRNode(Trees, TreeNo, VR_Node);
+
+			if(VarRates->UseFabricHomo == TRUE)
+				SetHomoFabricBeta(VarRates, VR_Node);
 
 			Node->LandscapeBeta = VR_Node->Scale;
 		}
 	}
 }
 
-void		MapLocalTranfromsBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+void		MapLocalTranfromsFabricBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	LOCAL_TRANSFORM *LRate;
 	int TIndex, Index;
@@ -143,7 +151,7 @@ void		MapLocalTranfromsBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	{
 		LRate = Rates->LocalTransforms[Index];
 
-		if(LRate->Type == VR_LS_BL)
+		if(LRate->Type == VR_FABRIC_BETA)
 		{
 			for(TIndex=0;TIndex<LRate->NoTags;TIndex++)
 			{
@@ -153,7 +161,8 @@ void		MapLocalTranfromsBeta(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		}
 	}	
 }
-void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
+
+void		MapFabric(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	TREE *Tree;
 	int TreeNo;
@@ -162,21 +171,21 @@ void		MapLandscape(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	TreeNo = Rates->TreeNo;
 	Tree = Trees->Tree[TreeNo];
 	
-	ResetTreeLandscape(Tree);
+	ResetTreeFabric(Tree);
 
-	MapLocalTranfromsBeta(Opt, Trees, Rates);
+	MapLocalTranfromsFabricBeta(Opt, Trees, Rates);
 	
-	MapRJLandscape(Opt, Trees, Rates);
+	MapRJFabric(Opt, Trees, Rates);
 
-	PropLandscapeBeta(Trees, Tree->Root, 0.0);
+	PropFabricBeta(Trees, Tree->Root, 0.0);
 }
-
 
 
 void	AncRecCalcContrast(NODE Node, int NoSites, double *TempAnc, double GlobalBeta)
 {
 	int		Index;
 	CONDATA *Con;
+
 
 	if(Node->Tip == TRUE)
 		return;
@@ -240,4 +249,42 @@ void	SetFabricAncStates(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 //	This will need to be done, but not at this point. 
 //	Likelihood(Rates, Trees, Opt);
+}
+
+
+
+double	CaclHomoFabricBetaT(double t, double a, double c)
+{
+	return (a * pow(t, -c))*t;
+}
+
+void	SetHomoFabricBeta(VARRATES* VR, VAR_RATES_NODE *VRNode)
+{
+	double HomoScale;
+
+	HomoScale = CaclHomoFabricBetaT(VRNode->NodeList[0]->UserLength, VR->FabricHomo[0], VR->FabricHomo[1]);
+
+	if(VRNode->Scale < 0)
+		VRNode->Scale = -HomoScale;
+	else
+		VRNode->Scale = HomoScale;
+}
+
+
+void	ChangeHomoFabric(RATES *Rates, SCHEDULE* Shed)
+{
+	VARRATES* VR;
+	double Dev;
+	int Pos;
+
+	VR = Rates->VarRates;
+
+
+	Shed->CurrentAT = Shed->FabricHomo;
+
+	Dev = Shed->CurrentAT->CDev;
+
+	Pos = (int)gsl_rng_uniform_int(Rates->RNG, NO_FABRIC_HOMO_P);
+
+	VR->FabricHomo[Pos] = ChangeRateExp(VR->FabricHomo[Pos], Dev, Rates->RNG, &Rates->LnHastings);
 }

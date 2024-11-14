@@ -3,8 +3,9 @@
 
 #include "TypeDef.h"
 TAG*	GetTagFromName(OPTIONS *Opt, char *Name);
+TAG*	GetTagFromNameList(char *Name, TAG **TagList, int NoTags);
 
-void	AddTag(OPTIONS *Opt, int Tokes, char **Passed);
+void	AddTag(OPTIONS *Opt, int Tokes, char **Passed, TREES* Trees);
 TAG*	CreateTag(TREES *Trees, char *Name, int NoTaxa, char **TaxaNames);
 
 void	FreeTag(TAG *Tag);

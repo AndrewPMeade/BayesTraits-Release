@@ -203,10 +203,10 @@ double CaclStdContrastLhMCMC(OPTIONS *Opt, TREES* Trees, RATES* Rates)
 
 double	CaclStdContrastLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
-	if(Opt->Analsis == ANALML)
+	if(Opt->Analsis == ANALYSIS_ML)
 		return CaclStdContrastLhML(Opt, Trees, Rates);
 	
-	if(Opt->Analsis == ANALMCMC)
+	if(Opt->Analsis == ANALYSIS_MCMC)
 		return CaclStdContrastLhMCMC(Opt, Trees, Rates);
 
 	return ERRLH;

@@ -42,7 +42,7 @@
 #include "Prob.h"
 #include "LocalTransform.h"
 #include "GlobalTrend.h"
-
+#include "Power.h"
 
 #include <gsl/gsl_cdf.h>
 #include <gsl/gsl_randist.h>
@@ -105,7 +105,6 @@ PRIOR*	AllocBlankPrior(int NoP)
 	PRIOR* Ret;
 
 	Ret = (PRIOR*)SMalloc(sizeof(PRIOR));
-
 	Ret->DistVals = NULL;
 	if(NoP > 0)
 		Ret->DistVals = (double*)SMalloc(sizeof(double) * NoP);
@@ -275,7 +274,6 @@ PRIOR* CreateWeibullPrior(char* Name, double Scale, double Exponent)
 
 	return Ret;
 }
-
 
 PRIOR*		CrateUndefinedPrior(char *Name)
 {
@@ -752,6 +750,7 @@ double	CalcLhPriorP(double X, PRIOR *Prior)
 	double Ret;
 
 //	PriorTest();
+	Ret = -1.0;
 	
 	switch(Prior->Dist)
 	{
@@ -826,6 +825,18 @@ double		RandFromPrior(gsl_rng *RNG, PRIOR *Prior)
 	return -1.0;
 }
 
+double		RandNonNegFromPrior(gsl_rng *RNG, PRIOR *Prior)
+{
+	double X;
+	do
+	{
+		X = RandFromPrior(RNG, Prior);
+		if(X > 0)
+			return X;
+	}while(TRUE);
+
+	return 0;
+}
 
 
 double	CalcTreeTransPrior(RATES *Rates, OPTIONS *Opt)
@@ -1058,6 +1069,26 @@ double CaclCVPrior(OPTIONS *Opt,RATES *Rates)
 	return POnToOff + Ret;
 }
 
+double	CaclFabicHomoPrior(RATES* Rates, OPTIONS* Opt)
+{
+	double Ret, P;
+	PRIOR *Prior;
+	
+	Prior = GetPriorFromName("FabricHomoA", Rates->Priors, Rates->NoPriors);
+	Ret = CalcLhPriorP(Rates->VarRates->FabricHomo[0], Prior);
+	if(Ret == ERRLH)
+		return ERRLH;
+
+
+	Prior = GetPriorFromName("FabricHomoC", Rates->Priors, Rates->NoPriors);
+	P = CalcLhPriorP(Rates->VarRates->FabricHomo[1], Prior);
+	if(P == ERRLH)
+		return ERRLH;
+
+
+	return Ret + P;
+}
+
 void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 {
 	double	PLh, Ret;
@@ -1164,6 +1195,22 @@ void	CalcPriors(RATES* Rates, OPTIONS* Opt)
 		Ret += PLh;
 	}
 
+	if(Opt->FabricHomo == TRUE)
+	{
+		PLh = CaclFabicHomoPrior(Rates, Opt);
+		if(PLh == ERRLH)
+			return;
+		Ret += PLh;
+	}
+
+	if(GetNoPowerSites(Opt) > 0)
+	{
+		PLh = CalcSitePowersPrior(Rates);
+		if(PLh == ERRLH)
+			return;
+		Ret += PLh;
+	}
+
 	Rates->LhPrior = Ret;
 }
 
@@ -1173,8 +1220,8 @@ void	MutatePriors(RATES *Rates, PRIOR **PriosList, int NoOfPriors)
 
 	for(PIndex=0;PIndex<NoOfPriors;PIndex++)
 	{
-		PriosList[PIndex]->DistVals[0] = RandDouble(Rates->RS) * 100;
-		PriosList[PIndex]->DistVals[1] = RandDouble(Rates->RS) * 100;
+		PriosList[PIndex]->DistVals[0] = gsl_rng_uniform(Rates->RNG) * 100;
+		PriosList[PIndex]->DistVals[1] = gsl_rng_uniform(Rates->RNG) * 100;
 	}
 }
 
@@ -1184,7 +1231,8 @@ double	ChangePriorNorm(RATES *Rates, double Val, double Dev, double Min, double 
 
 	do
 	{
-		Ret = RandNormal(Rates->RS, Val, Dev);
+//		Ret = RandNormal(Rates->RS, Val, Dev);
+		Ret = gsl_ran_gaussian(Rates->RNG, Dev) + Val;
 	} while(Ret > Max || Ret < Min);
 
 	return Ret;
@@ -1217,22 +1265,6 @@ void	MutatePriorsNormal(RATES *Rates, PRIOR **PriosList, int NoOfPriors, double 
 	}
 }
 
-double ChangePrior(RANDSTATES *RandStates, double Rate, double dev)
-{
-	double	Ret;
-
-	Ret = (RandDouble(RandStates) * dev) - (dev / 2.0); 
-
-	Ret += Rate;
-
-	if(Ret > 100)
-		Ret = 100 - (Ret - 100);
-
-	if(Ret < 0)
-		Ret = -Ret;
-
-	return Ret;
-}
 
 
 void	CopyPrior(PRIOR *A, PRIOR *B)
@@ -1531,7 +1563,7 @@ void TestPrior(PRIOR *Prior, size_t NoSamples)
 	gsl_rng *rng;
 	size_t Index;
 	
-	rng = gsl_rng_alloc(gsl_rng_mt19937);
+	rng = gsl_rng_alloc(RNG_TYPE);
 	printf("Sample form prior: %s\n", Prior->Name);
 	
 	for(Index=0;Index<NoSamples;Index++)

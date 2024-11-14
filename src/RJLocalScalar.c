@@ -90,8 +90,8 @@ PRIOR*	GetPriorFromRJRatesScalar(OPTIONS *Opt, TRANSFORM_TYPE Type)
 	if(Type == VR_BL)
 		return GetPriorFromName("VRBranch", Opt->AllPriors, Opt->NoAllPriors);
 
-	if(Type == VR_LS_BL)
-		return GetPriorFromName("VR_LS_BL", Opt->AllPriors, Opt->NoAllPriors);
+	if(Type == VR_FABRIC_BETA)
+		return GetPriorFromName("FabricBeta", Opt->AllPriors, Opt->NoAllPriors);
 
 	printf("Unknown transform type");
 	exit(1);

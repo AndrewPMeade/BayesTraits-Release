@@ -40,6 +40,7 @@
 #include "VarRates.h"
 #include "LocalTransform.h"
 #include "TimeSlices.h"
+#include "Power.h"
 
 void	AddToFullATList(SCHEDULE* Shed, AUTOTUNE *AT)
 {
@@ -110,12 +111,12 @@ void	BlankSchedule(SCHEDULE*	Shed)
 }
 
 
-int		MultiTree(OPTIONS *Opt)
+int		MultiTree(OPTIONS *Opt, TREES *Trees)
 {
 	if(Opt->UseEqualTrees == TRUE)
 		return FALSE;
 
-	if(Opt->Trees->NoTrees == 1)
+	if(Trees->NoTrees == 1)
 		return FALSE;
 
 	return TRUE;
@@ -152,7 +153,7 @@ void	SetCustomSchdule(SCHEDULE *Shed, OPTIONS *Opt)
 	return;
 }
 
-void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
+void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt, TREES *Trees)
 {
 	int		Rates, Index;
 	
@@ -177,7 +178,7 @@ void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 	if(UsingHP(Opt) == TRUE)
 		Shed->OptFreq[S_PPROR] = 0.1;
 
-	if(EstData(Opt->Trees) == TRUE)
+	if(EstData(Trees) == TRUE)
 		Shed->OptFreq[S_EST_DATA] = 0.5;
 
 	if(Opt->EstOU == TRUE && Opt->LoadModels == FALSE)
@@ -194,7 +195,7 @@ void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 	if(Opt->Model == M_FATTAIL)
 		Shed->OptFreq[S_FAT_TAIL_ANS_ALL] = 0.8;
 
-	if(MultiTree(Opt) == TRUE)
+	if(MultiTree(Opt, Trees) == TRUE)
 		Shed->OptFreq[S_TREE_MOVE] = 0.1;
 	
 	if(EstLocalTransforms(Opt->LocalTransforms, Opt->NoLocalTransforms) == TRUE && Opt->LoadModels == FALSE)
@@ -214,7 +215,7 @@ void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 
 	Rates = 0;
 	if(Opt->DataType == CONTINUOUS)
-		Rates = Opt->Trees->NoSites;
+		Rates = Trees->NoSites;
 	else
 		for(Index=0;Index<Opt->NoOfRates;Index++)
 			if(Opt->ResTypes[Index] == RESNONE)
@@ -259,6 +260,12 @@ void	SetSchedule(SCHEDULE *Shed, OPTIONS *Opt)
 
 	if(Opt->UseGlobalTrend == TRUE)
 		Shed->OptFreq[S_GLOBAL_TREND] = 0.1;
+
+	if(Opt->FabricHomo == TRUE)
+		Shed->OptFreq[S_FABRIC_HOMO] = 0.1;
+
+	if(GetNoPowerSites(Opt) > 0)
+		Shed->OptFreq[S_SITE_POWER] = 0.1;
 	   
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 
@@ -310,7 +317,7 @@ void	PrintShedHeadder(OPTIONS* Opt, SCHEDULE* Shed, FILE* Str)
 
 	for(Index=0;Index<Shed->NoOfOpts;Index++)
 	{
-		if(Shed->OptFreq[Index] != 0)
+//		if(Shed->OptFreq[Index] != 0)
 			fprintf(Str, "%s\t%2.2f\n", SHEDOP[Index], Shed->OptFreq[Index]*100);
 	}
 		
@@ -378,10 +385,10 @@ SCHEDULE*	AllocSchedule()
 	Ret->DataDevAT		= NULL;
 	Ret->VarRateAT		= NULL;
 
-	Ret->NoParm			= -1;
+/*	Ret->NoParm			= -1;
 	Ret->PTried			= NULL;
 	Ret->PAcc			= NULL;
-
+	*/
 	Ret->KappaAT		= NULL;
 	Ret->DeltaAT		= NULL;
 	Ret->LambdaAT		= NULL;
@@ -398,7 +405,7 @@ SCHEDULE*	AllocSchedule()
 	Ret->VarRatesOp		= NULL;
 
 	Ret->NoFullATList	= 0;
-	Ret->FullATList		= 0;
+	Ret->FullATList		= NULL;
 
 	Ret->TimeSliceTimeAT = NULL;
 	Ret->TimeSliceScaleAT= NULL;
@@ -410,26 +417,28 @@ SCHEDULE*	AllocSchedule()
 
 	Ret->StochasticBeta	=	NULL;
 	Ret->StochasticBetaPrior =	NULL;
+
+	Ret->FabricHomo = NULL;
 	
 	return Ret;
 }
 
-int		FindNoOfAutoCalibRates(OPTIONS *Opt)
+int		FindNoOfAutoCalibRates(OPTIONS *Opt, TREES *Trees)
 {
 	if(Opt->ModelType == MT_DISCRETE)
 		return 1;
 
-	return FindNoConRates(Opt);
+	return FindNoConRates(Opt, Trees);
 }
 
-char**	GetAutoParamNames(OPTIONS *Opt)
+char**	GetAutoParamNames(OPTIONS *Opt, TREES *Trees)
 {
 	char	**Ret,*Buffer;
 	int		NoP,PIndex,Index,NoS;
 	
 	PIndex = 0;
 
-	NoP = FindNoOfAutoCalibRates(Opt);
+	NoP = FindNoOfAutoCalibRates(Opt, Trees);
 	Buffer = (char*)SMalloc(sizeof(char) * BUFFERSIZE);
 	Ret = (char**)SMalloc(sizeof(char*) * NoP);
 
@@ -443,7 +452,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->ModelType == MT_FATTAIL)
 	{
-		NoS = Opt->Trees->NoSites;
+		NoS = Trees->NoSites;
 		if(Opt->Model == M_GEO)
 		{
 			sprintf(Buffer,"Scale");
@@ -471,7 +480,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST_CORREL)
 	{
-		for(Index=0;Index<Opt->Trees->NoSites;Index++)
+		for(Index=0;Index<Trees->NoSites;Index++)
 		{
 			sprintf(Buffer,"Alpha %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -483,7 +492,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST_REG)
 	{
-		for(Index=1;Index<Opt->Trees->NoSites;Index++)
+		for(Index=1;Index<Trees->NoSites;Index++)
 		{
 			sprintf(Buffer,"Beta %d", Index);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -495,13 +504,13 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTRAST)
 	{
-		for(Index=0;Index<Opt->Trees->NoSites;Index++)
+		for(Index=0;Index<Trees->NoSites;Index++)
 		{
 			sprintf(Buffer,"Alpha %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
 		}
 
-		for(Index=0;Index<Opt->Trees->NoSites;Index++)
+		for(Index=0;Index<Trees->NoSites;Index++)
 		{
 			sprintf(Buffer,"Sigma^2 %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -516,7 +525,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		sprintf(Buffer,"Alpha");
 		Ret[PIndex++] = StrMake(Buffer);
 
-		for(Index=1;Index<Opt->Trees->NoSites+1;Index++)
+		for(Index=1;Index<Trees->NoSites+1;Index++)
 		{
 			sprintf(Buffer,"Beta Trait %d",Index);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -525,7 +534,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 		return Ret;
 	}
 
-	for(Index=0;Index<Opt->Trees->NoSites;Index++)
+	for(Index=0;Index<Trees->NoSites;Index++)
 	{
 		sprintf(Buffer,"Alpha Trait %d",Index+1);
 		Ret[PIndex++] = StrMake(Buffer);
@@ -533,7 +542,7 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 
 	if(Opt->Model == M_CONTINUOUS_DIR)
 	{
-		for(Index=0;Index<Opt->Trees->NoSites;Index++)
+		for(Index=0;Index<Trees->NoSites;Index++)
 		{
 			sprintf(Buffer,"Beta Trait %d",Index+1);
 			Ret[PIndex++] = StrMake(Buffer);
@@ -546,23 +555,23 @@ char**	GetAutoParamNames(OPTIONS *Opt)
 	return Ret;
 }
 
-void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, RANDSTATES *RS)
+void	SetRateDevPerParm(SCHEDULE* Shed, OPTIONS *Opt, gsl_rng *RNG, TREES *Trees)
 {
 	int Index;
 	char **PNames;
 
-	Shed->NoParm			= FindNoOfAutoCalibRates(Opt);
+	Shed->NoParm			= FindNoOfAutoCalibRates(Opt, Trees);
 	
 	Shed->RateDevATList		= (AUTOTUNE**)SMalloc(sizeof(AUTOTUNE*) * Shed->NoParm);
 
-	PNames = GetAutoParamNames(Opt);
+	PNames = GetAutoParamNames(Opt, Trees);
 	
 	for(Index=0;Index<Shed->NoParm;Index++)
 	{
 		if(Opt->Model != M_GEO)
-			Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+			Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], gsl_rng_uniform_pos(RNG) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		else
-			Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], RandDouble(RS) * 10000, MIN_VALID_ACC, MAX_VALID_ACC);
+			Shed->RateDevATList[Index] = CreatAutoTune(PNames[Index], gsl_rng_uniform_pos(RNG) * 10000, MIN_VALID_ACC, MAX_VALID_ACC);
 
 		AddToFullATList(Shed, Shed->RateDevATList[Index]);
 
@@ -605,7 +614,23 @@ CUSTOM_SCHEDULE**		CloneCustomScheduleList(int NoCShed, CUSTOM_SCHEDULE **CShedL
 	return Ret;
 }
 
-SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
+int CompAT(const void *AP, const void *BP)
+{
+	AUTOTUNE *A, *B;
+
+	A = *(AUTOTUNE**)AP;
+	B = *(AUTOTUNE**)BP;
+
+	return strcmp(A->Name, B->Name);
+}
+
+
+void SortAutoTuneList(SCHEDULE* Sched)
+{
+	qsort(Sched->FullATList, Sched->NoFullATList, sizeof(AUTOTUNE *), &CompAT);
+}
+
+SCHEDULE*	CreatSchedule(OPTIONS *Opt, gsl_rng *RNG, TREES *Trees)
 {
 	SCHEDULE*	Ret;
 
@@ -613,12 +638,12 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 	
 	BlankSchedule(Ret);
 
-	SetSchedule(Ret, Opt);
+	SetSchedule(Ret, Opt, Trees);
 
 	Ret->GNoAcc = Ret->GNoTried = 0;
 	Ret->SNoAcc = Ret->SNoTried = 0;
 
-	SetRateDevPerParm(Ret, Opt, RS);
+	SetRateDevPerParm(Ret, Opt, RNG, Trees);
 
 	Ret->NoCShed = Opt->NoCShed;
 	Ret->CShedList = CloneCustomScheduleList(Opt->NoCShed, Opt->CShedList);
@@ -626,93 +651,111 @@ SCHEDULE*	CreatSchedule(OPTIONS *Opt, RANDSTATES *RS)
 	// Set Auto tune Data Dev
 	if(Opt->EstData == TRUE)
 	{
-		Ret->DataDevAT = CreatAutoTune("Data", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->DataDevAT = CreatAutoTune("Data", gsl_rng_uniform_pos(RNG) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Ret,Ret->DataDevAT);
 	}
 
 	// Set VarRates Auto Tune
 	if(UseNonParametricMethods(Opt) == TRUE)
 	{
-		Ret->VarRateAT = CreatAutoTune("VarRates", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->VarRateAT = CreatAutoTune("VarRates", gsl_rng_uniform_pos(RNG), MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->VarRateAT, 200.0);
 		AddToFullATList(Ret,Ret->VarRateAT);
 	}
 
 	if(Opt->EstKappa == TRUE)
 	{
-		Ret->KappaAT = CreatAutoTune("Kappa", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->KappaAT = CreatAutoTune("Kappa", gsl_rng_uniform_pos(RNG) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->KappaAT, 10.0);
 		AddToFullATList(Ret, Ret->KappaAT);
 	}
 
 	if(Opt->EstLambda == TRUE)
 	{
-		Ret->LambdaAT = CreatAutoTune("Lambda", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->LambdaAT = CreatAutoTune("Lambda", gsl_rng_uniform_pos(RNG) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->LambdaAT, 10.0);
 		AddToFullATList(Ret, Ret->LambdaAT);
 	}
 
 	if(Opt->EstDelta == TRUE)
 	{
-		Ret->DeltaAT = CreatAutoTune("Delta", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->DeltaAT = CreatAutoTune("Delta",gsl_rng_uniform_pos(RNG) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->DeltaAT, 10.0);
 		AddToFullATList(Ret, Ret->DeltaAT);
 	}
 
 	if(Opt->EstOU == TRUE)
 	{
-		Ret->OUAT = CreatAutoTune("OU", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->OUAT = CreatAutoTune("OU", gsl_rng_uniform_pos(RNG) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->OUAT, 10.0);
 		AddToFullATList(Ret, Ret->OUAT);
 	}
 
 	if(Opt->RJDummy == TRUE)
 	{
-		Ret->RJDummyBetaAT = CreatAutoTune("Dummy", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->RJDummyBetaAT = CreatAutoTune("Dummy", gsl_rng_uniform_pos(RNG) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		AddToFullATList(Ret, Ret->RJDummyBetaAT);
 	}
 	
 	if(Opt->EstGamma == TRUE)
 	{
-		Ret->GammaAT = CreatAutoTune("Gamma", RandDouble(RS) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->GammaAT = CreatAutoTune("Gamma", gsl_rng_uniform_pos(RNG) * 10, MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->GammaAT, 10.0);
 		AddToFullATList(Ret, Ret->GammaAT);
 	}
 
 	if(EstLocalTransforms(Opt->LocalTransforms, Opt->NoLocalTransforms) == TRUE)
 	{
-		Ret->LocalRatesAT = CreatAutoTune("LocalTransform", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->LocalRatesAT = CreatAutoTune("LocalTransform", gsl_rng_uniform_pos(RNG), MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->LocalRatesAT, 10.0);
 		AddToFullATList(Ret, Ret->LocalRatesAT);
 	}
 
 	if(TimeSliceEstTime(Opt->TimeSlices) == TRUE)
 	{
-		Ret->TimeSliceTimeAT = CreatAutoTune("Time Slice Time", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->TimeSliceTimeAT = CreatAutoTune("Time Slice Time", gsl_rng_uniform_pos(RNG), MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->TimeSliceTimeAT, 1.0);
 		AddToFullATList(Ret, Ret->TimeSliceTimeAT);
 	}
 
 	if(TimeSliceEstScale(Opt->TimeSlices) == TRUE)
 	{
-		Ret->TimeSliceScaleAT = CreatAutoTune("Time Slice Scale", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->TimeSliceScaleAT = CreatAutoTune("Time Slice Scale", gsl_rng_uniform_pos(RNG), MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->TimeSliceScaleAT, 10.0);
 		AddToFullATList(Ret, Ret->TimeSliceScaleAT);
 	}
 
 	if(Opt->UseGlobalTrend == TRUE)
 	{
-		Ret->GlobalTrendAT = CreatAutoTune("Global Trend", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->GlobalTrendAT = CreatAutoTune("Global Trend", gsl_rng_uniform_pos(RNG), MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->GlobalTrendAT, 100.0);
 		AddToFullATList(Ret, Ret->GlobalTrendAT);
 	}
 
 	if(Opt->NormQMat == TRUE)
 	{
-		Ret->GlobalRateAT = CreatAutoTune("Global Rate", RandDouble(RS), MIN_VALID_ACC, MAX_VALID_ACC);
+		Ret->GlobalRateAT = CreatAutoTune("Global Rate", gsl_rng_uniform_pos(RNG), MIN_VALID_ACC, MAX_VALID_ACC);
 		SetMaxDev(Ret->GlobalRateAT, 10000.0);
 		AddToFullATList(Ret, Ret->GlobalRateAT);
 	}
+
+
+	if(Opt->FabricHomo == TRUE)
+	{
+		Ret->FabricHomo = CreatAutoTune("Fabric Homo", gsl_rng_uniform_pos(RNG), MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->FabricHomo, 1.0);
+		AddToFullATList(Ret, Ret->FabricHomo);
+	}
+
+	if(GetNoPowerSites(Opt) > 0)
+	{
+		Ret->SitePower = CreatAutoTune("Site Power", 0.1, MIN_VALID_ACC, MAX_VALID_ACC);
+		SetMaxDev(Ret->SitePower, 100.0);
+		AddToFullATList(Ret, Ret->SitePower);
+	
+	}
+
+	SortAutoTuneList(Ret);
 
 	return Ret;
 }
@@ -731,8 +774,6 @@ void		FreeeSchedule(SCHEDULE* Sched)
 		for(Index=0;Index<Sched->NoParm;Index++)
 			FreeAutoTune(Sched->RateDevATList[Index]);
 		free(Sched->RateDevATList);
-		free(Sched->PAcc);
-		free(Sched->PTried);
 	}
 
 	if(Sched->DataDevAT != NULL)
@@ -792,6 +833,12 @@ void		FreeeSchedule(SCHEDULE* Sched)
 	if(Sched->StochasticBetaPrior != NULL)
 		FreeAutoTune(Sched->StochasticBetaPrior);
 
+	if(Sched->FabricHomo != NULL)
+		FreeAutoTune(Sched->FabricHomo);
+
+	if(Sched->FabricHomo != NULL)
+		FreeAutoTune(Sched->SitePower);		
+
 	if(Sched->NoCShed > 0)
 	{
 		for(Index=0;Index<Sched->NoCShed;Index++)
@@ -817,29 +864,12 @@ double	GetAccRate(int Op, SCHEDULE* Shed)
 	return Acc / (double)Tried;
 }
 
-double	GetRDDecAccRate(OPTIONS *Opt, SCHEDULE* Shed)
-{
-	double Ret;
-	int	Acc, Tried;
-
-	if(Opt->UseCovarion == FALSE)
-		Ret = (double)Shed->PAcc[0] / Shed->PTried[0];
-	else
-	{
-		Acc = Shed->PAcc[0] + Shed->Accepted[S_CV];
-		Tried = Shed->PTried[0] + Shed->Tryed[S_CV];
-		Ret = (double)Acc/Tried;
-	}
-
-	return Ret;
-}
-
-void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, RANDSTATES *RS)
+void	UpDateSchedule(OPTIONS *Opt, SCHEDULE* Shed, gsl_rng *RNG)
 {
 	int		Index;
 	
 	for(Index=0;Index<Shed->NoFullATList;Index++)
-		AutoTuneUpDate(Shed->FullATList[Index], RS);
+		AutoTuneUpDate(Shed->FullATList[Index], RNG);
 }
 
 void		SetCustomShed(SCHEDULE* Shed)
@@ -908,7 +938,7 @@ void PrintCustomSchedule(FILE *Str, int NoCShed, CUSTOM_SCHEDULE **ShedList)
 	}
 }
 
-void SetCustomSchedule(OPTIONS* Opt, FILE* ShedFile, long long Itters, SCHEDULE* Shed)
+void SetCustomSchedule(OPTIONS* Opt, FILE* ShedFile, size_t Itters, SCHEDULE* Shed)
 {
 	int Index;
 	CUSTOM_SCHEDULE *NShed;
@@ -932,3 +962,11 @@ void SetCustomSchedule(OPTIONS* Opt, FILE* ShedFile, long long Itters, SCHEDULE*
 		}
 	}
 }
+
+void	SetRJLockedModel(SCHEDULE* Shed)
+{
+	Shed->OptFreq[S_VARRATES_ADD_REMOVE] = 0.0;
+//	Shed->OptFreq[S_VARRATES_MOVE] = 0.0;
+	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
+}
+

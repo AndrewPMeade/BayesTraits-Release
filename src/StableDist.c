@@ -33,49 +33,6 @@
 #include "StableDist.h"
 #include "GenLib.h"
 
-STABLEDIST*	CreatStableDist(void)
-{
-	STABLEDIST* Ret;
-	int Index;
-
-	Ret = (STABLEDIST*)SMalloc(sizeof(STABLEDIST));
-
-	Ret->Alpha = -1;
-	Ret->Scale = -1;
-	Ret->ScaledAlpha  = -1;
-
-	Ret->P = (double**)SMalloc(sizeof(double*) * 4);
-	for(Index=0;Index<4;Index++)
-		Ret->P[Index] = (double*)SMalloc(sizeof(double) * 4);
-
-	return Ret;
-}
-
-void		SetStableDist(STABLEDIST* SD, double Alpha, double Scale)
-{
-	SD->Alpha = Alpha;
-	SD->Scale = Scale;
-
-	SD->ScaledAlpha = Alpha * 20 - 1;
-}
-
-void		FreeStableDist(STABLEDIST* SD)
-{
-	int Index;
-	
-	for(Index=0;Index<4;Index++)
-		free(SD->P[Index]);
-	free(SD->P);
-	free(SD);
-}
-
-
-
-double		StableDistPDF(STABLEDIST* SD, double x)
-{
-	return StableDistTPDF(SD, x, 1.0);
-}
-
 // Scale is Variance
 // Lh is in log space
 double		CaclNormalLogLh(double X, double Scale, double T)
@@ -92,8 +49,7 @@ double		CaclNormalLogLh(double X, double Scale, double T)
 	return Ret + T1;
 }
 
-double		StableDistTPDF(STABLEDIST* SD, double X, double t)
+double		StableDistTPDF(double Scale, double X, double t)
 {
-	return CaclNormalLogLh(X, SD->Scale, t);
+	return CaclNormalLogLh(X, Scale, t);
 }
-

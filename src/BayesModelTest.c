@@ -112,7 +112,7 @@ void	BayesModeTest(OPTIONS *Opt, TREES *Trees)
 /*		NUMFILE	*Err; */
 		int		Index;
 
-		Rates = CreatRates(Opt);
+		Rates = CreatRates(Opt, Trees, Opt->Seed);
 
 		InitContinusTree(Opt, Trees, 0);
 

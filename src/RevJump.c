@@ -275,7 +275,7 @@ int		PickSplitGroup(RATES *Rates, MAPINFO *MapInfo)
 
 	do
 	{
-		Ret = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+		Ret = (int)gsl_rng_uniform_int(Rates->RNG, MapInfo->NoOfGroups);
 	}while(MapInfo->GroupSize[Ret] <= 1);
 
 	return Ret;
@@ -297,7 +297,7 @@ int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
 	G0 = G1 = 0;
 	for(Index=0;Index<GSize-1;Index++)
 	{
-		if(RandDouble(Rates->RS) < 0.5)
+		if(gsl_rng_uniform_pos(Rates->RNG) < 0.5)
 		{
 			Ret[Index] = 0;
 			G0++;
@@ -311,7 +311,7 @@ int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
 
 	if((G0 > 0) && (G1 > 0))
 	{
-		if(RandDouble(Rates->RS) < 0.5)
+		if(gsl_rng_uniform_pos(Rates->RNG) < 0.5)
 			Ret[Index] = 0;
 		else
 			Ret[Index] = 1;
@@ -328,12 +328,12 @@ int*	MakeSplitMask(RATES* Rates, MAPINFO *MapInfo, int GroupNo)
 	return Ret;
 }
 
-double	GenDoubleIn(RANDSTATES*	RS, double Min, double Max)
+double	GenDoubleIn(gsl_rng	*RNG, double Min, double Max)
 {
 	double	Diff;
 	
 	Diff = Max - Min;
-	return (RandDouble(RS) * Diff) + Min;
+	return (gsl_rng_uniform(RNG) * Diff) + Min;
 }
 
 int		CanSplit(RATES *Rates, OPTIONS *Opt, MAPINFO *MapInfo)
@@ -399,7 +399,8 @@ int		RJSplit(RATES* Rates, OPTIONS* Opt)
 	OldR = Mue / (double)G0;
 	*/
 
-	Mue = GenDoubleIn(Rates->RS, -(G0*OldR), (G1*OldR));
+	Mue = gsl_ran_flat(Rates->RNG, -(G0*OldR), (G1*OldR));
+
 	NewR = OldR + (Mue / (double)G0);
 	OldR = OldR - (Mue / (double)G1);
 
@@ -574,9 +575,11 @@ int		RJMerge(RATES* Rates, OPTIONS* Opt)
 		return FALSE;
 	}
 
-	G0 = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+	G0 = (int)gsl_rng_uniform_int(Rates->RNG, MapInfo->NoOfGroups);
+
 	do
-		G1 = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+//		G1 = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+		G1 = (int)gsl_rng_uniform_int(Rates->RNG, MapInfo->NoOfGroups);
 	while(G1 == G0);
 
 	if(G1 < G0)
@@ -646,7 +649,7 @@ int		FindGropToReduce(RATES* Rates, MAPINFO* MapInfo)
 
 	do
 	{
-		No = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+		No = (int)gsl_rng_uniform_int(Rates->RNG, MapInfo->NoOfGroups);
 		if(MapInfo->GroupSize[No] > 1)
 			return No;
 	}while(1);
@@ -673,7 +676,7 @@ int		RJReduce(RATES* Rates, OPTIONS* Opt)
 		return FALSE;
 	}
 
-	TheOne = RandUSLong(Rates->RS) % MapInfo->GroupSize[Group];
+	TheOne = (int)gsl_rng_uniform_int(Rates->RNG, MapInfo->GroupSize[Group]);
 
 	Pos = MapInfo->GroupPos[Group][TheOne];
 
@@ -709,10 +712,10 @@ int		RJAugment(RATES* Rates, OPTIONS* Opt)
 		FreeMapInfo(MapInfo);
 		return FALSE;
 	}
-
-	ZeroPos = RandUSLong(Rates->RS) % MapInfo->NoInZero;
+		
+	ZeroPos = (int)gsl_rng_uniform_int(Rates->RNG, MapInfo->NoInZero);
 	ZeroPos = MapInfo->ZeroPos[ZeroPos];
-	Group = RandUSLong(Rates->RS) % MapInfo->NoOfGroups;
+	Group = (int)gsl_rng_uniform_int(Rates->RNG, MapInfo->NoOfGroups);
 
 	Rates->MappingVect[ZeroPos] = Group;
 	

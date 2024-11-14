@@ -23,6 +23,7 @@ int					GetNoTransformType(TRANSFORM_TYPE TType, RATES *Rates);
 
 double				CaclLocalTransformsPrior(RATES *Rates);
 
-double				ChangeLocalScale(RANDSTATES	*RS, double Scale, double Dev);
+double				ChangeLocalScale(gsl_rng *RNG, double Scale, double Dev);
+
 
 #endif

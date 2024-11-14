@@ -15,55 +15,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="src\StateSpeciationRate.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\StochasticCharacterMapping.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Stones.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Tag.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Threaded.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TimeSlices.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TransformTree.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\TreePasser.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\Trees.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\VarRates.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\VarRatesMLLocalTransfom.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\AncStateV.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\AutoTune.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\BatchMode.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\BayesModelTest.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
-    <ClCompile Include="src\BayesTraits.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\BigLh.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\BinaryCompressedResMaps.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\btdebug.c">
@@ -138,6 +93,9 @@
     <ClCompile Include="src\DistData.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Fabric.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\FatTail.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -156,10 +114,13 @@
     <ClCompile Include="src\GlobalTrend.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\GSLRNGAux.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\Initialise.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\Landscape.c">
+    <ClCompile Include="src\IntraNode.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Likelihood.c">
@@ -195,6 +156,9 @@
     <ClCompile Include="src\Options.c">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="src\Output.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
     <ClCompile Include="src\Part.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -205,6 +169,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\PMatrixTest.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Power.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Praxis.c">
@@ -219,9 +186,6 @@
     <ClCompile Include="src\PTrees.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\QuadDouble.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="src\RandDists.c">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -229,6 +193,12 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\Rates.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RestrictionMap.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\RestrictionMapTest.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="src\RevJump.c">
@@ -252,47 +222,56 @@
     <ClCompile Include="src\StableDist.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="src\RestrictionMap.c">
+    <ClCompile Include="src\StateSpeciationRate.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\StochasticCharacterMapping.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Stones.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Tag.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Threaded.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TimeSlices.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TransformTree.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\TreePasser.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\Trees.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VarRates.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\VarRatesMLLocalTransfom.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\AncStateV.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\AutoTune.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\BatchMode.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\BayesModelTest.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="src\BayesTraits.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="src\LocalTransform.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\LocalTransformMLAllNodes.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Matrix.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\MCMC.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\MinFit.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ML.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\ModelFile.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\NLOptBT.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Options.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Part.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\Pattern.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="src\PMatrix.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\Praxis.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -305,9 +284,6 @@
     <ClInclude Include="src\PTrees.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\QuadDouble.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\RandDists.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -315,6 +291,12 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Rates.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RestrictionMap.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\RestrictionMapTest.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\RevJump.h">
@@ -327,6 +309,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Schedule.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Serialize.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\SimData.h">
@@ -384,6 +369,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\BigLh.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\BinaryCompressedResMaps.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\btdebug.h">
@@ -461,6 +449,9 @@
     <ClInclude Include="src\DistData.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\Fabric.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\FatTail.h">
       <Filter>Header Files</Filter>
     </ClInclude>
@@ -479,10 +470,13 @@
     <ClInclude Include="src\GlobalTrend.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="src\GSLRNGAux.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
     <ClInclude Include="src\Initialise.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Landscape.h">
+    <ClInclude Include="src\IntraNode.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="src\Likelihood.h">
@@ -491,7 +485,46 @@
     <ClInclude Include="src\LinAlg.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\RestrictionMap.h">
+    <ClInclude Include="src\LocalTransform.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\LocalTransformMLAllNodes.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Matrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MCMC.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\MinFit.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ML.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\ModelFile.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\NLOptBT.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Options.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Output.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Part.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Pattern.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\PMatrix.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="src\Power.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

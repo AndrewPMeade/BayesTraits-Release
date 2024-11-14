@@ -23,6 +23,8 @@
 // use the intel MLK lib
 //#define USE_MKL
 
+
+
 #ifdef USE_MKL
 	#define MKL_INT int
 	#include <mkl.h>
@@ -30,6 +32,11 @@
 
 #ifdef BTLAPACK
 #ifndef USE_MKL
+
+	// this may need to be delete as gsl brings in its own
+	// to build on the cluster 8/24 
+	// gcc -DBTLAPACK -O3 *.c -lm -lgsl -lnlopt -lopenblas -lpthread
+	// will need to set export OPENBLAS_NUM_THREADS=1 for 
 	#include <cblas.h>
 #endif
 #endif
@@ -131,8 +138,6 @@
 /* Value of the VarRates alpha beta*/
 #define	VAR_RATES_ALPHA		1.1
 #define VAR_RATES_BETA		1
-#define VAR_RATES_SHAPE 2.0
-#define VAR_RATES_SCALE 0.7
 
 
 
@@ -169,6 +174,9 @@
 #define OUTPUT_EXT_VAR_RATES	".VarRates.txt"
 #define OUTPUT_EXT_STONES		".Stones.txt"
 #define OUTPUT_EXT_TREES		".Output.trees"
+#define OUTPUT_EXT_INTRA_NODE	".IntraNode.txt"
+#define OUTPUT_EXT_CHECKPOINT	".CheckPoint.bin"
+
 
 #define UNKNOWNSTATE	'-'
 #define ESTDATAPOINT	"?"
@@ -182,7 +190,7 @@
 
 //extern double LhPraxis(LhPraxisdouble *);
 
-#define DISPLAY_INFO	printf("BayesTraits V4.1.3 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
+#define DISPLAY_INFO	printf("BayesTraits V5.0 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
 
 #define MIN_DELTA	1E-07
 #define MAX_DELTA	3
@@ -229,6 +237,23 @@
 // How many iterations between updates to the MCMC scheduler
 #define	MCMC_SCHEDULE_UPDATE	1000
 
+// to build the code to create compressed binary restriction maps
+#define NO_GEO_MAP_BOX_SIZE_LONG 250
+#define NO_GEO_MAP_BOX_SIZE_LAT 150
+
+
+// to build code to simulate geo data, and exit. 
+//#define SIM_GEO_DATA
+
+#define RNG_TYPE gsl_rng_mt19937
+
+#define MIN_ML_POWER -10
+#define MAX_ML_POWER 10
+
+// State list, not compleate but 195 that work, may have to go to num based. 
+//	€ƒ„†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ¡¢£¤¥¦§¨©ª«¬®¯°±²³´µ¶·¸¹º»¼½¾¿ÀÁÂÃÄÅÆÇÈÉÊËÌÍÎÏÐÑÒÓÔÕÖ×ØÙÚÛÜÝÞßàáâãäåæçèéêëìíîïðñòóô!#$%&'*+./0123456789:;<=>@ABCDEFGHIJKLMNOPQRSTUVWXYZ\^_`abcdefghijklmnopqrstuvwxyz{|}~
+
+
 static char    *RJ_LOCAL_SCALAR_NAMES[] =
 {
 	"kappa",
@@ -237,8 +262,15 @@ static char    *RJ_LOCAL_SCALAR_NAMES[] =
 	"ou",
 	"node",
 	"branch",
-	"LandscapeBL"
+	"fabricbeta"
 };
+
+typedef enum
+{
+	STATE_BURN_IN,
+	STATE_SAMPLING,
+	STATE_STEPPING_STONES
+} CHAIN_STATE;
 
 typedef enum
 {
@@ -248,7 +280,7 @@ typedef enum
 	VR_OU,
 	VR_NODE,
 	VR_BL,
-	VR_LS_BL
+	VR_FABRIC_BETA
 } TRANSFORM_TYPE;
 
 typedef enum
@@ -342,6 +374,20 @@ typedef enum
 	C_LOAD_RJ_RATES,
 	C_TEST_PRIOR,
 	C_RES_MAP,
+	C_LOAD_MAPS,
+	C_FABRIC_BETA_Z_PRIOR, 
+	C_INTRA_NODE,
+	C_CHECKPOINT,
+	C_CHECKPOINT_FILE,
+	C_RESET_SEED,
+	C_RESET_ITTERS,
+	C_LANDSCAPE_HOMO,
+	C_FLIPP_NODES,
+	C_LOCK_RJ_BRANCH,
+	C_PRIOR_PROBABILITY,
+	C_POWER,
+	C_RJ_LOCK_MODEL,
+	C_BUILD_MAP_FILE,
 	CUNKNOWN,
 } COMMANDS;
 
@@ -436,6 +482,20 @@ static char    *COMMANDSTRINGS[] =
 	"LoadVarRates",		"lvr",
 	"TestPrior",		"TestPrior",
 	"RestrictionMap",	"ResMap",
+	"LoadMaps", "LoadMaps", 
+	"FabicBetaZPrior", "FabicBetaZPrior",
+	"IntraNode",	"IntraNode",
+	"CheckPoint",	"CheckPoint",
+	"CheckPointFile",	"CheckPointFile",
+	"ReSetSeed",	"ReSetSeed",
+	"ReSetIterations", "ReSetIterations",
+	"FabricHomo", "LandscapeHomo",
+	"FlippedNodes", "FlippedNodes",
+	"LockBRJranch", "LockRJBranch",
+	"PriorProbability", "PriorProbability",
+	"Power", "Power",
+	"RJLockModel", "RJLockModel",
+	"BuildMaps", "BuildMaps",
 	""
 };
 
@@ -514,19 +574,20 @@ static char    *DEPHETROPRAMS[] =
 	""
 };
 
-#define NO_PRIOR_DIST 8
+#define NO_PRIOR_DIST 9
 
 static char    *DISTNAMES[] =
 {
 	"gamma",
 	"uniform",
-	"chi",
+	"chi-squared",
 	"exp",
 	"sgamma",
 	"lognormal",
 	"normal",
 	"weibull",
-	"undefined"
+	"undefined",
+	""
 };
 
 static int	DISTPRAMS[] =
@@ -588,8 +649,8 @@ typedef enum
 
 typedef enum
 {
-	ANALML,
-	ANALMCMC,
+	ANALYSIS_ML,
+	ANALYSIS_MCMC
 } ANALSIS;
 
 typedef enum
@@ -644,26 +705,6 @@ typedef struct
 	TIME_SLICE	**TimeSlices;
 
 } TIME_SLICES;
-
-
-typedef struct
-{
-	int		NoRates;
-	double	Rate;
-	int		*PramList;
-} RATE_GROUP;
-
-typedef struct
-{
-	int NoRates;
-	int	NoGroups;
-	int	*RateList;
-
-	RATE_GROUP	**RateGroupList;
-
-	double	Sig;
-	int		FixedNoGroups;
-} LAND_RATE_GROUPS;
 
 typedef struct
 {
@@ -720,7 +761,6 @@ typedef struct
 
 	double	Var;
 	double	Err;
-
 
 //	double	*v;
 } CONTRAST;
@@ -786,6 +826,20 @@ typedef struct
 	double AgeMax;
 } RESTRICTION_MAP;
 
+typedef struct
+{
+	RESTRICTION_MAP	*ResMap;
+	int Flipped;
+} NODE_RES_MAP;
+
+typedef struct
+{
+	double X,Y,Z;
+	double Height, InputLength;
+	double Length;
+	RESTRICTION_MAP	*ResMap;
+} INTRA_NODE;
+
 
 struct INODE
 {
@@ -836,7 +890,12 @@ struct INODE
 
 	gsl_rng			*RNG;
 
-	RESTRICTION_MAP	*ResMap;
+	NODE_RES_MAP	*NodeResMap;
+
+	INTRA_NODE *IntraNodes;
+	int NoIntraNodes;
+
+	int	RJLockNode;
 };
 
 typedef struct INODE*	NODE;
@@ -953,6 +1012,9 @@ typedef	struct
 
 	// cash the taxa ID to map to nodes quick. 
 	NODE			*TaxaIDNodeMap;
+
+	INTRA_NODE *IntraNodes;
+	int NoIntraNodes;
 
 // information needed to traverse the tree and accumulate partial results
 #ifdef BTOCL
@@ -1107,7 +1169,7 @@ typedef struct
 //	NODE			Node;
 	double			Scale;
 	TRANSFORM_TYPE	Type;
-	long long		NodeID;
+	size_t			NodeID;
 
 	int				Fixed;
 	int				UserSupplied;
@@ -1126,6 +1188,10 @@ typedef struct
 	int			NoTempList;
 
 	double		Alpha;
+
+	int			UseFabricHomo;
+	double		*FabricHomo;
+
 } VARRATES;
 
 typedef struct
@@ -1159,6 +1225,15 @@ typedef struct
 
 typedef struct
 {
+	size_t	NoStones;
+	size_t	ItPerStone;
+	double	Alpha, Beta;
+
+} STONES_OPTIONS;
+
+
+typedef struct
+{
 	double	*Power;
 	double	*MLh;
 	double	LastLh;
@@ -1166,15 +1241,15 @@ typedef struct
 	double	Sum;
 	double	Scalar, Length;
 
-	int		NoStones;
+	size_t	NoStones;
 	double	Alpha, Beta;
 
-	int			ItPerStone;
-	long long	ItStart;
+	size_t	ItPerStone;
+	size_t	ItStart;
 
-	int		SampleFreq;
+	size_t	SampleFreq;
 	int		Started;
-	int		N;
+	size_t	N;
 } STONES;
 
 typedef struct
@@ -1190,7 +1265,7 @@ typedef struct
 
 typedef struct
 {
-	long long	Iteration;
+	size_t	Iteration;
 	double		*Frequencies;
 	int			Default;
 } CUSTOM_SCHEDULE;
@@ -1202,13 +1277,13 @@ typedef struct
 	int		NoTags;
 } PATTERN;
 
-
-
 typedef struct
 {
 	MODEL		Model;
 	ANALSIS		Analsis;
 	MODEL_TYPE	ModelType;
+
+	int			NoOfSites;
 
 	int			NoOfRates;
 	char		**RateName;
@@ -1223,9 +1298,9 @@ typedef struct
 
 	int			PriorCats;
 
-	long long	Itters;
+	size_t		Itters;
 	int			Sample;
-	long long	BurnIn;
+	size_t		BurnIn;
 
 	int			MLTries;
 	int			MLMaxEVals;
@@ -1235,7 +1310,7 @@ typedef struct
 	int			NoOfRecNodes;
 	RECNODE		**RecNodeList;
 
-	TREES		*Trees;
+//	TREES		*Trees;
 
 //	char		*LogFN;
 	char		*BaseOutputFN;
@@ -1246,6 +1321,12 @@ typedef struct
 	FILE		*OutTrees;
 	FILE		*VarRatesLog;
 	FILE		*LogFatTail;
+	FILE		*LogIntraNode;
+
+	FILE		*ShedFile;
+	FILE		*SaveModelFile;
+	FILE		*StoneFile;
+
 	char		*LogFileBuffer;
 	char		**PassedOut;
 
@@ -1323,7 +1404,7 @@ typedef struct
 //	int			UseVarRates;
 
 	int			UseEqualTrees;
-	int			ETreeBI;
+	int			EqualTreesBI;
 
 	int			Precision;
 	int			Cores;
@@ -1333,8 +1414,6 @@ typedef struct
 
 	int			LoadModels;
 	char		*LoadModelsFN;
-
-	STONES		*Stones;
 
 	int			RJDummy;
 	FILE		*RJDummyLog;
@@ -1397,6 +1476,32 @@ typedef struct
 	RESTRICTION_MAP**	RestrictionMaps;
 
 	int					NoRestrictionMaps;
+	int					FabricBetaZPrior;
+
+	int					UseIntraNode;
+	double				IntraNodeDist;
+
+	int					CheckPoint;
+	int					LoadCheckPointFile;
+	char				*CheckPointFile;
+	int					CheckPointAppendFiles;
+	int					CheckPointReSetItterations;
+	int					ReSetSeed;
+	long				ReSetSeedVal;
+
+	STONES_OPTIONS		*StoneOptions;
+
+	int					FabricHomo;
+
+	int			NoFlippedNodes;
+	TAG			**FlippedNodes;
+
+	int			NoLockedRJBL;
+	TAG			**LockedRJBL;
+
+	int			*PowerSites;
+	
+	int			RJLockModel;
 
 } OPTIONS;
 
@@ -1422,7 +1527,7 @@ typedef struct
 	RJDUMMY_TYPE	Type;
 	NODE			Node;
 	double			*Beta;
-	long long		Iteration;
+	size_t		Iteration;
 } DUMMYCODE;
 
 typedef struct
@@ -1453,12 +1558,7 @@ typedef struct
 
 typedef struct
 {
-	double		*Alpha;
-	double		*Scale;
-
 	double		*AnsVect;
-
-	double		*SiteLh;
 
 	double		*SiteMin;
 	double		*SiteMax;
@@ -1466,12 +1566,15 @@ typedef struct
 
 	SLICESAMPLER	**SliceSamplers;
 
-	int				NoSD;
-	STABLEDIST**	SDList;
-
 	double		*PartialLh;
-
 } FATTAILRATES;
+
+typedef struct
+{
+	int NoSites;
+	int *SiteIndex;
+	double *Powers;
+} SITE_POWER;
 
 typedef struct
 {
@@ -1551,12 +1654,8 @@ typedef struct
 	MODELFILE		*ModelFile;
 	int				ModelNo;
 
-	RANDSTATES		*RS;
-	RANDSTATES		**RSList;
 	gsl_rng			*RNG;
 	
-
-
 	VARRATES		*VarRates;
 	CONTRASTR		*Contrast;
 	HETERO			*Hetero;
@@ -1579,11 +1678,12 @@ typedef struct
 	double			GlobablRate;
 	double			NormConst;
 
-	LAND_RATE_GROUPS	*LandscapeRateGroups;
-
-	int			UseMLLandscape;
-
 	double		GlobalTrend;
+
+	INTRA_NODE		*IntraNodes;
+	int				NoIntraNodes;
+
+	SITE_POWER		*SitePowers;
 
 } RATES;
 
@@ -1601,7 +1701,7 @@ typedef struct
 	SUMMARYNO	*Root;
 } SUMMARY;
 
-#define NO_SCHEDULE_OPT	29
+#define NO_SCHEDULE_OPT	31
 
 static char    *SHEDOP[] =
 {
@@ -1633,7 +1733,9 @@ static char    *SHEDOP[] =
 	"Time Slice - Time",
 	"Time Slice - Scale",
 	"Global Rate",
-	"GlobalTrend-Change"
+	"GlobalTrend-Change",
+	"Fabric Homo",
+	"Site Power"
 };
 
 typedef enum
@@ -1666,7 +1768,9 @@ typedef enum
 	S_TIME_SLICE_TIME,
 	S_TIME_SLICE_SCALE,
 	S_GLOBAL_RATE,
-	S_GLOBAL_TREND
+	S_GLOBAL_TREND,
+	S_FABRIC_HOMO,
+	S_SITE_POWER
 } OPERATORS;
 
 typedef struct
@@ -1685,10 +1789,9 @@ typedef struct
 
 	int			NoParm;
 	AUTOTUNE	**RateDevATList;
-	int			*PTried;
-	int			*PAcc;
-	int			PNo;
 
+	int			PNo;
+	
 	int			NoVarRatesOp;
 	double		*FreqVarRatesOp;
 	TRANSFORM_TYPE	*VarRatesOp;
@@ -1722,6 +1825,9 @@ typedef struct
 	AUTOTUNE	*StochasticBeta;
 	AUTOTUNE	*StochasticBetaPrior;
 
+	AUTOTUNE	*FabricHomo;
+
+	AUTOTUNE	*SitePower;
 
 
 	int				NoCShed;

@@ -16,7 +16,7 @@ double MLLambda(TREE *Tree)
 	for(Index=1;Index<Tree->NoNodes;Index++)
 		SumBL += Tree->NodeList[Index]->Length;
 	
-	return SumBL / (Tree->NoNodes - 1);
+	return SumBL / (double)(Tree->NoNodes - 1);
 }
 
 double	NormPLhVect(double *Vect, int NOS)
@@ -124,18 +124,20 @@ void	StateSpeciationRateTemp(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 void	SetTreeRandBL(TREE *Tree)
 {
 	int Index;
-	RANDSTATES *RS;
+	gsl_rng	*RNG;
 
-	RS = CreateSeededRandStates(1977);
+	RNG	= gsl_rng_alloc(RNG_TYPE);
+	gsl_rng_set(RNG, 1977);
+
 
 	for(Index=0;Index<Tree->NoNodes;Index++)
 	{
-		Tree->NodeList[Index]->Length = RandExp(RS, 0.1);
+		Tree->NodeList[Index]->Length = gsl_ran_exponential(RNG, 0.1);
 	//	printf("%f\n", Tree->NodeList[Index]->Length);
 	}
 			
 //	exit(0);
-	FreeRandStates(RS);
+	gsl_rng_free(RNG);
 }
 
 double	CaclStateSpeciationRateLh(OPTIONS *Opt, TREES *Trees, RATES *Rates)

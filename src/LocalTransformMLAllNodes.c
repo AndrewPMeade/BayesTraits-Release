@@ -78,7 +78,7 @@ void	SetValidNodes(LT_ALL_NODES *Data, TREE *Tree)
 	{
 		Data->ValidNodeNodes[Index] = ValidNode(Tree->NodeList[Index], VR_NODE);
 		Data->ValidBLNodes[Index] = ValidNode(Tree->NodeList[Index], VR_BL);
-		Data->ValidBetaNodes[Index] = ValidNode(Tree->NodeList[Index], VR_LS_BL);
+		Data->ValidBetaNodes[Index] = ValidNode(Tree->NodeList[Index], VR_FABRIC_BETA);
 	}
 }
 
@@ -286,7 +286,7 @@ void	IncludeNewScalarType(LT_ALL_NODES* Data, TRANSFORM_TYPE TType, int *ValidNo
 			LT->TagList[0] = Tag;
 
 			LT->Scale = 1.0;
-			if(LT->Type == VR_LS_BL)
+			if(LT->Type == VR_FABRIC_BETA)
 				LT->Scale = 0.0;			
 
 			LhGain[NIndex] = MLLTScalar(Node, LT, Opt, Trees, Rates);
@@ -340,7 +340,7 @@ void	IncludeNewScalar(LT_ALL_NODES* Data, OPTIONS *Opt, TREES *Trees, RATES *Rat
 
 	if(Data->EstBeta == TRUE)
 	{
-		IncludeNewScalarType(Data, VR_LS_BL, Data->ValidBetaNodes, Opt, Trees, Rates);
+		IncludeNewScalarType(Data, VR_FABRIC_BETA, Data->ValidBetaNodes, Opt, Trees, Rates);
 		LTBeta = Rates->LocalTransforms[Rates->NoLocalTransforms-1];
 		LhGainBeta = Likelihood(Rates, Trees, Opt) - InitLh;
 		Rates->NoLocalTransforms--;

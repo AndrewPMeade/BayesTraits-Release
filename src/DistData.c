@@ -297,7 +297,7 @@ void		PrintDistData(FILE *Out, DIST_DATA *DistData)
 		PrintDistDataTaxa(Out, DistData->DistDataTaxa[Index], DistData->NoSites);
 }
 
-void SetRandDistDataRates(DIST_DATE_RATES *DistRates, DIST_DATA* DistData, RANDSTATES *RS)
+void SetRandDistDataRates(DIST_DATE_RATES *DistRates, DIST_DATA* DistData, gsl_rng *RNG)
 {
 	int TIndex, SIndex;
 	DIST_DATA_TAXA *DistT;
@@ -311,37 +311,43 @@ void SetRandDistDataRates(DIST_DATE_RATES *DistRates, DIST_DATA* DistData, RANDS
 			if(DistT->Linked == TRUE && SIndex != 0)
 				DistRates->SiteMap[TIndex][SIndex] = DistRates->SiteMap[TIndex][0];
 			else
-				DistRates->SiteMap[TIndex][SIndex] = RandUSInt(RS) % DistT->NoSites[SIndex];
+				DistRates->SiteMap[TIndex][SIndex] = (int)gsl_rng_uniform_int(RNG, DistT->NoSites[SIndex]);
 		}
 	}
 }
 
-DIST_DATE_RATES*	CreateDistDataRates(DIST_DATA* DistData, RANDSTATES *RS)
+int**	AllocDistDataRateMem(int NoTaxa, int NoSites)
+{
+	int **Ret;
+	int Index;
+
+	Ret = (int**)SMalloc(sizeof(int*) * NoTaxa);
+	Ret[0] = (int*)SMalloc(sizeof(int) * NoTaxa * NoSites);
+
+	for(Index=1;Index<NoTaxa;Index++)
+		Ret[Index] = Ret[0] + Index * NoSites;
+
+	return Ret;
+}
+
+DIST_DATE_RATES*	CreateDistDataRates(DIST_DATA* DistData, gsl_rng *RNG)
 {
 	DIST_DATE_RATES* Ret;
-	int Index;
 	
 	Ret = (DIST_DATE_RATES*)SMalloc(sizeof(DIST_DATE_RATES));
 	
 	Ret->NoSites = DistData->NoSites;
 	Ret->NoTaxa = DistData->NoTaxa;
-
-	Ret->SiteMap = (int**)SMalloc(sizeof(int*) * DistData->NoTaxa);
+	Ret->SiteMap = AllocDistDataRateMem(DistData->NoTaxa, DistData->NoSites);
 	
-	for(Index=0;Index<DistData->NoTaxa;Index++)
-		Ret->SiteMap[Index] = (int*)SMalloc(sizeof(int) * DistData->NoSites);
-	
-	SetRandDistDataRates(Ret, DistData, RS);
+	SetRandDistDataRates(Ret, DistData, RNG);
 
 	return Ret;
 }
 
 void	FreeDistDataRates(DIST_DATE_RATES* DistRates)
 {
-	int Index;
-
-	for(Index=0;Index<DistRates->NoTaxa;Index++)
-		free(DistRates->SiteMap[Index]);
+	free(DistRates->SiteMap[0]);
 	free(DistRates->SiteMap);
 
 	free(DistRates);
@@ -349,10 +355,7 @@ void	FreeDistDataRates(DIST_DATE_RATES* DistRates)
 
 void	CopyDistDataRates(DIST_DATE_RATES* A, DIST_DATE_RATES* B)
 {
-	int TIndex;
-
-	for(TIndex=0;TIndex<A->NoTaxa;TIndex++)
-		memcpy(A->SiteMap[TIndex], B->SiteMap[TIndex], sizeof(int) * B->NoSites);
+	memcpy(A->SiteMap[0], B->SiteMap[0], sizeof(int) * A->NoSites * A->NoTaxa);
 }
 
 void	SetDistDataTaxaCon(NODE N, DIST_DATA_TAXA *DTaxa, int NoSites, int *PosList)
@@ -422,20 +425,20 @@ void	ChangeTreeDistData(OPTIONS *Opt, RATES *Rates)
 	DD = Opt->DistData;
 	DDRates = Rates->DistDataRates;
 
-	TaxaNo = RandUSInt(Rates->RS) % DDRates->NoTaxa;
+	TaxaNo = (int)gsl_rng_uniform_int(Rates->RNG, DDRates->NoTaxa);
 
 	DDTaxa = DD->DistDataTaxa[TaxaNo];
 	
 	if(DDTaxa->Linked == TRUE)
 	{
-		NPos = RandUSInt(Rates->RS) % DDTaxa->NoSites[0];
+		NPos = (int)gsl_rng_uniform_int(Rates->RNG, DDTaxa->NoSites[0]);
 		for(Index=0;Index<DD->NoSites;Index++)
 			DDRates->SiteMap[TaxaNo][Index] = NPos;
 	}
 	else
 	{
-		Index = RandUSInt(Rates->RS) % DD->NoSites;
-		DDRates->SiteMap[TaxaNo][Index] = RandUSInt(Rates->RS) % DDTaxa->NoSites[Index];
+		Index = (int)gsl_rng_uniform_int(Rates->RNG, DD->NoSites);
+		DDRates->SiteMap[TaxaNo][Index] = (int)gsl_rng_uniform_int(Rates->RNG, DDTaxa->NoSites[Index]);
 	}
 }
 
@@ -500,3 +503,5 @@ void OutputDataDist(FILE *Str, RATES *Rates, OPTIONS *Opt)
 		}
 	}
 }
+
+

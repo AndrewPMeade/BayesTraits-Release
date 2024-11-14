@@ -56,7 +56,7 @@ void	ChangeGlobalTrend(RATES *Rates, SCHEDULE *Shed)
 
 	Dev = Shed->CurrentAT->CDev;
 	
-	Change = RandNormal(Rates->RS, 0, Dev);
+	Change = gsl_ran_gaussian(Rates->RNG, Dev);
 
 	Rates->GlobalTrend += Change;
 }

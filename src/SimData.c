@@ -84,23 +84,19 @@ void	BuildAllSateDS(TREES *Trees)
 }
 
 
-int		GetRootRates(TREES *Trees, RANDSTATES *RS)
+int		GetRootRates(TREES *Trees, gsl_rng	*RNG)
 {
-	int Ret;
-
-	Ret = (int)(RandUSInt(RS) % Trees->NoStates);
-
-	return Ret;
+	return gsl_rng_uniform_int(RNG, Trees->NoStates);
 }
 
-int		EndState(int StartS, MATRIX *P, RANDSTATES *RS)
+int		EndState(int StartS, MATRIX *P, gsl_rng	*RNG)
 {
 	double Point, Sum;
 	int Index, NOS;
 
 	NOS = P->NoOfCols;
 
-	Point = RandDouble(RS);
+	Point = gsl_rng_uniform(RNG); 
 	Sum = 0;
 
 	for(Index=0;Index<NOS-1;Index++)
@@ -114,13 +110,13 @@ int		EndState(int StartS, MATRIX *P, RANDSTATES *RS)
 	return Index;
 }
 
-void	RecSimData(int StartS, NODE N, TREES *Trees, RANDSTATES *RS, FILE *Out, int *NoChange)
+void	RecSimData(int StartS, NODE N, TREES *Trees, gsl_rng *RNG, FILE *Out, int *NoChange)
 {
 	MATRIX *P;
 	int Index, EndS;
 
 	P = Trees->PList[N->ID];
-	EndS = EndState(StartS, P, RS);
+	EndS = EndState(StartS, P, RNG);
 
 	if(EndS != StartS)
 		(*NoChange)++;
@@ -132,7 +128,7 @@ void	RecSimData(int StartS, NODE N, TREES *Trees, RANDSTATES *RS, FILE *Out, int
 	}
 
 	for(Index=0;Index<N->NoNodes;Index++)
-		RecSimData(EndS, N->NodeList[Index], Trees, RS, Out, NoChange);
+		RecSimData(EndS, N->NodeList[Index], Trees, RNG, Out, NoChange);
 }
 
 FILE*	OpenSimOutFile(char *BaseFN)
@@ -180,7 +176,8 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 {
 	double	Lh;
 	int		Err;
-	RANDSTATES *RS;
+	gsl_rng	*RNG;
+	
 	int		Index, RootS, SNo, NoChanges, No0;
 	NODE	Root;
 	FILE	*OutF;
@@ -190,12 +187,17 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 
 	OutF = OpenWriteWithExt(Opt->BaseOutputFN, OUTPUT_EXT_SIM);
 	
-	RS = CreateSeededRandStates(Opt->Seed);
+//	RS = CreateSeededRandStates(Opt->Seed);
+
+
+	RNG	= gsl_rng_alloc(RNG_TYPE);
+	gsl_rng_set(RNG, Opt->Seed);
+
 
 	No0 = 0;
 	for(SNo=0;SNo<1;SNo++)
 	{
-		Rates->Rates[0] = RandDouble(RS) * 0.0001;
+		Rates->Rates[0] = gsl_rng_uniform_pos(RNG) * 0.0001;
 	//	Rates->Rates[0] = 0.00002169;
 		Rates->Rates[0] = 0.00001;
 		Rates->Rates[0] = 0.000009;
@@ -225,7 +227,7 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 			exit(0);
 		}
 	
-		RootS = GetRootRates(Trees, RS);
+		RootS = GetRootRates(Trees, RNG);
 		RootS = 0;
 
 		Root = Trees->Tree[0]->Root;
@@ -236,7 +238,7 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 		NoChanges = 0;
 		for(Index=0;Index<Root->NoNodes;Index++)
 		{
-			RecSimData(RootS, Root->NodeList[Index], Trees, RS, OutF, &NoChanges);
+			RecSimData(RootS, Root->NodeList[Index], Trees, RNG, OutF, &NoChanges);
 		}
 
 		printf("Sim:\t%d\t%.012f\t%d\n", SNo, Rates->Rates[0], NoChanges);
@@ -249,6 +251,8 @@ void	SimData(OPTIONS *Opt, TREES *Trees, RATES *Rates)
 	printf("No0\t%d\n", No0);
 
 	fclose(OutF);
+
+	gsl_rng_free(RNG);
 
 	exit(0);
 }

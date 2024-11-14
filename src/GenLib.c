@@ -58,6 +58,18 @@ void*	smalloc(size_t n, char* FName, unsigned long LineNo)
 	return Ret;
 }
 
+void*	sbmalloc(size_t n, char* FName, unsigned long LineNo)
+{
+	void *Ret;
+	
+	Ret = smalloc(n, FName, LineNo);
+
+	memset(Ret, 0, n);
+
+	return Ret;
+}
+
+
 char*		StrMake(const char* Str)
 {
 	char*	Ret;
@@ -97,14 +109,37 @@ FILE*		OpenWrite(char *FileName)
 	return Ret;
 }
 
-FILE*		OpenWriteWithExt(char *Base, char *Ext)
+FILE*		OpenAppend(char *FileName)
+{
+	FILE*	Ret;
+
+	Ret = fopen(FileName, "a");
+	if(Ret == NULL)
+	{
+		fprintf(stderr, "Could not open file %s for appending\n", FileName);
+		exit(1);
+	}
+
+	return Ret;
+}
+
+char*		GetFileNameWithExt(char *Base, char *Ext)
 {
 	char *Buffer;
-	FILE *Ret;
-
 	Buffer = (char*)SMalloc(strlen(Base) + strlen(Ext) + 2);
 
 	sprintf(Buffer, "%s%s", Base, Ext);
+
+	return Buffer;
+
+}
+
+FILE*		OpenWriteWithExt(char *Base, char *Ext)
+{
+	FILE *Ret;
+	char *Buffer;
+
+	Buffer = GetFileNameWithExt(Base, Ext);
 
 	Ret = OpenWrite(Buffer);
 
@@ -112,6 +147,21 @@ FILE*		OpenWriteWithExt(char *Base, char *Ext)
 
 	return Ret;
 }
+
+FILE*		OpenAppendWithExt(char *Base, char *Ext)
+{
+	FILE *Ret;
+	char *Buffer;
+
+	Buffer = GetFileNameWithExt(Base, Ext);
+
+	Ret = OpenAppend(Buffer);
+
+	free(Buffer);
+
+	return Ret;
+}
+
 /*
 	PC	:	CRLF	013 010
 	Mac	:	CR		013
@@ -1238,4 +1288,30 @@ double	HexStrToDouble(char *Str)
 	}
 
 	return DS.Double;
+}
+
+int		FileExists(char *FName)
+{
+	FILE *FIn;
+
+	FIn = fopen(FName, "rb");
+	if(FIn == NULL)
+		return FALSE;
+
+	fclose(FIn);
+
+	return TRUE;
+
+}
+
+FILE*	OpenWithExt(int Append, char *Base, char *Ext)
+{
+	FILE *File;
+
+	if(Append == FALSE)
+		File = OpenWriteWithExt(Base, Ext);
+	else
+		File = OpenAppendWithExt(Base, Ext);
+
+	return File;
 }

@@ -9,15 +9,15 @@ void		FreeOptions(OPTIONS *Opt, int NoSites);
 MODEL		GetModel(TREES *Trees);
 ANALSIS		GetAnalsis(TREES *Trees);
 MODEL_TYPE	GetModelType(MODEL Model);
-void		GetOptions(OPTIONS *Opt);
+void		GetOptions(OPTIONS *Opt, TREES *Trees);
 
 int			ValidModelChoice(TREES *Trees, MODEL Model);
 
-void		PrintOptions(FILE* Str, OPTIONS *Opt);
-void		GetOptionsArry(OPTIONS *Opt, int Size, char** OptStr);
-
-void		CheckOptions(OPTIONS *Opt);
+void		PrintOptions(FILE* Str, OPTIONS *Opt, TREES *Trees);
+void		GetOptionsArry(OPTIONS *Opt, int Size, char** OptStr, TREES *Trees);
 
 MODEL		IntToModel(int No);
+
+int			DataModifiedOptions(OPTIONS *Opt);
 
 #endif
