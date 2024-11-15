@@ -2,7 +2,7 @@ ReadMe for the Fabric-regression in BayesTraits V5.0 Beta – a prerelease version
 
 The manual for BayesTraits which details, how to build and run the program, set parameters and analyse data, can be found in the manual section of the repository.  Note that the manual is not fully up-to-date but along with this README the Fabric-regression model as used in the paper can be run.
 
-The commands below were used to run the Fabric-regression model for the brain and body size dataset used in the paper. 
+The commands below were used to run the Fabric-regression model for the brain and body size dataset used in the paper. (see Examples/FabricRegression) for tree and data. 
 
 The first two lines select the regression model and MCMC analysis. 
 
