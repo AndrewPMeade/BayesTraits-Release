@@ -13,18 +13,18 @@ Line 6 selects the Fabric model, and the next four lines set the priors on the b
 The next line sets the stepping stone sampler to run using 1000 stones, each for 50K iterations. 
 
 The last two lines specify that the reverse jump component of the model is turned off during the estimation of the marginal likelihood and the model is run. For a more detailed description of the settings, please see the manual. 
-
-9
-2
-burnin 100000000
-iterations 200000000
-sample 100000
-Fabric
-Prior FabricBeta gamma 3.18 0.20 
-Prior VRNode gamma 1.2 5 
-Prior Beta-1 uniform 0 2
-Prior Beta-2 normal 0 1
-RJThreshold FabricBeta -2.25
-Stones 1000 50000
-RJLockModel
-run
+<br/>
+9<br/>
+2<br/>
+burnin 100000000<br/>
+iterations 200000000<br/>
+sample 100000<br/>
+Fabric<br/>
+Prior FabricBeta gamma 3.18 0.20<br/>
+Prior VRNode gamma 1.2 5<br/>
+Prior Beta-1 uniform 0 2<br/>
+Prior Beta-2 normal 0 1<br/>
+RJThreshold FabricBeta -2.25<br/>
+Stones 1000 50000<br/>
+RJLockModel<br/>
+run<br/>
