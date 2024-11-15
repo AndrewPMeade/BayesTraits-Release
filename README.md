@@ -14,6 +14,7 @@ The next line sets the stepping stone sampler to run using 1000 stones, each for
 
 The last two lines specify that the reverse jump component of the model is turned off during the estimation of the marginal likelihood and the model is run. For a more detailed description of the settings, please see the manual. 
 <br/>
+<br/>
 9<br/>
 2<br/>
 burnin 100000000<br/>
