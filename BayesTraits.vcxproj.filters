@@ -311,9 +311,6 @@
     <ClInclude Include="src\Schedule.h">
       <Filter>Header Files</Filter>
     </ClInclude>
-    <ClInclude Include="src\Serialize.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
     <ClInclude Include="src\SimData.h">
       <Filter>Header Files</Filter>
     </ClInclude>

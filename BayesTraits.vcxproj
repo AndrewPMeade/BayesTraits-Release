@@ -191,7 +191,6 @@
     <ClInclude Include="src\RJDummy.h" />
     <ClInclude Include="src\RJLocalScalar.h" />
     <ClInclude Include="src\Schedule.h" />
-    <ClInclude Include="src\Serialize.h" />
     <ClInclude Include="src\SimData.h" />
     <ClInclude Include="src\SliceSampler.h" />
     <ClInclude Include="src\StableDist.h" />

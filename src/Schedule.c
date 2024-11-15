@@ -966,7 +966,7 @@ void SetCustomSchedule(OPTIONS* Opt, FILE* ShedFile, size_t Itters, SCHEDULE* Sh
 void	SetRJLockedModel(SCHEDULE* Shed)
 {
 	Shed->OptFreq[S_VARRATES_ADD_REMOVE] = 0.0;
-//	Shed->OptFreq[S_VARRATES_MOVE] = 0.0;
+	Shed->OptFreq[S_VARRATES_MOVE] = 0.0;
 	NormaliseVector(Shed->OptFreq, Shed->NoOfOpts);
 }
 
