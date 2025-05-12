@@ -4668,7 +4668,7 @@ void	SetRJThreshold(OPTIONS* Opt, int Tokes, char** Passed)
 
 	if(Err == TRUE)
 	{
-		printf("Cannot convert %s to a valid transform type", Passed[1]);
+		printf("Cannot convert %s to a valid transform type ", Passed[1]);
 		printf("Valid are transform type");
 		for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
 			printf("%s, ", RJ_LOCAL_SCALAR_NAMES[Index]);
@@ -4734,9 +4734,16 @@ void	OptTestPrior(OPTIONS *Opt, int Tokes, char **Passed)
 	}
 
 	Prior = GetPriorFromName(Passed[1], Opt->AllPriors, Opt->NoAllPriors);
+
 	if(Prior == NULL)
 	{
 		printf("Invalid prior name %s\n", Passed[1]);
+		exit(1);
+	}
+
+	if(Prior->Dist == PDIST_UNDEFINED)
+	{
+		printf("Prior %s is not defined.\n", Passed[1]);
 		exit(1);
 	}
 
@@ -4762,9 +4769,16 @@ void	OptPriorProbability(OPTIONS* Opt, int Tokes, char** Passed)
 	}
 
 	Prior = GetPriorFromName(Passed[1], Opt->AllPriors, Opt->NoAllPriors);
+
 	if (Prior == NULL)
 	{
 		printf("Invalid prior name %s\n", Passed[1]);
+		exit(1);
+	}
+
+	if(Prior->Dist == PDIST_UNDEFINED)
+	{
+		printf("Prior %s is not defined.\n", Passed[1]);
 		exit(1);
 	}
 

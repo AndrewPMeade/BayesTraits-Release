@@ -74,53 +74,28 @@ int		UseNonParametricMethods(OPTIONS *Opt)
 
 TRANSFORM_TYPE	StrToVarRatesType(char *Str)
 {
-	if(StrICmp("Node", Str) == 0)
-		return VR_NODE;
+	TRANSFORM_TYPE Type; 
+	int Err;
 
-	if(StrICmp("Branch", Str) == 0)
-		return VR_BL;
+	Err = FALSE;
+	Type = NameToRJLocalType(Str, &Err);
 
-	if(StrICmp("Kappa", Str) == 0)
-		return VR_KAPPA;
-
-	if(StrICmp("Lambda", Str) == 0)
-		return VR_LAMBDA;
-
-	if(StrICmp("Delta", Str) == 0)
-		return VR_DELTA;
-
-	if(StrICmp("OU", Str) == 0)
-		return VR_OU;
-
-	if(StrICmp("LandscapeBL", Str) == 0)
-		return VR_FABRIC_BETA;
-
-	printf("uknown varaible rate type %s\n", Str); 
-	exit(0);
+	if(Err == TRUE)
+	{
+		printf("%s::%d unkonwn varaible rate type %s\n", __FILE__, __LINE__, Str);
+		exit(0);
+	}
+	
+	return Type;
 }
 
 char* VarRatesTypeToStr(TRANSFORM_TYPE Type)
 {
-	if(Type == VR_NODE)
-		return "Node";
+	int Index;
 
-	if(Type == VR_BL)
-		return "Branch";
-
-	if(Type == VR_KAPPA)
-		return "Kappa";
-
-	if(Type == VR_LAMBDA)
-		return "Lambda";
-
-	if(Type == VR_DELTA)
-		return "Delta";
-
-	if(Type == VR_OU)
-		return "OU";
-
-	if(Type == VR_FABRIC_BETA)
-		return "LandscapeBL";
+	for(Index=0;Index<NO_RJ_LOCAL_SCALAR;Index++)
+		if(Type == (TRANSFORM_TYPE)Index)
+			return RJ_LOCAL_SCALAR_NAMES[Index];
 
 	printf("%s::%d unkonwn RJ Variable type\n", __FILE__, __LINE__);
 	exit(0);

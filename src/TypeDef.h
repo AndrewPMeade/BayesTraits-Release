@@ -267,13 +267,6 @@ static char    *RJ_LOCAL_SCALAR_NAMES[] =
 
 typedef enum
 {
-	STATE_BURN_IN,
-	STATE_SAMPLING,
-	STATE_STEPPING_STONES
-} CHAIN_STATE;
-
-typedef enum
-{
 	VR_KAPPA,
 	VR_LAMBDA,
 	VR_DELTA,
@@ -282,6 +275,14 @@ typedef enum
 	VR_BL,
 	VR_FABRIC_BETA
 } TRANSFORM_TYPE;
+
+
+typedef enum
+{
+	STATE_BURN_IN,
+	STATE_SAMPLING,
+	STATE_STEPPING_STONES
+} CHAIN_STATE;
 
 typedef enum
 {
