@@ -341,3 +341,4 @@ ASALocalRun/
 healthchecksdb
 /Documentation/Manual
 /Data
+/Testing/run
