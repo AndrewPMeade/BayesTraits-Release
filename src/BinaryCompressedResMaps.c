@@ -235,9 +235,7 @@ RESTRICTION_MAP**	LoadBinCompResMaps(char *FName, int *Size);
 void	PrintBuildBinResMapsHeader(void)
 {
 	printf("\n\n\n");
-	printf("BuildBinaryMaps (%s) - Creates a binary map file from csv files.\n", __DATE__);
-	printf("The fist line, should be the output file name, number of longitude bins, the number of latitude bins.\n");
-	printf("The other lines should be, csv file defining the map, start heigh (from the root), end high (from the root).\n");
+	printf("BuildMaps - Creates a binary map file from csv files.\n");
 	printf("See manual for details.\n");
 	printf("Building the maps file can take a while and require considerable memory, depending on the number of maps and number of points per map.\n");
 	printf("The program will exit once the maps have been build.\n");

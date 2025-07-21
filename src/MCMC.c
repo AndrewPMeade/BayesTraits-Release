@@ -567,10 +567,10 @@ CHAIN_STATE	SetChainState(OPTIONS *Opt, size_t Itters, int EqualTreeBurntIn)
 	if(Itters < Opt->BurnIn)
 		return STATE_BURN_IN;
 
-	if(Itters > Opt->Itters && Opt->Itters != -1)
-		return STATE_STEPPING_STONES;
+	if(Opt->Itters == 0 || Itters <= Opt->Itters)
+		return STATE_SAMPLING;
 
-	return STATE_SAMPLING;
+	return STATE_STEPPING_STONES;
 }
 
 void BugTest(OPTIONS *Opt, TREES *Trees, RATES *Rates)
