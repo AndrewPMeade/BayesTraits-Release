@@ -978,6 +978,9 @@ double	CombineLh(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 
 void	LhTransformTree(RATES* Rates, TREES *Trees, OPTIONS *Opt)
 {
+	if(Opt->ModelType == MT_CONTINUOUS)
+		return;
+
 	if(NeedToTransformTree(Opt, Rates) == FALSE)
 		return;
 	
