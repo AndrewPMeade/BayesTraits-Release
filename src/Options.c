@@ -3772,14 +3772,14 @@ void	SetLocalTransformPrior(OPTIONS *Opt, TRANSFORM_TYPE	Type)
 	if(Type == VR_BL)
 	{
 		RemovePriorFormOpt("VRBL", Opt);
-		Prior = CreateSGammaPrior("VRBL", VAR_RATES_ALPHA, VAR_RATES_BETA);
+		Prior = CreateGammaPrior("VRBL", VAR_RATES_DEF_GAMMA_ALPHA, VAR_RATES_DEF_GAMMA_BETA);
 		AddPriorToOpt(Opt, Prior);
 	}
 
 	if(Type == VR_NODE)
 	{
 		RemovePriorFormOpt("VRNode", Opt);
-		Prior = CreateSGammaPrior("VRNode", VAR_RATES_ALPHA, VAR_RATES_BETA);
+		Prior = CreateGammaPrior("VRNode", VAR_RATES_DEF_GAMMA_ALPHA, VAR_RATES_DEF_GAMMA_BETA);
 		AddPriorToOpt(Opt, Prior);
 	}
 
@@ -3964,7 +3964,7 @@ void	AddTimeSlicePriors(TIME_SLICE *TS, OPTIONS *Opt)
 	if(TS->FixedScale == FALSE)
 	{
 		RemovePriorFormOpt("TimeSlice-Scale", Opt);
-		Prior = CreateSGammaPrior("TimeSlice-Scale", VAR_RATES_ALPHA, VAR_RATES_BETA);
+		Prior = CreateGammaPrior("TimeSlice-Scale", VAR_RATES_DEF_GAMMA_ALPHA, VAR_RATES_DEF_GAMMA_BETA);
 		AddPriorToOpt(Opt, Prior);
 	}
 

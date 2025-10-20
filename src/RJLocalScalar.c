@@ -68,32 +68,3 @@ int	UseRJLocalScalars(OPTIONS *Opt)
 
 	return FALSE;
 }
-
-
-PRIOR*	GetPriorFromRJRatesScalar(OPTIONS *Opt, TRANSFORM_TYPE Type)
-{
-	if(Type == VR_KAPPA)
-		return GetPriorFromName("Kappa", Opt->AllPriors, Opt->NoAllPriors);
-
-	if(Type == VR_LAMBDA)
-		return GetPriorFromName("Lambda", Opt->AllPriors, Opt->NoAllPriors);
-
-	if(Type == VR_DELTA)
-		return GetPriorFromName("Delta", Opt->AllPriors, Opt->NoAllPriors);
-
-	if(Type == VR_OU)
-		return GetPriorFromName("OU", Opt->AllPriors, Opt->NoAllPriors);
-
-	if(Type == VR_NODE)
-		return GetPriorFromName("VRNode", Opt->AllPriors, Opt->NoAllPriors);
-
-	if(Type == VR_BL)
-		return GetPriorFromName("VRBranch", Opt->AllPriors, Opt->NoAllPriors);
-
-	if(Type == VR_FABRIC_BETA)
-		return GetPriorFromName("FabricBeta", Opt->AllPriors, Opt->NoAllPriors);
-
-	printf("Unknown transform type");
-	exit(1);
-	return NULL;
-}

@@ -136,8 +136,8 @@
 #define VAR_RATES_PRIOR_SCALE 1
 
 /* Value of the VarRates alpha beta*/
-#define	VAR_RATES_ALPHA		1.1
-#define VAR_RATES_BETA		1
+#define	VAR_RATES_DEF_GAMMA_ALPHA		1.2
+#define VAR_RATES_DEF_GAMMA_BETA		5.0
 
 
 
@@ -190,7 +190,7 @@
 
 //extern double LhPraxis(LhPraxisdouble *);
 
-#define DISPLAY_INFO	printf("BayesTraits V5.0.2 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
+#define DISPLAY_INFO	printf("BayesTraits V5.0.3 (%s)\nMark Pagel and Andrew Meade\nwww.evolution.reading.ac.uk\n\n\n",__DATE__);fflush(stdout);
 
 #define MIN_DELTA	1E-07
 #define MAX_DELTA	3
@@ -583,7 +583,6 @@ static char    *DISTNAMES[] =
 	"uniform",
 	"chi-squared",
 	"exp",
-	"sgamma",
 	"lognormal",
 	"normal",
 	"weibull",
@@ -600,7 +599,6 @@ static int	DISTPRAMS[] =
 	2,
 	2,
 	2,
-	2,
 	0
 };
 
@@ -610,7 +608,6 @@ typedef enum
 	PDIST_UNIFORM,
 	PDIST_CHI,
 	PDIST_EXP,
-	PDIST_SGAMMA,
 	PDIST_LOGNORMAL,
 	PDIST_NORMAL,
 	PDIST_WEIBULL,

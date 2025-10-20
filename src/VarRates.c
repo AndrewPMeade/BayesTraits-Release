@@ -52,6 +52,7 @@
 
 
 void	OutputVarRatesType(FILE *Out, TRANSFORM_TYPE Type);
+PRIOR*	GetVRPrior(TRANSFORM_TYPE Type, RATES *Rates);
 
 int		UseRJLocalScalar(OPTIONS* Opt)
 {
@@ -193,7 +194,7 @@ VARRATES*	CreatVarRates(RATES *Rates, TREES *Trees, OPTIONS *Opt)
 #ifdef PPUNIFORM
 	Ret->Alpha = -1;
 #else
-	Ret->Alpha = VAR_RATES_ALPHA;
+	Ret->Alpha = VAR_RATES_DEF_GAMMA_ALPHA;
 #endif
 
 	if(Opt->FabricHomo == TRUE)
@@ -286,16 +287,6 @@ TRANSFORM_TYPE	GetVarRatesType(gsl_rng *RNG, SCHEDULE *Shed)
 	return Shed->VarRatesOp[Pos];
 }
 
-void	SetVRNodeBLRates(VAR_RATES_NODE *PNode, gsl_rng *RNG)
-{
-#ifdef PPUNIFORM
-	PNode->Scale = RandDouble(RS) * PPMAXSCALE;
-#else
-	//PNode->Scale = RandGamma(VAR_RATES_ALPHA, VAR_RATES_BETA);
-	PNode->Scale = gsl_ran_gamma(RNG, VAR_RATES_ALPHA, VAR_RATES_BETA);
-#endif
-}
-
 double GetBetaZPrior(OPTIONS *Opt, RATES *Rates, VAR_RATES_NODE *PNode, NODE N, TREES *Trees)
 {
 	PRIOR *Prior;
@@ -309,8 +300,8 @@ double GetBetaZPrior(OPTIONS *Opt, RATES *Rates, VAR_RATES_NODE *PNode, NODE N, 
 
 	Sig2 = Rates->Rates[1];
 
-	Prior = GetPriorFromRJRatesScalar(Opt, PNode->Type);
-	
+	Prior = GetVRPrior(PNode->Type, Rates);
+
 	Z = RandFromPrior(Rates->RNG, Prior);
 	
 	Scale = Z * sqrt(Sig2 * N->Length);
@@ -322,8 +313,9 @@ void	SetVRScalar(OPTIONS *Opt, RATES *Rates, VAR_RATES_NODE *PNode, NODE N, TREE
 {
 	PRIOR *Prior;
 
-	Prior = GetPriorFromRJRatesScalar(Opt, PNode->Type);
-	
+//	Prior = GetPriorFromRJRatesScalar(Opt, PNode->Type);
+	Prior = GetVRPrior(PNode->Type, Rates);
+
 	PNode->Scale = RandFromPrior(Rates->RNG, Prior);
 
 	if(Opt->FabricBetaZPrior == TRUE && PNode->Type == VR_FABRIC_BETA)
@@ -389,16 +381,6 @@ void	CheckPlasyNodes(VARRATES *VarRates)
 	}
 }
 
-void	SetScalar(OPTIONS *Opt, RATES *Rates,  VAR_RATES_NODE *PNode, NODE N, TREES *Trees)
-{
-	if(PNode->Type == VR_BL || PNode->Type == VR_NODE)
-	{
-		SetVRNodeBLRates(PNode, Rates->RNG);
-		return;
-	}
-
-	SetVRScalar(Opt, Rates, PNode, N, Trees);
-}
 
 double	SetLandscapeBeta(RATES *Rates, double t)
 {
@@ -424,8 +406,8 @@ void	VarRatesAddNode(RATES *Rates, TREES *Trees, OPTIONS *Opt, TRANSFORM_TYPE Ty
 
 	PNode->Type = Type;
 
-	SetScalar(Opt, Rates, PNode, N, Trees);
-	
+	SetVRScalar(Opt, Rates, PNode, N, Trees);
+		
 	VarRates->NodeList = (VAR_RATES_NODE**)AddToList(&VarRates->NoNodes, (void**)VarRates->NodeList, (void*)PNode);
 
 	Rates->LnHastings = 0;

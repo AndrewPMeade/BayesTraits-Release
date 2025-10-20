@@ -326,7 +326,6 @@ CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 gamma 1.5 2.5;TestPri
 CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 uniform 4 5;TestPrior Sigma-1 1000;Run
 CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 chi-squared 3.3;TestPrior Sigma-1 1000;Run
 CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 exp 5.5;TestPrior Sigma-1 1000;Run
-CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 sgamma 1.1 10.5;TestPrior Sigma-1 1000;Run
 CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 lognormal -5 5;TestPrior Sigma-1 1000;Run
 CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 normal 5 1;TestPrior Sigma-1 1000;Run
 CarnivoresNoMissing.trees	Carnivores.txt	7;2;Prior Sigma-1 weibull 5 1;TestPrior Sigma-1 1000;Run

@@ -194,24 +194,6 @@ PRIOR*		CreateExpPrior(char *Name, double Alpha)
 	return Ret;
 }
 
-
-PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta)
-{
-	int		NoP;
-	PRIOR	*Ret;
-
-	NoP = DISTPRAMS[PDIST_SGAMMA];
-	Ret = AllocBlankPrior(NoP);
-
-	Ret->Dist = PDIST_SGAMMA;
-	Ret->DistVals[0] = Alpha;
-	Ret->DistVals[1] = Beta;
-	
-	Ret->Name = StrMake(Name);
-
-	return Ret;
-}
-
 PRIOR*		CreateLogNormalPrior(char *Name, double Location, double Scale)
 {
 	int		NoP;
@@ -641,41 +623,6 @@ double LogChiSquaredP(double X, PRIOR *Prior)
 	return log(Ret);
 }
 
-void	PLhTest(PRIOR *Prior)
-{
-	double X, Lh;
-
-	for(X=0;X<=10;X+=0.001)
-	{
-		Lh  = PDFSGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
-
-		printf("%f\t%f\n", X, Lh);
-	}
-
-	exit(0);
-}
-
-double LogSGammaP(double X, PRIOR *Prior)
-{
-	double Ret;
-
-
-//	PLhTest(Prior);
-
-	if(X < 0.0)
-		return ERRLH;
-
-	if(Prior->Discretised == TRUE)
-	{
-		printf("Discretised scaled gamma is not supoorted\n");
-		exit(1);
-	}
-
-	Ret = PDFSGamma(X, Prior->DistVals[0], Prior->DistVals[1]);
-
-	return log(Ret);
-}
-
 double	LogExpContinuous(double X, PRIOR *Prior)
 {
 	double A, B, Alpha;
@@ -749,7 +696,6 @@ double	CalcLhPriorP(double X, PRIOR *Prior)
 {
 	double Ret;
 
-//	PriorTest();
 	Ret = -1.0;
 	
 	switch(Prior->Dist)
@@ -768,10 +714,6 @@ double	CalcLhPriorP(double X, PRIOR *Prior)
 
 		case PDIST_CHI:
 			Ret = LogChiSquaredP(X, Prior);
-		break;
-
-		case PDIST_SGAMMA:
-			Ret = LogSGammaP(X, Prior);
 		break;
 
 		case PDIST_LOGNORMAL:
@@ -805,9 +747,6 @@ double		RandFromPrior(gsl_rng *RNG, PRIOR *Prior)
 
 		case PDIST_CHI:
 			return gsl_ran_chisq(RNG, Prior->DistVals[0]);
-
-		case PDIST_SGAMMA:
-			return gsl_ran_gamma(RNG, Prior->DistVals[0], Prior->DistVals[1]);
 
 		case PDIST_LOGNORMAL:
 			return gsl_ran_lognormal(RNG, Prior->DistVals[0], Prior->DistVals[1]);
@@ -1394,9 +1333,6 @@ PRIOR*		CreatePriorFromStr(char *Name, int Tokes, char **Passed)
 
 	if(PD == PDIST_NORMAL)
 		Ret = CreateNormalPrior(Name, PVal[0], PVal[1]);
-
-	if(PD == PDIST_SGAMMA)
-		Ret = CreateSGammaPrior(Name, PVal[0], PVal[1]);
 
 	if(PD == PDIST_WEIBULL)
 		Ret = CreateWeibullPrior(Name, PVal[0], PVal[1]);

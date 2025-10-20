@@ -33,7 +33,6 @@ PRIOR*		CreateGammaPrior(char *Name, double Shape, double Scale);
 PRIOR*		CreateUniformPrior(char *Name, double Min, double Max);
 PRIOR*		CreateChiPrior(char *Name, double Mean);
 PRIOR*		CreateExpPrior(char *Name, double Alpha);
-PRIOR*		CreateSGammaPrior(char *Name, double Alpha, double Beta);
 PRIOR*		CreateLogNormalPrior(char *Name, double Location, double Scale);
 PRIOR*		CreateNormalPrior(char *Name, double Mean, double SD);
 PRIOR*		CreateWeibullPrior(char *Name, double Scale, double Exponent);
