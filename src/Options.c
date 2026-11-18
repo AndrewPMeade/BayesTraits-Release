@@ -1234,7 +1234,7 @@ void	AllocRatePriors(OPTIONS *Opt, TREES *Trees)
 
 	for(Index=0;Index<Opt->NoOfRates;Index++)
 	{
-		if(Opt->ModelType == DISCRETE)
+		if(Opt->ModelType == MT_DISCRETE)
 			Prior = CreateUniformPrior(Opt->RateName[Index], 0, 100);
 		else
 			Prior = CreateUniformPrior(Opt->RateName[Index], -100, 100);
@@ -2694,7 +2694,7 @@ int		CmdVailWithDataType(OPTIONS *Opt, COMMANDS	Command)
 
 		if(Command == CDISTDATA)
 		{
-			if(Command == MT_CONTINUOUS)
+			if(Opt->ModelType == MT_DISCRETE)
 				return FALSE;
 		}
 		

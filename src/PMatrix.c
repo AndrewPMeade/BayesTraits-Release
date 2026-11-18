@@ -721,8 +721,9 @@ double	CreatFullPMatrix(double t, INVINFO	*InvInfo, MATRIX *Mat, int NOS, int Th
 	
 	if(t < MIN_BL)
 	{
-		SetIDMatrix(Mat);
-		return 0;
+//		SetIDMatrix(Mat);
+//		return 0;
+		t = MIN_BL;
 	}	
 	
 	for(i=0;i<NOS;i++)

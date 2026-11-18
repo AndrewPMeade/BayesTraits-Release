@@ -153,6 +153,13 @@ void	CheckOptions(OPTIONS *Opt, TREES *Trees)
 
 	CheckMissingDataAndNonParametricMethods(Opt, Trees);
 	
+    if(EstData(Trees) == TRUE && Opt->Analsis == ANALYSIS_ML)
+	{
+		printf("Data points cannot be estimated using ML, please see manual for MCMC procedure.\n");
+		exit(1);
+	}
+
+
 	if(Opt->LoadModels == TRUE)
 	{
 		if(Opt->UseRJMCMC == TRUE)

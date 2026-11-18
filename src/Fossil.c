@@ -190,7 +190,7 @@ void	FossilLh(NODE N, OPTIONS *Opt, TREES *Trees, int SiteNo)
 		FossilLhBig(N, Trees, Mask,  SiteNo);
 		return;
 #endif
-
+		N->Partial[SiteNo][Index] = N->Partial[SiteNo][Index] * (double)Mask[Index];
 	}
 
 }
